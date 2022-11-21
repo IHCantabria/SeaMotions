@@ -3,10 +3,10 @@
 #define __config_hpp
 
 #ifdef SIMPLE_PREC
-int FLOATING_PRECISION = 32;
+extern int FLOATING_PRECISION;
 typedef float cusfloat;
 #else
-int FLOATING_PRECISION = 64;
+extern int FLOATING_PRECISION;
 typedef double cusfloat;
 #endif
 
