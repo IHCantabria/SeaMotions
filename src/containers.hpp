@@ -7,11 +7,12 @@
 struct PanelNodes
 {
     int num_points = 0;
-    cusfloat x[4];
+    static constexpr int MAX_PANEL_NODES = 4;
+    cusfloat x[MAX_PANEL_NODES];
     cusfloat xm = 0;
-    cusfloat y[4];
+    cusfloat y[MAX_PANEL_NODES];
     cusfloat ym = 0;
-    cusfloat z[4];
+    cusfloat z[MAX_PANEL_NODES];
     cusfloat zm = 0;
 
     // Add method to calculate the geometric propertiess
