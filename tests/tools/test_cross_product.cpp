@@ -34,7 +34,7 @@ int sub_test_1(void)
     cross(v0, v1, v2);
 
     // Check if the calculated vector is equal to the expected
-    int result = assert_vector_equality<cusfloat>(v2, v3, EPS_PRECISION);
+    int result = assert_vector_equality<cusfloat>(3, v2, v3, EPS_PRECISION);
 
     return result;
 }
@@ -54,7 +54,7 @@ int sub_test_2(void)
     cross(v0, v1, v2);
 
     // Check if the calculated vector is equal to the expected
-    int result = assert_vector_equality<cusfloat>(v2, v3, EPS_PRECISION);
+    int result = assert_vector_equality<cusfloat>(3, v2, v3, EPS_PRECISION);
 
     return result;
 }
@@ -74,7 +74,7 @@ int sub_test_3(void)
     cross(v0, v1, v2);
 
     // Check if the calculated vector is equal to the expected
-    int result = assert_vector_equality<cusfloat>(v2, v3, EPS_PRECISION);
+    int result = assert_vector_equality<cusfloat>(3, v2, v3, EPS_PRECISION);
 
     return result;
 }
@@ -94,7 +94,7 @@ int sub_test_4(void)
     cross(v0, v1, v2);
 
     // Check if the calculated vector is equal to the expected
-    int result = assert_vector_equality<int>(v2, v3, 0);
+    int result = assert_vector_equality<int>(3, v2, v3, 0);
 
     return result;
 }
@@ -114,7 +114,7 @@ int sub_test_5(void)
     cross(v0, v1, v2);
 
     // Check if the calculated vector is equal to the expected
-    int result = assert_vector_equality<cusfloat>(v2, v3, EPS_PRECISION);
+    int result = assert_vector_equality<cusfloat>(3, v2, v3, EPS_PRECISION);
 
     return result;
 }

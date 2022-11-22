@@ -1,9 +1,9 @@
 
 template<typename T>
-inline int assert_vector_equality(T (&u)[3], T (&v)[3], T epsilon)
+inline int assert_vector_equality(int N, T* u, T* v, T epsilon)
 {
     int pass = 1;
-    for (int i=0; i<3; i++)
+    for (int i=0; i<N; i++)
     {
         if (std::abs(u[i]-v[i])>epsilon)
         {
@@ -16,10 +16,10 @@ inline int assert_vector_equality(T (&u)[3], T (&v)[3], T epsilon)
 
 
 template<>
-inline int assert_vector_equality<int>(int (&u)[3], int (&v)[3], int epsilon)
+inline int assert_vector_equality<int>(int N, int* u, int* v, int epsilon)
 {
     int pass = 1;
-    for (int i=0; i<3; i++)
+    for (int i=0; i<N; i++)
     {
         if ((u[i]-v[i]) != epsilon)
         {
