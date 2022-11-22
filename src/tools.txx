@@ -14,6 +14,7 @@ inline int assert_vector_equality(T (&u)[3], T (&v)[3], T epsilon)
     return pass;
 }
 
+
 template<>
 inline int assert_vector_equality<int>(int (&u)[3], int (&v)[3], int epsilon)
 {
