@@ -4,6 +4,9 @@ project(SEAMOTIONS CXX)
 ###########################################################
 #################### Configure project ####################
 ###########################################################
+# Configure project to work with ctest
+enable_testing()
+
 # Appends the cmake/modules path to MAKE_MODULE_PATH variable.
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules ${CMAKE_MODULE_PATH})
 
@@ -43,7 +46,7 @@ find_package(MKL CONFIG REQUIRED)
 function(set_mkl_lib_target target)
     target_compile_options(${target} PUBLIC ${PRECISION_FLAG} -Wall -Wextra)
     target_include_directories(${target} PUBLIC ${MKL_INCLUDE})
-    target_link_libraries(${target} PUBLIC mkl_intel_lp64 mkl_intel_thread mkl_core)
+    target_link_libraries(${target} PUBLIC mkl_intel_lp64_dll mkl_intel_thread_dll mkl_core_dll)
 endfunction()
 
 function(kkk)
@@ -58,4 +61,4 @@ endfunction()
 add_subdirectory(tests)
 
 set(SOURCE_FILES src/main.cpp src/version.hpp src/version.cpp)
-add_executable(test ${SOURCE_FILES})
+add_executable(version_exec ${SOURCE_FILES})
