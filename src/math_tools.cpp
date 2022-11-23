@@ -4,7 +4,7 @@
 
 // Include local libraries
 #include "config.hpp"
-#include "tools.hpp"
+#include "math_tools.hpp"
 
 
 cusfloat* generate_empty_vector(int size)

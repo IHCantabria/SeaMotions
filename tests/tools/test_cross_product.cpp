@@ -5,7 +5,7 @@
 
 // Include local modules
 #include "../../src/config.hpp"
-#include "../../src/tools.hpp"
+#include "../../src/math_tools.hpp"
 
 
 void print_vector(cusfloat (&v)[3])
