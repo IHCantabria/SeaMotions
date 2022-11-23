@@ -4,9 +4,9 @@ set(test_cross_product_src
     test_cross_product.cpp
     ../../src/config.hpp
     ../../src/config.cpp
-    ../../src/tools.hpp
-    ../../src/tools.cpp
-    ../../src/tools.txx
+    ../../src/math_tools.hpp
+    ../../src/math_tools.cpp
+    ../../src/math_tools.txx
     )
     
 add_executable(test_cross_product_cmd ${test_cross_product_src})
