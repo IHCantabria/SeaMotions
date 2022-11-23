@@ -21,7 +21,7 @@ T nrm2(int N, T* v)
     T a = 0;
     for (int i=0; i<N; i++)
     {
-        a += pow(v[i], 2.0);
+        a += v[i]*v[i];
     }
 
     return sqrt(a);
