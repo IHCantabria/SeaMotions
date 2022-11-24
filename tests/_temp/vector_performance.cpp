@@ -43,8 +43,8 @@ int main(void)
     double t2 = get_cpu_time();
     for (int i=0; i<num_reps; i++)
     {
-        // vdAdd(N, u, v, w);
-        cblas_dnrm2(N, u, 1);
+        vdAdd(N, u, v, w);
+        // cblas_dnrm2(N, u, 1);
     }
     double t3 = get_cpu_time();
     double vm_time = (t3-t2);
@@ -52,8 +52,8 @@ int main(void)
     double t0 = get_cpu_time();
     for (int i=0; i<num_reps; i++)
     {
-        // cvAdd(N, u, v, w);
-        nrm2(N, u);
+        cvAdd(N, u, v, w);
+        // nrm2(N, u);
     }
     double t1 = get_cpu_time();
     double compiler_time = (t1-t0);
