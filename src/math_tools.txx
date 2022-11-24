@@ -179,4 +179,6 @@ inline void print_vector(int n, T* v, int mode)
     {
         throw std::runtime_error("Mode specified is not correct. It must be 0: horizontal | 1: vertical.");
     }
+    std::cout << std::endl;
+    
 }
