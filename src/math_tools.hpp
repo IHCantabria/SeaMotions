@@ -10,6 +10,8 @@ template<typename T> inline int assert_vector_equality(int N, T* u, T* v, T epsi
 template<> inline int assert_vector_equality<int>(int N, int* u, int* v, int epsilon);
 cusfloat* generate_empty_vector(int size);
 template<typename T> inline void cross(T (&u)[3], T (&v)[3], T (&w)[3]);
+template<typename T> inline T pow2s(T x);
+template<typename T> inline T pow3s(T x);
 template<typename T> inline void sv_add(int n, T* u, T* v, T* w);
 template<typename T> inline void svs_add(int n, T* u, T s, T* w);
 template<typename T> inline void sv_div(int n, T* u, T* v, T* w);

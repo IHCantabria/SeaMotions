@@ -61,6 +61,20 @@ inline void cross(T (&u)[3], T (&v)[3], T (&w)[3])
 
 
 template<typename T>
+inline T pow2s(T x)
+{
+    return x*x;
+}
+
+
+template<typename T>
+inline T pow3s(T x)
+{
+    return x*x*x;
+}
+
+
+template<typename T>
 inline void sv_add(int n, T* u, T* v, T* w)
 {
     for (int i=0; i<n; i++)
