@@ -7,6 +7,11 @@ project(SEAMOTIONS CXX)
 # Configure project to work with ctest
 enable_testing()
 
+# Configure project ot be compiled with a specific standard
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 # Appends the cmake/modules path to MAKE_MODULE_PATH variable.
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules ${CMAKE_MODULE_PATH})
 
