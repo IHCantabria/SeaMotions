@@ -134,6 +134,20 @@ struct PanelGeom
         }
 
     }
+
+    void get_node_position(int num_node, cusfloat (&node_pos)[3])
+    {
+        node_pos[0] = this->x[num_node];
+        node_pos[1] = this->y[num_node];
+        node_pos[2] = this->z[num_node];
+    }
+
+    void get_node_local_position(int num_node, cusfloat (&node_pos)[3])
+    {
+        node_pos[0] = this->xl[num_node];
+        node_pos[1] = this->yl[num_node];
+        node_pos[2] = this->zl[num_node];
+    }
 };
 
 #endif
