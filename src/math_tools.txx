@@ -7,6 +7,19 @@
 
 
 template<typename T>
+inline int assert_scalar_equality(T &u, T &v, T epsilon)
+{
+    int pass = 1;
+    if (std::abs(u-v)>epsilon)
+    {
+        pass = 0;
+    }
+
+    return pass;
+}
+
+
+template<typename T>
 inline int assert_vector_equality(int N, T* u, T* v, T epsilon)
 {
     int pass = 1;
@@ -84,6 +97,18 @@ inline void sv_inv(int n, T s, T* u, T* w)
     {
         w[i] = s/u[i];
     }
+}
+
+
+template<typename T>
+inline void sv_mod(int n, T* u, T &mod)
+{
+    mod = 0.0;
+    for (int i=0; i<n; i++)
+    {
+        mod += u[i]*u[i];
+    }
+    mod = std::sqrt(mod);
 }
 
 

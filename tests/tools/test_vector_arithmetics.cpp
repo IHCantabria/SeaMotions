@@ -74,6 +74,23 @@ int sub_test_sv_inv(cusfloat* u, cusfloat s)
 }
 
 
+int sub_test_sv_mod(cusfloat* u)
+{
+    // Define result vector
+    cusfloat w;
+    cusfloat w_sol = std::sqrt(1+4+9);
+
+    // Perform vector addition
+    sv_mod(3, u, w);
+
+    // Compare computed and solution vector
+    int pass = assert_scalar_equality(w, w_sol, EPS_PRECISION);
+
+    return pass;
+}
+
+
+
 int sub_test_sv_mult(cusfloat* u, cusfloat* v)
 {
     // Define result vector
@@ -225,6 +242,14 @@ int main(void)
     if (pass == 0)
     {
         std::cerr << "test_vector_arithmetics/sub_test_svs_div failed!" << std::endl;
+        return 1;
+    }
+
+    // Test vector modulus
+    pass = sub_test_sv_mod(u);
+    if (pass == 0)
+    {
+        std::cerr << "test_vector_arithmetics/sub_test_sv_mod failed!" << std::endl;
         return 1;
     }
 
