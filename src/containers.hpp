@@ -12,7 +12,7 @@
 struct PanelGeom
 {
     cusfloat area = 0.0;
-    cusfloat center[3];
+    cusfloat center[3] = {0.0, 0.0, 0.0};
     cusfloat global_to_local_mat[9];
     cusfloat local_to_global_mat[9];
     int num_nodes = 0;
@@ -109,19 +109,15 @@ struct PanelGeom
         // Declare auxiliar vectors to perform the vector rotations
         cusfloat global_pos[3];
         cusfloat local_pos[3];
+
         // Calculate local coordinates of the panel.
         for (int i=0; i<this->num_nodes; i++)
         {
             // Remove mean point of the panel in order to rotate the panel
             // around a point inside of it
-            this->xl[i] = this->x[i] - this->center[0];
-            this->yl[i] = this->y[i] - this->center[1];
-            this->zl[i] = this->z[i] - this->center[2];
-
-            // Storage the nodes global coordinate positions into the input vector
-            global_pos[0] = this->xl[i];
-            global_pos[1] = this->yl[i];
-            global_pos[2] = this->zl[i];
+            global_pos[0] = this->x[i] - this->center[0];
+            global_pos[1] = this->y[i] - this->center[1];
+            global_pos[2] = this->z[i] - this->center[2];
 
             // Rotate node position to express the node coordinates in
             // the local coordinate system
