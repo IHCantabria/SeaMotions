@@ -56,26 +56,26 @@ void calculate_dipole_potential(PanelGeom &panel, cusfloat (&field_point)[3], in
 void calculate_dipole_potential_kernel(PanelGeom &panel, cusfloat * node_fieldp_mod, cusfloat* node_fieldp_dx, 
     cusfloat* node_fieldp_dy, cusfloat* node_fieldp_dz, cusfloat* delta_xi, cusfloat* delta_eta, cusfloat &phi)
 {
-    cusfloat a0, a1, a2;
-    cusfloat b0, b1, b2;
+    cusfloat a0i, a0j, a1i, a1j;
+    int j = 0;
     for (int i=0; i<panel.num_nodes-1; i++)
     {
-        a0 = delta_eta[i]*(pow2s(node_fieldp_dx[i])+pow2s(node_fieldp_dz[i]));
-        a1 = delta_xi[i]*node_fieldp_dx[i]*node_fieldp_dy[i];
-        a2 = node_fieldp_mod[i]*node_fieldp_dz[i]*delta_xi[i];
-        b0 = delta_eta[i]*(pow2s(node_fieldp_dx[i+1])+pow2s(node_fieldp_dz[i+1]));
-        b1 = delta_xi[i]*node_fieldp_dx[i+1]*node_fieldp_dy[i+1];
-        b2 = node_fieldp_mod[i+1]*node_fieldp_dz[i+1]*delta_xi[i];
-        phi += atan((a0-a1)/a2) - atan((b0-b1)/b2);
+        // Calculate secondary index
+        j = (i+1)%panel.num_nodes;
+
+        // Calcualte potential coefficients
+        a0i = delta_eta[i]*(pow2s(node_fieldp_dx[i])+pow2s(node_fieldp_dz[i]));
+        a0i -= delta_xi[i]*node_fieldp_dx[i]*node_fieldp_dy[i];
+        a1i = node_fieldp_mod[i]*node_fieldp_dz[i]*delta_xi[i];
+
+        a0j = delta_eta[j]*(pow2s(node_fieldp_dx[j])+pow2s(node_fieldp_dz[j]));
+        a0j -= delta_xi[j]*node_fieldp_dx[j]*node_fieldp_dy[j];
+        a1j = node_fieldp_mod[j]*node_fieldp_dz[j]*delta_xi[j];
+
+        phi += atan(a0i/a1i) - atan(a0j/a1j);
+
     }
-    int n = panel.num_nodes-1;
-    a0 = delta_eta[n]*(pow2s(node_fieldp_dx[n])+pow2s(node_fieldp_dz[n]));
-    a1 = delta_xi[n]*node_fieldp_dx[n]*node_fieldp_dy[n];
-    a2 = node_fieldp_mod[n]*node_fieldp_dz[n]*delta_xi[n];
-    b0 = delta_eta[n]*(pow2s(node_fieldp_dx[0])+pow2s(node_fieldp_dz[0]));
-    b1 = delta_xi[n]*node_fieldp_dx[0]*node_fieldp_dy[0];
-    b2 = node_fieldp_mod[0]*node_fieldp_dz[0]*delta_xi[n];
-    phi += atan((a0-a1)/a2) - atan((b0-b1)/b2);
+
 }
 
 
@@ -121,72 +121,53 @@ void calculate_dipole_velocity(PanelGeom &panel, cusfloat (&field_point)[3], int
 void calculate_dipole_velocity_kernel(PanelGeom &panel, cusfloat * node_fieldp_mod, cusfloat* node_fieldp_dx, 
     cusfloat* node_fieldp_dy, cusfloat* node_fieldp_dz, cusfloat* delta_xi, cusfloat* delta_eta, cusfloat (&velocity)[3])
 {
-    cusfloat a0, a1, a2;
-    cusfloat b0, b1, b2;
-    cusfloat der_arg0, der_arg1;
-    cusfloat f0, f1;
-    for (int i=0; i<panel.num_nodes-1; i++)
+    cusfloat a0i, a0j, a1i, a1j;
+    cusfloat da0i, da0j, da1i, da1j;
+    cusfloat fi, fj;
+    int j = 0;
+    for (int i=0; i<panel.num_nodes; i++)
     {
+        // Calculate secondary index
+        j = (i+1)%panel.num_nodes;
+
         // Calculate argument for the derivative function
-        a0 = delta_eta[i]*(pow2s(node_fieldp_dx[i])+pow2s(node_fieldp_dz[i]));
-        a1 = delta_xi[i]*node_fieldp_dx[i]*node_fieldp_dy[i];
-        a2 = node_fieldp_mod[i]*node_fieldp_dz[i]*delta_xi[i];
-        b0 = delta_eta[i]*(pow2s(node_fieldp_dx[i+1])+pow2s(node_fieldp_dz[i+1]));
-        b1 = delta_xi[i]*node_fieldp_dx[i+1]*node_fieldp_dy[i+1];
-        b2 = node_fieldp_mod[i+1]*node_fieldp_dz[i+1]*delta_xi[i];
-        f0 = 1/(1+pow2s((a0-a1)/a2));
-        f1 = 1/(1+pow2s((b0-b1)/b2));
+        a0i = delta_eta[i]*(pow2s(node_fieldp_dx[i])+pow2s(node_fieldp_dz[i]));
+        a0i -= delta_xi[i]*node_fieldp_dx[i]*node_fieldp_dy[i];
+        a1i = node_fieldp_mod[i]*node_fieldp_dz[i]*delta_xi[i];
+
+        a0j = delta_eta[j]*(pow2s(node_fieldp_dx[j])+pow2s(node_fieldp_dz[j]));
+        a0j -= delta_xi[j]*node_fieldp_dx[j]*node_fieldp_dy[j];
+        a1j = node_fieldp_mod[j]*node_fieldp_dz[j]*delta_xi[j];
+
+        fi = 1/(1+pow2s(a0i/a1i));
+        fj = 1/(1+pow2s(a0j/a1j));
 
         // Calculate X derivative of the argument
-        der_arg0 = (2*delta_eta[i]*node_fieldp_dx[i]-delta_xi[i]*node_fieldp_dy[i])/(node_fieldp_mod[i]*node_fieldp_dz[i]*delta_xi[i]);
-        der_arg1 = (2*delta_eta[i+1]*node_fieldp_dx[i+1]-delta_xi[i+1]*node_fieldp_dy[i+1])/(node_fieldp_mod[i+1]*node_fieldp_dz[i+1]*delta_xi[i+1]);
-        velocity[0] += der_arg0*f0 - der_arg1*f1;
+        da0i = 2*node_fieldp_dx[i]*delta_eta[i]-delta_xi[i]*node_fieldp_dy[i];
+        da1i = node_fieldp_dx[i]*node_fieldp_dz[i]*delta_xi[i]/node_fieldp_mod[i];
+
+        da0j = 2*node_fieldp_dx[j]*delta_eta[j]-delta_xi[j]*node_fieldp_dy[j];
+        da1j= node_fieldp_dx[j]*node_fieldp_dz[j]*delta_xi[j]/node_fieldp_mod[j];
+
+        velocity[0] += (da0i*a1i-a0i*da1i)/pow2s(a1i)*fi - (da0j*a1j-a0j*da1j)/pow2s(a1j)*fj;
 
         // Calculate Y derivative of the argument
-        der_arg0 = -delta_xi[i]*node_fieldp_dx[i]/(node_fieldp_mod[i]*node_fieldp_dz[i]*delta_xi[i]);
-        der_arg1 = -delta_xi[i+1]*node_fieldp_dx[i+1]/(node_fieldp_mod[i+1]*node_fieldp_dz[i+1]*delta_xi[i+1]);
-        velocity[1] += der_arg0*f0 - der_arg1*f1;
+        da0i = -delta_xi[i]*node_fieldp_dx[i];
+        da1i = node_fieldp_dy[i]*node_fieldp_dz[i]*delta_xi[i]/node_fieldp_mod[i];
+
+        da0j = -delta_xi[j]*node_fieldp_dx[j];
+        da1j = node_fieldp_dy[j]*node_fieldp_dz[j]*delta_xi[j]/node_fieldp_mod[j];
+
+        velocity[1] += (da0i*a1i-a0i*da1i)/pow2s(a1i)*fi - (da0j*a1j-a0j*da1j)/pow2s(a1j)*fj;
 
         // Calculate Z derivative of the argument
-        der_arg0 = 2*pow2s(node_fieldp_dz[i])*delta_eta[i]*node_fieldp_mod[i]*delta_xi[i];
-        der_arg0 -= (a0-a1)*node_fieldp_mod[i]*delta_xi[i];
-        der_arg0 /= pow2s(node_fieldp_mod[i]*node_fieldp_dz[i]*delta_xi[i]);
+        da0i = 2*node_fieldp_dz[i]*delta_eta[i];
+        da1i = pow2s(node_fieldp_dz[i])*delta_xi[i]/node_fieldp_mod[i] + node_fieldp_mod[i]*delta_xi[i];
 
-        der_arg1 = 2*pow2s(node_fieldp_dz[i+1])*delta_eta[i+1]*node_fieldp_mod[i+1]*delta_xi[i+1];
-        der_arg1 -= (b0-b1)*node_fieldp_mod[i+1]*delta_xi[i+1];
-        der_arg1 /= pow2s(node_fieldp_mod[i+1]*node_fieldp_dz[i+1]*delta_xi[i+1]);
+        da0j = 2*node_fieldp_dz[j]*delta_eta[j];
+        da1j = pow2s(node_fieldp_dz[j])*delta_xi[j]/node_fieldp_mod[j] + node_fieldp_mod[j]*delta_xi[j];
 
-        velocity[2] += der_arg0*f0 - der_arg1*f1;
+        velocity[2] += (da0i*a1i-a0i*da1i)/pow2s(a1i)*fi - (da0j*a1j-a0j*da1j)/pow2s(a1j)*fj;
 
     }
-    int n = panel.num_nodes-1;
-    a0 = delta_eta[n]*(pow2s(node_fieldp_dx[n])+pow2s(node_fieldp_dz[n]));
-    a1 = delta_xi[n]*node_fieldp_dx[n]*node_fieldp_dy[n];
-    a2 = node_fieldp_mod[n]*node_fieldp_dz[n]*delta_xi[n];
-    b0 = delta_eta[0]*(pow2s(node_fieldp_dx[0])+pow2s(node_fieldp_dz[0]));
-    b1 = delta_xi[0]*node_fieldp_dx[0]*node_fieldp_dy[0];
-    b2 = node_fieldp_mod[0]*node_fieldp_dz[0]*delta_xi[0];
-    f0 = 1/(1+pow2s((a0-a1)/a2));
-    f1 = 1/(1+pow2s((b0-b1)/b2));
-
-    // Calculate X derivative of the argument
-    der_arg0 = (2*delta_eta[n]*node_fieldp_dx[n]-delta_xi[n]*node_fieldp_dy[n])/(node_fieldp_mod[n]*node_fieldp_dz[n]*delta_xi[n]);
-    der_arg1 = (2*delta_eta[0]*node_fieldp_dx[0]-delta_xi[0]*node_fieldp_dy[0])/(node_fieldp_mod[0]*node_fieldp_dz[0]*delta_xi[0]);
-    velocity[0] += der_arg0*f0 - der_arg1*f1;
-
-    // Calculate Y derivative of the argument
-    der_arg0 = -delta_xi[n]*node_fieldp_dx[n]/(node_fieldp_mod[n]*node_fieldp_dz[n]*delta_xi[n]);
-    der_arg1 = -delta_xi[0]*node_fieldp_dx[0]/(node_fieldp_mod[0]*node_fieldp_dz[0]*delta_xi[0]);
-    velocity[1] += der_arg0*f0 - der_arg1*f1;
-
-    // Calculate Z derivative of the argument
-    der_arg0 = 2*pow2s(node_fieldp_dz[n])*delta_eta[n]*node_fieldp_mod[n]*delta_xi[n];
-    der_arg0 -= (a0-a1)*node_fieldp_mod[n]*delta_xi[n];
-    der_arg0 /= pow2s(node_fieldp_mod[n]*node_fieldp_dz[n]*delta_xi[n]);
-
-    der_arg1 = 2*pow2s(node_fieldp_dz[0])*delta_eta[0]*node_fieldp_mod[0]*delta_xi[0];
-    der_arg1 -= (b0-b1)*node_fieldp_mod[0]*delta_xi[0];
-    der_arg1 /= pow2s(node_fieldp_mod[0]*node_fieldp_dz[0]*delta_xi[0]);
-
-    velocity[2] += der_arg0*f0 - der_arg1*f1;
 }
