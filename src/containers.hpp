@@ -75,15 +75,15 @@ struct PanelGeom
         }
 
         // Calculate normal vector to the panel
-        cross(v0, v1_aux, v2);
+        cross(v1_aux, v0, v2);
 
         // Calculate base vector 1 in a orthogonal base
         cross(v2, v0, v1);
 
         // Normalize base vectors
-        double v0_mod = cblas_nrm2<cusfloat>(3, v0, 1);
-        double v1_mod = cblas_nrm2<cusfloat>(3, v1, 1);
-        double v2_mod = cblas_nrm2<cusfloat>(3, v2, 1);
+        cusfloat v0_mod = cblas_nrm2<cusfloat>(3, v0, 1);
+        cusfloat v1_mod = cblas_nrm2<cusfloat>(3, v1, 1);
+        cusfloat v2_mod = cblas_nrm2<cusfloat>(3, v2, 1);
         
         svs_mult(3, v0, 1/v0_mod, v0);
         svs_mult(3, v1, 1/v1_mod, v1);
