@@ -4,6 +4,8 @@ set(test_dipole_potential_src
         test_dipole_potential.cpp
         ../../src/config.hpp
         ../../src/config.cpp
+        ../../src/green/common.hpp
+        ../../src/green/common.cpp
         ../../src/containers.hpp
         ../../src/green/dipole.hpp
         ../../src/green/dipole.cpp

@@ -1,0 +1,35 @@
+
+#include "../config.hpp"
+#include "../containers.hpp"
+
+
+void calculate_distance_node_field(PanelGeom &panel, cusfloat (&field_point_local)[3], cusfloat* node_fieldp_mod,
+    cusfloat* node_fieldp_dx, cusfloat* node_fieldp_dy, cusfloat* node_fieldp_dz)
+{
+    // Calculate distances from each node to the field point in local coordinates
+    cusfloat node_fieldp_vec[3];
+    cusfloat node_pos[3];
+    for (int i=0; i<panel.num_nodes; i++)
+    {
+        panel.get_node_local_position(i, node_pos);
+        sv_sub(3, field_point_local, node_pos, node_fieldp_vec);
+        sv_mod(3, node_fieldp_vec, node_fieldp_mod[i]);
+
+        // Storage vector components for futher use
+        node_fieldp_dx[i] = node_fieldp_vec[0];
+        node_fieldp_dy[i] = node_fieldp_vec[1];
+        node_fieldp_dz[i] = node_fieldp_vec[2];
+    }
+}
+
+
+void calculate_nodes_distance(PanelGeom &panel, cusfloat* delta_xi, cusfloat* delta_eta)
+{
+    for (int i=0; i<panel.num_nodes-1; i++)
+    {
+        delta_xi[i] = panel.xl[i+1] - panel.xl[i];
+        delta_eta[i] = panel.yl[i+1] - panel.yl[i];
+    }
+    delta_xi[panel.num_nodes-1] = panel.xl[0]-panel.xl[panel.num_nodes-1];
+    delta_eta[panel.num_nodes-1] = panel.yl[0]-panel.yl[panel.num_nodes-1];
+}
