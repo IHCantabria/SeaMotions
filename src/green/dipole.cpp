@@ -13,13 +13,16 @@
 #include "../math_tools.hpp"
 
 
-cusfloat dipole_potential(PanelGeom &panel, cusfloat (&field_point)[3])
+cusfloat dipole_potential(PanelGeom &panel, cusfloat (&field_point)[3], int fp_local_flag)
 {
     // Translate field point to panel local coordinates
-    cusfloat field_point_local_aux[3];
-    cusfloat field_point_local[3];
-    sv_sub(3, field_point, panel.center, field_point_local_aux);
-    cblas_gemv<cusfloat>(CblasRowMajor, CblasNoTrans, 3, 3, 1.0, panel.global_to_local_mat, 3, field_point_local_aux, 1, 0, field_point_local, 1);
+    if (fp_local_flag == 0)
+    {
+        cusfloat field_point_local_aux[3];
+        cusfloat field_point_local[3];
+        sv_sub(3, field_point, panel.center, field_point_local_aux);
+        cblas_gemv<cusfloat>(CblasRowMajor, CblasNoTrans, 3, 3, 1.0, panel.global_to_local_mat, 3, field_point_local_aux, 1, 0, field_point_local, 1);
+    }
 
     // Calculate distances from each node to the field point in local coordinates
     cusfloat node_fieldp_dx[panel.MAX_PANEL_NODES];
