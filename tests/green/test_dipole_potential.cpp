@@ -1,6 +1,7 @@
 
 // Include external libraries
 #include <cstdlib>
+#include <cmath>
 #include <iostream>
 #include "mkl.h"
 
@@ -38,6 +39,31 @@ void define_square_vertexes(PanelGeom &panel)
 }
 
 
+void define_square_vertexes_2(PanelGeom &panel)
+{
+    // Define number of nodes for the panel
+    panel.num_nodes = 4;
+
+    // Define X position
+    panel.x[0] = -1.0/std::sqrt(2);
+    panel.x[1] = -1.0/std::sqrt(2);
+    panel.x[2] = 1.0/std::sqrt(2);
+    panel.x[3] = 1.0/std::sqrt(2);
+
+    // Define Y position
+    panel.y[0] = -1;
+    panel.y[1] = 1;
+    panel.y[2] = 1;
+    panel.y[3] = -1;
+
+    // Define Z position
+    panel.z[0] = 2.0/std::sqrt(2);
+    panel.z[1] = 2.0/std::sqrt(2);
+    panel.z[2] = 0.0;
+    panel.z[3] = 0.0;
+}
+
+
 int main(void)
 {
     // int num_points = 4;
@@ -55,11 +81,11 @@ int main(void)
     // mkl_free( z_pos );
 
     // Define field point position
-    cusfloat field_point[3] = {0.0, 0.0, 1.0};
+    cusfloat field_point[3] = {1.0, 1.0, 1.0+std::sqrt(2)/2.0};
 
     // Define vertexes position
     PanelGeom panel;
-    define_square_vertexes(panel);
+    define_square_vertexes_2(panel);
     panel.calculate_properties();
 
     // double t0 = get_cpu_time();
@@ -90,7 +116,8 @@ int main(void)
     // std::cout << "  Z: " << panel.zm << std::endl;
 
     // Calculate dipole potential
-    dipole_potential(panel, field_point);
+    cusfloat phi = 0.0;
+    dipole_potential(panel, field_point, 0, phi);
 
     std::cout << "Program working... " << std::endl;
 
