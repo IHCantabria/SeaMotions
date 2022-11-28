@@ -16,9 +16,6 @@ add_executable(vector_performance
 )
 set_mkl_lib_target(vector_performance)
 
-add_executable(partial_specialization_cmd partial_specialization.cpp)
-
-
 # Add test to asset the performance of blas_gmev with respec to a local implementation
 add_executable(matrix_vector_mult
     matrix_vector_mult.cpp
