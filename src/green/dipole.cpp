@@ -119,7 +119,8 @@ void calculate_dipole_velocity(PanelGeom &panel, cusfloat (&field_point)[3], int
 
 
 void calculate_dipole_velocity_kernel(PanelGeom &panel, cusfloat * node_fieldp_mod, cusfloat* node_fieldp_dx, 
-    cusfloat* node_fieldp_dy, cusfloat* node_fieldp_dz, cusfloat* delta_xi, cusfloat* delta_eta, cusfloat (&velocity)[3])
+    cusfloat* node_fieldp_dy, cusfloat* node_fieldp_dz, cusfloat* delta_xi, cusfloat* delta_eta, cusfloat* velocity,
+    int potential_flag)
 {
     cusfloat a0i, a0j, a1i, a1j;
     cusfloat da0i, da0j, da1i, da1j;
@@ -138,6 +139,11 @@ void calculate_dipole_velocity_kernel(PanelGeom &panel, cusfloat * node_fieldp_m
         a0j = delta_eta[j]*(pow2s(node_fieldp_dx[j])+pow2s(node_fieldp_dz[j]));
         a0j -= delta_xi[j]*node_fieldp_dx[j]*node_fieldp_dy[j];
         a1j = node_fieldp_mod[j]*node_fieldp_dz[j]*delta_xi[j];
+
+        if(potential_flag == 1)
+        {
+            velocity[4] += atan(a0i/a1i) - atan(a0j/a1j);
+        }
 
         fi = 1/(1+pow2s(a0i/a1i));
         fj = 1/(1+pow2s(a0j/a1j));
