@@ -25,11 +25,29 @@ void calculate_distance_node_field(PanelGeom &panel, cusfloat (&field_point_loca
 
 void calculate_nodes_distance(PanelGeom &panel, cusfloat* delta_xi, cusfloat* delta_eta)
 {
-    for (int i=0; i<panel.num_nodes-1; i++)
+    int i1 = 0;
+    for (int i=0; i<panel.num_nodes; i++)
     {
-        delta_xi[i] = panel.xl[i+1] - panel.xl[i];
-        delta_eta[i] = panel.yl[i+1] - panel.yl[i];
+        i1 = (i+1)%panel.num_nodes;
+        delta_xi[i] = panel.xl[i1] - panel.xl[i];
+        delta_eta[i] = panel.yl[i1] - panel.yl[i];
     }
-    delta_xi[panel.num_nodes-1] = panel.xl[0]-panel.xl[panel.num_nodes-1];
-    delta_eta[panel.num_nodes-1] = panel.yl[0]-panel.yl[panel.num_nodes-1];
+}
+
+
+void calculate_polar_angles(PanelGeom &panel, cusfloat* delta_xi, cusfloat* delta_eta, cusfloat* polar_angles)
+{
+    for (int i=0; i<panel.num_nodes; i++)
+    {
+        polar_angles[i] = std::atan2(delta_eta[i], delta_xi[i]);
+    }
+}
+
+
+void calculate_sides_len_local(PanelGeom &panel, cusfloat* delta_xi, cusfloat* delta_eta, cusfloat* sides_len)
+{
+    for (int i=0; i<panel.num_nodes; i++)
+    {
+        sides_len[i] = std::sqrt(pow2s(delta_xi[i])+pow2s(delta_eta[i]));
+    }
 }
