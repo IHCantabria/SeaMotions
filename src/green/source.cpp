@@ -1,6 +1,7 @@
 
 // Include general usage scientific libraries
 #include <cmath>
+#include "mkl.h"
 
 // Include local modules
 #include "common.hpp"
@@ -117,7 +118,7 @@ void calculate_source_velocity(PanelGeom &panel, cusfloat (&field_point)[3], int
     cusfloat r_sum = 0.0;
     cusfloat a, b, b0, b1, bf;
     cusfloat da_dxi, db_dxi;
-    cusfloat dipole_res[3];
+    cusfloat dipole_res[4];
     int i1;
     for (int i=0; i<panel.num_nodes; i++)
     {
