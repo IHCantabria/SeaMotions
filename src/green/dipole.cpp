@@ -56,23 +56,23 @@ void calculate_dipole_potential(PanelGeom &panel, cusfloat (&field_point)[3], in
 void calculate_dipole_potential_kernel(PanelGeom &panel, cusfloat * node_fieldp_mod, cusfloat* node_fieldp_dx, 
     cusfloat* node_fieldp_dy, cusfloat* node_fieldp_dz, cusfloat* delta_xi, cusfloat* delta_eta, cusfloat &phi)
 {
-    cusfloat a0i, a0j, a1i, a1j;
+    cusfloat a0i, a0i2, a0j, a0j2, a1i, a1j;
     int j = 0;
-    for (int i=0; i<panel.num_nodes-1; i++)
+    for (int i=0; i<panel.num_nodes; i++)
     {
         // Calculate secondary index
         j = (i+1)%panel.num_nodes;
 
         // Calcualte potential coefficients
         a0i = delta_eta[i]*(pow2s(node_fieldp_dx[i])+pow2s(node_fieldp_dz[i]));
-        a0i -= delta_xi[i]*node_fieldp_dx[i]*node_fieldp_dy[i];
+        a0i2 = delta_xi[i]*node_fieldp_dx[i]*node_fieldp_dy[i];
         a1i = node_fieldp_mod[i]*node_fieldp_dz[i]*delta_xi[i];
 
-        a0j = delta_eta[j]*(pow2s(node_fieldp_dx[j])+pow2s(node_fieldp_dz[j]));
-        a0j -= delta_xi[j]*node_fieldp_dx[j]*node_fieldp_dy[j];
-        a1j = node_fieldp_mod[j]*node_fieldp_dz[j]*delta_xi[j];
+        a0j = delta_eta[i]*(pow2s(node_fieldp_dx[j])+pow2s(node_fieldp_dz[j]));
+        a0j2 = delta_xi[i]*node_fieldp_dx[j]*node_fieldp_dy[j];
+        a1j = node_fieldp_mod[j]*node_fieldp_dz[j]*delta_xi[i];
 
-        phi += atan(a0i/a1i) - atan(a0j/a1j);
+        phi += atan((a0i-a0i2)/a1i) - atan((a0j-a0j2)/a1j);
 
     }
 
@@ -113,14 +113,13 @@ void calculate_dipole_velocity(PanelGeom &panel, cusfloat (&field_point)[3], int
     calculate_nodes_distance(panel, delta_xi, delta_eta);
 
     // Calculate velocities
-    calculate_dipole_velocity_kernel(panel, node_fieldp_mod, node_fieldp_dx, node_fieldp_dy, node_fieldp_dz, delta_xi, delta_eta, velocity);
+    calculate_dipole_velocity_kernel(panel, node_fieldp_mod, node_fieldp_dx, node_fieldp_dy, node_fieldp_dz, delta_xi, delta_eta, velocity, 0);
 
 }
 
 
 void calculate_dipole_velocity_kernel(PanelGeom &panel, cusfloat * node_fieldp_mod, cusfloat* node_fieldp_dx, 
-    cusfloat* node_fieldp_dy, cusfloat* node_fieldp_dz, cusfloat* delta_xi, cusfloat* delta_eta, cusfloat* velocity,
-    int potential_flag)
+    cusfloat* node_fieldp_dy, cusfloat* node_fieldp_dz, cusfloat* delta_xi, cusfloat* delta_eta, cusfloat* velocity)
 {
     cusfloat a0i, a0j, a1i, a1j;
     cusfloat da0i, da0j, da1i, da1j;
@@ -136,42 +135,31 @@ void calculate_dipole_velocity_kernel(PanelGeom &panel, cusfloat * node_fieldp_m
         a0i -= delta_xi[i]*node_fieldp_dx[i]*node_fieldp_dy[i];
         a1i = node_fieldp_mod[i]*node_fieldp_dz[i]*delta_xi[i];
 
-        a0j = delta_eta[j]*(pow2s(node_fieldp_dx[j])+pow2s(node_fieldp_dz[j]));
-        a0j -= delta_xi[j]*node_fieldp_dx[j]*node_fieldp_dy[j];
-        a1j = node_fieldp_mod[j]*node_fieldp_dz[j]*delta_xi[j];
-
-        if(potential_flag == 1)
-        {
-            velocity[4] += atan(a0i/a1i) - atan(a0j/a1j);
-        }
+        a0j = delta_eta[i]*(pow2s(node_fieldp_dx[j])+pow2s(node_fieldp_dz[j]));
+        a0j -= delta_xi[i]*node_fieldp_dx[j]*node_fieldp_dy[j];
+        a1j = node_fieldp_mod[j]*node_fieldp_dz[j]*delta_xi[i];
 
         fi = 1/(1+pow2s(a0i/a1i));
         fj = 1/(1+pow2s(a0j/a1j));
 
         // Calculate X derivative of the argument
-        da0i = 2*node_fieldp_dx[i]*delta_eta[i]-delta_xi[i]*node_fieldp_dy[i];
-        da1i = node_fieldp_dx[i]*node_fieldp_dz[i]*delta_xi[i]/node_fieldp_mod[i];
+        da0i = 2.0*delta_eta[i]*node_fieldp_dx[i] - delta_xi[i]*node_fieldp_dy[i];
+        da0j = 2.0*delta_eta[i]*node_fieldp_dx[j] - delta_xi[i]*node_fieldp_dy[j];
 
-        da0j = 2*node_fieldp_dx[j]*delta_eta[j]-delta_xi[j]*node_fieldp_dy[j];
-        da1j= node_fieldp_dx[j]*node_fieldp_dz[j]*delta_xi[j]/node_fieldp_mod[j];
-
-        velocity[0] += (da0i*a1i-a0i*da1i)/pow2s(a1i)*fi - (da0j*a1j-a0j*da1j)/pow2s(a1j)*fj;
+        velocity[0] += da0i*a1i/pow2s(a1i)*fi - da0j*a1j/pow2s(a1j)*fj;
 
         // Calculate Y derivative of the argument
         da0i = -delta_xi[i]*node_fieldp_dx[i];
-        da1i = node_fieldp_dy[i]*node_fieldp_dz[i]*delta_xi[i]/node_fieldp_mod[i];
+        da0j = -delta_xi[i]*node_fieldp_dx[j];
 
-        da0j = -delta_xi[j]*node_fieldp_dx[j];
-        da1j = node_fieldp_dy[j]*node_fieldp_dz[j]*delta_xi[j]/node_fieldp_mod[j];
-
-        velocity[1] += (da0i*a1i-a0i*da1i)/pow2s(a1i)*fi - (da0j*a1j-a0j*da1j)/pow2s(a1j)*fj;
+        velocity[1] += da0i*a1i/pow2s(a1i)*fi - da0j*a1j/pow2s(a1j)*fj;
 
         // Calculate Z derivative of the argument
         da0i = 2*node_fieldp_dz[i]*delta_eta[i];
-        da1i = pow2s(node_fieldp_dz[i])*delta_xi[i]/node_fieldp_mod[i] + node_fieldp_mod[i]*delta_xi[i];
+        da1i = node_fieldp_mod[i]*delta_xi[i];
 
-        da0j = 2*node_fieldp_dz[j]*delta_eta[j];
-        da1j = pow2s(node_fieldp_dz[j])*delta_xi[j]/node_fieldp_mod[j] + node_fieldp_mod[j]*delta_xi[j];
+        da0j = 2*node_fieldp_dz[j]*delta_eta[i];
+        da1j = node_fieldp_mod[j]*delta_xi[i];
 
         velocity[2] += (da0i*a1i-a0i*da1i)/pow2s(a1i)*fi - (da0j*a1j-a0j*da1j)/pow2s(a1j)*fj;
 
