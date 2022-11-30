@@ -113,7 +113,7 @@ void calculate_dipole_velocity(PanelGeom &panel, cusfloat (&field_point)[3], int
     calculate_nodes_distance(panel, delta_xi, delta_eta);
 
     // Calculate velocities
-    calculate_dipole_velocity_kernel(panel, node_fieldp_mod, node_fieldp_dx, node_fieldp_dy, node_fieldp_dz, delta_xi, delta_eta, velocity, 0);
+    calculate_dipole_velocity_kernel(panel, node_fieldp_mod, node_fieldp_dx, node_fieldp_dy, node_fieldp_dz, delta_xi, delta_eta, velocity);
 
 }
 
