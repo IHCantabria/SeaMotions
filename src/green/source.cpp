@@ -110,10 +110,6 @@ void calculate_source_velocity(PanelGeom &panel, cusfloat (&field_point)[3], int
     cusfloat sides_len [panel.MAX_PANEL_NODES];
     calculate_sides_len_local(panel, delta_xi, delta_eta, sides_len);
 
-    // Calculate polar angles
-    cusfloat polar_angles [panel.MAX_PANEL_NODES];
-    calculate_polar_angles(panel, delta_xi, delta_eta, polar_angles);
-
     // Calculate induced velocities
     cusfloat r_sum = 0.0;
     cusfloat b, b0, b1;
@@ -131,10 +127,10 @@ void calculate_source_velocity(PanelGeom &panel, cusfloat (&field_point)[3], int
 
 
         // Calculate X derivative coefficients
-        velocity[0] -= std::sin(polar_angles[i])*b;
+        velocity[0] -= delta_eta[i]/sides_len[i]*b;
 
         // Calculate Y derivative coefficients
-        velocity[1] += std::cos(polar_angles[i])*b;
+        velocity[1] += delta_xi[i]/sides_len[i]*b;
 
     }
     calculate_dipole_potential_kernel(panel, node_fieldp_mod, node_fieldp_dx, node_fieldp_dy, node_fieldp_dz, delta_xi, delta_eta, velocity[2]);
