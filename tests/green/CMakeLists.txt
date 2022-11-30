@@ -40,3 +40,28 @@ set(test_source_velocity_src
 
 add_executable(test_source_velocity ${test_source_velocity_src})
 set_mkl_lib_target(test_source_velocity)
+
+
+# Configure source performance test Hess vs Newman
+set(performance_source_newman_hess_src 
+        performance_hess_vs_newman.cpp
+        ../../src/config.hpp
+        ../../src/config.cpp
+        ../../src/green/common.hpp
+        ../../src/green/common.cpp
+        ../../src/containers.hpp
+        ../../src/green/dipole.hpp
+        ../../src/green/dipole.cpp
+        ../../src/math_interface.hpp
+        ../../src/math_tools.hpp
+        ../../src/math_tools.cpp
+        ../../src/green/source.hpp
+        ../../src/green/source.cpp
+        test_panel_geometries.hpp
+        test_panel_geometries.cpp
+        ../../src/tools.hpp
+        ../../src/tools.cpp
+)
+
+add_executable(performance_source_newman_hess ${performance_source_newman_hess_src})
+set_mkl_lib_target(performance_source_newman_hess)
