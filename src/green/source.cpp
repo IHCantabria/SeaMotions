@@ -116,9 +116,7 @@ void calculate_source_velocity(PanelGeom &panel, cusfloat (&field_point)[3], int
 
     // Calculate induced velocities
     cusfloat r_sum = 0.0;
-    cusfloat a, b, b0, b1, bf;
-    cusfloat da_dxi, db_dxi;
-    cusfloat dipole_res[4];
+    cusfloat b, b0, b1;
     int i1;
     for (int i=0; i<panel.num_nodes; i++)
     {
@@ -129,28 +127,17 @@ void calculate_source_velocity(PanelGeom &panel, cusfloat (&field_point)[3], int
         r_sum = node_fieldp_mod[i]+node_fieldp_mod[i1];
         b0 = r_sum + sides_len[i];
         b1 = r_sum - sides_len[i];
-        bf = (b1-b0)/(b0*b1);
-        a = node_fieldp_dx[i]*std::sin(polar_angles[i])-node_fieldp_dy[i]*std::cos(polar_angles[i]);
         b = std::log(b0/b1);
 
-        // Calculate dipole velocity and potential
-        calculate_dipole_velocity_kernel(panel, node_fieldp_mod, node_fieldp_dx, node_fieldp_dy, node_fieldp_dz, delta_xi, delta_eta, dipole_res, 1);
 
         // Calculate X derivative coefficients
-        da_dxi = std::sin(polar_angles[i]);
-        db_dxi = (node_fieldp_dx[i]/node_fieldp_mod[i] + node_fieldp_dx[i1]/node_fieldp_mod[i1])*bf;
-        velocity[0] += da_dxi*b + a*db_dxi - node_fieldp_dz[i]*dipole_res[0];
+        velocity[0] -= std::sin(polar_angles[i])*b;
 
         // Calculate Y derivative coefficients
-        da_dxi = -std::cos(polar_angles[i]);
-        db_dxi = (node_fieldp_dy[i]/node_fieldp_mod[i] + node_fieldp_dy[i1]/node_fieldp_mod[i1])*bf;
-        velocity[1] += da_dxi*b + a*db_dxi - node_fieldp_dz[i]*dipole_res[1];
-
-        // Calculate Z derivative coefficients
-        db_dxi = (node_fieldp_dz[i]/node_fieldp_mod[i] + node_fieldp_dz[i1]/node_fieldp_mod[i1])*bf;
-        velocity[2] += a*db_dxi - dipole_res[3] - node_fieldp_dz[i]*dipole_res[2];
+        velocity[1] += std::cos(polar_angles[i])*b;
 
     }
+    calculate_dipole_potential_kernel(panel, node_fieldp_mod, node_fieldp_dx, node_fieldp_dy, node_fieldp_dz, delta_xi, delta_eta, velocity[2]);
 
 }
 
