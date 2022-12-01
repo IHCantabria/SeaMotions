@@ -5,6 +5,7 @@
 #include "../../src/config.hpp"
 #include "../../src/containers.hpp"
 
+void define_45_inclined_panel(PanelGeom &panel);
 void define_square_panel(PanelGeom &panel, cusfloat scale);
 
 #endif
