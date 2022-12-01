@@ -138,6 +138,68 @@ void calculate_source_velocity(PanelGeom &panel, cusfloat (&field_point)[3], int
 }
 
 
+void calculate_source_potential_hess(PanelGeom &panel, cusfloat (&field_point)[3], int fp_local_flag, cusfloat &phi)
+{
+    // Translate field point to panel local coordinates
+    cusfloat field_point_local[3];
+    if (fp_local_flag == 0)
+    {
+        cusfloat field_point_local_aux[3];
+        sv_sub(3, field_point, panel.center, field_point_local_aux);
+        cblas_gemv<cusfloat>(CblasRowMajor, CblasNoTrans, 3, 3, 1.0, panel.global_to_local_mat, 3, field_point_local_aux, 1, 0, field_point_local, 1);
+    }
+    else if (fp_local_flag == 1)
+    {
+        field_point_local[0] = field_point[0];
+        field_point_local[1] = field_point[1];
+        field_point_local[2] = field_point[2];
+    }
+    else
+    {
+        throw std::runtime_error("Local flag must have values of: 0 (non-local) and 1 (local)");
+    }
+
+    // Calculate distances from each node to the field point in local coordinates
+    cusfloat node_fieldp_dx[panel.MAX_PANEL_NODES];
+    cusfloat node_fieldp_dy[panel.MAX_PANEL_NODES];
+    cusfloat node_fieldp_dz[panel.MAX_PANEL_NODES];
+    cusfloat node_fieldp_mod[panel.MAX_PANEL_NODES];
+    calculate_distance_node_field(panel, field_point_local, node_fieldp_mod, node_fieldp_dx, node_fieldp_dy, node_fieldp_dz);
+
+    // Calculate distances in between nodes
+    cusfloat delta_xi [panel.MAX_PANEL_NODES];
+    cusfloat delta_eta [panel.MAX_PANEL_NODES];
+    calculate_nodes_distance(panel, delta_xi, delta_eta);
+
+    cusfloat sides_len [panel.MAX_PANEL_NODES];
+    calculate_sides_len_local(panel, delta_xi, delta_eta, sides_len);
+
+    // Calcualte potential value
+    int j;
+    cusfloat a, b, si, sj, r;
+    cusfloat cx, cy;
+    for (int i=0; i<panel.num_nodes; i++)
+    {
+        // Calculate forward index
+        j = (i+1)%panel.num_nodes;
+
+        // Calculate local parameters
+        a = delta_xi[i]/sides_len[i];
+        b = delta_eta[i]/sides_len[i];
+        si = -(a*node_fieldp_dx[i] + b*node_fieldp_dy[i]);
+        sj = -(a*node_fieldp_dx[j] + b*node_fieldp_dy[j]);
+        r = node_fieldp_dx[i]*b - node_fieldp_dy[i]*a;
+
+        // Calculate potential
+        cy = r*std::abs(node_fieldp_dz[i])*(node_fieldp_mod[i]*sj-node_fieldp_mod[j]*si);
+        cx = node_fieldp_mod[i]*node_fieldp_mod[j]*pow2s(r)+pow2s(node_fieldp_dz[i])*si*sj;
+        phi += std::atan2(cy, cx);
+
+    }
+
+}
+
+
 void calculate_source_velocity_hess(PanelGeom &panel, cusfloat (&field_point)[3], int fp_local_flag, cusfloat (&velocity)[3])
 {
     // Translate field point to panel local coordinates
