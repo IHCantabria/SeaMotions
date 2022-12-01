@@ -12,6 +12,8 @@ set(test_dipole_potential_src
         ../../src/math_interface.hpp
         ../../src/math_tools.hpp
         ../../src/math_tools.cpp
+        test_panel_geometries.hpp
+        test_panel_geometries.cpp
         ../../src/tools.hpp
         ../../src/tools.cpp
         )
