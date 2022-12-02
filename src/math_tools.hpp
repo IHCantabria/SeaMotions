@@ -4,7 +4,15 @@
 
 #include "config.hpp"
 
+//////////////////////////////////////////////
+////// MATHEMATICAL CONSTANTS BLOCK //////////
+//////////////////////////////////////////////
+extern cusfloat PI;
 
+
+//////////////////////////////////////////////
+/////// FUNCTION DEFINITION BLOCK ////////////
+//////////////////////////////////////////////
 template<typename T> inline int assert_scalar_equality(T &u, T &v, T epsilon);
 template<typename T> inline int assert_vector_equality(int N, T* u, T* v, T epsilon);
 template<> inline int assert_vector_equality<int>(int N, int* u, int* v, int epsilon);
