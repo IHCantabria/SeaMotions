@@ -202,6 +202,11 @@ void calculate_source_potential_hess(PanelGeom &panel, cusfloat (&field_point)[3
 
 void calculate_source_velocity_hess(PanelGeom &panel, cusfloat (&field_point)[3], int fp_local_flag, cusfloat (&velocity)[3])
 {
+    // Reset velocity to 0 in order to avoid summation over non-clean memory locations
+    velocity[0] = 0.0;
+    velocity[1] = 0.0;
+    velocity[2] = 0.0;
+
     // Translate field point to panel local coordinates
     cusfloat field_point_local[3];
     if (fp_local_flag == 0)
