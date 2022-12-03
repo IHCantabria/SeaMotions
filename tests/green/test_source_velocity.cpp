@@ -1,83 +1,65 @@
 
 // Include local modules
+#include "../../src/config.hpp"
+#include "../../src/containers.hpp"
 #include "../../src/green/dipole.hpp"
 #include "../../src/green/source.hpp"
+#include "../../src/math_tools.hpp"
+#include "test_panel_geometries.hpp"
 
 
-void define_square_vertexes(PanelGeom &panel)
+int sub_test_1(void)
 {
-    // Define number of nodes for the panel
-    panel.num_nodes = 4;
+    // Generate panel for calculations
+    PanelGeom panel;
+    define_square_panel(panel, 2.0);
+    panel.calculate_properties();
 
-    // Define X position
-    panel.x[0] = -1;
-    panel.x[1] = -1;
-    panel.x[2] = 1;
-    panel.x[3] = 1;
+    // Define field points to evaluate the source potential
+    int num_field_points = 0;
+    cusfloat* field_points = nullptr;
+    define_field_points_set_1(num_field_points, field_points);
 
-    // Define Y position
-    panel.y[0] = -1;
-    panel.y[1] = 1;
-    panel.y[2] = 1;
-    panel.y[3] = -1;
+    // Loop over field points to check compatibility of results between
+    // Hess and Smith formulation and the formulation proposed by Newman.
+    int pass = 1;
+    cusfloat velocity_hess[3] = {0.0, 0.0, 0.0};
+    cusfloat velocity_nw[3] = {0.0, 0.0, 0.0};
+    cusfloat field_point_i[3] = {0.0, 0.0, 0.0};
+    for (int i=1; i<num_field_points; i++)
+    {
+        // Get field point i
+        slice_vector(field_points, 3*i, 3*i+3, field_point_i);
 
-    // Define Z position
-    panel.z[0] = 0.0;
-    panel.z[1] = 0.0;
-    panel.z[2] = 0.0;
-    panel.z[3] = 0.0;
-}
+        // Calculate Hess and Smith velocity
+        calculate_source_velocity_hess(panel, field_point_i, 0, velocity_hess);
 
+        // Calculate Newman velocity
+        calculate_source_velocity_newman(panel, field_point_i, 0, velocity_nw);
 
-void define_square_vertexes_2(PanelGeom &panel)
-{
-    // Define number of nodes for the panel
-    panel.num_nodes = 4;
+        // Compare results
+        if (assert_vector_equality<cusfloat>(3, velocity_hess, velocity_nw, EPS_PRECISION) == 0)
+        {
+            pass = 0;
+            break;
+        }
+    }
 
-    // Define X position
-    panel.x[0] = -1.0/std::sqrt(2);
-    panel.x[1] = -1.0/std::sqrt(2);
-    panel.x[2] = 1.0/std::sqrt(2);
-    panel.x[3] = 1.0/std::sqrt(2);
-
-    // Define Y position
-    panel.y[0] = -1;
-    panel.y[1] = 1;
-    panel.y[2] = 1;
-    panel.y[3] = -1;
-
-    // Define Z position
-    panel.z[0] = 2.0/std::sqrt(2);
-    panel.z[1] = 2.0/std::sqrt(2);
-    panel.z[2] = 0.0;
-    panel.z[3] = 0.0;
+    return pass;
 }
 
 
 int main(void)
 {
-    // Define field point position
-    cusfloat field_point[3] = {1.0, 1.0, std::sqrt(2.0)};
-    // cusfloat field_point[3] = {1.0, 1.0, 1.0+std::sqrt(2)/2.0};
+    int pass;
 
-    // Define vertexes position
-    PanelGeom panel;
-    define_square_vertexes(panel);
-    // define_square_vertexes_2(panel);
-    panel.calculate_properties();
-
-    // Calculate source velocity
-    cusfloat velocity_nw[3] = {0.0, 0.0, 0.0};
-    cusfloat velocity_hs[3] = {0.0, 0.0, 0.0};
-    cusfloat phi = 0.0;
-    calculate_source_velocity(panel, field_point, 0, velocity_nw);
-    calculate_source_velocity_hess(panel, field_point, 0, velocity_hs);
-    calculate_dipole_potential(panel, field_point, 0, phi);
-
-    std::cout << "Velocity NW: "; print_vector(3, velocity_nw, 0);
-    std::cout << "Velocity HS: "; print_vector(3, velocity_hs, 0);
-    std::cout << "Phi: " << phi << std::endl;
-
+    // Compare velocity field calculated through Hess and Smith with Newman formulation
+    pass = sub_test_1();
+    if (pass == 0)
+    {
+        std::cerr << "test_source_velocity/sub_test_1 failed!" << std::endl;
+        return 1;
+    }
 
     return 0;
 }
