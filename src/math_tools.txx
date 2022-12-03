@@ -219,7 +219,7 @@ inline void print_matrix(int num_rows, int num_cols, T* mat, int precision, int 
     if (max > 1.0)
     {
         max = std::floor(std::log10(max));
-        col_width = static_cast<int>(max);
+        col_width = static_cast<int>(max)+precision+6;
     }
     else
     {
