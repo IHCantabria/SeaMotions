@@ -2,6 +2,7 @@
 // Include external libraries
 #include <cstdlib>
 #include <cmath>
+#include <iomanip>
 #include <iostream>
 #include "mkl.h"
 
@@ -11,115 +12,70 @@
 #include "../../src/green/dipole.hpp"
 #include "../../src/math_interface.hpp"
 #include "../../src/math_tools.hpp"
+#include "test_panel_geometries.hpp"
 #include "../../src/tools.hpp"
 
 
-void define_square_vertexes(PanelGeom &panel)
+int sub_test_1(void)
 {
-    // Define number of nodes for the panel
-    panel.num_nodes = 4;
+    // Define field point position
+    cusfloat field_point[3] = {0.0, 0.0, std::sqrt(2.0)};
 
-    // Define X position
-    panel.x[0] = -1;
-    panel.x[1] = 1;
-    panel.x[2] = 1;
-    panel.x[3] = -1;
+    // Define vertexes position
+    PanelGeom panel;
+    define_square_panel(panel, 2.0);
+    panel.calculate_properties();
 
-    // Define Y position
-    panel.y[0] = -1;
-    panel.y[1] = -1;
-    panel.y[2] = 1;
-    panel.y[3] = 1;
+    // Calculate dipole potential
+    cusfloat phi = 0.0;
+    calculate_dipole_potential(panel, field_point, 0, phi);
 
-    // Define Z position
-    panel.z[0] = 0.0;
-    panel.z[1] = 0.0;
-    panel.z[2] = 0.0;
-    panel.z[3] = 0.0;
+    // Calculate analytical solution
+    cusfloat phi_ana = 4*std::atan(1/2.0/std::sqrt(2.0));
+
+    int pass = 1;
+    if (std::abs(phi-phi_ana) > EPS_PRECISION)
+    {
+        pass = 0;
+    }
+
+    return pass;
 }
 
 
-void define_square_vertexes_2(PanelGeom &panel)
+int sub_test_2(void)
 {
-    // Define number of nodes for the panel
-    panel.num_nodes = 4;
+    // Define field points to evaluate the source potential
+    int num_points = 0;
+    cusfloat* field_points = nullptr;
+    define_field_points_set_1(num_points, field_points);
 
-    // Define X position
-    panel.x[0] = -1.0/std::sqrt(2);
-    panel.x[1] = -1.0/std::sqrt(2);
-    panel.x[2] = 1.0/std::sqrt(2);
-    panel.x[3] = 1.0/std::sqrt(2);
+    print_matrix(13, 3, field_points, 3, 0, 0);
 
-    // Define Y position
-    panel.y[0] = -1;
-    panel.y[1] = 1;
-    panel.y[2] = 1;
-    panel.y[3] = -1;
+    delete [] field_points;
 
-    // Define Z position
-    panel.z[0] = 2.0/std::sqrt(2);
-    panel.z[1] = 2.0/std::sqrt(2);
-    panel.z[2] = 0.0;
-    panel.z[3] = 0.0;
+    return 1;
 }
 
 
 int main(void)
 {
-    // int num_points = 4;
-    // double* x_pos = generate_empty_vector(num_points);
-    // double* y_pos = generate_empty_vector(num_points);
-    // double* z_pos = generate_empty_vector(num_points);
-    // // Print points position
-    // for (int i=0; i<10; i++)
-    // {
-    //     std::cout << x_pos[i] << " - " << y_pos[i] << " - " << z_pos[i] << std::endl;
-    // }
-    // // Free memory
-    // mkl_free( x_pos );
-    // mkl_free( y_pos );
-    // mkl_free( z_pos );
+    int pass;
 
-    // Define field point position
-    cusfloat field_point[3] = {1.0, 1.0, 1.0+std::sqrt(2)/2.0};
+    // Calculate dipole potential for a field point over the unit square panel.
+    pass = sub_test_1();
+    if (pass == 0)
+    {
+        std::cerr << "test_dipole_potential/sub_test_1 failed!" << std::endl;
+        return 1;
+    }
 
-    // Define vertexes position
-    PanelGeom panel;
-    define_square_vertexes_2(panel);
-    panel.calculate_properties();
-
-    // double t0 = get_cpu_time();
-    // for (int i=0; i<1e7; i++)
-    // {
-    //     panel.calculate_properties();
-    // }
-    // double t1 = get_cpu_time();
-    // double elapsed = t1-t0;
-    // std::cout << "Elapsed Time: " << elapsed << std::endl;
-
-    // std::cout << "Precision: " << FLOATING_PRECISION << std::endl;
-    // std::cout << "Floating type: " << typeid(cusfloat).name() << std::endl;
-    // std::cout << "Floating size: " << sizeof(cusfloat) << std::endl;
-
-    // std::cout << "PANEL NODES POSITION" << std::endl;
-    // for (int i=0; i<4; i++)
-    // {
-    //     std::cout << "Point: " << i << std::endl;
-    //     std::cout << "  X: " << panel.x[i] << std::endl;
-    //     std::cout << "  Y: " << panel.y[i] << std::endl;
-    //     std::cout << "  Z: " << panel.z[i] << std::endl;
-    //     std::cout << std::endl;
-    // }
-    // std::cout << "Panel Center" << std::endl;
-    // std::cout << "  X: " << panel.xm << std::endl;
-    // std::cout << "  Y: " << panel.ym << std::endl;
-    // std::cout << "  Z: " << panel.zm << std::endl;
-
-    // Calculate dipole potential
-    cusfloat phi = 0.0;
-    dipole_potential(panel, field_point, 0, phi);
-
-    std::cout << "Program working... " << std::endl;
+    // Calculate compatibility of source potential of Hess and Smith and Newman formulations
+    pass = sub_test_2();
+    if (pass == 0)
+    {
+        std::cerr << "test_dipole_potential/sub_test_2 failed!" << std::endl;
+    }
 
     return 0;
 }
