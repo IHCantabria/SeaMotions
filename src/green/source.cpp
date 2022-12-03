@@ -202,10 +202,8 @@ void calculate_source_potential_hess(PanelGeom &panel, cusfloat (&field_point)[3
 
 void calculate_source_velocity_hess(PanelGeom &panel, cusfloat (&field_point)[3], int fp_local_flag, cusfloat (&velocity)[3])
 {
-    // Reset velocity to 0 in order to avoid summation over non-clean memory locations
-    velocity[0] = 0.0;
-    velocity[1] = 0.0;
-    velocity[2] = 0.0;
+    // Create axuliar velocity vector to store the velocities in local coordinates
+    cusfloat velocity_local[3] = {0.0, 0.0, 0.0};
 
     // Translate field point to panel local coordinates
     cusfloat field_point_local[3];
@@ -258,15 +256,22 @@ void calculate_source_velocity_hess(PanelGeom &panel, cusfloat (&field_point)[3]
         log_r = std::log((r_sum-sides_len[i])/(r_sum+sides_len[i]));
 
         // Calculate X velocity
-        velocity[0] += delta_eta[i]/sides_len[i]*log_r;
+        velocity_local[0] += delta_eta[i]/sides_len[i]*log_r;
 
         // Calculate Y velocity
-        velocity[1] -= delta_xi[i]/sides_len[i]*log_r;
+        velocity_local[1] -= delta_xi[i]/sides_len[i]*log_r;
 
         // Calculate Z velocity
         mi = delta_eta[i]/delta_xi[i];
-        velocity[2] += std::atan((mi*eki-hki)/(node_fieldp_dz[i]*node_fieldp_mod[i]));
-        velocity[2] -= std::atan((mi*eki1-hki1)/(node_fieldp_dz[i1]*node_fieldp_mod[i1]));
+        velocity_local[2] += std::atan((mi*eki-hki)/(node_fieldp_dz[i]*node_fieldp_mod[i]));
+        velocity_local[2] -= std::atan((mi*eki1-hki1)/(node_fieldp_dz[i1]*node_fieldp_mod[i1]));
         
+    }
+
+    // Convert back the velocity vector to global coordinates if the field
+    // vector was given in that base
+    if (fp_local_flag == 0)
+    {
+        cblas_gemv<cusfloat>(CblasRowMajor, CblasNoTrans, 3, 3, 1.0, panel.local_to_global_mat, 3, velocity_local, 1, 0, velocity, 1);
     }
 }
