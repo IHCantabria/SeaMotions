@@ -22,6 +22,7 @@ template<typename T> inline int assert_scalar_equality(T &u, T &v, T epsilon);
 template<typename T> inline int assert_vector_equality(int N, T* u, T* v, T epsilon);
 template<> inline int assert_vector_equality<int>(int N, int* u, int* v, int epsilon);
 cusfloat* generate_empty_vector(int size);
+template<typename T> void copy_vector(int n, T* reference_vector, T* target_vector);
 template<typename T> inline void cross(T (&u)[3], T (&v)[3], T (&w)[3]);
 template<typename T> inline T pow2s(T x);
 template<typename T> inline T pow3s(T x);

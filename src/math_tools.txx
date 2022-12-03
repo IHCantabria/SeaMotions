@@ -58,6 +58,16 @@ inline int assert_vector_equality<int>(int N, int* u, int* v, int epsilon)
 
 
 template<typename T>
+void copy_vector(int n, T* reference_vector, T* target_vector)
+{
+    for(int i=0; i<n; i++)
+    {
+        target_vector[i] = reference_vector[i];
+    }
+}
+
+
+template<typename T>
 inline void cross(T (&u)[3], T (&v)[3], T (&w)[3])
 {
     w[0] = u[1]*v[2] - u[2]*v[1];
