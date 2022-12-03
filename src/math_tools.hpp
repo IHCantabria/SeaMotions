@@ -25,6 +25,8 @@ cusfloat* generate_empty_vector(int size);
 template<typename T> inline void cross(T (&u)[3], T (&v)[3], T (&w)[3]);
 template<typename T> inline T pow2s(T x);
 template<typename T> inline T pow3s(T x);
+template<typename T> inline void print_matrix(int num_rows, int num_cols, T* mat, int precision, int align, int scient_not);
+template<typename T> inline void print_vector(int n, T* v, int mode, int precision);
 template<typename T> inline void sv_add(int n, T* u, T* v, T* w);
 template<typename T> inline void svs_add(int n, T* u, T s, T* w);
 template<typename T> inline void sv_div(int n, T* u, T* v, T* w);
@@ -37,8 +39,6 @@ template<typename T> inline void sv_sqrt(int n, T* u, T* w);
 template<typename T> inline void sv_sub(int n, T* u, T* v, T* w);
 template<typename T> inline void svs_sub(int n, T* u, T s, T* w);
 template<typename T> inline void svs_sub(int n, T s, T* u, T* w);
-template<typename T> inline void print_matrix(int num_rows, int num_cols, T* mat, int precision, int align, int scient_not);
-template<typename T> inline void print_vector(int n, T* v, int mode, int precision);
 
 
 #include "math_tools.txx"

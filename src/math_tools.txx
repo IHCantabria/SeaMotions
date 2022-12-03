@@ -81,6 +81,88 @@ inline T pow3s(T x)
 
 
 template<typename T>
+inline void print_matrix(int num_rows, int num_cols, T* mat, int precision, int align, int scient_not)
+{
+    // Look for the biggest number in the matrix in order to calculate the width of the columns
+    T max = mat[0];
+    for (int i=0; i<num_rows*num_cols; i++)
+    {
+        if (mat[i]>max)
+        {
+            max = mat[i];
+        }
+    }
+
+    size_t col_width = 0;
+    if (max > 1.0)
+    {
+        max = std::floor(std::log10(max));
+        col_width = static_cast<int>(max)+precision+6;
+    }
+    else
+    {
+        col_width = static_cast<int>(precision+6);
+    }
+
+    if (scient_not == 1)
+    {
+        col_width += 4;
+    }
+    else if (scient_not != 0)
+    {
+        std::string err_message("Scient notation flag must be: 0 - No Scientist notation | 1: Scientist notation.");
+        std::cerr << err_message << std::endl;
+        throw std::runtime_error(err_message);
+    }
+
+    size_t row_header_width = static_cast<int>(std::floor(std::log10(num_rows))+10);
+
+    // Print table data
+    std::stringstream ss_row_header;
+    for (int i=0; i<num_rows; i++)
+    {
+        ss_row_header.str("");
+        ss_row_header << "R [" << i << "]: ";
+        std::cout << align_str(ss_row_header.str(), row_header_width, 1) << align_num(mat[num_cols*i], col_width, precision, align, scient_not);
+
+        //  (mat[num_cols*i], col_width, precision, scient_not);
+        for (int j=1; j<num_cols; j++)
+        {
+            std::cout << " | " << align_num(mat[num_cols*i+j], col_width, precision, align, scient_not);
+        }
+        std::cout << std::endl;
+    }
+}
+
+
+template<typename T>
+inline void print_vector(int n, T* v, int mode, int precision)
+{
+    std::cout << "v[0]: " << v[0];
+    if (mode == 0)
+    {
+        for (int i=1; i<n; i++)
+        {
+            std::cout << " - v[" << i <<"]: " << std::setprecision(precision) << v[i];
+        }
+    }
+    else if (mode == 1)
+    {
+        for (int i=1; i<n; i++)
+        {
+            std::cout << "\nv[" << i <<"]: " << std::setprecision(precision) << v[i];
+        }
+    }
+    else
+    {
+        throw std::runtime_error("Mode specified is not correct. It must be 0: horizontal | 1: vertical.");
+    }
+    std::cout << std::endl;
+    
+}
+
+
+template<typename T>
 inline void sv_add(int n, T* u, T* v, T* w)
 {
     for (int i=0; i<n; i++)
@@ -199,86 +281,4 @@ inline void svs_sub(int n, T s, T* u, T* w)
     {
         w[i] = s - u[i];
     }
-}
-
-
-template<typename T>
-inline void print_matrix(int num_rows, int num_cols, T* mat, int precision, int align, int scient_not)
-{
-    // Look for the biggest number in the matrix in order to calculate the width of the columns
-    T max = mat[0];
-    for (int i=0; i<num_rows*num_cols; i++)
-    {
-        if (mat[i]>max)
-        {
-            max = mat[i];
-        }
-    }
-
-    size_t col_width = 0;
-    if (max > 1.0)
-    {
-        max = std::floor(std::log10(max));
-        col_width = static_cast<int>(max)+precision+6;
-    }
-    else
-    {
-        col_width = static_cast<int>(precision+6);
-    }
-
-    if (scient_not == 1)
-    {
-        col_width += 4;
-    }
-    else if (scient_not != 0)
-    {
-        std::string err_message("Scient notation flag must be: 0 - No Scientist notation | 1: Scientist notation.");
-        std::cerr << err_message << std::endl;
-        throw std::runtime_error(err_message);
-    }
-
-    size_t row_header_width = static_cast<int>(std::floor(std::log10(num_rows))+10);
-
-    // Print table data
-    std::stringstream ss_row_header;
-    for (int i=0; i<num_rows; i++)
-    {
-        ss_row_header.str("");
-        ss_row_header << "R [" << i << "]: ";
-        std::cout << align_str(ss_row_header.str(), row_header_width, 1) << align_num(mat[num_cols*i], col_width, precision, align, scient_not);
-
-        //  (mat[num_cols*i], col_width, precision, scient_not);
-        for (int j=1; j<num_cols; j++)
-        {
-            std::cout << " | " << align_num(mat[num_cols*i+j], col_width, precision, align, scient_not);
-        }
-        std::cout << std::endl;
-    }
-}
-
-
-template<typename T>
-inline void print_vector(int n, T* v, int mode, int precision)
-{
-    std::cout << "v[0]: " << v[0];
-    if (mode == 0)
-    {
-        for (int i=1; i<n; i++)
-        {
-            std::cout << " - v[" << i <<"]: " << std::setprecision(precision) << v[i];
-        }
-    }
-    else if (mode == 1)
-    {
-        for (int i=1; i<n; i++)
-        {
-            std::cout << "\nv[" << i <<"]: " << std::setprecision(precision) << v[i];
-        }
-    }
-    else
-    {
-        throw std::runtime_error("Mode specified is not correct. It must be 0: horizontal | 1: vertical.");
-    }
-    std::cout << std::endl;
-    
 }
