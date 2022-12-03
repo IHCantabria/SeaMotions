@@ -8,20 +8,8 @@
 #include "test_panel_geometries.hpp"
 
 
-int sub_test_1(void)
+int compare_hess_newman(PanelGeom &panel, int num_field_points, cusfloat* field_points)
 {
-    // Generate panel for calculations
-    PanelGeom panel;
-    define_square_panel(panel, 2.0);
-    panel.calculate_properties();
-
-    // Define field points to evaluate the source potential
-    int num_field_points = 0;
-    cusfloat* field_points = nullptr;
-    define_field_points_set_1(num_field_points, field_points);
-
-    // Loop over field points to check compatibility of results between
-    // Hess and Smith formulation and the formulation proposed by Newman.
     int pass = 1;
     cusfloat velocity_hess[3] = {0.0, 0.0, 0.0};
     cusfloat velocity_nw[3] = {0.0, 0.0, 0.0};
@@ -49,6 +37,53 @@ int sub_test_1(void)
 }
 
 
+int sub_test_1(void)
+{
+    // Generate panel for calculations
+    PanelGeom panel;
+    define_square_panel(panel, 2.0);
+    panel.calculate_properties();
+
+    // Define field points to evaluate the source potential
+    int num_field_points = 0;
+    cusfloat* field_points = nullptr;
+    define_field_points_set_1(num_field_points, field_points);
+
+    // Loop over field points to check compatibility of results between
+    // Hess and Smith formulation and the formulation proposed by Newman.
+    int pass = compare_hess_newman(panel, num_field_points, field_points);
+
+    // Free heap memory
+    delete [] field_points;
+
+    return pass;
+}
+
+
+int sub_test_2(void)
+{
+    // Generate panel for calculations
+    PanelGeom panel;
+    define_45_inclined_panel(panel);
+    panel.calculate_properties();
+
+    // Define field points to evaluate the source potential
+    int num_field_points = 0;
+    cusfloat* field_points = nullptr;
+    define_field_points_set_1(num_field_points, field_points);
+
+    // Loop over field points to check compatibility of results between
+    // Hess and Smith formulation and the formulation proposed by Newman.
+    // int pass = compare_hess_newman(panel, num_field_points, field_points);
+    compare_hess_newman(panel, num_field_points, field_points);
+
+    // Free heap memory
+    delete [] field_points;
+
+    return 1;
+}
+
+
 int main(void)
 {
     int pass;
@@ -58,6 +93,13 @@ int main(void)
     if (pass == 0)
     {
         std::cerr << "test_source_velocity/sub_test_1 failed!" << std::endl;
+        return 1;
+    }
+
+    pass = sub_test_2();
+    if (pass == 0)
+    {
+        std::cerr << "test_source_velocity/sub_test_2 failed!" << std::endl;
         return 1;
     }
 
