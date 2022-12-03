@@ -163,6 +163,18 @@ inline void print_vector(int n, T* v, int mode, int precision)
 
 
 template<typename T>
+inline void slice_vector(T* parent_vector, int first_pos, int second_pos, T* slice_vector)
+{
+    int count = 0;
+    for (int i=first_pos; i<second_pos; i++)
+    {
+        slice_vector[count] = parent_vector[i];
+        count++;
+    }
+}
+
+
+template<typename T>
 inline void sv_add(int n, T* u, T* v, T* w)
 {
     for (int i=0; i<n; i++)

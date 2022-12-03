@@ -27,6 +27,7 @@ template<typename T> inline T pow2s(T x);
 template<typename T> inline T pow3s(T x);
 template<typename T> inline void print_matrix(int num_rows, int num_cols, T* mat, int precision, int align, int scient_not);
 template<typename T> inline void print_vector(int n, T* v, int mode, int precision);
+template<typename T> inline void slice_vector(T* parent_vector, int first_pos, int second_pos, T* slice_vector);
 template<typename T> inline void sv_add(int n, T* u, T* v, T* w);
 template<typename T> inline void svs_add(int n, T* u, T s, T* w);
 template<typename T> inline void sv_div(int n, T* u, T* v, T* w);
