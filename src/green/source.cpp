@@ -76,6 +76,9 @@ void calculate_source_potential_newman(PanelGeom &panel, cusfloat (&field_point)
 
 void calculate_source_velocity_newman(PanelGeom &panel, cusfloat (&field_point)[3], int fp_local_flag, cusfloat (&velocity)[3])
 {
+    // Create axuliar velocity vector to store the velocities in local coordinates
+    cusfloat velocity_local[3] = {0.0, 0.0, 0.0};
+
     // Translate field point to panel local coordinates
     cusfloat field_point_local[3];
     if (fp_local_flag == 0)
@@ -127,14 +130,24 @@ void calculate_source_velocity_newman(PanelGeom &panel, cusfloat (&field_point)[
 
 
         // Calculate X derivative coefficients
-        velocity[0] -= delta_eta[i]/sides_len[i]*b;
+        velocity_local[0] -= delta_eta[i]/sides_len[i]*b;
 
         // Calculate Y derivative coefficients
-        velocity[1] += delta_xi[i]/sides_len[i]*b;
+        velocity_local[1] += delta_xi[i]/sides_len[i]*b;
 
     }
-    calculate_dipole_potential_kernel(panel, node_fieldp_mod, node_fieldp_dx, node_fieldp_dy, node_fieldp_dz, delta_xi, delta_eta, velocity[2]);
+    calculate_dipole_potential_kernel(panel, node_fieldp_mod, node_fieldp_dx, node_fieldp_dy, node_fieldp_dz, delta_xi, delta_eta, velocity_local[2]);
 
+    // Convert back the velocity vector to global coordinates if the field
+    // vector was given in that base
+    if (fp_local_flag == 0)
+    {
+        cblas_gemv<cusfloat>(CblasRowMajor, CblasNoTrans, 3, 3, 1.0, panel.local_to_global_mat, 3, velocity_local, 1, 0, velocity, 1);
+    }
+    else
+    {
+        copy_vector(3, velocity_local, velocity);
+    }
 }
 
 
@@ -273,5 +286,9 @@ void calculate_source_velocity_hess(PanelGeom &panel, cusfloat (&field_point)[3]
     if (fp_local_flag == 0)
     {
         cblas_gemv<cusfloat>(CblasRowMajor, CblasNoTrans, 3, 3, 1.0, panel.local_to_global_mat, 3, velocity_local, 1, 0, velocity, 1);
+    }
+    else
+    {
+        copy_vector(3, velocity_local, velocity);
     }
 }
