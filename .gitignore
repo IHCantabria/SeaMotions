@@ -1,4 +1,6 @@
 *.obj
 *.exe
+launch-vtune.bat
 settings.json
 build/
+vtune/
