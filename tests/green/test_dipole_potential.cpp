@@ -45,16 +45,35 @@ int sub_test_1(void)
 
 int sub_test_2(void)
 {
+    // Create unit square panel
+    PanelGeom panel;
+    define_square_panel(panel, 2.0);
+    panel.calculate_properties();
+
     // Define field points to evaluate the source potential
-    int num_points = 0;
+    int num_field_points = 0;
     cusfloat* field_points = nullptr;
-    define_field_points_set_1(num_points, field_points);
+    define_field_points_set_1(num_field_points, field_points);
 
-    print_matrix(13, 3, field_points, 3, 0, 0);
+    // Loop over the field points and check equivalence in between Hess and Smith formulation
+    // and Newmann method.
+    int pass = 1;
+    cusfloat phi_hess = 0.0;
+    cusfloat phi_nm = 0.0;
+    // for (int i=0; i<num_field_points; i++)
+    // {
+        // Calculate Hess and Smith potential
+        // calculate_dipole_potential()
 
+        // Calculate Newman potential
+
+        // Compare
+    // }
+
+    // Free heap memory
     delete [] field_points;
 
-    return 1;
+    return pass;
 }
 
 
