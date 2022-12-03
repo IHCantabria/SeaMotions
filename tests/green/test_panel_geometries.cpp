@@ -1,5 +1,11 @@
 
+// Include general usage libraries
+#include <fstream>
+#include <iostream>
+#include <string>
+
 // Include local modules
+#include "../../src/math_tools.hpp"
 #include "test_panel_geometries.hpp"
 
 
@@ -28,6 +34,54 @@ void define_45_inclined_panel(PanelGeom &panel)
 }
 
 
+void define_field_points_set_1(int &num_points, cusfloat* &data)
+{
+    // Define number of points
+    num_points = 111;
+
+    // Allocate heap memory for the array
+    data = new cusfloat[3*num_points];
+
+    // Declare z variable to use along the function
+    cusfloat z;
+
+    // Define points at z=0 m
+    z = 0.0;
+    int count_point = 0;
+    data[3*count_point] = 0.0;
+    data[3*count_point+1] = 0.0;
+    data[3*count_point+2] = z;
+    count_point++;
+
+    fill_circle_points(data, 0.5, z, count_point);
+    fill_circle_points(data, 1.0, z, count_point);
+    fill_circle_points(data, 1.5, z, count_point);
+
+    // Define points at z=1.0 m
+    z = 1.0;
+    data[3*count_point] = 0.0;
+    data[3*count_point+1] = 0.0;
+    data[3*count_point+2] = z;
+    count_point++;
+    
+    fill_circle_points(data, 0.5, z, count_point);
+    fill_circle_points(data, 1.0, z, count_point);
+    fill_circle_points(data, 1.5, z, count_point);
+
+    // Define points at z=-1.0 m
+    z = -1.0;
+    data[3*count_point] = 0.0;
+    data[3*count_point+1] = 0.0;
+    data[3*count_point+2] = z;
+    count_point++;
+    
+    fill_circle_points(data, 0.5, z, count_point);
+    fill_circle_points(data, 1.0, z, count_point);
+    fill_circle_points(data, 1.5, z, count_point);
+
+}
+
+
 void define_square_panel(PanelGeom &panel, cusfloat scale)
 {
     // Define number of nodes for the panel
@@ -50,4 +104,18 @@ void define_square_panel(PanelGeom &panel, cusfloat scale)
     panel.z[1] = 0.0;
     panel.z[2] = 0.0;
     panel.z[3] = 0.0;
+}
+
+
+void fill_circle_points(cusfloat* data, cusfloat r, cusfloat z, int &count_point)
+{
+    for (int i=0; i<12; i++)
+    {
+        data[3*count_point] = r*std::cos(i*PI/12);
+        data[3*count_point+1] = r*std::sin(i*PI/12);
+        data[3*count_point+2] = z;
+        
+        count_point++;
+    }
+
 }
