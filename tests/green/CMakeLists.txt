@@ -1,7 +1,6 @@
 
 # Define common files to compile green function tests
 set(green_common_src
-        test_source_velocity.cpp
         ../../src/config.hpp
         ../../src/config.cpp
         ../../src/green/common.hpp
