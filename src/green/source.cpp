@@ -13,6 +13,9 @@
 
 void calculate_source_potential_newman(PanelGeom &panel, cusfloat (&field_point)[3], int fp_local_flag, cusfloat &phi)
 {
+    // Reset potential value
+    phi = 0.0;
+    
     // Translate field point to panel local coordinates
     cusfloat field_point_local[3];
     if (fp_local_flag == 0)
@@ -153,6 +156,9 @@ void calculate_source_velocity_newman(PanelGeom &panel, cusfloat (&field_point)[
 
 void calculate_source_potential_hess(PanelGeom &panel, cusfloat (&field_point)[3], int fp_local_flag, cusfloat &phi)
 {
+    // Reset potential value
+    phi = 0.0;
+
     // Translate field point to panel local coordinates
     cusfloat field_point_local[3];
     if (fp_local_flag == 0)
