@@ -144,6 +144,85 @@ struct PanelGeom
         node_pos[1] = this->yl[num_node];
         node_pos[2] = this->zl[num_node];
     }
+
+    int is_inside(cusfloat (&field_point)[3])
+    {
+        // Check if the field point is inside of the bounding box
+        // of the panel.
+        cusfloat x_min = 1e16;
+        cusfloat x_max = -1e16;
+        cusfloat y_min = 1e16;
+        cusfloat y_max = -1e16;
+
+        for (int i=0; i<this->num_nodes; i++)
+        {
+            // Check bounding box limits in X axis
+            if (this->xl[i]>x_max)
+            {
+                x_max = this->xl[i];
+            }
+
+            if (this->xl[i]<x_min)
+            {
+                x_min = this->xl[i];
+            }
+
+            // Check bounding box limits in Y axis
+            if (this->yl[i]>y_max)
+            {
+                y_max = this->yl[i];
+            }
+
+            if (this->yl[i]<y_min)
+            {
+                y_min = this->yl[i];
+            }
+        }
+
+        if ((field_point[0]>x_max) || (field_point[0]<x_min) || (field_point[1]>y_max) || (field_point[1]<y_min))
+        {
+            return 0;
+        }
+
+        // Look if the point is also inside of the panel
+        cusfloat lam, mu;
+        cusfloat rx = -2*x_min;
+        cusfloat ry = field_point[1];
+        cusfloat uiy = 0.0;
+        cusfloat uix = 0.0;
+        cusfloat vx = field_point[0] - rx;
+        int count_cross = 0;
+        int j = 0;
+        for (int i=0; i<this->num_nodes; i++)
+        {
+            // Calculate forward index
+            j = (i+1)%num_nodes;
+
+            // Calculate side vector coefficients
+            uix = this->xl[j] - this->xl[i];
+            uiy = this->yl[j] - this->yl[i];
+
+            // Calculate vectors scale
+            mu = (ry-this->yl[i])/uiy;
+            lam = (this->xl[i]+mu*uix-rx)/vx;
+
+            // Check if there is cross in between the ray traced and 
+            // the side of the panel
+            if ((lam>0.0) & (lam<1.0) & (mu>0.0) & (mu<1.0))
+            {
+                count_cross += 1;
+            }
+
+        }
+        
+        int is_inside = 0;
+        if ((count_cross%2)==1)
+        {
+            is_inside = 1;
+        }
+
+        return is_inside;
+    }
 };
 
 #endif
