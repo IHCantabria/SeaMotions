@@ -196,7 +196,7 @@ void calculate_source_potential_hess(PanelGeom &panel, cusfloat (&field_point)[3
     // Calcualte potential value
     int j;
     cusfloat a, b, si, sj, r;
-    cusfloat cx, cy;
+    cusfloat cx, cy, r_sum;
     for (int i=0; i<panel.num_nodes; i++)
     {
         // Calculate forward index
@@ -209,12 +209,19 @@ void calculate_source_potential_hess(PanelGeom &panel, cusfloat (&field_point)[3
         sj = -(a*node_fieldp_dx[j] + b*node_fieldp_dy[j]);
         r = node_fieldp_dx[i]*b - node_fieldp_dy[i]*a;
 
+        r_sum = node_fieldp_mod[i]+node_fieldp_mod[j];
+        phi += r*std::log((r_sum+sides_len[i])/(r_sum-sides_len[i]));
+
         // Calculate potential
         cy = r*std::abs(node_fieldp_dz[i])*(node_fieldp_mod[i]*sj-node_fieldp_mod[j]*si);
         cx = node_fieldp_mod[i]*node_fieldp_mod[j]*pow2s(r)+pow2s(node_fieldp_dz[i])*si*sj;
-        phi += std::atan2(cy, cx);
+        phi += std::abs(node_fieldp_dz[i])*std::atan2(cy, cx);
 
     }
+
+    // Add the last contribution
+    int is_inside = panel.is_inside(field_point_local);
+    phi -= std::abs(node_fieldp_dz[0])*is_inside*2*PI;
 
 }
 
