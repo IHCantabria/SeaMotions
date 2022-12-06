@@ -186,7 +186,7 @@ struct PanelGeom
 
         // Look if the point is also inside of the panel
         cusfloat lam, mu;
-        cusfloat rx = -2*x_min;
+        cusfloat rx = x_min-2*std::abs(x_min);
         cusfloat ry = field_point[1];
         cusfloat uiy = 0.0;
         cusfloat uix = 0.0;
@@ -206,9 +206,15 @@ struct PanelGeom
             mu = (ry-this->yl[i])/uiy;
             lam = (this->xl[i]+mu*uix-rx)/vx;
 
+            // Check mu value to control precision
+            if (std::abs(mu)<EPS_PRECISION)
+            {
+                mu = 0.0;
+            }
+
             // Check if there is cross in between the ray traced and 
             // the side of the panel
-            if ((lam>0.0) & (lam<1.0) & (mu>0.0) & (mu<1.0))
+            if ((lam>0.0) & (lam<1.0) & (mu>=0.0) & (mu<1.0))
             {
                 count_cross += 1;
             }
