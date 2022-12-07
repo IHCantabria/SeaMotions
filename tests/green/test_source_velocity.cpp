@@ -20,10 +20,10 @@ int compare_hess_newman(PanelGeom &panel, int num_field_points, cusfloat* field_
         slice_vector(field_points, 3*i, 3*i+3, field_point_i);
 
         // Calculate Hess and Smith velocity
-        calculate_source_velocity_hess(panel, field_point_i, 0, velocity_hess);
+        calculate_source_velocity_hess(panel, field_point_i, 0, 1, velocity_hess);
 
         // Calculate Newman velocity
-        calculate_source_velocity_newman(panel, field_point_i, 0, velocity_nw);
+        calculate_source_velocity_newman(panel, field_point_i, 0, 1, velocity_nw);
 
         // Compare results
         if (assert_vector_equality<cusfloat>(3, velocity_hess, velocity_nw, EPS_PRECISION) == 0)

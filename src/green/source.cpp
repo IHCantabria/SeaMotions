@@ -11,17 +11,32 @@
 #include "source.hpp"
 
 
-void calculate_source_potential_newman(PanelGeom &panel, cusfloat (&field_point)[3], int fp_local_flag, cusfloat &phi)
+void calculate_source_potential_newman(PanelGeom &panel, cusfloat (&field_point)[3], int fp_local_flag, 
+    int multipole_flag, cusfloat &phi)
 {
     // Reset potential value
     phi = 0.0;
     
-    // Translate field point to panel local coordinates
+    // Translate field point to panel local coordinates. Check, if multipole
+    // formulation applies
     cusfloat field_point_local[3];
     if (fp_local_flag == 0)
     {
+        // Calculate vector from center of the panel to field point
         cusfloat field_point_local_aux[3];
         sv_sub(3, field_point, panel.center, field_point_local_aux);
+
+        // Calculate distance from the center of the panel to the field point
+        cusfloat r0 = cblas_nrm2<cusfloat>(3, field_point_local_aux, 1);
+
+        // Check if multipole expansion applies
+        if ((r0/panel.length > 4.0) && multipole_flag)
+        {
+            phi = panel.area/r0;
+            return;
+        }
+
+        // Change from global system of coordinates to the local one
         cblas_gemv<cusfloat>(CblasRowMajor, CblasNoTrans, 3, 3, 1.0, panel.global_to_local_mat, 3, field_point_local_aux, 1, 0, field_point_local, 1);
     }
     else if (fp_local_flag == 1)
@@ -77,17 +92,34 @@ void calculate_source_potential_newman(PanelGeom &panel, cusfloat (&field_point)
 }
 
 
-void calculate_source_velocity_newman(PanelGeom &panel, cusfloat (&field_point)[3], int fp_local_flag, cusfloat (&velocity)[3])
+void calculate_source_velocity_newman(PanelGeom &panel, cusfloat (&field_point)[3], int fp_local_flag,
+    int multipole_flag, cusfloat (&velocity)[3])
 {
     // Create axuliar velocity vector to store the velocities in local coordinates
     cusfloat velocity_local[3] = {0.0, 0.0, 0.0};
 
-    // Translate field point to panel local coordinates
+    // Translate field point to panel local coordinates. Check, if multipole
+    // formulation applies
     cusfloat field_point_local[3];
     if (fp_local_flag == 0)
     {
+        // Calculate vector from center of the panel to field point
         cusfloat field_point_local_aux[3];
         sv_sub(3, field_point, panel.center, field_point_local_aux);
+                
+        // Calculate distance from the center of the panel to the field point
+        cusfloat r0 = cblas_nrm2<cusfloat>(3, field_point_local_aux, 1);
+
+        // Check if multipole expansion applies
+        if ((r0/panel.length > 4.0) && multipole_flag)
+        {
+            velocity[0] = field_point_local_aux[0]*panel.area/pow3s(r0);
+            velocity[1] = field_point_local_aux[1]*panel.area/pow3s(r0);
+            velocity[2] = field_point_local_aux[2]*panel.area/pow3s(r0);
+            return;
+        }
+
+        // Change from global system of coordinates to the local one
         cblas_gemv<cusfloat>(CblasRowMajor, CblasNoTrans, 3, 3, 1.0, panel.global_to_local_mat, 3, field_point_local_aux, 1, 0, field_point_local, 1);
     }
     else if (fp_local_flag == 1)
@@ -154,17 +186,32 @@ void calculate_source_velocity_newman(PanelGeom &panel, cusfloat (&field_point)[
 }
 
 
-void calculate_source_potential_hess(PanelGeom &panel, cusfloat (&field_point)[3], int fp_local_flag, cusfloat &phi)
+void calculate_source_potential_hess(PanelGeom &panel, cusfloat (&field_point)[3], int fp_local_flag, 
+    int multipole_flag, cusfloat &phi)
 {
     // Reset potential value
     phi = 0.0;
 
-    // Translate field point to panel local coordinates
+    // Translate field point to panel local coordinates. Check, if multipole
+    // formulation applies
     cusfloat field_point_local[3];
     if (fp_local_flag == 0)
     {
+        // Calculate vector from center of the panel to field point
         cusfloat field_point_local_aux[3];
         sv_sub(3, field_point, panel.center, field_point_local_aux);
+
+        // Calculate distance from the center of the panel to the field point
+        cusfloat r0 = cblas_nrm2<cusfloat>(3, field_point_local_aux, 1);
+
+        // Check if multipole expansion applies
+        if ((r0/panel.length > 4.0) && multipole_flag)
+        {
+            phi = panel.area/r0;
+            return;
+        }
+
+        // Change from global system of coordinates to the local one
         cblas_gemv<cusfloat>(CblasRowMajor, CblasNoTrans, 3, 3, 1.0, panel.global_to_local_mat, 3, field_point_local_aux, 1, 0, field_point_local, 1);
     }
     else if (fp_local_flag == 1)
@@ -226,17 +273,34 @@ void calculate_source_potential_hess(PanelGeom &panel, cusfloat (&field_point)[3
 }
 
 
-void calculate_source_velocity_hess(PanelGeom &panel, cusfloat (&field_point)[3], int fp_local_flag, cusfloat (&velocity)[3])
+void calculate_source_velocity_hess(PanelGeom &panel, cusfloat (&field_point)[3], int fp_local_flag, 
+    int multipole_flag, cusfloat (&velocity)[3])
 {
     // Create axuliar velocity vector to store the velocities in local coordinates
     cusfloat velocity_local[3] = {0.0, 0.0, 0.0};
 
-    // Translate field point to panel local coordinates
+    // Translate field point to panel local coordinates. Check, if multipole
+    // formulation applies
     cusfloat field_point_local[3];
     if (fp_local_flag == 0)
     {
+        // Calculate vector from center of the panel to field point
         cusfloat field_point_local_aux[3];
         sv_sub(3, field_point, panel.center, field_point_local_aux);
+        
+        // Calculate distance from the center of the panel to the field point
+        cusfloat r0 = cblas_nrm2<cusfloat>(3, field_point_local_aux, 1);
+
+        // Check if multipole expansion applies
+        if ((r0/panel.length > 4.0) && multipole_flag)
+        {
+            velocity[0] = field_point_local_aux[0]*panel.area/pow3s(r0);
+            velocity[1] = field_point_local_aux[1]*panel.area/pow3s(r0);
+            velocity[2] = field_point_local_aux[2]*panel.area/pow3s(r0);
+            return;
+        }
+
+        // Change from global system of coordinates to the local one
         cblas_gemv<cusfloat>(CblasRowMajor, CblasNoTrans, 3, 3, 1.0, panel.global_to_local_mat, 3, field_point_local_aux, 1, 0, field_point_local, 1);
     }
     else if (fp_local_flag == 1)

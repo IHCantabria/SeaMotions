@@ -34,7 +34,7 @@ int main(void)
     double t0_hess = get_cpu_time();
     for (int i=0; i<num_reps; i++)
     {
-        calculate_source_velocity_hess(panel, field_point, 0, velocity);
+        calculate_source_velocity_hess(panel, field_point, 0, 1, velocity);
     }
     double t1_hess = get_cpu_time();
 
@@ -42,7 +42,7 @@ int main(void)
     double t0_newman = get_cpu_time();
     for (int i=0; i<num_reps; i++)
     {
-        calculate_source_velocity(panel, field_point, 0, velocity);
+        calculate_source_velocity_newman(panel, field_point, 0, 1, velocity);
     }
     double t1_newman = get_cpu_time();
 

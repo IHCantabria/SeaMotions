@@ -23,10 +23,10 @@ int compare_hess_newman(PanelGeom &panel, int num_field_points, cusfloat* field_
         // Reset potential values
 
         // Calculate Hess and Smith velocity
-        calculate_source_potential_hess(panel, field_point_i, 0, phi_hess);
+        calculate_source_potential_hess(panel, field_point_i, 0, 1, phi_hess);
 
         // Calculate Newman velocity
-        calculate_source_potential_newman(panel, field_point_i, 0, phi_nw);
+        calculate_source_potential_newman(panel, field_point_i, 0, 1, phi_nw);
 
         // Compare results
         if (std::abs(phi_hess-phi_nw) > EPS_PRECISION)
@@ -97,12 +97,12 @@ int main(void)
     int pass;
 
     // Compare velocity field calculated through Hess and Smith with Newman formulation
-    // pass = sub_test_1();
-    // if (pass == 0)
-    // {
-    //     std::cerr << "test_source_velocity/sub_test_1 failed!" << std::endl;
-    //     return 1;
-    // }
+    pass = sub_test_1();
+    if (pass == 0)
+    {
+        std::cerr << "test_source_velocity/sub_test_1 failed!" << std::endl;
+        return 1;
+    }
 
     pass = sub_test_2();
     if (pass == 0)
