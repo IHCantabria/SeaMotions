@@ -11,6 +11,21 @@
 #include "source.hpp"
 
 
+void calculate_source_monopole_potential(PanelGeom &panel, cusfloat r0, cusfloat &phi)
+{
+    phi = panel.area/r0;
+}
+
+
+void calculate_source_monopole_velocity(PanelGeom &panel, cusfloat r0, cusfloat (&field_point)[3],
+    cusfloat (&velocity)[3])
+{
+    velocity[0] = field_point[0]*panel.area/pow3s(r0);
+    velocity[1] = field_point[1]*panel.area/pow3s(r0);
+    velocity[2] = field_point[2]*panel.area/pow3s(r0);
+}
+
+
 void calculate_source_potential_newman(PanelGeom &panel, cusfloat (&field_point)[3], int fp_local_flag, 
     int multipole_flag, cusfloat &phi)
 {
@@ -32,7 +47,7 @@ void calculate_source_potential_newman(PanelGeom &panel, cusfloat (&field_point)
         // Check if multipole expansion applies
         if ((r0/panel.length > 4.0) && multipole_flag)
         {
-            phi = panel.area/r0;
+            calculate_source_monopole_potential(panel, r0, phi);
             return;
         }
 
@@ -41,9 +56,21 @@ void calculate_source_potential_newman(PanelGeom &panel, cusfloat (&field_point)
     }
     else if (fp_local_flag == 1)
     {
+        // Store field point in the local container. This is done to have compatilibity
+        // with the case where the field point is provided in global coordinate system.
         field_point_local[0] = field_point[0];
         field_point_local[1] = field_point[1];
         field_point_local[2] = field_point[2];
+
+        // Calculate distance from the center of the panel to the field point
+        cusfloat r0 = cblas_nrm2<cusfloat>(3, field_point_local, 1);
+
+        // Check if multipole expansion applies
+        if ((r0/panel.length > 4.0) && multipole_flag)
+        {
+            calculate_source_monopole_potential(panel, r0, phi);
+            return;
+        }
     }
     else
     {
@@ -113,9 +140,7 @@ void calculate_source_velocity_newman(PanelGeom &panel, cusfloat (&field_point)[
         // Check if multipole expansion applies
         if ((r0/panel.length > 4.0) && multipole_flag)
         {
-            velocity[0] = field_point_local_aux[0]*panel.area/pow3s(r0);
-            velocity[1] = field_point_local_aux[1]*panel.area/pow3s(r0);
-            velocity[2] = field_point_local_aux[2]*panel.area/pow3s(r0);
+            calculate_source_monopole_velocity(panel, r0, field_point_local_aux, velocity);
             return;
         }
 
@@ -124,9 +149,21 @@ void calculate_source_velocity_newman(PanelGeom &panel, cusfloat (&field_point)[
     }
     else if (fp_local_flag == 1)
     {
+        // Store field point in the local container. This is done to have compatilibity
+        // with the case where the field point is provided in global coordinate system.
         field_point_local[0] = field_point[0];
         field_point_local[1] = field_point[1];
         field_point_local[2] = field_point[2];
+
+        // Calculate distance from the center of the panel to the field point
+        cusfloat r0 = cblas_nrm2<cusfloat>(3, field_point_local, 1);
+
+        // Check if multipole expansion applies
+        if ((r0/panel.length > 4.0) && multipole_flag)
+        {
+            calculate_source_monopole_velocity(panel, r0, field_point_local, velocity);
+            return;
+        }
     }
     else
     {
@@ -207,7 +244,7 @@ void calculate_source_potential_hess(PanelGeom &panel, cusfloat (&field_point)[3
         // Check if multipole expansion applies
         if ((r0/panel.length > 4.0) && multipole_flag)
         {
-            phi = panel.area/r0;
+            calculate_source_monopole_potential(panel, r0, phi);
             return;
         }
 
@@ -216,9 +253,21 @@ void calculate_source_potential_hess(PanelGeom &panel, cusfloat (&field_point)[3
     }
     else if (fp_local_flag == 1)
     {
+        // Store field point in the local container. This is done to have compatilibity
+        // with the case where the field point is provided in global coordinate system.
         field_point_local[0] = field_point[0];
         field_point_local[1] = field_point[1];
         field_point_local[2] = field_point[2];
+
+        // Calculate distance from the center of the panel to the field point
+        cusfloat r0 = cblas_nrm2<cusfloat>(3, field_point_local, 1);
+
+        // Check if multipole expansion applies
+        if ((r0/panel.length > 4.0) && multipole_flag)
+        {
+            calculate_source_monopole_potential(panel, r0, phi);
+            return;
+        }
     }
     else
     {
@@ -294,9 +343,7 @@ void calculate_source_velocity_hess(PanelGeom &panel, cusfloat (&field_point)[3]
         // Check if multipole expansion applies
         if ((r0/panel.length > 4.0) && multipole_flag)
         {
-            velocity[0] = field_point_local_aux[0]*panel.area/pow3s(r0);
-            velocity[1] = field_point_local_aux[1]*panel.area/pow3s(r0);
-            velocity[2] = field_point_local_aux[2]*panel.area/pow3s(r0);
+            calculate_source_monopole_velocity(panel, r0, field_point, velocity);
             return;
         }
 
@@ -305,9 +352,21 @@ void calculate_source_velocity_hess(PanelGeom &panel, cusfloat (&field_point)[3]
     }
     else if (fp_local_flag == 1)
     {
+        // Store field point in the local container. This is done to have compatilibity
+        // with the case where the field point is provided in global coordinate system.
         field_point_local[0] = field_point[0];
         field_point_local[1] = field_point[1];
         field_point_local[2] = field_point[2];
+
+        // Calculate distance from the center of the panel to the field point
+        cusfloat r0 = cblas_nrm2<cusfloat>(3, field_point_local, 1);
+
+        // Check if multipole expansion applies
+        if ((r0/panel.length > 4.0) && multipole_flag)
+        {
+            calculate_source_monopole_velocity(panel, r0, field_point_local, velocity);
+            return;
+        }
     }
     else
     {
