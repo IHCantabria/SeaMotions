@@ -14,6 +14,7 @@ struct PanelGeom
     cusfloat area = 0.0;
     cusfloat center[3] = {0.0, 0.0, 0.0};
     cusfloat global_to_local_mat[9];
+    cusfloat length;
     cusfloat local_to_global_mat[9];
     int num_nodes = 0;
     static constexpr int MAX_PANEL_NODES = 4;
@@ -91,6 +92,47 @@ struct PanelGeom
 
         // Calculate area of the panel based on the norm of the cross product
         this->area = v2_mod/2.0;
+
+        // Calcualte the maximum representative distance of the panel
+        if (this->num_nodes == 3)
+        {
+            // Calculate vector that joins the third side
+            cusfloat v_star[3];
+            v_star[0] = this->x[2] - this->x[1];
+            v_star[1] = this->y[2] - this->y[1];
+            v_star[2] = this->z[2] - this->z[1];
+
+            // Calculate modulus of the second and third sides
+            cusfloat v1_aux_mod = cblas_nrm2<cusfloat>(3, v1_aux, 1);
+            cusfloat v_star_mod = cblas_nrm2<cusfloat>(3, v_star, 1);
+
+            // Calculate panel length
+            this->length = v0_mod;
+            if (v1_aux_mod > this->length)
+            {
+                this->length = v1_aux_mod;
+            }
+            
+            if (v_star_mod > this->length)
+            {
+                this->length = v_star_mod;
+            }
+
+        }
+        else if (this->num_nodes == 4)
+        {
+            // Calculate modulus of the second diagonal of the panel
+            cusfloat v1_aux_mod = cblas_nrm2<cusfloat>(3, v1_aux, 1);
+
+            // Calculate panel length
+            this->length = v0_mod;
+
+            if (v1_aux_mod > this->length)
+            {
+                this->length = v1_aux_mod;
+            }
+
+        }
 
         // Generate translation matrixes
         for (int i=0; i<3; i++)
