@@ -197,3 +197,98 @@ cusfloat besselj1(cusfloat x)
 
     return sol;
 }
+
+
+cusfloat bessely0(cusfloat x)
+{
+    // Check if the input is a real positive number
+    if (x < 0.0)
+    {
+        std::string err_message("Bessel function of second kind and first order not defined for x < 0.0.");
+        std::cerr << err_message << std::endl;
+        throw std::runtime_error(err_message);
+    }
+
+    // Declare local variables
+    cusfloat sol = 0.0;
+
+    // Calculate polynomial approximation for 0 <= x <= 3
+    if (x <= 3.0)
+    {
+        // Calculate polynomial coordinate to avoid
+        // repeated calculation of it
+        cusfloat xi = x/3.0;
+
+        // Calculate power coefficients to economize
+        // the computational effort
+        cusfloat p2 = std::pow(xi, 2.0);
+        cusfloat pc = p2;
+
+        // Calculate polynomial approximation
+        sol += (2.0/PI)*std::log(x/2.0)*besselj0(x);
+        sol += 0.36746703;
+        sol += 0.60558498*pc;
+        pc *= p2;
+        sol -= 0.74340225*pc;
+        pc *= p2;
+        sol += 0.25256673*pc;
+        pc *= p2;
+        sol -= 0.04177345*pc;
+        pc *= p2;
+        sol += 0.00353354*pc;
+    }
+    else
+    {
+        sol = 1/std::sqrt(x)*rational_fraction_f0(x)*std::sin(rational_fraction_th0(x));
+    }
+
+    return sol;
+}
+
+
+cusfloat bessely1(cusfloat x)
+{
+    // Check if the input is a real positive number
+    if (x < 0.0)
+    {
+        std::string err_message("Bessel function of second kind and second order not defined for x < 0.0.");
+        std::cerr << err_message << std::endl;
+        throw std::runtime_error(err_message);
+    }
+
+    // Declare local variables
+    cusfloat sol = 0.0;
+
+    // Calculate polynomial approximation for 0 <= x <= 3
+    if (x <= 3.0)
+    {
+        // Calculate polynomial coordinate to avoid
+        // repeated calculation of it
+        cusfloat xi = x/3.0;
+
+        // Calculate power coefficients to economize
+        // the computational effort
+        cusfloat p2 = std::pow(xi, 2.0);
+        cusfloat pc = xi;
+
+        // Calculate polynomial approximation
+        sol += (2.0/PI)*(std::log(x/2.0)*besselj1(x)-1/x);
+        sol += 0.07373571*pc;
+        pc *= p2;
+        sol += 0.72276433*pc;
+        pc *= p2;
+        sol -= 0.43885620*pc;
+        pc *= p2;
+        sol += 0.10418264*pc;
+        pc *= p2;
+        sol -= 0.01340825*pc;
+        pc *= p2;
+        sol += 0.00094249*pc;
+    }
+    else
+    {
+        sol = 1/std::sqrt(x)*rational_fraction_f1(x)*std::sin(rational_fraction_th1(x));
+    }
+
+    return sol;
+}
