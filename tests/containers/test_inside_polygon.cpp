@@ -21,7 +21,6 @@ void read_file_data(std::string file_path, PanelGeom &panel, int &num_field_poin
     // Loop over number of nodes and extrac data from file. In this case the nodes 
     // value are pasted directly over the local nodes definition in order to not change 
     // from reference system and to have compatibility with the external test definition
-    std::cout << "Number of panel nodes: " << panel.num_nodes << std::endl;
     for (int i=0; i<panel.num_nodes; i++)
     {
         // Read from file
