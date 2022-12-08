@@ -28,6 +28,102 @@
 #endif
 
 
+cusfloat polynomial_f0(cusfloat x)
+{
+    // Define local variables
+    cusfloat xi = 3.0/x;
+    cusfloat p2 = xi*xi;
+    cusfloat pc = p2;
+    cusfloat f0 = 0.0;
+
+    // Calculate polynomial expansion
+    f0 += 0.79788454;
+    f0 -= 0.00553897*pc;
+    pc *= p2;
+    f0 += 0.00099336*pc;
+    pc *= p2;
+    f0 -= 0.00044346*pc;
+    pc *= p2;
+    f0 += 0.00020445*pc;
+    pc *= p2;
+    f0 -= 0.00004959*pc;
+
+    return f0;
+}
+
+
+cusfloat polynomial_f1(cusfloat x)
+{
+    // Define local variables
+    cusfloat xi = 3.0/x;
+    cusfloat p2 = xi*xi;
+    cusfloat pc = p2;
+    cusfloat f0 = 0.0;
+
+    // Calculate polynomial expansion
+    f0 += 0.79788459;
+    f0 += 0.01662008*pc;
+    pc *= p2;
+    f0 -= 0.00187002*pc;
+    pc *= p2;
+    f0 += 0.00068519*pc;
+    pc *= p2;
+    f0 -= 0.00029440*pc;
+    pc *= p2;
+    f0 += 0.00006952*pc;
+
+    return f0;
+}
+
+
+cusfloat polynomial_th0(cusfloat x)
+{
+    // Define local variables
+    cusfloat xi = 3.0/x;
+    cusfloat p2 = xi*xi;
+    cusfloat pc = xi;
+    cusfloat f0 = 0.0;
+
+    // Calculate polynomial expansion
+    f0 += x - PI/4.0;
+    f0 -= -0.04166592*pc;
+    pc *= p2;
+    f0 += 0.00239399*pc;
+    pc *= p2;
+    f0 -= 0.00073984*pc;
+    pc *= p2;
+    f0 += 0.00031099*pc;
+    pc *= p2;
+    f0 -= 0.00007605*pc;
+
+    return f0;
+}
+
+
+cusfloat polynomial_th1(cusfloat x)
+{
+    // Define local variables
+    cusfloat xi = 3.0/x;
+    cusfloat p2 = xi*xi;
+    cusfloat pc = xi;
+    cusfloat f0 = 0.0;
+
+    // Calculate polynomial expansion
+    f0 += x - 3.0*PI/4.0;
+    f0 += 0.12499895*pc;
+    pc *= p2;
+    f0 -= 0.00605240*pc;
+    pc *= p2;
+    f0 += 0.00135825*pc;
+    pc *= p2;
+    f0 -= 0.00049616*pc;
+    pc *= p2;
+    f0 += 0.00011531*pc;
+
+    return f0;
+}
+
+
 cusfloat rational_fraction_f0(cusfloat x)
 {
     // Define local constants
