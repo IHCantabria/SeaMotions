@@ -1,6 +1,7 @@
 
 set(containers_common_src
-
+    ../../src/config.hpp
+    ../../src/config.cpp
 )
 
 # Add test to check if the points are inside a polygon
