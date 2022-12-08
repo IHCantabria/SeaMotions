@@ -188,6 +188,7 @@ cusfloat besselj1(cusfloat x)
         sol += 0.00439494*pc;
         pc *= p2;
         sol -= 0.00028397*pc;
+        sol *= x;
     }
     else
     {
