@@ -178,7 +178,16 @@ cusfloat besselj1(cusfloat x)
         cusfloat pc = p2;
 
         // Calculate polynomial approximation
-        sol += ;
+        sol += 0.49999999;
+        sol -= 0.56249945*pc;
+        pc *= p2;
+        sol += 0.21093101*pc;
+        pc *= p2;
+        sol -= 0.03952287*pc;
+        pc *= p2;
+        sol += 0.00439494*pc;
+        pc *= p2;
+        sol -= 0.00028397*pc;
     }
     else
     {
