@@ -26,3 +26,21 @@ set(test_vector_arithmetic_src
 add_executable(test_vector_arithmetic_cmd ${test_vector_arithmetic_src})
 set_mkl_lib_target(test_vector_arithmetic_cmd)
 add_test(NAME test_vector_arithmetic COMMAND test_vector_arithmetic_cmd)
+
+
+# Add test to check the romberg algorithm implemented
+set(test_romberg_src
+    test_romberg.cpp
+    ../../src/config.hpp
+    ../../src/config.cpp
+    ../../src/math_tools.hpp
+    ../../src/math_tools.cpp
+    ../../src/math_tools.txx
+    ../../src/tools.hpp
+    ../../src/tools.cpp
+    ../../src/tools.txx
+)
+
+add_executable(test_romberg_cmd ${test_romberg_src})
+set_mkl_lib_target(test_romberg_cmd)
+add_test(NAME test_romberg COMMAND test_romberg_cmd)
