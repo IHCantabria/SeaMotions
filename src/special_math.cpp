@@ -252,6 +252,80 @@ cusfloat rational_fraction_th1(cusfloat x)
 }
 
 
+cusfloat besseli0(cusfloat x)
+{
+    // Check if the input is a real positive number
+    if (x < -3.75)
+    {
+        std::string err_message("Modified Bessel function of first kind and first order not defined for x < -3.75.");
+        std::cerr << err_message << std::endl;
+        throw std::runtime_error(err_message);
+    }
+
+    // Declare local variables
+    cusfloat sol = 0.0;
+
+    // Calculate polynomial approximation for 0 <= x <= 3
+    if (x <= 3.75)
+    {
+        // Calculate polynomial coordinate to avoid
+        // repeated calculation of it
+        cusfloat xi = x/3.75;
+
+        // Calculate power coefficients to economize
+        // the computational effort
+        cusfloat p2 = std::pow(xi, 2.0);
+        cusfloat pc = p2;
+
+        // Calculate polynomial approximation
+        sol += 1.0;
+        sol += 3.5156229*pc;
+        pc *= p2;
+        sol += 3.0899424*pc;
+        pc *= p2;
+        sol += 1.2067492*pc;
+        pc *= p2;
+        sol += 0.2659732*pc;
+        pc *= p2;
+        sol += 0.0360768*pc;
+        pc *= p2;
+        sol += 0.0045813*pc;
+    }
+    else
+    {
+        // Calculate polynomial coordinate to avoid
+        // repeated calculation of it
+        cusfloat xi = x/3.75;
+
+        // Calculate power coefficients to economize
+        // the computational effort
+        cusfloat p1 = 1/xi;
+        cusfloat pc = p1;
+
+        // Calculate polynomial approximation
+        sol += 0.39894228;
+        sol += 0.01328592*pc;
+        pc *= p1;
+        sol += 0.00225319*pc;
+        pc *= p1;
+        sol -= 0.00157565*pc;
+        pc *= p1;
+        sol += 0.00916281*pc;
+        pc *= p1;
+        sol -= 0.02057706*pc;
+        pc *= p1;
+        sol += 0.02635537*pc;
+        pc *= p1;
+        sol -= 0.01647633*pc;
+        pc *= p1;
+        sol += 0.00392377*pc;
+        sol *= std::exp(x)/std::sqrt(x);
+    }
+
+    return sol;
+}
+
+
 cusfloat besselj0(cusfloat x)
 {
     // Check if the input is a real positive number
