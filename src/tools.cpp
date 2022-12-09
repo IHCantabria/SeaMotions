@@ -47,6 +47,25 @@ std::string align_str(std::string input, int width, int align)
 }
 
 
+bool check_num_cmd_args(int argc, int req_argc)
+{
+    if (argc < (req_argc+1))
+    {
+        std::cerr << "Not enough input command line input arguments. ";
+        std::cerr << "Received: " << argc-1 << " - Expected :" << req_argc << std::endl;
+        return false;
+    }
+    else if (argc > (req_argc+1))
+    {
+        std::cerr << "More input arguments than expected." << std::endl;
+        std::cerr << "Received: " << argc-1 << " - Expected :" << req_argc << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+
 //  Windows
 #ifdef _WIN32
 #include <Windows.h>
