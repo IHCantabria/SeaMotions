@@ -44,3 +44,18 @@ set(test_romberg_src
 add_executable(test_romberg_cmd ${test_romberg_src})
 set_mkl_lib_target(test_romberg_cmd)
 add_test(NAME test_romberg COMMAND test_romberg_cmd)
+
+
+# Configure performance test for auxiliary bessel functions
+set(performance_aux_bessel_src
+        test_performance_aux_bessel.cpp
+        ../../src/config.hpp
+        ../../src/config.cpp
+        ../../src/containers.hpp
+        ../../src/special_math.hpp
+        ../../src/special_math.cpp
+        ../../src/tools.hpp
+        ../../src/tools.cpp
+        ../../src/tools.txx
+)
+add_executable(test_performance_aux_bessel_cmd ${performance_aux_bessel_src})
