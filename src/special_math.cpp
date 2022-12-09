@@ -291,7 +291,7 @@ cusfloat besselj0(cusfloat x)
     }
     else
     {
-        sol = 1/std::sqrt(x)*rational_fraction_f0(x)*std::cos(rational_fraction_th0(x));
+        sol = 1/std::sqrt(x)*polynomial_f0(x)*std::cos(polynomial_th0(x));
     }
 
     return sol;
@@ -338,7 +338,7 @@ cusfloat besselj1(cusfloat x)
     }
     else
     {
-        sol = 1/std::sqrt(x)*rational_fraction_f1(x)*std::cos(rational_fraction_th1(x));
+        sol = 1/std::sqrt(x)*polynomial_f1(x)*std::cos(polynomial_th1(x));
     }
 
     return sol;
@@ -385,7 +385,7 @@ cusfloat bessely0(cusfloat x)
     }
     else
     {
-        sol = 1/std::sqrt(x)*rational_fraction_f0(x)*std::sin(rational_fraction_th0(x));
+        sol = 1/std::sqrt(x)*polynomial_f0(x)*std::sin(polynomial_th0(x));
     }
 
     return sol;
@@ -433,7 +433,7 @@ cusfloat bessely1(cusfloat x)
     }
     else
     {
-        sol = 1/std::sqrt(x)*rational_fraction_f1(x)*std::sin(rational_fraction_th1(x));
+        sol = 1/std::sqrt(x)*polynomial_f1(x)*std::sin(polynomial_th1(x));
     }
 
     return sol;
