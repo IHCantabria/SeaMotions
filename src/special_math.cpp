@@ -326,6 +326,81 @@ cusfloat besseli0(cusfloat x)
 }
 
 
+cusfloat besseli1(cusfloat x)
+{
+    // Check if the input is a real positive number
+    if (x < -3.75)
+    {
+        std::string err_message("Modified Bessel function of first kind and first order not defined for x < -3.75.");
+        std::cerr << err_message << std::endl;
+        throw std::runtime_error(err_message);
+    }
+
+    // Declare local variables
+    cusfloat sol = 0.0;
+
+    // Calculate polynomial approximation for 0 <= x <= 3
+    if (x <= 3.75)
+    {
+        // Calculate polynomial coordinate to avoid
+        // repeated calculation of it
+        cusfloat xi = x/3.75;
+
+        // Calculate power coefficients to economize
+        // the computational effort
+        cusfloat p2 = std::pow(xi, 2.0);
+        cusfloat pc = p2;
+
+        // Calculate polynomial approximation
+        sol += 0.5;
+        sol += 0.87890594*pc;
+        pc *= p2;
+        sol += 0.51498869*pc;
+        pc *= p2;
+        sol += 0.15084934*pc;
+        pc *= p2;
+        sol += 0.02658733*pc;
+        pc *= p2;
+        sol += 0.00301532*pc;
+        pc *= p2;
+        sol += 0.00032411*pc;
+        sol *= x;
+    }
+    else
+    {
+        // Calculate polynomial coordinate to avoid
+        // repeated calculation of it
+        cusfloat xi = x/3.75;
+
+        // Calculate power coefficients to economize
+        // the computational effort
+        cusfloat p1 = 1/xi;
+        cusfloat pc = p1;
+
+        // Calculate polynomial approximation
+        sol += 0.39894228;
+        sol -= 0.03988024*pc;
+        pc *= p1;
+        sol -= 0.00362018*pc;
+        pc *= p1;
+        sol += 0.00163801*pc;
+        pc *= p1;
+        sol -= 0.01031555*pc;
+        pc *= p1;
+        sol += 0.02282967*pc;
+        pc *= p1;
+        sol -= 0.02895312*pc;
+        pc *= p1;
+        sol += 0.01787654*pc;
+        pc *= p1;
+        sol -= 0.00420059*pc;
+        sol *= std::exp(x)/std::sqrt(x);
+    }
+
+    return sol;
+}
+
+
 cusfloat besselj0(cusfloat x)
 {
     // Check if the input is a real positive number
