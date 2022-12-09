@@ -7,6 +7,7 @@
 // Include local modules
 #include "../../src/config.hpp"
 #include "../../src/containers.hpp"
+#include "../../src/tools.hpp"
 
 
 void read_file_data(std::string file_path, PanelGeom &panel, int &num_field_points,
@@ -99,9 +100,9 @@ int test(std::string file_path)
 int main(int argc, char* argv[])
 {
     // Read command line arguments
-    if (argc < 2)
+    if (!check_num_cmd_args(argc, 3))
     {
-        std::cerr << "Missing data file path." << std::endl;
+        return 1;
     }
     
     std::string file_path_1(argv[1]);
