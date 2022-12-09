@@ -564,6 +564,76 @@ cusfloat besselk0(cusfloat x)
 }
 
 
+cusfloat besselk1(cusfloat x)
+{
+    // Check if the input is a real positive number
+    if (!(x > 0.0))
+    {
+        std::string err_message("Modified Bessel function of second kind and second order not defined for x > 0.0.");
+        std::cerr << err_message << std::endl;
+        throw std::runtime_error(err_message);
+    }
+
+    // Declare local variables
+    cusfloat sol = 0.0;
+
+    // Calculate polynomial approximation for 0 <= x <= 3
+    if (x <= 2.0)
+    {
+        // Calculate polynomial coordinate to avoid
+        // repeated calculation of it
+        cusfloat xi = x/2.0;
+
+        // Calculate power coefficients to economize
+        // the computational effort
+        cusfloat p2 = std::pow(xi, 2.0);
+        cusfloat pc = p2;
+
+        // Calculate polynomial approximation
+        sol += x*std::log(xi)*besseli1(x)+1.0;
+        sol += 0.15443144*pc;
+        pc *= p2;
+        sol -= 0.67278579*pc;
+        pc *= p2;
+        sol -= 0.18156897*pc;
+        pc *= p2;
+        sol -= 0.01919402*pc;
+        pc *= p2;
+        sol -= 0.00110404*pc;
+        pc *= p2;
+        sol -= 0.00004686*pc;
+        sol /= x;
+    }
+    else
+    {
+        // Calculate polynomial coordinate to avoid
+        // repeated calculation of it
+        cusfloat xi = 2.0/x;
+
+        // Calculate power coefficients to economize
+        // the computational effort
+        cusfloat pc = xi;
+
+        // Calculate polynomial approximation
+        sol += 1.25331414;
+        sol += 0.23498619*pc;
+        pc *= xi;
+        sol -= 0.03655620*pc;
+        pc *= xi;
+        sol += 0.01504268*pc;
+        pc *= xi;
+        sol -= 0.00780353*pc;
+        pc *= xi;
+        sol += 0.00325614*pc;
+        pc *= xi;
+        sol -= 0.00068245*pc;
+        sol /= std::exp(x)*std::sqrt(x);
+    }
+
+    return sol;
+}
+
+
 cusfloat bessely0(cusfloat x)
 {
     // Check if the input is a real positive number
