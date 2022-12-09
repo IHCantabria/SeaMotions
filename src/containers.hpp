@@ -273,4 +273,34 @@ struct PanelGeom
     }
 };
 
+
+struct PerformanceStats
+{
+    int count = 0;
+    double t_max = 0.0;
+    double t_mean = 0.0;
+    double t_min = 1e16;
+
+    void add_performance_point(double t)
+    {
+        // Increment counter to have this new iteration
+        this->count++;
+
+        // Check if the new performance point is higher than the maximum
+        if (t > t_max)
+        {
+            this->t_max = t;
+        }
+
+        // Check if the new performance point is lower than the minimum
+        if (t < t_min)
+        {
+            this->t_min = t;
+        }
+
+        // Add performance point to the mean
+        this->t_mean = (this->t_mean*(this->count-1)+t)/this->count;
+    }
+};
+
 #endif
