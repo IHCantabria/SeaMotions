@@ -86,7 +86,7 @@ cusfloat polynomial_th0(cusfloat x)
 
     // Calculate polynomial expansion
     f0 += x - PI/4.0;
-    f0 -= -0.04166592*pc;
+    f0 -= 0.04166592*pc;
     pc *= p2;
     f0 += 0.00239399*pc;
     pc *= p2;
