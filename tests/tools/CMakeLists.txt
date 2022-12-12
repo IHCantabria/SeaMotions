@@ -77,3 +77,21 @@ set(performance_aux_bessel_src
         ../../src/tools.txx
 )
 add_executable(test_performance_aux_bessel_cmd ${performance_aux_bessel_src})
+
+# Added test to check the psi function
+set(test_psi_function_src
+    test_psi_function.cpp
+    ../../src/config.hpp
+    ../../src/config.cpp
+    ../../src/math_tools.hpp
+    ../../src/math_tools.cpp
+    ../../src/math_tools.txx
+    ../../src/special_math.hpp
+    ../../src/special_math.cpp
+    ../../src/tools.hpp
+    ../../src/tools.cpp
+    ../../src/tools.txx
+)
+
+add_executable(test_psi_function_cmd ${test_psi_function_src})
+set_mkl_lib_target(test_psi_function_cmd)
