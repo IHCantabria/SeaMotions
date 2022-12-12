@@ -28,6 +28,42 @@
 #endif
 
 
+cusfloat besseli(int nu, cusfloat x)
+{
+    cusfloat sol = 0.0;
+    cusfloat sol_old = 0.0;
+    cusfloat sol_i = 0.0;
+    cusfloat scale = std::pow(x/2.0, nu);
+    cusfloat pk = 1;
+    cusfloat k = 0;
+    cusfloat gamma = static_cast<cusfloat>(factorial(nu));
+    while (true)
+    {
+        // Calculate new term in the series
+        sol_i = scale*std::pow(x*x/4.0, k)/pk/gamma;
+        sol += sol_i;
+
+        std::cout << std::setprecision(30) << k << " - " << sol_i << " - "<< std::abs(sol-sol_old) << " - ";
+        std::cout << std::setprecision(30) << sol << std::endl;
+
+        // Check for convergence
+        if (std::abs(sol-sol_old) < 1e-15)
+        {
+            break;
+        }
+
+        // Calculte new series parameters
+        k += 1.0;
+        pk *= k;
+        gamma *= (nu+k);
+        sol_old = sol;
+
+    }
+
+    return sol;
+}
+
+
 cusfloat polynomial_f0(cusfloat x)
 {
     // Define local variables
