@@ -24,6 +24,7 @@ template<> inline int assert_vector_equality<int>(int N, int* u, int* v, int eps
 cusfloat* generate_empty_vector(int size);
 template<typename T> void copy_vector(int n, T* reference_vector, T* target_vector);
 template<typename T> inline void cross(T (&u)[3], T (&v)[3], T (&w)[3]);
+int factorial(int n);
 template<typename T> inline T pow2s(T x);
 template<typename T> inline T pow3s(T x);
 template<typename T> inline void print_matrix(int num_rows, int num_cols, T* mat, int precision, int align, int scient_not);
