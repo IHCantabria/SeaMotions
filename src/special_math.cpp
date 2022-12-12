@@ -12,16 +12,41 @@
 
 
 //////////////////////////////////////////////
-////// Bessel functions aproximations ////////
-////// for simple precision           ////////
+////// General defined functions in  /////////
+////// simple and double precision   /////////
+//////////////////////////////////////////////
+cusfloat psi_fun(int n)
+{
+    // Check for function domain bounds
+    if (n <= 0)
+    {
+        std::string err_message("Psi function only defined for natural positive numbers.");
+        std::cerr << err_message << std::endl;
+        throw std::runtime_error(err_message);
+    }
+
+    // Calculate psi function values
+    cusfloat sol = -EULERGAMMA;
+    for (int i=1; i<n; i++)
+    {
+        sol += 1/static_cast<cusfloat>(i);
+    }
+
+    return sol;
+}
+
+
+//////////////////////////////////////////////
+////// Functions definition in simple ////////
+////// precision                      ////////
 //////////////////////////////////////////////
 #ifdef SIMPLE_PREC
 
 
 
 //////////////////////////////////////////////
-////// Bessel functions aproximations ////////
-////// for double precision           ////////
+////// Functions definition in double ////////
+////// precision                      ////////
 //////////////////////////////////////////////
 #else
 

@@ -25,5 +25,6 @@ cusfloat rational_fraction_f0(cusfloat x);
 cusfloat rational_fraction_f1(cusfloat x);
 cusfloat rational_fraction_th0(cusfloat x);
 cusfloat rational_fraction_th1(cusfloat x);
+cusfloat psi_fun(int n);
 
 #endif
