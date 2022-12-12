@@ -46,6 +46,24 @@ set_mkl_lib_target(test_romberg_cmd)
 add_test(NAME test_romberg COMMAND test_romberg_cmd)
 
 
+# Add test to check the factorial function
+set(test_factorial_src
+    test_factorial.cpp
+    ../../src/config.hpp
+    ../../src/config.cpp
+    ../../src/math_tools.hpp
+    ../../src/math_tools.cpp
+    ../../src/math_tools.txx
+    ../../src/tools.hpp
+    ../../src/tools.cpp
+    ../../src/tools.txx
+)
+
+add_executable(test_factorial_cmd ${test_factorial_src})
+set_mkl_lib_target(test_factorial_cmd)
+add_test(NAME test_factorial COMMAND test_factorial_cmd)
+
+
 # Configure performance test for auxiliary bessel functions
 set(performance_aux_bessel_src
         test_performance_aux_bessel.cpp
