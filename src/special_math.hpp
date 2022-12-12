@@ -6,6 +6,17 @@
 #include "config.hpp"
 
 
+cusfloat besseli(int nu, cusfloat x);
+cusfloat besseli0(cusfloat x);
+cusfloat besseli1(cusfloat x);
+cusfloat besselj0(cusfloat x);
+cusfloat besselj1(cusfloat x);
+cusfloat besselk0(cusfloat x);
+cusfloat besselk1(cusfloat x);
+cusfloat bessely0(cusfloat x);
+cusfloat bessely1(cusfloat x);
+cusfloat struve0(cusfloat x);
+cusfloat struve1(cusfloat x);
 cusfloat polynomial_f0(cusfloat x);
 cusfloat polynomial_f1(cusfloat x);
 cusfloat polynomial_th0(cusfloat x);
