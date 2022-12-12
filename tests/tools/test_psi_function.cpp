@@ -71,9 +71,11 @@ int main(int argc, char* argv[])
     // Loop over the reference data values and check if the
     // output of the PSI function is correct according with the
     // machine precision defined during compilation
+    cusfloat fi = 0.0;
     for (int i=0; i<data_ref.num_points; i++)
     {
-        if (std::abs(psi_fun(data_ref.x[i])-data_ref.y[i]) > EPS_PRECISION)
+        fi = psi_fun(static_cast<cusfloat>(data_ref.x[i]));
+        if (std::abs(fi-data_ref.y[i]) > EPS_PRECISION)
         {
             std::cerr << "test_psi_function failed!" << std::endl;
         }
