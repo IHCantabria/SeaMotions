@@ -33,7 +33,7 @@ cusfloat besseli0(cusfloat x)
 
         // Calculate power coefficients to economize
         // the computational effort
-        cusfloat p2 = std::pow(xi, 2.0);
+        cusfloat p2 = xi*xi;
         cusfloat pc = p2;
 
         // Calculate polynomial approximation
