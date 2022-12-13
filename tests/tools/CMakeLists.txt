@@ -115,3 +115,26 @@ set(test_bessel_functions_src
 
 add_executable(test_bessel_functions_cmd ${test_bessel_functions_src})
 set_mkl_lib_target(test_bessel_functions_cmd)
+set(file_path_besselj0 "${CMAKE_SOURCE_DIR}/tests/tests_data/special_math/besselj0.dat")
+set(file_path_besselj1 "${CMAKE_SOURCE_DIR}/tests/tests_data/special_math/besselj1.dat")
+set(file_path_bessely0 "${CMAKE_SOURCE_DIR}/tests/tests_data/special_math/bessely0.dat")
+set(file_path_bessely1 "${CMAKE_SOURCE_DIR}/tests/tests_data/special_math/bessely1.dat")
+set(file_path_struve0 "${CMAKE_SOURCE_DIR}/tests/tests_data/special_math/struve0.dat")
+set(file_path_struve1 "${CMAKE_SOURCE_DIR}/tests/tests_data/special_math/struve1.dat")
+set(file_path_besseli0 "${CMAKE_SOURCE_DIR}/tests/tests_data/special_math/besseli0.dat")
+set(file_path_besseli1 "${CMAKE_SOURCE_DIR}/tests/tests_data/special_math/besseli1.dat")
+set(file_path_besselk0 "${CMAKE_SOURCE_DIR}/tests/tests_data/special_math/besselk0.dat")
+set(file_path_besselk1 "${CMAKE_SOURCE_DIR}/tests/tests_data/special_math/besselk1.dat")
+add_test(NAME test_bessel_functions 
+        COMMAND test_bessel_functions_cmd 
+                ${file_path_besselj0}
+                ${file_path_besselj1}
+                ${file_path_bessely0}
+                ${file_path_bessely1}
+                ${file_path_struve0}
+                ${file_path_struve1}
+                ${file_path_besseli0}
+                ${file_path_besseli1}
+                ${file_path_besselk0}
+                ${file_path_besselk1}
+                )
