@@ -89,7 +89,7 @@ int sub_test_3(void)
     cusfloat ana_sol = std::exp(1.0) - std::exp(0.0);
 
     // Calculate numerical solution using Romberg method
-    cusfloat num_sol = romberg_quadrature(std::exp, 0.0, 1.0, 1e-15);
+    cusfloat num_sol = romberg_quadrature([](cusfloat t) -> cusfloat {return std::exp(t);}, 0.0, 1.0, 1e-15);
 
     // Check the accurcy of the solution
     int pass = 1;
