@@ -95,6 +95,8 @@ set(test_psi_function_src
 
 add_executable(test_psi_function_cmd ${test_psi_function_src})
 set_mkl_lib_target(test_psi_function_cmd)
+set(psi_refdata_file_path "${CMAKE_SOURCE_DIR}/tests/tests_data/special_math/psi.dat")
+add_test(NAME test_psi_function COMMAND test_psi_function_cmd ${psi_refdata_file_path})
 
 # Configure test to check the accuracy of the bessel functions
 set(test_bessel_functions_src
