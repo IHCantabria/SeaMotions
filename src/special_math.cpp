@@ -11,308 +11,6 @@
 #include "special_math.hpp"
 
 
-//////////////////////////////////////////////
-////// General defined functions in  /////////
-////// simple and double precision   /////////
-//////////////////////////////////////////////
-cusfloat psi_fun(int n)
-{
-    // Check for function domain bounds
-    if (n <= 0)
-    {
-        std::string err_message("Psi function only defined for natural positive numbers.");
-        std::cerr << err_message << std::endl;
-        throw std::runtime_error(err_message);
-    }
-
-    // Calculate psi function values
-    cusfloat sol = -EULERGAMMA;
-    for (int i=1; i<n; i++)
-    {
-        sol += 1/static_cast<cusfloat>(i);
-    }
-
-    return sol;
-}
-
-
-//////////////////////////////////////////////
-////// Functions definition in simple ////////
-////// precision                      ////////
-//////////////////////////////////////////////
-#ifdef SIMPLE_PREC
-
-
-
-//////////////////////////////////////////////
-////// Functions definition in double ////////
-////// precision                      ////////
-//////////////////////////////////////////////
-#else
-
-#endif
-
-
-cusfloat besseli(int nu, cusfloat x)
-{
-    cusfloat sol = 0.0;
-    cusfloat sol_old = 0.0;
-    cusfloat sol_i = 0.0;
-    cusfloat scale = std::pow(x/2.0, nu);
-    cusfloat pk = 1;
-    cusfloat k = 0;
-    cusfloat gamma = static_cast<cusfloat>(factorial(nu));
-    while (true)
-    {
-        // Calculate new term in the series
-        sol_i = scale*std::pow(x*x/4.0, k)/pk/gamma;
-        sol += sol_i;
-
-        std::cout << std::setprecision(30) << k << " - " << sol_i << " - "<< std::abs(sol-sol_old) << " - ";
-        std::cout << std::setprecision(30) << sol << std::endl;
-
-        // Check for convergence
-        if (std::abs(sol-sol_old) < 1e-15)
-        {
-            break;
-        }
-
-        // Calculte new series parameters
-        k += 1.0;
-        pk *= k;
-        gamma *= (nu+k);
-        sol_old = sol;
-
-    }
-
-    return sol;
-}
-
-
-cusfloat polynomial_f0(cusfloat x)
-{
-    // Define local variables
-    cusfloat xi = 3.0/x;
-    cusfloat p2 = xi*xi;
-    cusfloat pc = p2;
-    cusfloat f0 = 0.0;
-
-    // Calculate polynomial expansion
-    f0 += 0.79788454;
-    f0 -= 0.00553897*pc;
-    pc *= p2;
-    f0 += 0.00099336*pc;
-    pc *= p2;
-    f0 -= 0.00044346*pc;
-    pc *= p2;
-    f0 += 0.00020445*pc;
-    pc *= p2;
-    f0 -= 0.00004959*pc;
-
-    return f0;
-}
-
-
-cusfloat polynomial_f1(cusfloat x)
-{
-    // Define local variables
-    cusfloat xi = 3.0/x;
-    cusfloat p2 = xi*xi;
-    cusfloat pc = p2;
-    cusfloat f0 = 0.0;
-
-    // Calculate polynomial expansion
-    f0 += 0.79788459;
-    f0 += 0.01662008*pc;
-    pc *= p2;
-    f0 -= 0.00187002*pc;
-    pc *= p2;
-    f0 += 0.00068519*pc;
-    pc *= p2;
-    f0 -= 0.00029440*pc;
-    pc *= p2;
-    f0 += 0.00006952*pc;
-
-    return f0;
-}
-
-
-cusfloat polynomial_th0(cusfloat x)
-{
-    // Define local variables
-    cusfloat xi = 3.0/x;
-    cusfloat p2 = xi*xi;
-    cusfloat pc = xi;
-    cusfloat f0 = 0.0;
-
-    // Calculate polynomial expansion
-    f0 += x - PI/4.0;
-    f0 -= 0.04166592*pc;
-    pc *= p2;
-    f0 += 0.00239399*pc;
-    pc *= p2;
-    f0 -= 0.00073984*pc;
-    pc *= p2;
-    f0 += 0.00031099*pc;
-    pc *= p2;
-    f0 -= 0.00007605*pc;
-
-    return f0;
-}
-
-
-cusfloat polynomial_th1(cusfloat x)
-{
-    // Define local variables
-    cusfloat xi = 3.0/x;
-    cusfloat p2 = xi*xi;
-    cusfloat pc = xi;
-    cusfloat f0 = 0.0;
-
-    // Calculate polynomial expansion
-    f0 += x - 3.0*PI/4.0;
-    f0 += 0.12499895*pc;
-    pc *= p2;
-    f0 -= 0.00605240*pc;
-    pc *= p2;
-    f0 += 0.00135825*pc;
-    pc *= p2;
-    f0 -= 0.00049616*pc;
-    pc *= p2;
-    f0 += 0.00011531*pc;
-
-    return f0;
-}
-
-
-cusfloat rational_fraction_f0(cusfloat x)
-{
-    // Define local constants
-    cusfloat a0 = 0.79788454;
-    cusfloat a1 = 5.46272781;
-    cusfloat a2 = 3.02562477;
-
-    cusfloat b1 = 6.90899779;
-    cusfloat b2 = 4.12217805;
-
-    // Calculate f0 function
-    cusfloat x2 = x*x;
-    cusfloat x4 = x2*x2;
-    cusfloat f0 = (a0+a1/x2+a2/x4)/(1+b1/x2+b2/x4);
-
-    return f0;
-}
-
-
-cusfloat rational_fraction_f1(cusfloat x)
-{
-    // Define local constants
-    cusfloat a0 = 0.79788459;
-    cusfloat a1 = 4.76650390;
-    cusfloat a2 = 2.58896576;
-
-    cusfloat b1 = 5.78645312;
-    cusfloat b2 = 2.35033517;
-
-    // Calculate f0 function
-    cusfloat x2 = x*x;
-    cusfloat x4 = x2*x2;
-    cusfloat f1 = (a0+a1/x2+a2/x4)/(1+b1/x2+b2/x4);
-
-    return f1;
-}
-
-
-cusfloat rational_fraction_struve0(cusfloat x)
-{
-    // Define local constans
-    cusfloat a0 = 0.99999906;
-    cusfloat a1 = 4.77228920;
-    cusfloat a2 = 3.85542044;
-    cusfloat a3 = 0.32303607;
-
-    cusfloat b1 = 4.88331068;
-    cusfloat b2 = 4.28957333;
-    cusfloat b3 = 0.52120508;
-
-    // Compute struve factor
-    cusfloat xi = 3.0/x;
-    cusfloat x2 = xi*xi;
-    cusfloat x4 = x2*x2;
-    cusfloat x6 = x2*x4;
-    cusfloat c0 = 2*(a0+a1*x2+a2*x4+a3*x6);
-    cusfloat c1 = PI*x*(1+b1*x2+b2*x4+b3*x6);
-    cusfloat sf = c0/c1;
-
-    return sf;
-}
-
-
-cusfloat rational_fraction_struve1(cusfloat x)
-{
-    // Define local constans
-    cusfloat a0 = 1.00000004;
-    cusfloat a1 = 3.92205313;
-    cusfloat a2 = 2.64893033;
-    cusfloat a3 = 0.27450895;
-
-    cusfloat b1 = 3.81095112;
-    cusfloat b2 = 2.26216956;
-    cusfloat b3 = 0.10885141;
-
-    // Compute struve factor
-    cusfloat xi = 3.0/x;
-    cusfloat x2 = xi*xi;
-    cusfloat x4 = x2*x2;
-    cusfloat x6 = x2*x4;
-    cusfloat c0 = 2*(a0+a1*x2+a2*x4+a3*x6);
-    cusfloat c1 = PI*(1+b1*x2+b2*x4+b3*x6);
-    cusfloat sf = c0/c1;
-
-    return sf;
-}
-
-
-cusfloat rational_fraction_th0(cusfloat x)
-{
-    // Define local constants
-    cusfloat a0 = -0.12499967;
-    cusfloat a1 = -1.07437411;
-    cusfloat a2 = -0.75853664;
-
-    cusfloat b1 = 9.11511321;
-    cusfloat b2 = 9.19906287;
-
-    // Calculate f0 function
-    cusfloat x2 = x*x;
-    cusfloat x3 = x*x2;
-    cusfloat x4 = x2*x2;
-    cusfloat th0 = (a0+a1/x2+a2/x4)/(x+b1/x+b2/x3) + x - PI/4.0;
-
-    return th0;
-}
-
-
-cusfloat rational_fraction_th1(cusfloat x)
-{
-    // Define local constants
-    cusfloat a0 = 0.37499947;
-    cusfloat a1 = 2.77870488;
-    cusfloat a2 = 1.39381402;
-
-    cusfloat b1 = 7.84700458;
-    cusfloat b2 = 6.19124657;
-
-    // Calculate f0 function
-    cusfloat x2 = x*x;
-    cusfloat x3 = x*x2;
-    cusfloat x4 = x2*x2;
-    cusfloat th1 = (a0+a1/x2+a2/x4)/(x+b1/x+b2/x3) + x - 3.0*PI/4.0;
-
-    return th1;
-}
-
-
 cusfloat besseli0(cusfloat x)
 {
     // Check if the input is a real positive number
@@ -787,6 +485,251 @@ cusfloat bessely1(cusfloat x)
     }
 
     return sol;
+}
+
+
+cusfloat polynomial_f0(cusfloat x)
+{
+    // Define local variables
+    cusfloat xi = 3.0/x;
+    cusfloat p2 = xi*xi;
+    cusfloat pc = p2;
+    cusfloat f0 = 0.0;
+
+    // Calculate polynomial expansion
+    f0 += 0.79788454;
+    f0 -= 0.00553897*pc;
+    pc *= p2;
+    f0 += 0.00099336*pc;
+    pc *= p2;
+    f0 -= 0.00044346*pc;
+    pc *= p2;
+    f0 += 0.00020445*pc;
+    pc *= p2;
+    f0 -= 0.00004959*pc;
+
+    return f0;
+}
+
+
+cusfloat polynomial_f1(cusfloat x)
+{
+    // Define local variables
+    cusfloat xi = 3.0/x;
+    cusfloat p2 = xi*xi;
+    cusfloat pc = p2;
+    cusfloat f0 = 0.0;
+
+    // Calculate polynomial expansion
+    f0 += 0.79788459;
+    f0 += 0.01662008*pc;
+    pc *= p2;
+    f0 -= 0.00187002*pc;
+    pc *= p2;
+    f0 += 0.00068519*pc;
+    pc *= p2;
+    f0 -= 0.00029440*pc;
+    pc *= p2;
+    f0 += 0.00006952*pc;
+
+    return f0;
+}
+
+
+cusfloat polynomial_th0(cusfloat x)
+{
+    // Define local variables
+    cusfloat xi = 3.0/x;
+    cusfloat p2 = xi*xi;
+    cusfloat pc = xi;
+    cusfloat f0 = 0.0;
+
+    // Calculate polynomial expansion
+    f0 += x - PI/4.0;
+    f0 -= 0.04166592*pc;
+    pc *= p2;
+    f0 += 0.00239399*pc;
+    pc *= p2;
+    f0 -= 0.00073984*pc;
+    pc *= p2;
+    f0 += 0.00031099*pc;
+    pc *= p2;
+    f0 -= 0.00007605*pc;
+
+    return f0;
+}
+
+
+cusfloat polynomial_th1(cusfloat x)
+{
+    // Define local variables
+    cusfloat xi = 3.0/x;
+    cusfloat p2 = xi*xi;
+    cusfloat pc = xi;
+    cusfloat f0 = 0.0;
+
+    // Calculate polynomial expansion
+    f0 += x - 3.0*PI/4.0;
+    f0 += 0.12499895*pc;
+    pc *= p2;
+    f0 -= 0.00605240*pc;
+    pc *= p2;
+    f0 += 0.00135825*pc;
+    pc *= p2;
+    f0 -= 0.00049616*pc;
+    pc *= p2;
+    f0 += 0.00011531*pc;
+
+    return f0;
+}
+
+
+cusfloat psi_fun(int n)
+{
+    // Check for function domain bounds
+    if (n <= 0)
+    {
+        std::string err_message("Psi function only defined for natural positive numbers.");
+        std::cerr << err_message << std::endl;
+        throw std::runtime_error(err_message);
+    }
+
+    // Calculate psi function values
+    cusfloat sol = -EULERGAMMA;
+    for (int i=1; i<n; i++)
+    {
+        sol += 1/static_cast<cusfloat>(i);
+    }
+
+    return sol;
+}
+
+
+cusfloat rational_fraction_f0(cusfloat x)
+{
+    // Define local constants
+    cusfloat a0 = 0.79788454;
+    cusfloat a1 = 5.46272781;
+    cusfloat a2 = 3.02562477;
+
+    cusfloat b1 = 6.90899779;
+    cusfloat b2 = 4.12217805;
+
+    // Calculate f0 function
+    cusfloat x2 = x*x;
+    cusfloat x4 = x2*x2;
+    cusfloat f0 = (a0+a1/x2+a2/x4)/(1+b1/x2+b2/x4);
+
+    return f0;
+}
+
+
+cusfloat rational_fraction_f1(cusfloat x)
+{
+    // Define local constants
+    cusfloat a0 = 0.79788459;
+    cusfloat a1 = 4.76650390;
+    cusfloat a2 = 2.58896576;
+
+    cusfloat b1 = 5.78645312;
+    cusfloat b2 = 2.35033517;
+
+    // Calculate f0 function
+    cusfloat x2 = x*x;
+    cusfloat x4 = x2*x2;
+    cusfloat f1 = (a0+a1/x2+a2/x4)/(1+b1/x2+b2/x4);
+
+    return f1;
+}
+
+
+cusfloat rational_fraction_struve0(cusfloat x)
+{
+    // Define local constans
+    cusfloat a0 = 0.99999906;
+    cusfloat a1 = 4.77228920;
+    cusfloat a2 = 3.85542044;
+    cusfloat a3 = 0.32303607;
+
+    cusfloat b1 = 4.88331068;
+    cusfloat b2 = 4.28957333;
+    cusfloat b3 = 0.52120508;
+
+    // Compute struve factor
+    cusfloat xi = 3.0/x;
+    cusfloat x2 = xi*xi;
+    cusfloat x4 = x2*x2;
+    cusfloat x6 = x2*x4;
+    cusfloat c0 = 2*(a0+a1*x2+a2*x4+a3*x6);
+    cusfloat c1 = PI*x*(1+b1*x2+b2*x4+b3*x6);
+    cusfloat sf = c0/c1;
+
+    return sf;
+}
+
+
+cusfloat rational_fraction_struve1(cusfloat x)
+{
+    // Define local constans
+    cusfloat a0 = 1.00000004;
+    cusfloat a1 = 3.92205313;
+    cusfloat a2 = 2.64893033;
+    cusfloat a3 = 0.27450895;
+
+    cusfloat b1 = 3.81095112;
+    cusfloat b2 = 2.26216956;
+    cusfloat b3 = 0.10885141;
+
+    // Compute struve factor
+    cusfloat xi = 3.0/x;
+    cusfloat x2 = xi*xi;
+    cusfloat x4 = x2*x2;
+    cusfloat x6 = x2*x4;
+    cusfloat c0 = 2*(a0+a1*x2+a2*x4+a3*x6);
+    cusfloat c1 = PI*(1+b1*x2+b2*x4+b3*x6);
+    cusfloat sf = c0/c1;
+
+    return sf;
+}
+
+
+cusfloat rational_fraction_th0(cusfloat x)
+{
+    // Define local constants
+    cusfloat a0 = -0.12499967;
+    cusfloat a1 = -1.07437411;
+    cusfloat a2 = -0.75853664;
+
+    cusfloat b1 = 9.11511321;
+    cusfloat b2 = 9.19906287;
+
+    // Calculate f0 function
+    cusfloat x2 = x*x;
+    cusfloat x3 = x*x2;
+    cusfloat x4 = x2*x2;
+    cusfloat th0 = (a0+a1/x2+a2/x4)/(x+b1/x+b2/x3) + x - PI/4.0;
+
+    return th0;
+}
+
+
+cusfloat rational_fraction_th1(cusfloat x)
+{
+    // Define local constants
+    cusfloat a0 = 0.37499947;
+    cusfloat a1 = 2.77870488;
+    cusfloat a2 = 1.39381402;
+
+    cusfloat b1 = 7.84700458;
+    cusfloat b2 = 6.19124657;
+
+    // Calculate f0 function
+    cusfloat x2 = x*x;
+    cusfloat x3 = x*x2;
+    cusfloat x4 = x2*x2;
+    cusfloat th1 = (a0+a1/x2+a2/x4)/(x+b1/x+b2/x3) + x - 3.0*PI/4.0;
+
+    return th1;
 }
 
 
