@@ -95,3 +95,21 @@ set(test_psi_function_src
 
 add_executable(test_psi_function_cmd ${test_psi_function_src})
 set_mkl_lib_target(test_psi_function_cmd)
+
+# Configure test to check the accuracy of the bessel functions
+set(test_bessel_functions_src
+    test_bessel_functions.cpp
+    ../../src/config.hpp
+    ../../src/config.cpp
+    ../../src/math_tools.hpp
+    ../../src/math_tools.cpp
+    ../../src/math_tools.txx
+    ../../src/special_math.hpp
+    ../../src/special_math.cpp
+    ../../src/tools.hpp
+    ../../src/tools.cpp
+    ../../src/tools.txx
+)
+
+add_executable(test_bessel_functions_cmd ${test_bessel_functions_src})
+set_mkl_lib_target(test_bessel_functions_cmd)
