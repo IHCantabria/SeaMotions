@@ -14,8 +14,7 @@ cusfloat besselk0(cusfloat x);
 cusfloat besselk1(cusfloat x);
 cusfloat bessely0(cusfloat x);
 cusfloat bessely1(cusfloat x);
-cusfloat struve0(cusfloat x);
-cusfloat struve1(cusfloat x);
+cusfloat legendre_poly_raw(int n, cusfloat x);
 cusfloat polynomial_f0(cusfloat x);
 cusfloat polynomial_f1(cusfloat x);
 cusfloat polynomial_th0(cusfloat x);
@@ -25,5 +24,7 @@ cusfloat rational_fraction_f0(cusfloat x);
 cusfloat rational_fraction_f1(cusfloat x);
 cusfloat rational_fraction_th0(cusfloat x);
 cusfloat rational_fraction_th1(cusfloat x);
+cusfloat struve0(cusfloat x);
+cusfloat struve1(cusfloat x);
 
 #endif

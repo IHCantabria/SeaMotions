@@ -488,6 +488,55 @@ cusfloat bessely1(cusfloat x)
 }
 
 
+cusfloat legendre_poly_raw(int n, cusfloat x)
+{
+    // Include name
+    using namespace std;
+
+    // Look for the Lengendre polynomial
+    switch (n)
+    {
+        case 0:
+        return 1.0;
+
+        case 1:
+        return x;
+
+        case 2:
+        return 0.5*(3.0*pow(x, 2.0)-1.0);
+
+        case 3:
+        return 0.5*(5.0*pow(x, 3.0)-3.0*x);
+
+        case 4:
+        return 0.125*(35.0*pow(x, 4.0)-30.0*pow(x, 2.0)+3.0);
+
+        case 5:
+        return 0.125*(63.0*pow(x, 5.0)-70.0*pow(x, 3.0)+15.0*x);
+
+        case 6:
+        return 0.0625*(231.0*pow(x, 6.0)-315.0*pow(x, 4.0)+105*pow(x, 2.0)-5.0);
+
+        case 7:
+        return 0.0625*(429.0*pow(x, 7.0)-693.0*pow(x, 5.0)+315.0*pow(x, 3.0)-35.0*x);
+
+        case 8:
+        return (1.0/128.0)*(6435.0*pow(x, 8.0)-12012*pow(x, 6.0)+6930.0*pow(x, 4.0)-1260.0*pow(x, 2.0)+35.0);
+
+        case 9:
+        return (1.0/128.0)*(12155.0*pow(x, 9.0)-25740.0*pow(x, 7.0)+18018.0*pow(x, 5.0)-4620.0*pow(x, 3.0)+315.0*x);
+
+        case 10:
+        return (1.0/256.0)*(46189.0*pow(x, 10.0)-109395.0*pow(x, 8.0)+90090*pow(x, 6.0)-30030*pow(x, 4.0)+3465.0*pow(x, 2.0)-63.0);
+
+        default:
+        std::string err_message("Raw Legendre polynomial defined for a degree en between 0 and 10.");
+        std::cerr << err_message << std::endl;
+        throw std::runtime_error(err_message);
+    }
+}
+
+
 cusfloat polynomial_f0(cusfloat x)
 {
     // Define local variables
