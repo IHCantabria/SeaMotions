@@ -3,20 +3,24 @@
 set(green_common_src
     ../../src/config.hpp
     ../../src/config.cpp
+    ../../src/containers.hpp
     ../../src/green/common.hpp
     ../../src/green/common.cpp
-    ../../src/containers.hpp
     ../../src/green/dipole.hpp
     ../../src/green/dipole.cpp
+    ../../src/green/pulsating.hpp
+    ../../src/green/pulsating.cpp
+    ../../src/green/source.hpp
+    ../../src/green/source.cpp
     ../../src/math_interface.hpp
     ../../src/math_tools.hpp
     ../../src/math_tools.cpp
-    ../../src/green/source.hpp
-    ../../src/green/source.cpp
-    test_panel_geometries.hpp
-    test_panel_geometries.cpp
+    ../../src/special_math.hpp
+    ../../src/special_math.cpp
     ../../src/tools.hpp
     ../../src/tools.cpp
+    test_panel_geometries.hpp
+    test_panel_geometries.cpp
 )
 
 # Add test for dipole potential function
@@ -57,3 +61,27 @@ set(performance_source_newman_hess_src
 
 add_executable(performance_source_newman_hess ${performance_source_newman_hess_src})
 set_mkl_lib_target(performance_source_newman_hess)
+
+
+# Add test to check the romberg integration methods with the
+# analytical expressions derived in the infinite water depth
+# formulation of the pulsating source.
+set(test_pulsating_inf_depth_romberg_src
+    test_pulsating_inf_depth_romberg.cpp
+    ${green_common_src}
+    )
+
+add_executable(test_pulsating_inf_depth_romberg_cmd ${test_pulsating_inf_depth_romberg_src})
+set_mkl_lib_target(test_pulsating_inf_depth_romberg_cmd)
+
+set(expint_file_path "${CMAKE_SOURCE_DIR}/tests/tests_data/green_inf_depth_tables/table_1_int.dat")
+set(expint_dx_file_path "${CMAKE_SOURCE_DIR}/tests/tests_data/green_inf_depth_tables/table_2_int.dat")
+set(wave_term_file_path "${CMAKE_SOURCE_DIR}/tests/tests_data/green_inf_depth_tables/table_3_int.dat")
+set(wave_term_dx_file_path "${CMAKE_SOURCE_DIR}/tests/tests_data/green_inf_depth_tables/table_4_int.dat")
+add_test(NAME test_pulsating_inf_depth_romberg
+    COMMAND test_pulsating_inf_depth_romberg_cmd
+    ${expint_file_path}
+    ${expint_dx_file_path}
+    ${wave_term_file_path}
+    ${wave_term_dx_file_path}
+)
