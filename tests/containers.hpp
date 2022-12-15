@@ -42,11 +42,11 @@ struct DataRef
         std::ifstream infile(file_path);
 
         // Read number of points
-        infile >> s0 >> s1 >> s2;
+        infile >> s0;
         infile >> this->num_points;
 
         // Read number of channels
-        infile >> s0 >> s1 >> s2;
+        infile >> s0;
         infile >> this->num_channels;
 
         // Allocate heap memory for the data
