@@ -23,7 +23,7 @@ bool launch_test(cusfloat (*f)(cusfloat), std::string file_path, cusfloat precis
 {
     // Read reference data
     DataRef data_ref;
-    data_ref.read_data(file_path);
+    data_ref.read_single_channel(file_path);
 
     // Loop over reference data to check the solution of the 
     // function
