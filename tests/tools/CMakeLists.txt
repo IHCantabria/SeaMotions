@@ -81,6 +81,7 @@ add_executable(test_performance_aux_bessel_cmd ${performance_aux_bessel_src})
 # Added test to check the psi function
 set(test_psi_function_src
     test_psi_function.cpp
+    ../containers.hpp
     ../../src/config.hpp
     ../../src/config.cpp
     ../../src/math_tools.hpp
