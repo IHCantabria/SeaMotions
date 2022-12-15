@@ -140,3 +140,28 @@ add_test(NAME test_bessel_functions
                 ${file_path_besselk0}
                 ${file_path_besselk1}
                 )
+
+
+# Configure test to check the accuracy of the bessel functions
+set(test_legendre_poly_src
+    test_legendre_poly.cpp
+    ../containers.hpp
+    ../../src/config.hpp
+    ../../src/config.cpp
+    ../../src/math_tools.hpp
+    ../../src/math_tools.cpp
+    ../../src/math_tools.txx
+    ../../src/special_math.hpp
+    ../../src/special_math.cpp
+    ../../src/tools.hpp
+    ../../src/tools.cpp
+    ../../src/tools.txx
+)
+
+add_executable(test_legendre_poly_cmd ${test_legendre_poly_src})
+set_mkl_lib_target(test_legendre_poly_cmd)
+set(legendre_file_path "${CMAKE_SOURCE_DIR}/tests/tests_data/legendre_poly.dat")
+add_test(NAME test_legendre_poly
+    COMMAND test_legendre_poly_cmd
+    ${legendre_file_path}
+)
