@@ -21,7 +21,7 @@ struct DataRef
         delete [] this->y;
     }
 
-    void read_data(std::string file_path)
+    void read_single_channel(std::string file_path)
     {
         // Declare local variables
         std::string s0, s1, s2;

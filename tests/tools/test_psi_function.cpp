@@ -24,7 +24,7 @@ int main(int argc, char* argv[])
 
     // Read reference data for the test
     DataRef data_ref;
-    data_ref.read_data(file_path);
+    data_ref.read_single_channel(file_path);
 
     // Loop over the reference data values and check if the
     // output of the PSI function is correct according with the
