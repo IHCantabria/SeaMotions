@@ -101,6 +101,7 @@ add_test(NAME test_psi_function COMMAND test_psi_function_cmd ${psi_refdata_file
 # Configure test to check the accuracy of the bessel functions
 set(test_bessel_functions_src
     test_bessel_functions.cpp
+    ../containers.hpp
     ../../src/config.hpp
     ../../src/config.cpp
     ../../src/math_tools.hpp

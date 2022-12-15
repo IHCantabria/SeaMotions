@@ -9,6 +9,7 @@
 #include <cmath>
 
 // Include local modules
+#include "../containers.hpp"
 #include "../../src/config.hpp"
 #include "../../src/special_math.hpp"
 #include "../../src/tools.hpp"
@@ -16,49 +17,6 @@
 
 // Set relative precision for Bessel functions.
 cusfloat EPS_BESSEL = 1e-6;
-
-
-struct DataRef
-{
-    int num_points = 0;
-    cusfloat* x = nullptr;
-    cusfloat* y = nullptr;
-
-    ~DataRef()
-    {
-        delete [] this->x;
-        delete [] this->y;
-    }
-
-    void read_data(std::string file_path)
-    {
-        // Declare local variables
-        std::string s0, s1, s2;
-
-        // Open file unit
-        std::ifstream infile(file_path);
-
-        // Read number of points
-        infile >> s0 >> s1 >> s2;
-        infile >> this->num_points;
-
-        // Allocate heap memory for the data
-        this->x = new cusfloat [this->num_points];
-        this->y = new cusfloat [this->num_points];
-
-        // Read data from file
-        infile >> s0 >> s1;
-        for (int i=0; i<this->num_points; i++)
-        {
-            infile >> this->x[i] >> this->y[i];
-        }
-
-        // Close file unit
-        infile.close();
-
-    }
-
-};
 
 
 bool launch_test(cusfloat (*f)(cusfloat), std::string file_path, cusfloat precision, bool rel_flag)
