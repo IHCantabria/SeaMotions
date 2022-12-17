@@ -85,3 +85,14 @@ add_test(NAME test_pulsating_inf_depth_romberg
     ${wave_term_file_path}
     ${wave_term_dx_file_path}
 )
+
+
+# Add test to check the wave term Newman series
+# expansion for infinite water depth
+set(test_wave_term_inf_depth_src
+    test_wave_term_inf_depth.cpp
+    ${green_common_src}
+)
+
+add_executable(test_wave_termn_inf_depth_cmd ${test_wave_term_inf_depth_src})
+set_mkl_lib_target(test_wave_termn_inf_depth_cmd)
