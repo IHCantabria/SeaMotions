@@ -88,7 +88,7 @@ struct DataRef
         std::ifstream infile(file_path);
 
         // Read number of points
-        infile >> s0 >> s1 >> s2;
+        infile >> s0;
         infile >> this->num_points;
 
         // Allocate heap memory for the data
@@ -104,6 +104,14 @@ struct DataRef
 
         // Close file unit
         infile.close();
+
+        // Check if the file was read correctly
+        if (this->num_points == 0)
+        {
+            std::string err_message("Single channel file read has a zero number of points container.");
+            std::cerr << err_message << std::endl;
+            throw std::runtime_error(err_message);
+        }
 
     }
 
