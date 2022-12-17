@@ -2,5 +2,6 @@
 *.exe
 launch-vtune.bat
 settings.json
+c_cpp_properties.json
 build/
 vtune/
