@@ -3,13 +3,15 @@
 #define __config_hpp
 
 #ifdef SIMPLE_PREC
-extern int FLOATING_PRECISION;
 typedef float cusfloat;
-extern cusfloat EPS_PRECISION;
+constexpr int FLOATING_PRECISION = 32;
+constexpr cusfloat EPS_PRECISION = 1e-6;
+constexpr cusfloat EPS_PRECISION_ORDER = -6;
 #else
-extern int FLOATING_PRECISION;
 typedef double cusfloat;
-extern cusfloat EPS_PRECISION;
+constexpr int FLOATING_PRECISION = 32;
+constexpr cusfloat EPS_PRECISION = 1e-14;
+constexpr cusfloat EPS_PRECISION_ORDER = -14;
 #endif
 
 #endif

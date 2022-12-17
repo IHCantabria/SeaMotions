@@ -1,7 +1,6 @@
 
 set(containers_common_src
     ../../src/config.hpp
-    ../../src/config.cpp
     ../../src/tools.hpp
     ../../src/tools.cpp
     ../../src/tools.txx

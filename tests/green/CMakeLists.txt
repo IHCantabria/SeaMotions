@@ -2,7 +2,6 @@
 # Define common files to compile green function tests
 set(green_common_src
     ../../src/config.hpp
-    ../../src/config.cpp
     ../../src/containers.hpp
     ../../src/green/common.hpp
     ../../src/green/common.cpp
