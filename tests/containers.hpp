@@ -4,6 +4,7 @@
 
 // Include general usage libraries
 #include <fstream>
+#include <iostream>
 #include <string>
 
 // Include local modules
