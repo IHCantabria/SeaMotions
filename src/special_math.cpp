@@ -488,6 +488,35 @@ cusfloat bessely1(cusfloat x)
 }
 
 
+cusfloat expint_i(cusfloat x)
+{
+    cusfloat ei = EULERGAMMA + std::log(x);
+    cusfloat ei_old = ei;
+    cusfloat dei = 0.0;
+    cusfloat xn = x;
+    cusfloat fn = 1.0;
+    cusfloat n = 1.0;
+    while (true)
+    {
+        // Calculate new term in the series
+        dei = xn/(n*fn);
+        ei += dei;
+        if (std::abs(ei-ei_old) < EPS_PRECISION)
+        {
+            break;
+        }
+        
+        // Advance iteration
+        ei_old = ei;
+        n += 1.0;
+        fn *= n;
+        xn *= x;
+    }
+
+    return ei;
+}
+
+
 cusfloat legendre_poly_raw(int n, cusfloat x)
 {
     // Include name

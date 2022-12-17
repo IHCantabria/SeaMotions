@@ -176,3 +176,8 @@ set(test_expint_src
 
 add_executable(test_expint_cmd ${test_expint_src})
 set_mkl_lib_target(test_expint_cmd)
+set(file_path_expint_i "${CMAKE_SOURCE_DIR}/tests/tests_data/expint_i.dat")
+add_test(NAME test_exp_int
+    COMMAND test_expint_cmd
+    ${file_path_expint_i}
+)
