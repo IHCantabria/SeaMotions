@@ -26,9 +26,42 @@ cusfloat expint_inf_depth_num_dx(cusfloat X, cusfloat Y, cusfloat t)
     return -X*std::exp(t-Y)/pow3s(std::sqrt(pow2s(X)+pow2s(t)));
 }
 
+
 cusfloat expint_inf_depth_num_dxt(cusfloat X, cusfloat Y, cusfloat t)
 {
     return t*std::exp(t-Y)/std::sqrt(pow2s(X)+pow2s(t));
+}
+
+
+cusfloat wave_term_inf_depth(cusfloat X, cusfloat Y)
+{
+    cusfloat wave_term = 0.0;
+    if ((X>8.0) && (Y>=20.0))
+    {
+        // Calculate formulation parameters
+        cusfloat R = std::sqrt(pow2s(X)+pow2s(Y));
+        cusfloat sf = Y/R;
+        cusfloat rfs = 1/R;
+        cusfloat rf = rfs;
+        cusfloat pn = 1.0;
+        for (int i=0; i<=4; i++)
+        {
+            // Add new term to the series
+            wave_term += pn*legendre_poly_raw(i, sf)*rf;
+
+            // Update formulation parameters
+            rf *= rfs;
+            pn *= static_cast<cusfloat>(i+1);
+        }
+
+        wave_term = rfs - PI*std::exp(-Y)*(struve0(X)+bessely0(X))-2.0*wave_term;
+    }
+    else if (Y > 2*X)
+    {
+        
+    }
+
+    return wave_term;
 }
 
 
