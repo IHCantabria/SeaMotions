@@ -10,9 +10,9 @@
 //////////////////////////////////////////////
 /////// FUNCTION DEFINITION BLOCK ////////////
 //////////////////////////////////////////////
-int factorial(int n)
+signed long long factorial(int n)
 {
-    int pk = 1;
+    signed long long pk = 1;
     for (int i=1; i<=n; i++)
     {
         pk *= i;
