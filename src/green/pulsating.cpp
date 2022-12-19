@@ -103,7 +103,6 @@ cusfloat wave_term_inf_depth(cusfloat X, cusfloat Y)
     }
     else if ((X >= 3.7) && (Y <= 0.25*X))
     {
-        std::cout << "New term" << std::endl;
         cusfloat fs = 1.0;
         cusfloat fn = 1.0;
         cusfloat fx = 1/pow2s(X);
@@ -128,7 +127,56 @@ cusfloat wave_term_inf_depth(cusfloat X, cusfloat Y)
         wave_term /= X;
         wave_term = 1/std::sqrt(pow2s(X)+pow2s(Y)) - PI*std::exp(-Y)*(struve0(X)+bessely0(X)) - 2.0*wave_term;
     }
+    else if ((X>0)&&(X<=3.7)&&(Y>0.0)&&(Y<=2.0))
+    {
+        std::cout << "New term" << std::endl;
+        // Define radial distance to be used along the module
+        cusfloat R = std::sqrt(pow2s(X)+pow2s(Y));
 
+        // Calculate double series first row of coefficients
+        constexpr int N = 4;
+        cusfloat cmn_coeffs[2*N+1];
+        cusfloat fn = 2.0;
+        for (int n=1; n<(2*N+1); n++)
+        {
+            cmn_coeffs[n-1] = 1/fn/(n+1);
+            fn *= (n+2);
+        }
+
+        // Calculate double series of coefficients
+        cusfloat fx = pow2s(X);
+        cusfloat tx = fx;
+        cusfloat ty = 0.0;
+        cusfloat nf = 0.0;
+        cusfloat cumsum_cmn = 0.0;
+        for (int m=0; m<=N; m++)
+        {
+            ty = Y;
+            for (int n=1; n<=(2*N+1-2*m); n++)
+            {
+                // Update n as float in order to perform the math operations
+                // correctly
+                nf = static_cast<cusfloat>(n);
+
+                // Add new term to the series
+                cumsum_cmn += cmn_coeffs[n-1]*tx*ty;
+
+                // Update series coefficients
+                cmn_coeffs[n-1] = -((nf+2.0)/(nf+1.0))*cmn_coeffs[n+1];
+                ty *= Y;
+            }
+            // Update series coefficients
+            tx *= fx;
+        }
+        cumsum_cmn *= R;
+
+        // Addd rest of the function
+        wave_term = 1/R - 2.0*std::exp(-Y)*(besselj0(X)*std::log(Y/X+std::sqrt(1.0+pow2s(Y/X)))
+                                            + PI*bessely0(X)/2.0
+                                            + PI*struve0(X)*R/2.0/X
+                                            + cumsum_cmn
+                                            );
+    }
     return wave_term;
 }
 
