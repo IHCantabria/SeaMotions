@@ -129,7 +129,6 @@ cusfloat wave_term_inf_depth(cusfloat X, cusfloat Y)
     }
     else if ((X>0)&&(X<=3.7)&&(Y>0.0)&&(Y<=2.0))
     {
-        std::cout << "New term" << std::endl;
         // Define radial distance to be used along the module
         cusfloat R = std::sqrt(pow2s(X)+pow2s(Y));
 
@@ -176,6 +175,33 @@ cusfloat wave_term_inf_depth(cusfloat X, cusfloat Y)
                                             + PI*struve0(X)*R/2.0/X
                                             + cumsum_cmn
                                             );
+    }
+    else if ((X>=3.7)&&(Y<=2.0))
+    {
+        std::cout << "New term" << std::endl;
+        cusfloat fs = 1.0;
+        cusfloat fn = 1.0;
+        cusfloat fx = 1/pow2s(X);
+        cusfloat fy = pow2s(Y);
+        cusfloat tx = 1.0;
+        cusfloat ty = 1.0;
+        cusfloat fmult = 1.0;
+        cusfloat i2n = 1-std::exp(-Y);
+        for (int i=0; i<=7; i++)
+        {
+            // Add expansion series term
+            wave_term += fs*tx/fn*fmult*i2n;
+
+            // Update loop variables
+            fs *= -1.0;
+            fn *= (i+1);
+            tx *= fx;
+            ty *= fy;
+            fmult *= (2*(i+1)-1.0)/2.0;
+            i2n = ty - 2.0*(i+1.0)*ty/Y + 2.0*(i+1.0)*(2.0*(i+1.0)-1.0)*i2n;
+        }
+        wave_term /= X;
+        wave_term = 1/std::sqrt(pow2s(X)+pow2s(Y)) - PI*std::exp(-Y)*(struve0(X)+bessely0(X)) - 2.0*wave_term;
     }
     return wave_term;
 }
