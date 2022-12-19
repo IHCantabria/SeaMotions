@@ -58,7 +58,75 @@ cusfloat wave_term_inf_depth(cusfloat X, cusfloat Y)
     }
     else if (Y > 2*X)
     {
-        
+        // Add radius term
+        wave_term = 1/std::sqrt(pow2s(X)+pow2s(Y));
+
+        // Define local variables
+        cusfloat cumsum_n = 0.0;
+        cusfloat cumsum_m = 0.0;
+        cusfloat fx = -pow2s(X)/4.0;
+        cusfloat fy = 1/Y;
+        cusfloat tx = fx;
+        cusfloat ty = fy*fy;
+        cusfloat fn = 2.0;
+        cusfloat fm = 2.0;
+        cusfloat c_expi = std::exp(-Y)*expint_i(Y);
+
+        // Add n=0 and n=1 terms
+        cumsum_m = (fy+ty);
+        cumsum_n = -c_expi + tx*(cumsum_m-c_expi);
+        tx *= fx;
+        ty *= fy;
+
+        // Add terms up to n=9
+        for (int n=2; n<=9; n++)
+        {
+            // Calculate m loop value
+            for (int m=2*(n-1)+1; m<=2*n; m++)
+            {
+                // Upate m loop
+                cumsum_m += fm*ty;
+
+                // Calculate m loop variables
+                fm *= m;
+                ty *= fy;
+            }
+
+            // Calculate n loop contribution
+            cumsum_n += tx/pow2s(fn)*(cumsum_m-c_expi);
+
+            // Update n loop variables
+            tx *= fx;
+            fn *= n+1;
+        }
+        wave_term += 2.0*cumsum_n;
+    }
+    else if ((X >= 3.7) && (Y <= 0.25*X))
+    {
+        std::cout << "New term" << std::endl;
+        cusfloat fs = 1.0;
+        cusfloat fn = 1.0;
+        cusfloat fx = 1/pow2s(X);
+        cusfloat fy = pow2s(Y);
+        cusfloat tx = 1.0;
+        cusfloat ty = 1.0;
+        cusfloat fmult = 1.0;
+        cusfloat i2n = 1-std::exp(-Y);
+        for (int i=0; i<=3; i++)
+        {
+            // Add expansion series term
+            wave_term += fs*tx/fn*fmult*i2n;
+
+            // Update loop variables
+            fs *= -1.0;
+            fn *= (i+1);
+            tx *= fx;
+            ty *= fy;
+            fmult *= (2*(i+1)-1.0)/2.0;
+            i2n = ty - 2.0*(i+1.0)*ty/Y + 2.0*(i+1.0)*(2.0*(i+1.0)-1.0)*i2n;
+        }
+        wave_term /= X;
+        wave_term = 1/std::sqrt(pow2s(X)+pow2s(Y)) - PI*std::exp(-Y)*(struve0(X)+bessely0(X)) - 2.0*wave_term;
     }
 
     return wave_term;
