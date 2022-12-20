@@ -135,7 +135,7 @@ add_test(NAME test_bessel_functions
                 )
 
 
-# Configure test to check the accuracy of the bessel functions
+# Configure test to check the accuracy of the legendre polynomials implementation
 set(test_legendre_poly_src
     test_legendre_poly.cpp
     ../containers.hpp
@@ -158,6 +158,29 @@ add_test(NAME test_legendre_poly
     ${legendre_file_path}
 )
 
+
+# Configure test to check the accuracy of the chebyshev polynomials implementation
+set(test_chebyshev_poly_src
+    test_chebyshev_poly.cpp
+    ../containers.hpp
+    ../../src/config.hpp
+    ../../src/math_tools.hpp
+    ../../src/math_tools.cpp
+    ../../src/math_tools.txx
+    ../../src/special_math.hpp
+    ../../src/special_math.cpp
+    ../../src/tools.hpp
+    ../../src/tools.cpp
+    ../../src/tools.txx
+)
+
+add_executable(test_chebyshev_poly_cmd ${test_chebyshev_poly_src})
+set_mkl_lib_target(test_chebyshev_poly_cmd)
+set(chebyshev_file_path "${CMAKE_SOURCE_DIR}/tests/tests_data/chebyshev_poly.dat")
+add_test(NAME test_chebyshev_poly
+    COMMAND test_chebyshev_poly_cmd
+    ${chebyshev_file_path}
+)
 
 # Configure test to check exponential integral i
 set(test_expint_src
