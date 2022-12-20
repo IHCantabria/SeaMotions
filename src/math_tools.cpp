@@ -20,10 +20,3 @@ signed long long factorial(int n)
 
     return pk;
 }
-
-cusfloat* generate_empty_vector(int size)
-{
-    cusfloat* new_vector = (cusfloat*)mkl_calloc( size, sizeof(cusfloat), FLOATING_PRECISION );
-
-    return new_vector;
-}

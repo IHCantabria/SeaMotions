@@ -77,6 +77,13 @@ inline void cross(T (&u)[3], T (&v)[3], T (&w)[3])
 
 
 template<typename T>
+T* generate_empty_vector(int size)
+{
+    return (T*)mkl_calloc( size, sizeof(T), FLOATING_PRECISION );
+}
+
+
+template<typename T>
 inline T pow2s(T x)
 {
     return x*x;
