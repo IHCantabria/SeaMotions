@@ -488,6 +488,55 @@ cusfloat bessely1(cusfloat x)
 }
 
 
+cusfloat chebyshev_poly_raw(int n, cusfloat x)
+{
+    // Include name
+    using namespace std;
+
+    // Look for the Lengendre polynomial
+    switch (n)
+    {
+        case 0:
+        return 1.0;
+
+        case 1:
+        return x;
+
+        case 2:
+        return 2*pow(x,2)-1;
+
+        case 3:
+        return 4*pow(x,3)-3*x;
+
+        case 4:
+        return 8*pow(x,4)-8*pow(x,2)+1;
+
+        case 5:
+        return 16*pow(x,5)-20*pow(x,3)+5*x;
+
+        case 6:
+        return 32*pow(x,6)-48*pow(x,4)+18*pow(x,2)-1;
+
+        case 7:
+        return 64*pow(x,7)-112*pow(x,5)+56*pow(x,3)-7*x;
+
+        case 8:
+        return 128*pow(x,8)-256*pow(x,6)+160*pow(x,4)-32*pow(x,2)+1;
+
+        case 9:
+        return 256*pow(x,9)-576*pow(x,7)+432*pow(x,5)-120*pow(x,3)+9*x;
+
+        case 10:
+        return 512*pow(x,10)-1280*pow(x,8)+1120*pow(x,6)-400*pow(x,4)+50*pow(x,2)-1;
+
+        default:
+        std::string err_message("Raw Chebyshev polynomial defined for a degree en between 0 and 10.");
+        std::cerr << err_message << std::endl;
+        throw std::runtime_error(err_message);
+    }
+}
+
+
 cusfloat expint_i(cusfloat x)
 {
     cusfloat ei = EULERGAMMA + std::log(x);
