@@ -8,18 +8,23 @@
 
 void get_gauss_legendre(int num_points, cusfloat* weights, cusfloat* roots)
 {
+    std::cout << "num_points: " << num_points << std::endl;
     switch (num_points)
     {
         case 1:
             roots[0] = 0.0000000000000000;
 
             weights[0] = 2.0000000000000000;
+            break;
+            
         case 2:
             roots[0] = -0.5773502691896257;
             roots[1] = 0.5773502691896257;
 
             weights[0] = 1.0000000000000000;
             weights[1] = 1.0000000000000000;
+            break;
+
         case 3:
             roots[0] = -0.7745966692414834;
             roots[1] = 0.0000000000000000;
@@ -28,6 +33,8 @@ void get_gauss_legendre(int num_points, cusfloat* weights, cusfloat* roots)
             weights[0] = 0.5555555555555554;
             weights[1] = 0.8888888888888888;
             weights[2] = 0.5555555555555554;
+            break;
+
         case 4:
             roots[0] = -0.8611363115940526;
             roots[1] = -0.3399810435848563;
@@ -38,6 +45,8 @@ void get_gauss_legendre(int num_points, cusfloat* weights, cusfloat* roots)
             weights[1] = 0.6521451548625461;
             weights[2] = 0.6521451548625461;
             weights[3] = 0.3478548451374538;
+            break;
+
         case 5:
             roots[0] = -0.9061798459386640;
             roots[1] = -0.5384693101056831;
@@ -50,6 +59,8 @@ void get_gauss_legendre(int num_points, cusfloat* weights, cusfloat* roots)
             weights[2] = 0.5688888888888889;
             weights[3] = 0.4786286704993665;
             weights[4] = 0.2369268850561891;
+            break;
+
         case 6:
             roots[0] = -0.9324695142031521;
             roots[1] = -0.6612093864662645;
@@ -64,6 +75,8 @@ void get_gauss_legendre(int num_points, cusfloat* weights, cusfloat* roots)
             weights[3] = 0.4679139345726913;
             weights[4] = 0.3607615730481387;
             weights[5] = 0.1713244923791702;
+            break;
+
         case 7:
             roots[0] = -0.9491079123427585;
             roots[1] = -0.7415311855993945;
@@ -80,6 +93,8 @@ void get_gauss_legendre(int num_points, cusfloat* weights, cusfloat* roots)
             weights[4] = 0.3818300505051192;
             weights[5] = 0.2797053914892765;
             weights[6] = 0.1294849661688698;
+            break;
+
         case 8:
             roots[0] = -0.9602898564975363;
             roots[1] = -0.7966664774136267;
@@ -98,6 +113,8 @@ void get_gauss_legendre(int num_points, cusfloat* weights, cusfloat* roots)
             weights[5] = 0.3137066458778874;
             weights[6] = 0.2223810344533745;
             weights[7] = 0.1012285362903759;
+            break;
+
         case 9:
             roots[0] = -0.9681602395076261;
             roots[1] = -0.8360311073266358;
@@ -118,6 +135,8 @@ void get_gauss_legendre(int num_points, cusfloat* weights, cusfloat* roots)
             weights[6] = 0.2606106964029354;
             weights[7] = 0.1806481606948575;
             weights[8] = 0.0812743883615745;
+            break;
+
         case 10:
             roots[0] = -0.9739065285171717;
             roots[1] = -0.8650633666889845;
@@ -140,6 +159,8 @@ void get_gauss_legendre(int num_points, cusfloat* weights, cusfloat* roots)
             weights[7] = 0.2190863625159821;
             weights[8] = 0.1494513491505807;
             weights[9] = 0.0666713443086882;
+            break;
+            
         default:
             std::string err_message("Number of gauss points specified not available.");
             std::cerr << err_message << std::endl;
