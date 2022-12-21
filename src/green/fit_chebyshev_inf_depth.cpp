@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <fstream>
 #include <functional>
+#include <iomanip>
 #include <iostream>
 #include <string>
 
@@ -20,24 +21,28 @@ namespace fs = std::filesystem;
 
 
 // Declare local module functions
-void generate_grid(int n, cusfloat y_min, cusfloat y_max, cusfloat* x, cusfloat* y);
-void get_x_range(cusfloat y, cusfloat &x0, cusfloat &x1, int side);
+struct FitRegion;
+void generate_grid(FitRegion fr, double* x, double* y);
+void get_x_range(double y, double &x0, double &x1, int side);
+void write_domain(std::ofstream &outfile, int num_cheby, double* cheby_coeff,
+                int* cheby_order_0, int* cheby_order_1, std::string domain_key);
+template<typename T> void write_vector(std::ofstream &outfile, int num_points, T* vec, int shift);
 
 
 struct FitRegion
 {
-    cusfloat dy = 0.0;
+    double dy = 0.0;
     int num_points = 0;
     int side = 0;
-    cusfloat y_min = 0.0;
-    cusfloat y_max = 0.0;
+    double y_min = 0.0;
+    double y_max = 0.0;
 
-    void fit(cusfloat x, cusfloat y, cusfloat &xl, cusfloat &yl)
+    void fit(double x, double y, double &xl, double &yl)
     {
         // Calculate x local range
-        cusfloat x0 = 0.0, x1 = 0.0;
+        double x0 = 0.0, x1 = 0.0;
         get_x_range(y, x0, x1, this->side);
-        cusfloat dx = x1-x0;
+        double dx = x1-x0;
         xl = 2.0*(x-x0)/dx-1.0;
 
         // Calculate y local range
@@ -48,10 +53,10 @@ struct FitRegion
 };
 
 
-cusfloat eval_chebyshev_xy(int n_order, FitRegion fr, cusfloat x, cusfloat y, cusfloat* cheby_coeff)
+double eval_chebyshev_xy(int n_order, FitRegion fr, double x, double y, double* cheby_coeff)
 {
-    cusfloat sol = 0.0;
-    cusfloat xl = 0.0, yl = 0.0;
+    double sol = 0.0;
+    double xl = 0.0, yl = 0.0;
     for (int i=0; i<n_order; i++)
     {
         for (int j=0; j<n_order; j++)
@@ -66,14 +71,14 @@ cusfloat eval_chebyshev_xy(int n_order, FitRegion fr, cusfloat x, cusfloat y, cu
 }
 
 
-void fit_chebyshev_xy(int n_order, int num_points, FitRegion fr, cusfloat* x, cusfloat * y,
-    cusfloat* f, cusfloat* cheby_coeff)
+void fit_chebyshev_xy(int n_order, int num_points, FitRegion fr, double* x, double * y,
+    double* f, double* cheby_coeff)
 {
     // Generate kernel matrix
     int num_cols = n_order*n_order;
-    cusfloat* A = generate_empty_vector<cusfloat>(num_points*num_cols);
-    cusfloat* At = generate_empty_vector<cusfloat>(num_points*num_cols);
-    cusfloat xl = 0.0, yl = 0.0;
+    double* A = generate_empty_vector<double>(num_points*num_cols);
+    double* At = generate_empty_vector<double>(num_points*num_cols);
+    double xl = 0.0, yl = 0.0;
     for (int i=0; i<num_points; i++)
     {
         fr.fit(x[i], y[i], xl, yl);
@@ -88,7 +93,7 @@ void fit_chebyshev_xy(int n_order, int num_points, FitRegion fr, cusfloat* x, cu
         }
     }
 
-    cusfloat* Ak = generate_empty_vector<cusfloat>(num_cols*num_cols);
+    double* Ak = generate_empty_vector<double>(num_cols*num_cols);
     cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
                 num_cols, num_cols, num_points, 1.0, At, num_points, A, num_cols, 1.0, Ak, num_cols);
 
@@ -110,11 +115,11 @@ void fit_chebyshev_xy(int n_order, int num_points, FitRegion fr, cusfloat* x, cu
 }
 
 
-void generate_grid(FitRegion fr, cusfloat* x, cusfloat* y)
+void generate_grid(FitRegion fr, double* x, double* y)
 {
     // Generate y coordinate grid
-    cusfloat dy = (fr.y_max-fr.y_min)/(fr.num_points-1);
-    cusfloat yi = 0.0;
+    double dy = (fr.y_max-fr.y_min)/(fr.num_points-1);
+    double yi = 0.0;
     for (int i=0; i<fr.num_points; i++)
     {
         yi = fr.y_min + i*dy;
@@ -125,8 +130,8 @@ void generate_grid(FitRegion fr, cusfloat* x, cusfloat* y)
     }
 
     // Generate x coordinate grid
-    cusfloat dx = 0.0;
-    cusfloat x0 = 0.0, x1 = 0.0;
+    double dx = 0.0;
+    double x0 = 0.0, x1 = 0.0;
 
     for (int i=0; i<fr.num_points; i++)
     {
@@ -141,7 +146,7 @@ void generate_grid(FitRegion fr, cusfloat* x, cusfloat* y)
 }
 
 
-void get_x_range(cusfloat y, cusfloat &x0, cusfloat &x1, int side)
+void get_x_range(double y, double &x0, double &x1, int side)
 {
     if (y<=4.0)
     {
@@ -178,23 +183,20 @@ void get_x_range(cusfloat y, cusfloat &x0, cusfloat &x1, int side)
 
 
 void fit_sub_domain(FitRegion fr, int cheby_order, int &count_coeffs,
-    cusfloat* cheby_coeff_filter, int* cheby_order_0, 
+    double* cheby_coeff_filter, int* cheby_order_0, 
     int* cheby_order_1, std::string sub_domain_name)
 {
     // Define allocation matrixes
     int cheby_order_2 = cheby_order*cheby_order;
     int num_points_p2 = fr.num_points*fr.num_points;
-    std::cout << "num_points_p2: " << num_points_p2 << std::endl;
-    cusfloat* x = generate_empty_vector<cusfloat>(num_points_p2);
-    cusfloat* y = generate_empty_vector<cusfloat>(num_points_p2);
+    double* x = generate_empty_vector<double>(num_points_p2);
+    double* y = generate_empty_vector<double>(num_points_p2);
 
     // Generate grid
-    std::cout << "Generate grid... " << std::endl;
     generate_grid(fr, x, y);
 
     // Generate target vector
-    std::cout << "Generate target vector... " << std::endl;
-    cusfloat* f = generate_empty_vector<cusfloat>(num_points_p2);
+    double* f = generate_empty_vector<double>(num_points_p2);
     for (int i=0; i<num_points_p2; i++)
     {
         f[i] = (
@@ -204,21 +206,20 @@ void fit_sub_domain(FitRegion fr, int cheby_order, int &count_coeffs,
             )*pow3s(std::sqrt(pow2s(x[i])+pow2s(y[i])))/y[i];
     }
 
-    cusfloat* fxy = generate_empty_vector<cusfloat>(num_points_p2);
+    double* fxy = generate_empty_vector<double>(num_points_p2);
     for (int i=0; i<num_points_p2; i++)
     {
         fxy[i] = wave_term_inf_depth_num(x[i], y[i]) + 1/std::sqrt(pow2s(x[i])+pow2s(y[i]));
     }
 
     // Fit Chebyshev polynomials
-    cusfloat* cheby_coeff = generate_empty_vector<cusfloat>(cheby_order_2);
-    std::cout << "Fit " << sub_domain_name << std::endl;
+    double* cheby_coeff = generate_empty_vector<double>(cheby_order_2);
     fit_chebyshev_xy(cheby_order, num_points_p2, fr, x, y, f, cheby_coeff);
 
     // Evaluate Chebyshev polynomials
-    cusfloat* sol_fit = generate_empty_vector<cusfloat>(num_points_p2);
-    cusfloat f1 = 0.0;
-    cusfloat R = 0.0;
+    double* sol_fit = generate_empty_vector<double>(num_points_p2);
+    double f1 = 0.0;
+    double R = 0.0;
     for (int i=0; i<=num_points_p2; i++)
     {
         R = std::sqrt(pow2s(x[i])+pow2s(y[i]));
@@ -228,7 +229,7 @@ void fit_sub_domain(FitRegion fr, int cheby_order, int &count_coeffs,
     }
 
     // Compute error with respecto the reference values
-    cusfloat* err = generate_empty_vector<cusfloat>(num_points_p2);
+    double* err = generate_empty_vector<double>(num_points_p2);
     for (int i=0; i<num_points_p2; i++)
     {
         err[i] = sol_fit[i]-fxy[i];
@@ -236,10 +237,10 @@ void fit_sub_domain(FitRegion fr, int cheby_order, int &count_coeffs,
 
     // Compute error statistics
     int count_thr = 0;
-    cusfloat max_err = 0.0;
-    cusfloat mean_err = 0.0;
-    cusfloat min_err = 0.0;
-    cusfloat threshold = 1e-6;
+    double max_err = 0.0;
+    double mean_err = 0.0;
+    double min_err = 0.0;
+    double threshold = 1e-6;
     for (int i=0; i<num_points_p2; i++)
     {
         // Check for threshold value
@@ -271,7 +272,7 @@ void fit_sub_domain(FitRegion fr, int cheby_order, int &count_coeffs,
     std::cout << std::endl;
 
     // Filter Chebyshev coefficients by threshold
-    cusfloat cheby_thres = 1e-7;
+    double cheby_thres = 1e-7;
     for (int i=0; i<cheby_order_2; i++)
     {
         if (std::abs(cheby_coeff[i])>=cheby_thres)
@@ -280,9 +281,6 @@ void fit_sub_domain(FitRegion fr, int cheby_order, int &count_coeffs,
         }
     }
 
-    cheby_coeff_filter = generate_empty_vector<cusfloat>(count_coeffs);
-    cheby_order_0 = generate_empty_vector<int>(count_coeffs);
-    cheby_order_1 = generate_empty_vector<int>(count_coeffs);
     int count_index = 0;
     for (int i=0; i<cheby_order; i++)
     {
@@ -297,7 +295,7 @@ void fit_sub_domain(FitRegion fr, int cheby_order, int &count_coeffs,
             }
         }
     }
- 
+
     // Delete heap memory
     mkl_free(cheby_coeff);
     mkl_free(f);
@@ -317,36 +315,33 @@ int main(int argc, char* argv[])
     }
 
     fs::path folder_path(argv[1]);
-    fs::path file_path = folder_path / "my_file.dat";
 
-    std::cout << "Folder path: " << folder_path << std::endl;
-    std::cout << "Folder path: " << file_path << std::endl;
+    // Define fit properties
+    int num_points = 100;
+    int cheby_order = 10;
+    int cheby_order_2 = cheby_order*cheby_order;
 
     // Allocate heap memory to storage fit results
-    cusfloat* cheby_coeff_filter_a0 = nullptr;
-    cusfloat* cheby_coeff_filter_a1 = nullptr;
-    cusfloat* cheby_coeff_filter_b0 = nullptr;
-    cusfloat* cheby_coeff_filter_b1 = nullptr;
-    cusfloat* cheby_coeff_filter_c = nullptr;
-    int* cheby_order_0_a0 = nullptr;
-    int* cheby_order_0_a1 = nullptr;
-    int* cheby_order_0_b0 = nullptr;
-    int* cheby_order_0_b1 = nullptr;
-    int* cheby_order_0_c = nullptr;
-    int* cheby_order_1_a0 = nullptr;
-    int* cheby_order_1_a1 = nullptr;
-    int* cheby_order_1_b0 = nullptr;
-    int* cheby_order_1_b1 = nullptr;
-    int* cheby_order_1_c = nullptr;
+    double* cheby_coeff_filter_a0 = generate_empty_vector<double>(cheby_order_2);
+    double* cheby_coeff_filter_a1 = generate_empty_vector<double>(cheby_order_2);
+    double* cheby_coeff_filter_b0 = generate_empty_vector<double>(cheby_order_2);
+    double* cheby_coeff_filter_b1 = generate_empty_vector<double>(cheby_order_2);
+    double* cheby_coeff_filter_c = generate_empty_vector<double>(cheby_order_2);
+    int* cheby_order_0_a0 = generate_empty_vector<int>(cheby_order_2);
+    int* cheby_order_0_a1 = generate_empty_vector<int>(cheby_order_2);
+    int* cheby_order_0_b0 = generate_empty_vector<int>(cheby_order_2);
+    int* cheby_order_0_b1 = generate_empty_vector<int>(cheby_order_2);
+    int* cheby_order_0_c = generate_empty_vector<int>(cheby_order_2);
+    int* cheby_order_1_a0 = generate_empty_vector<int>(cheby_order_2);
+    int* cheby_order_1_a1 = generate_empty_vector<int>(cheby_order_2);
+    int* cheby_order_1_b0 = generate_empty_vector<int>(cheby_order_2);
+    int* cheby_order_1_b1 = generate_empty_vector<int>(cheby_order_2);
+    int* cheby_order_1_c = generate_empty_vector<int>(cheby_order_2);
     int count_cheby_a0 = 0;
     int count_cheby_a1 = 0;
     int count_cheby_b0 = 0;
     int count_cheby_b1 = 0;
     int count_cheby_c = 0;
-
-    // Define fit properties
-    int num_points = 100;
-    int cheby_order = 10;
 
     // Generate Chebyshev polynomials for region a0 (X<3.0 & 2.0<=Y<=4.0)
     std::string sub_domain_name_a0 = "Sub-Domain A0";
@@ -402,6 +397,27 @@ int main(int argc, char* argv[])
     fr_c.dy = (fr_c.y_max-fr_c.y_min);
     fit_sub_domain(fr_c, cheby_order, count_cheby_c, cheby_coeff_filter_c,
         cheby_order_0_c, cheby_order_1_c, sub_domain_name_c);
+    std::cout << "cccc" << cheby_order_1_c << std::endl;
+
+    // Write module
+    fs::path file_path = folder_path / "chebyshev_inf_depth.hpp";
+    std::ofstream outfile(file_path);
+
+    outfile << std::endl;
+    outfile << "#ifndef __chebyshev_inf_depth_hpp" << std::endl;
+    outfile << "#define __chebyshev_inf_depth_hpp" << std::endl;
+    outfile << std::endl << std::endl;
+
+    outfile << "namespace chebyinf{" << std::endl;
+
+    write_domain(outfile, count_cheby_c, cheby_coeff_filter_c, cheby_order_0_c,
+                cheby_order_1_c, "c");
+    
+    outfile << "}" << std::endl;
+
+    outfile << std::endl;
+    outfile << "#endif" << std::endl;
+
 
     // Deallocate heap memory
     mkl_free(cheby_coeff_filter_a0);
@@ -424,4 +440,39 @@ int main(int argc, char* argv[])
 }
 
 
-// void write_domain(std::infile infile, )
+// void write_domain(std::ofstream &outfile, int num_cheby, double* cheby_coeff_filter, 
+//                 double* cheby_order_0, double* cheby_order_1, std::string domain_key)
+void write_domain(std::ofstream &outfile, int num_cheby, double* cheby_coeff, int* cheby_order_0,
+    int* cheby_order_1, std::string domain_key)
+{
+    int num_pad_space = 32;
+    std::string pad_space(num_pad_space, ' ');
+    outfile << "///////////////////////////////////////////" << std::endl
+    outfile << "////////sub_domain " << domain_key <<"///////" << std::endl
+    outfile << "///////////////////////////////////////////" << std::endl
+    outfile << std::endl;
+    outfile << "    constexpr int num_cheby_" << domain_key << " = " << num_cheby << ";" << std::endl;
+    outfile << "    constexpr double* cheby_coeff_" << domain_key << " = " << "{" << std::endl;
+    write_vector(outfile, num_cheby, cheby_coeff, num_pad_space);
+    outfile << pad_space << "};" << std::endl;
+    outfile << "    constexpr int* cheby_order_0_" << domain_key << " = " << "{" << std::endl;
+    write_vector(outfile, num_cheby, cheby_order_0, num_pad_space);
+    outfile << pad_space << "};" << std::endl;
+    outfile << "    constexpr int* cheby_order_1_" << domain_key << " = " << "{" << std::endl;
+    write_vector(outfile, num_cheby, cheby_order_1, num_pad_space);
+    outfile << pad_space << "};" << std::endl;
+
+    outfile << std::endl << std::endl;
+}
+
+template<typename T>
+void write_vector(std::ofstream &outfile, int num_points, T* vec, int shift)
+{
+    std::string shift_space(shift, ' ');
+    for (int i=0; i<num_points; i++)
+    {
+        outfile << shift_space;
+        outfile << std::setprecision(16) << std::scientific << vec[i];
+        outfile << ", // C[" << i << "]" << std::endl;
+    }
+}
