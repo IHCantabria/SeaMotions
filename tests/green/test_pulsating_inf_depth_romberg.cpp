@@ -83,53 +83,7 @@ void print_t(Functor f)
 }
 
 
-bool launch_test(std::string file_path, std::function<cusfloat(cusfloat, cusfloat, cusfloat)> f)
-{
-    // Read data from file
-    DataTable data_table;
-    data_table.read_data(file_path);
-
-    // Loop over reference values to check the integral representation
-    cusfloat abs_err = 0.0;
-    int count = 0;
-    cusfloat fi = 0.0;
-    bool pass = true;
-    cusfloat X = 0.0, Y = 0.0;
-    for (int j=0; j<data_table.num_points_y; j++)
-    {
-        for (int i=0; i<data_table.num_points_x; i++)
-        {
-            // Calculate numerical integral
-            X = data_table.x[i];
-            Y = data_table.y[j];
-            fi = romberg_quadrature(
-                [X, Y, f](cusfloat t)->cusfloat {return f(X, Y, t);},
-                0,
-                Y,
-                1e-12
-            );
-
-            // Check error
-            abs_err = fi - data_table.int_value[count];
-            if (std::abs(abs_err) > 1e-12)
-            {
-                std::cerr << "X: " << X << "- Y: " << Y << " - Int(num): " << std::setprecision(15) << fi;
-                std::cerr << " - Int(ref): " << std::setprecision(15) << data_table.int_value[count];
-                std::cerr << " - Diff: " << std::setprecision(15) << abs_err << " - Line: " << count+10 << std::endl;
-                pass = false;
-                return pass;
-            }
-
-            // Advance counter
-            count++;
-        }
-    }
-
-    return pass;
-}
-
-
-bool launch_test(std::string file_path, std::function<cusfloat(cusfloat, cusfloat)> f)
+bool launch_test(std::string file_path, std::function<cusfloat(cusfloat, cusfloat)> f, cusfloat precision)
 {
     // Read data from file
     DataTable data_table;
@@ -152,7 +106,7 @@ bool launch_test(std::string file_path, std::function<cusfloat(cusfloat, cusfloa
 
             // Check error
             abs_err = fi - data_table.int_value[count];
-            if (std::abs(abs_err) > 1e-6)
+            if (std::abs(abs_err) > precision)
             {
                 std::cerr << "X: " << X << "- Y: " << Y << " - Int(num): " << std::setprecision(15) << fi;
                 std::cerr << " - Int(ref): " << std::setprecision(15) << data_table.int_value[count];
@@ -187,7 +141,7 @@ int main(int argc, char* argv[])
     bool pass = false;
 
     // Launch test for integral table 1 
-    pass = launch_test(file_path_table_1, expint_inf_depth_num);
+    pass = launch_test(file_path_table_1, expint_inf_depth_num, 1e-12);
     if (!pass)
     {
         std::cerr << "test_pulsating_inf_depth_romberg/sub_test_table_1 failed!" << std::endl;
@@ -195,7 +149,7 @@ int main(int argc, char* argv[])
     }
 
     // Launch test for integral table 2
-    pass = launch_test(file_path_table_2, expint_inf_depth_num_dx);
+    pass = launch_test(file_path_table_2, expint_inf_depth_num_dx, 1e-12);
     if (!pass)
     {
         std::cerr << "test_pulsating_inf_depth_romberg/sub_test_table_2 failed!" << std::endl;
@@ -203,7 +157,7 @@ int main(int argc, char* argv[])
     }
 
     // Launch test for integral table 3
-    pass = launch_test(file_path_table_3, wave_term_inf_depth_num);
+    pass = launch_test(file_path_table_3, wave_term_inf_depth_num, 1e-6);
     if (!pass)
     {
         std::cerr << "test_pulsating_inf_depth_romberg/sub_test_table_3 failed!" << std::endl;
@@ -211,7 +165,7 @@ int main(int argc, char* argv[])
     }
 
     // Launch test for integral table 4
-    pass = launch_test(file_path_table_4, wave_term_inf_depth_num_dx);
+    pass = launch_test(file_path_table_4, wave_term_inf_depth_num_dx, 1e-6);
     if (!pass)
     {
         std::cerr << "test_pulsating_inf_depth_romberg/sub_test_table_4 failed!" << std::endl;
