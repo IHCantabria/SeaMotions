@@ -65,5 +65,26 @@ endfunction()
 # Add tests
 add_subdirectory(tests)
 
+# Add executable to calculate chebyshev coefficients for the 
+# infinite water depth expansion series
+set(chebyshev_inf_depth_src
+    ./src/green/fit_chebyshev_inf_depth.cpp
+    ./src/config.hpp
+    ./src/green/common.hpp
+    ./src/green/common.cpp
+    ./src/green/pulsating.hpp
+    ./src/green/pulsating.cpp
+    ./src/math_tools.hpp
+    ./src/math_tools.cpp
+    ./src/special_math.hpp
+    ./src/special_math.cpp
+    ./src/tools.hpp
+    ./src/tools.cpp
+)
+
+add_executable(chebyshev_inf_depth_cmd ${chebyshev_inf_depth_src})
+set_mkl_lib_target(chebyshev_inf_depth_cmd)
+
+# Add test executable to check the version passes to the software
 set(SOURCE_FILES src/main.cpp src/version.hpp src/version.cpp)
 add_executable(version_exec ${SOURCE_FILES})
