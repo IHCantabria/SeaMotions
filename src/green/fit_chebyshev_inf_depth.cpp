@@ -23,7 +23,7 @@ namespace fs = std::filesystem;
 // Declare local module functions
 struct FitRegion;
 void generate_grid(FitRegion fr, double* x, double* y);
-void get_x_domain_inf_fit(double y, double &x0, double &x1, int side);
+void get_x_range(double y, double &x0, double &x1, int side);
 void write_domain(std::ofstream &outfile, int num_cheby, double* cheby_coeff,
                 int* cheby_order_0, int* cheby_order_1, std::string domain_key);
 template<typename T> void write_vector(std::ofstream &outfile, int num_points, T* vec, int shift);
@@ -41,7 +41,7 @@ struct FitRegion
     {
         // Calculate x local range
         double x0 = 0.0, x1 = 0.0;
-        get_x_domain_inf_fit(y, x0, x1, this->side);
+        get_x_range(y, x0, x1, this->side);
         double dx = x1-x0;
         xl = 2.0*(x-x0)/dx-1.0;
 
@@ -63,7 +63,6 @@ double eval_chebyshev_xy(int n_order, FitRegion fr, double x, double y, double* 
         {
             fr.fit(x, y, xl, yl);
             sol += cheby_coeff[i*n_order+j]*chebyshev_poly_raw(i, xl)*chebyshev_poly_raw(j, yl);
-            // std::cout << "i: " << i << " - j: " << j << " - sol: " << sol << " - chev: " << cheby_coeff[i*n_order+j] << std::endl;
         }
     }
 
@@ -112,37 +111,6 @@ void fit_chebyshev_xy(int n_order, int num_points, FitRegion fr, double* x, doub
     mkl_free(Ak);
     mkl_free(At);
     mkl_free(ipiv);
-}
-
-
-void generate_grid(FitRegion fr, double* x, double* y)
-{
-    // Generate y coordinate grid
-    double dy = (fr.y_max-fr.y_min)/(fr.num_points-1);
-    double yi = 0.0;
-    for (int i=0; i<fr.num_points; i++)
-    {
-        yi = fr.y_min + i*dy;
-        for (int j=0; j<fr.num_points; j++)
-        {
-            y[i*fr.num_points+j] = yi;
-        }
-    }
-
-    // Generate x coordinate grid
-    double dx = 0.0;
-    double x0 = 0.0, x1 = 0.0;
-
-    for (int i=0; i<fr.num_points; i++)
-    {
-        get_x_domain_inf_fit(y[i*fr.num_points], x0, x1, fr.side);
-        dx = (x1-x0)/(fr.num_points-1);
-        for (int j=0; j<fr.num_points; j++)
-        {
-            x[i*fr.num_points+j] = x0 + j*dx;
-        }
-    }
-
 }
 
 
@@ -267,6 +235,73 @@ void fit_sub_domain(FitRegion fr, int cheby_order, int &count_coeffs,
     mkl_free(sol_fit);
     mkl_free(err);
 
+}
+
+
+void generate_grid(FitRegion fr, double* x, double* y)
+{
+    // Generate y coordinate grid
+    double dy = (fr.y_max-fr.y_min)/(fr.num_points-1);
+    double yi = 0.0;
+    for (int i=0; i<fr.num_points; i++)
+    {
+        yi = fr.y_min + i*dy;
+        for (int j=0; j<fr.num_points; j++)
+        {
+            y[i*fr.num_points+j] = yi;
+        }
+    }
+
+    // Generate x coordinate grid
+    double dx = 0.0;
+    double x0 = 0.0, x1 = 0.0;
+
+    for (int i=0; i<fr.num_points; i++)
+    {
+        get_x_range(y[i*fr.num_points], x0, x1, fr.side);
+        dx = (x1-x0)/(fr.num_points-1);
+        for (int j=0; j<fr.num_points; j++)
+        {
+            x[i*fr.num_points+j] = x0 + j*dx;
+        }
+    }
+
+}
+
+
+void get_x_range(double y, double &x0, double &x1, int side)
+{
+    if (y<=4.0)
+    {
+        if (side == 0)
+        {
+            x0 = y/2.0;
+            x1 = 3.0;
+        }
+        else
+        {
+            x0 = 3.0;
+            x1 = 4.0*y;
+        }
+    }
+    else if (y<=8.0)
+    {
+        if (side == 0)
+        {
+            x0 = y/2.0;
+            x1 = 8.0;
+        }
+        else
+        {
+            x0 = 8.0;
+            x1 = 4.0*y;
+        }
+    }
+    else
+    {
+        x0 = y/2.0;
+        x1 = 4.0*y;
+    }
 }
 
 
@@ -428,13 +463,13 @@ void write_domain(std::ofstream &outfile, int num_cheby, double* cheby_coeff, in
     outfile << "    ////////////// sub_domain " << domain_key <<"///////////////" << std::endl;
     outfile << "    ///////////////////////////////////////////" << std::endl;
     outfile << "    constexpr int num_cheby_" << domain_key << " = " << num_cheby << ";" << std::endl;
-    outfile << "    constexpr cusfloat* cheby_coeff_" << domain_key << " = " << "{" << std::endl;
+    outfile << "    constexpr cusfloat cheby_coeff_" << domain_key << "[" << num_cheby << "] = " << "{" << std::endl;
     write_vector(outfile, num_cheby, cheby_coeff, num_pad_space);
     outfile << pad_space << "};" << std::endl;
-    outfile << "    constexpr int* cheby_order_0_" << domain_key << " = " << "{" << std::endl;
+    outfile << "    constexpr int cheby_order_0_" << domain_key << "[" << num_cheby << "] = " << "{" << std::endl;
     write_vector(outfile, num_cheby, cheby_order_0, num_pad_space);
     outfile << pad_space << "};" << std::endl;
-    outfile << "    constexpr int* cheby_order_1_" << domain_key << " = " << "{" << std::endl;
+    outfile << "    constexpr int cheby_order_1_" << domain_key  << "[" << num_cheby << "] = " << "{" << std::endl;
     write_vector(outfile, num_cheby, cheby_order_1, num_pad_space);
     outfile << pad_space << "};" << std::endl;
 
