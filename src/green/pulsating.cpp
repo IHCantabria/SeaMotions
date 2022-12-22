@@ -241,23 +241,28 @@ cusfloat wave_term_inf_depth(cusfloat X, cusfloat Y)
         // Define radial distance to be used along the module
         cusfloat R = std::sqrt(pow2s(X)+pow2s(Y));
 
-        // Calculate double series first row of coefficients
-        constexpr int N = 4;
-        cusfloat cmn_coeffs[2*N+1];
-        cusfloat fn = 2.0;
-        for (int n=1; n<(2*N+1); n++)
-        {
-            cmn_coeffs[n-1] = 1/fn/(n+1);
-            fn *= (n+2);
-        }
-
-        // Calculate double series of coefficients
+        // Define factor variables
         cusfloat fx = pow2s(X);
         cusfloat tx = fx;
         cusfloat ty = 0.0;
-        cusfloat nf = 0.0;
+
+        // Calculate double series first row of coefficients
+        constexpr int N = 9;
+        cusfloat cmn_coeffs[2*N+1];
+        cusfloat fn = 2.0;
         cusfloat cumsum_cmn = 0.0;
-        for (int m=0; m<=N; m++)
+        ty = Y;
+        for (int n=1; n<=(2*N+1); n++)
+        {
+            cmn_coeffs[n-1] = 1.0/fn/(n+1);
+            cumsum_cmn += cmn_coeffs[n-1]*ty;
+            fn *= (n+2);
+            ty *= Y;
+        }
+
+        // Calculate double series of coefficients
+        cusfloat nf = 0.0;
+        for (int m=1; m<N; m++)
         {
             ty = Y;
             for (int n=1; n<=(2*N+1-2*m); n++)
@@ -266,16 +271,18 @@ cusfloat wave_term_inf_depth(cusfloat X, cusfloat Y)
                 // correctly
                 nf = static_cast<cusfloat>(n);
 
+                // Update series coefficients
+                cmn_coeffs[n-1] = -((nf+2.0)/(nf+1.0))*cmn_coeffs[n+1];
+                
                 // Add new term to the series
                 cumsum_cmn += cmn_coeffs[n-1]*tx*ty;
 
-                // Update series coefficients
-                cmn_coeffs[n-1] = -((nf+2.0)/(nf+1.0))*cmn_coeffs[n+1];
                 ty *= Y;
             }
             // Update series coefficients
             tx *= fx;
         }
+        cumsum_cmn += cmn_coeffs[0]*tx*Y;
         cumsum_cmn *= R;
 
         // Addd rest of the function
