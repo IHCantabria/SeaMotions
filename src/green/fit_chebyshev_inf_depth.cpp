@@ -11,10 +11,10 @@
 #include "mkl.h"
 
 // Include local modules
-#include "../../src/config.hpp"
-#include "../../src/green/pulsating.hpp"
-#include "../../src/math_tools.hpp"
-#include "../../src/special_math.hpp"
+#include "../config.hpp"
+#include "../math_tools.hpp"
+#include "pulsating.hpp"
+#include "../special_math.hpp"
 
 // Redefine-include name spaces
 namespace fs = std::filesystem;
@@ -23,7 +23,7 @@ namespace fs = std::filesystem;
 // Declare local module functions
 struct FitRegion;
 void generate_grid(FitRegion fr, double* x, double* y);
-void get_x_range(double y, double &x0, double &x1, int side);
+void get_x_domain_inf_fit(double y, double &x0, double &x1, int side);
 void write_domain(std::ofstream &outfile, int num_cheby, double* cheby_coeff,
                 int* cheby_order_0, int* cheby_order_1, std::string domain_key);
 template<typename T> void write_vector(std::ofstream &outfile, int num_points, T* vec, int shift);
@@ -41,7 +41,7 @@ struct FitRegion
     {
         // Calculate x local range
         double x0 = 0.0, x1 = 0.0;
-        get_x_range(y, x0, x1, this->side);
+        get_x_domain_inf_fit(y, x0, x1, this->side);
         double dx = x1-x0;
         xl = 2.0*(x-x0)/dx-1.0;
 
@@ -135,7 +135,7 @@ void generate_grid(FitRegion fr, double* x, double* y)
 
     for (int i=0; i<fr.num_points; i++)
     {
-        get_x_range(y[i*fr.num_points], x0, x1, fr.side);
+        get_x_domain_inf_fit(y[i*fr.num_points], x0, x1, fr.side);
         dx = (x1-x0)/(fr.num_points-1);
         for (int j=0; j<fr.num_points; j++)
         {
@@ -143,42 +143,6 @@ void generate_grid(FitRegion fr, double* x, double* y)
         }
     }
 
-}
-
-
-void get_x_range(double y, double &x0, double &x1, int side)
-{
-    if (y<=4.0)
-    {
-        if (side == 0)
-        {
-            x0 = y/2.0;
-            x1 = 3.0;
-        }
-        else
-        {
-            x0 = 3.0;
-            x1 = 4.0*y;
-        }
-    }
-    else if (y<=8.0)
-    {
-        if (side == 0)
-        {
-            x0 = y/2.0;
-            x1 = 8.0;
-        }
-        else
-        {
-            x0 = 8.0;
-            x1 = 4.0*y;
-        }
-    }
-    else
-    {
-        x0 = y/2.0;
-        x1 = 4.0*y;
-    }
 }
 
 
@@ -272,7 +236,7 @@ void fit_sub_domain(FitRegion fr, int cheby_order, int &count_coeffs,
     std::cout << std::endl;
 
     // Filter Chebyshev coefficients by threshold
-    double cheby_thres = 1e-7;
+    double cheby_thres = 1e-6;
     for (int i=0; i<cheby_order_2; i++)
     {
         if (std::abs(cheby_coeff[i])>=cheby_thres)
@@ -397,7 +361,6 @@ int main(int argc, char* argv[])
     fr_c.dy = (fr_c.y_max-fr_c.y_min);
     fit_sub_domain(fr_c, cheby_order, count_cheby_c, cheby_coeff_filter_c,
         cheby_order_0_c, cheby_order_1_c, sub_domain_name_c);
-    std::cout << "cccc" << cheby_order_1_c << std::endl;
 
     // Write module
     fs::path file_path = folder_path / "chebyshev_inf_depth.hpp";
@@ -408,7 +371,21 @@ int main(int argc, char* argv[])
     outfile << "#define __chebyshev_inf_depth_hpp" << std::endl;
     outfile << std::endl << std::endl;
 
+    outfile << "#include \"../config.hpp\"" << std::endl << std::endl;
+
     outfile << "namespace chebyinf{" << std::endl;
+
+    write_domain(outfile, count_cheby_a0, cheby_coeff_filter_a0, cheby_order_0_a0,
+                cheby_order_1_a0, "a0");
+
+    write_domain(outfile, count_cheby_a1, cheby_coeff_filter_a1, cheby_order_0_a1,
+                cheby_order_1_a1, "a1");
+
+    write_domain(outfile, count_cheby_b0, cheby_coeff_filter_b0, cheby_order_0_b0,
+                cheby_order_1_b0, "b0");
+
+    write_domain(outfile, count_cheby_b1, cheby_coeff_filter_b1, cheby_order_0_b1,
+                cheby_order_1_b1, "b1");
 
     write_domain(outfile, count_cheby_c, cheby_coeff_filter_c, cheby_order_0_c,
                 cheby_order_1_c, "c");
@@ -447,12 +424,11 @@ void write_domain(std::ofstream &outfile, int num_cheby, double* cheby_coeff, in
 {
     int num_pad_space = 32;
     std::string pad_space(num_pad_space, ' ');
-    outfile << "///////////////////////////////////////////" << std::endl
-    outfile << "////////sub_domain " << domain_key <<"///////" << std::endl
-    outfile << "///////////////////////////////////////////" << std::endl
-    outfile << std::endl;
+    outfile << "    ///////////////////////////////////////////" << std::endl;
+    outfile << "    ////////////// sub_domain " << domain_key <<"///////////////" << std::endl;
+    outfile << "    ///////////////////////////////////////////" << std::endl;
     outfile << "    constexpr int num_cheby_" << domain_key << " = " << num_cheby << ";" << std::endl;
-    outfile << "    constexpr double* cheby_coeff_" << domain_key << " = " << "{" << std::endl;
+    outfile << "    constexpr cusfloat* cheby_coeff_" << domain_key << " = " << "{" << std::endl;
     write_vector(outfile, num_cheby, cheby_coeff, num_pad_space);
     outfile << pad_space << "};" << std::endl;
     outfile << "    constexpr int* cheby_order_0_" << domain_key << " = " << "{" << std::endl;
