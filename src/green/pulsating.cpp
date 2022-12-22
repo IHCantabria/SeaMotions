@@ -51,6 +51,42 @@ cusfloat expint_inf_depth_num_dxt(cusfloat X, cusfloat Y)
 }
 
 
+void get_x_domain_inf_fit(double y, double &x0, double &x1, int side)
+{
+    if (y<=4.0)
+    {
+        if (side == 0)
+        {
+            x0 = y/2.0;
+            x1 = 3.0;
+        }
+        else
+        {
+            x0 = 3.0;
+            x1 = 4.0*y;
+        }
+    }
+    else if (y<=8.0)
+    {
+        if (side == 0)
+        {
+            x0 = y/2.0;
+            x1 = 8.0;
+        }
+        else
+        {
+            x0 = 8.0;
+            x1 = 4.0*y;
+        }
+    }
+    else
+    {
+        x0 = y/2.0;
+        x1 = 4.0*y;
+    }
+}
+
+
 cusfloat wave_term_inf_depth(cusfloat X, cusfloat Y)
 {
     cusfloat wave_term = 0.0;
