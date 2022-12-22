@@ -93,5 +93,8 @@ set(test_wave_term_inf_depth_src
     ${green_common_src}
 )
 
-add_executable(test_wave_termn_inf_depth_cmd ${test_wave_term_inf_depth_src})
-set_mkl_lib_target(test_wave_termn_inf_depth_cmd)
+add_executable(test_wave_term_inf_depth_cmd ${test_wave_term_inf_depth_src})
+set_mkl_lib_target(test_wave_term_inf_depth_cmd)
+
+add_test(NAME test_wave_term_inf_depth
+    COMMAND test_wave_term_inf_depth_cmd)
