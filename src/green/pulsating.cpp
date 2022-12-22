@@ -19,7 +19,7 @@ cusfloat PRECISION_ROMBERG = 1e-12;
 ///// Declare module local functions //////
 ///////////////////////////////////////////
 void domain_inf_fit(cusfloat x, cusfloat y, cusfloat &xl, cusfloat &yl);
-cusfloat eval_chebyshev_fit(int num_cheby, const cusfloat cheby_coeffs[num_cheby], const int cheby_order_0[num_cheby],
+cusfloat eval_chebyshev_fit(const int num_cheby, const cusfloat cheby_coeffs[num_cheby], const int cheby_order_0[num_cheby],
     const int cheby_order_1[num_cheby], cusfloat x, cusfloat y);
 void get_inf_domain_bounds(cusfloat x, cusfloat y, cusfloat &x0, cusfloat &x1, cusfloat &y0, cusfloat &y1);
 
@@ -43,7 +43,7 @@ void domain_inf_fit(cusfloat x, cusfloat y, cusfloat &xl, cusfloat &yl)
 }
 
 
-cusfloat eval_chebyshev_fit(int num_cheby, const cusfloat cheby_coeffs[num_cheby], const int cheby_order_0[num_cheby],
+cusfloat eval_chebyshev_fit(const int num_cheby, const cusfloat cheby_coeffs[num_cheby], const int cheby_order_0[num_cheby],
     const int cheby_order_1[num_cheby], cusfloat x, cusfloat y)
 {
     cusfloat sol = 0.0;
@@ -313,7 +313,6 @@ cusfloat wave_term_inf_depth(cusfloat X, cusfloat Y)
     }
     else
     {
-        std::cout << "New term" << std::endl;
         // Calculate expint residual values - R(x,y)
         cusfloat rxy = 0.0;
         if (Y<=4.0)
