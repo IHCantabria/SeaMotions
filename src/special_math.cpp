@@ -615,6 +615,55 @@ cusfloat legendre_poly_raw(int n, cusfloat x)
 }
 
 
+cusfloat legendre_poly_der_raw(int n, cusfloat x)
+{
+    // Include name
+    using namespace std;
+
+    // Look for the Lengendre polynomial
+    switch (n)
+    {
+        case 0:
+        return 0.0;
+
+        case 1:
+        return 1.0;
+
+        case 2:
+        return 3*x;
+
+        case 3:
+        return 0.5*(15*pow(x, 2)-3);
+
+        case 4:
+        return 0.5*(35*pow(x, 3)-15*x);
+
+        case 5:
+        return (315*pow(x, 4)-210*pow(x, 2)+15)/8;
+
+        case 6:
+        return (693*pow(x, 5)-630*pow(x, 3)+105*x)/8;
+
+        case 7:
+        return (3003*pow(x, 6)-3465*pow(x, 4)+945*pow(x, 2)-35)/16;
+
+        case 8:
+        return (51480*pow(x, 7)-72072*pow(x, 5)+27720*pow(x, 3)-2520*x)/128;
+
+        case 9:
+        return (109395*pow(x, 8)-180180*pow(x, 6)+90090*pow(x, 4)-13860*pow(x, 2)+315)/128;
+
+        case 10:
+        return (461890*pow(x, 9)-875160*pow(x, 7)+540540*pow(x, 5)-120120*pow(x, 3)+6930*x)/256;
+
+        default:
+        std::string err_message("Raw Legendre polynomial defined for a degree en between 0 and 10.");
+        std::cerr << err_message << std::endl;
+        throw std::runtime_error(err_message);
+    }
+}
+
+
 cusfloat polynomial_f0(cusfloat x)
 {
     // Define local variables

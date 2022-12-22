@@ -17,6 +17,7 @@ cusfloat bessely1(cusfloat x);
 cusfloat chebyshev_poly_raw(int n, cusfloat x);
 cusfloat expint_i(cusfloat x);
 cusfloat legendre_poly_raw(int n, cusfloat x);
+cusfloat legendre_poly_der_raw(int n, cusfloat x);
 cusfloat polynomial_f0(cusfloat x);
 cusfloat polynomial_f1(cusfloat x);
 cusfloat polynomial_th0(cusfloat x);
