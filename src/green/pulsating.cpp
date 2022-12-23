@@ -429,8 +429,9 @@ cusfloat wave_term_inf_depth_dx(cusfloat X, cusfloat Y)
     }
     else if (Y > 2*X)
     {
+        std::cout << "New term" << std::endl;
         // Add radius term
-        wave_term = 1/std::sqrt(pow2s(X)+pow2s(Y));
+        wave_term = -X/pow3s(std::sqrt(pow2s(X)+pow2s(Y)));
 
         // Define local variables
         cusfloat cumsum_n = 0.0;
@@ -445,8 +446,7 @@ cusfloat wave_term_inf_depth_dx(cusfloat X, cusfloat Y)
 
         // Add n=0 and n=1 terms
         cumsum_m = (fy+ty);
-        cumsum_n = -c_expi + tx*(cumsum_m-c_expi);
-        tx *= fx;
+        cumsum_n = (cumsum_m-c_expi);
         ty *= fy;
 
         // Add terms up to n=9
@@ -464,13 +464,13 @@ cusfloat wave_term_inf_depth_dx(cusfloat X, cusfloat Y)
             }
 
             // Calculate n loop contribution
-            cumsum_n += tx/pow2s(fn)*(cumsum_m-c_expi);
+            cumsum_n += n*tx/pow2s(fn)*(cumsum_m-c_expi);
 
             // Update n loop variables
             tx *= fx;
             fn *= n+1;
         }
-        wave_term += 2.0*cumsum_n;
+        wave_term += (-X)*cumsum_n;
     }
     else if ((X >= 3.7) && (Y <= 0.25*X))
     {
