@@ -179,7 +179,10 @@ set(test_chebyshev_poly_src
 
 add_executable(test_chebyshev_poly_cmd ${test_chebyshev_poly_src})
 set_mkl_lib_target(test_chebyshev_poly_cmd)
-set(chebyshev_file_path "${CMAKE_SOURCE_DIR}/tests/tests_data/chebyshev_poly.dat")
+set(chebyshev_file_path 
+    "${CMAKE_SOURCE_DIR}/tests/tests_data/chebyshev_poly.dat"
+    "${CMAKE_SOURCE_DIR}/tests/tests_data/chebyshev_poly_der.dat"
+    )
 add_test(NAME test_chebyshev_poly
     COMMAND test_chebyshev_poly_cmd
     ${chebyshev_file_path}

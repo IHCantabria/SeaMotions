@@ -17,18 +17,35 @@ cusfloat EPS_CHEBYSHEV = 1e-12;
 #endif
 
 
-bool launch_test(DataRef &data_ref, int order)
+bool launch_channel_test(DataRef &data_ref, std::function<cusfloat(int, cusfloat)> f_test, int order)
 {
     // Loop over reference data to check the target
     // function
     cusfloat fi = 0;
     cusfloat diff = 0;
+    cusfloat diff_order = 0.0;
     bool pass = true;
     for (int i=0; i<data_ref.num_points; i++)
     {
-        fi = chebyshev_poly_raw(order, data_ref.x[i]);
-        diff = data_ref.data[i][order] - fi;
-        if (std::abs(diff)>EPS_CHEBYSHEV)
+        // Calculate current function value and its difference
+        fi = f_test(order, data_ref.x[i]);
+        diff = (data_ref.data[i][order] - fi);
+
+        // Check for zero values in order to not have inifite
+        // values when using the log10 check
+        if (std::abs(diff)<1e-16)
+        {
+            diff = 1e-16;
+        }
+
+        if (std::abs(fi)<1e-16)
+        {
+            fi = 1e-16;
+        }
+
+        // Check precision
+        diff_order = std::log10(std::abs(fi+1e-16))-std::log10(std::abs(diff));
+        if (diff_order<std::log10(EPS_CHEBYSHEV))
         {
             std::cerr << std::setprecision(15) << "X: " << data_ref.x[i] << " - Yf: " << fi;
             std::cerr << std::setprecision(15) << " - Yref:" << data_ref.data[i][order];
@@ -42,33 +59,57 @@ bool launch_test(DataRef &data_ref, int order)
 }
 
 
+bool launch_test(std::string file_path, std::function<cusfloat(int, cusfloat)> f_test,
+    std::string test_type)
+{
+    // Load reference data
+    DataRef data_ref;
+    data_ref.read_multiple_channel(file_path);
+
+    // Launch testpolynomial
+    bool pass = false;
+    for (int i=0; i<data_ref.num_channels; i++)
+    {
+        pass = launch_channel_test(data_ref, f_test, i);
+        if (!pass)
+        {
+            std::cerr << "test_chebyshev_poly/" << test_type;
+            std::cerr << " Order:" << i << " failed!" << std::endl;
+            break;
+        }
+
+    }
+
+    return pass;
+}
+
+
 int main(int argc, char* argv[])
 {
     // Read command line arguments
-    if (!check_num_cmd_args(argc, 1))
+    if (!check_num_cmd_args(argc, 2))
     {
         return 1;
     }
 
-    std::string file_path_legendre(argv[1]);
+    std::string file_path_chebyshev(argv[1]);
+    std::string file_path_chebyshev_der(argv[2]);
 
     // Define local variables
     bool pass = false;
 
-    // Load reference data
-    DataRef data_ref;
-    data_ref.read_multiple_channel(file_path_legendre);
-
-    // Launch tests for chebyshev polynomials
-    for (int i=0; i<data_ref.num_channels; i++)
+    // Test Chebyshev polynomial function
+    pass = launch_test(file_path_chebyshev, chebyshev_poly_raw, "chebyshev_poly");
+    if (!pass)
     {
-        pass = launch_test(data_ref, i);
-        if (!pass)
-        {
-            std::cerr << "test_chebyshev_poly/chebyshev_poly Order " << i << " failed!" << std::endl;
-            return 1;
-        }
+        return 1;
+    }
 
+    // Test Chebyshev derivative polynomial function
+    pass = launch_test(file_path_chebyshev_der, chebyshev_poly_der_raw, "chebyshev_poly_der");
+    if (!pass)
+    {
+        return 1;
     }
 
     return 0;
