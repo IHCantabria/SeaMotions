@@ -152,7 +152,10 @@ set(test_legendre_poly_src
 
 add_executable(test_legendre_poly_cmd ${test_legendre_poly_src})
 set_mkl_lib_target(test_legendre_poly_cmd)
-set(legendre_file_path "${CMAKE_SOURCE_DIR}/tests/tests_data/legendre_poly.dat")
+set(legendre_file_path 
+    "${CMAKE_SOURCE_DIR}/tests/tests_data/legendre_poly.dat"
+    "${CMAKE_SOURCE_DIR}/tests/tests_data/legendre_poly_der.dat"
+    )
 add_test(NAME test_legendre_poly
     COMMAND test_legendre_poly_cmd
     ${legendre_file_path}
