@@ -13,7 +13,7 @@
 #ifdef SIMPLE_PREC
 cusfloat EPS_LEGENDRE = 1e-6;
 #else
-cusfloat EPS_LEGENDRE = 1e-11;
+cusfloat EPS_LEGENDRE = 1e-12;
 #endif
 
 
@@ -23,12 +23,29 @@ bool launch_channel_test(DataRef &data_ref, std::function<cusfloat(int, cusfloat
     // function
     cusfloat fi = 0;
     cusfloat diff = 0;
+    cusfloat diff_order = 0.0;
     bool pass = true;
     for (int i=0; i<data_ref.num_points; i++)
     {
+        // Calculate current function value and its difference
         fi = f_test(order, data_ref.x[i]);
-        diff = data_ref.data[i][order] - fi;
-        if (std::abs(diff)>EPS_LEGENDRE)
+        diff = (data_ref.data[i][order] - fi);
+
+        // Check for zero values in order to not have inifite
+        // values when using the log10 check
+        if (std::abs(diff)<1e-16)
+        {
+            diff = 1e-16;
+        }
+
+        if (std::abs(fi)<1e-16)
+        {
+            fi = 1e-16;
+        }
+
+        // Check precision
+        diff_order = std::log10(std::abs(fi+1e-16))-std::log10(std::abs(diff));
+        if (diff_order<std::log10(EPS_LEGENDRE))
         {
             std::cerr << std::setprecision(15) << "X: " << data_ref.x[i] << " - Yf: " << fi;
             std::cerr << std::setprecision(15) << " - Yref:" << data_ref.data[i][order];
