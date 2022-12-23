@@ -473,7 +473,6 @@ cusfloat wave_term_inf_depth_dx(cusfloat X, cusfloat Y)
     }
     else if ((X >= 3.7) && (Y <= 0.25*X))
     {
-        std::cout << "New term" << std::endl;
         cusfloat f0 = 0.0;
         cusfloat f1 = 0.0;
         cusfloat fs = 1.0;
@@ -504,6 +503,7 @@ cusfloat wave_term_inf_depth_dx(cusfloat X, cusfloat Y)
     }
     else if ((X>0)&&(X<=3.7)&&(Y>0.0)&&(Y<=2.0))
     {
+        std::cout << "New term" << std::endl;
         // Define radial distance to be used along the module
         cusfloat R = std::sqrt(pow2s(X)+pow2s(Y));
 
@@ -513,10 +513,11 @@ cusfloat wave_term_inf_depth_dx(cusfloat X, cusfloat Y)
         cusfloat ty = 0.0;
 
         // Calculate double series first row of coefficients
-        constexpr int N = 9;
+        constexpr int N = 10;
         cusfloat cmn_coeffs[2*N+1];
         cusfloat fn = 2.0;
         cusfloat cumsum_cmn = 0.0;
+        cusfloat cumsum_cmn_der = 0.0;
         ty = Y;
         for (int n=1; n<=(2*N+1); n++)
         {
@@ -542,6 +543,7 @@ cusfloat wave_term_inf_depth_dx(cusfloat X, cusfloat Y)
                 
                 // Add new term to the series
                 cumsum_cmn += cmn_coeffs[n-1]*tx*ty;
+                cumsum_cmn_der += cmn_coeffs[n-1]*2*m*tx*ty/X;
 
                 ty *= Y;
             }
@@ -549,13 +551,25 @@ cusfloat wave_term_inf_depth_dx(cusfloat X, cusfloat Y)
             tx *= fx;
         }
         cumsum_cmn += cmn_coeffs[0]*tx*Y;
-        cumsum_cmn *= R;
+        cumsum_cmn_der += cmn_coeffs[0]*2*N*tx*Y/X;
+        cumsum_cmn *= X/R;
+        cumsum_cmn_der *= R;
 
         // Addd rest of the function
-        wave_term = 1/R - 2.0*std::exp(-Y)*(besselj0(X)*std::log(Y/X+std::sqrt(1.0+pow2s(Y/X)))
-                                            + PI*bessely0(X)/2.0
-                                            + PI*struve0(X)*R/2.0/X
-                                            + cumsum_cmn
+        cusfloat ix = 1/X;
+        cusfloat ydx = Y*ix;
+        cusfloat f0 = -X/pow3s(R);
+        cusfloat s0 = sqrt(1+pow2s(ydx));
+        cusfloat s1 = ydx + s0;
+        cusfloat f1 = -besselj1(X)*log(s1)
+                    + besselj0(X)*((-ydx*ix-pow2s(ydx)*ix/s0)/s1);
+        cusfloat f2 = -PI*bessely1(X)/2.0;
+        cusfloat f3 = 0.5*PI*ix*(-ix*struve0(X)+2.0/PI-struve1(X))*R
+                    + 0.5*PI*struve0(X)/R;
+        wave_term = f0 - 2.0*std::exp(-Y)*(f1
+                                            + f2
+                                            + f3
+                                            + cumsum_cmn + cumsum_cmn_der
                                             );
     }
     else if ((X>=3.7)&&(Y<=2.0))
