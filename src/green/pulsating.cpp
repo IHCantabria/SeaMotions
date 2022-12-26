@@ -18,8 +18,10 @@ cusfloat PRECISION_ROMBERG = 1e-12;
 ///////////////////////////////////////////
 ///// Declare module local functions //////
 ///////////////////////////////////////////
-void domain_inf_fit(cusfloat x, cusfloat y, cusfloat &xl, cusfloat &yl);
+void domain_inf_fit(cusfloat x, cusfloat y, cusfloat &xl, cusfloat &yl, cusfloat &jac);
 cusfloat eval_chebyshev_fit(const int num_cheby, const cusfloat cheby_coeffs[num_cheby], const int cheby_order_0[num_cheby],
+    const int cheby_order_1[num_cheby], cusfloat x, cusfloat y);
+cusfloat eval_chebyshev_fit_dx(const int num_cheby, const cusfloat cheby_coeffs[num_cheby], const int cheby_order_0[num_cheby],
     const int cheby_order_1[num_cheby], cusfloat x, cusfloat y);
 void get_inf_domain_bounds(cusfloat x, cusfloat y, cusfloat &x0, cusfloat &x1, cusfloat &y0, cusfloat &y1);
 
@@ -27,7 +29,7 @@ void get_inf_domain_bounds(cusfloat x, cusfloat y, cusfloat &x0, cusfloat &x1, c
 ///////////////////////////////////////////
 //////// Define module functions //////////
 ///////////////////////////////////////////
-void domain_inf_fit(cusfloat x, cusfloat y, cusfloat &xl, cusfloat &yl)
+void domain_inf_fit(cusfloat x, cusfloat y, cusfloat &xl, cusfloat &yl, cusfloat &jac)
 {
     // Calculate x local range
     cusfloat x0 = 0.0, x1 = 0.0;
@@ -35,6 +37,7 @@ void domain_inf_fit(cusfloat x, cusfloat y, cusfloat &xl, cusfloat &yl)
     get_inf_domain_bounds(x, y, x0, x1, y0, y1);
     cusfloat dx = x1-x0;
     xl = 2.0*(x-x0)/dx-1.0;
+    jac = 2/dx;
 
     // Calculate y local range
     cusfloat dy = y1 - y0;
@@ -47,11 +50,30 @@ cusfloat eval_chebyshev_fit(const int num_cheby, const cusfloat cheby_coeffs[num
     const int cheby_order_1[num_cheby], cusfloat x, cusfloat y)
 {
     cusfloat sol = 0.0;
-    cusfloat xl = 0.0, yl = 0.0;
+    cusfloat xl = 0.0, yl = 0.0, jac = 0.0;
     for (int i=0; i<num_cheby; i++)
     {
-        domain_inf_fit(x, y, xl, yl);
+        domain_inf_fit(x, y, xl, yl, jac);
         sol += cheby_coeffs[i]*chebyshev_poly_raw(cheby_order_0[i], xl)*chebyshev_poly_raw(cheby_order_1[i], yl);
+    }
+
+    return sol;
+}
+
+
+cusfloat eval_chebyshev_fit_dx(const int num_cheby, const cusfloat cheby_coeffs[num_cheby], const int cheby_order_0[num_cheby],
+    const int cheby_order_1[num_cheby], cusfloat x, cusfloat y)
+{
+    cusfloat sol = 0.0;
+    cusfloat xl = 0.0, yl = 0.0, jac = 0.0;
+    cusfloat ci = 0.0;
+    for (int i=0; i<num_cheby; i++)
+    {
+        domain_inf_fit(x, y, xl, yl, jac);
+        // std::cout << "x: " << x << " - y: " << y << " - xl: " << xl << " - yl: " << yl << std::endl;
+        ci = cheby_coeffs[i]*chebyshev_poly_der_raw(cheby_order_0[i], xl)*chebyshev_poly_raw(cheby_order_1[i], yl)*jac;
+        // std::cout << "i" << i << " - ci: " << ci << std::endl;
+        sol += ci;
     }
 
     return sol;
@@ -129,14 +151,14 @@ void get_inf_domain_bounds(cusfloat x, cusfloat y, cusfloat &x0, cusfloat &x1, c
         }
 
         // Define Y boundaries
-        y0 = 4.0;
+        y0 = 4.0001;
         y1 = 8.0;
     }
     else
     {
         x0 = y/2.0;
         x1 = 4.0*y;
-        y0 = 8.0;
+        y0 = 8.00001;
         y1 = 20.0;
     }
 }
@@ -573,7 +595,6 @@ cusfloat wave_term_inf_depth_dx(cusfloat X, cusfloat Y)
     }
     else if ((X>=3.7)&&(Y<=2.0))
     {
-        std::cout << "New term" << std::endl;
         cusfloat f0 = 0.0;
         cusfloat f1 = 0.0;
         cusfloat fs = 1.0;
@@ -606,6 +627,7 @@ cusfloat wave_term_inf_depth_dx(cusfloat X, cusfloat Y)
     {
         // Calculate expint residual values - R(x,y)
         cusfloat rxy = 0.0;
+        cusfloat rxy_dx = 0.0;
         if (Y<=4.0)
         {
             if (X <= 3.0)
@@ -618,10 +640,26 @@ cusfloat wave_term_inf_depth_dx(cusfloat X, cusfloat Y)
                     X,
                     Y
                 );
+                rxy_dx = eval_chebyshev_fit_dx(
+                    chebyinf::num_cheby_a0,
+                    chebyinf::cheby_coeff_a0,
+                    chebyinf::cheby_order_0_a0,
+                    chebyinf::cheby_order_1_a0,
+                    X,
+                    Y
+                );
             }
             else
             {
                 rxy = eval_chebyshev_fit(
+                    chebyinf::num_cheby_a1,
+                    chebyinf::cheby_coeff_a1,
+                    chebyinf::cheby_order_0_a1,
+                    chebyinf::cheby_order_1_a1,
+                    X,
+                    Y
+                );
+                rxy_dx = eval_chebyshev_fit_dx(
                     chebyinf::num_cheby_a1,
                     chebyinf::cheby_coeff_a1,
                     chebyinf::cheby_order_0_a1,
@@ -643,10 +681,26 @@ cusfloat wave_term_inf_depth_dx(cusfloat X, cusfloat Y)
                     X,
                     Y
                 );
+                rxy_dx = eval_chebyshev_fit_dx(
+                    chebyinf::num_cheby_b0,
+                    chebyinf::cheby_coeff_b0,
+                    chebyinf::cheby_order_0_b0,
+                    chebyinf::cheby_order_1_b0,
+                    X,
+                    Y
+                );
             }
             else
             {
                 rxy = eval_chebyshev_fit(
+                    chebyinf::num_cheby_b1,
+                    chebyinf::cheby_coeff_b1,
+                    chebyinf::cheby_order_0_b1,
+                    chebyinf::cheby_order_1_b1,
+                    X,
+                    Y
+                );
+                rxy_dx = eval_chebyshev_fit_dx(
                     chebyinf::num_cheby_b1,
                     chebyinf::cheby_coeff_b1,
                     chebyinf::cheby_order_0_b1,
@@ -666,13 +720,25 @@ cusfloat wave_term_inf_depth_dx(cusfloat X, cusfloat Y)
                 X,
                 Y
             );
+            rxy_dx = eval_chebyshev_fit_dx(
+                chebyinf::num_cheby_c,
+                chebyinf::cheby_coeff_c,
+                chebyinf::cheby_order_0_c,
+                chebyinf::cheby_order_1_c,
+                X,
+                Y
+            );
         }
 
         // Add oscilatory bessel and struve terms to
         // calculate full expint integral
         cusfloat R = std::sqrt(pow2s(X)+pow2s(Y));
-        cusfloat f1 = 1/R - std::exp(-Y)/X + Y/pow3s(R)*rxy;
-        wave_term = 1/R - PI*std::exp(-Y)*(struve0(X)+bessely0(X)) - 2.0*f1;
+        cusfloat r3inv = X/pow3s(R);
+        cusfloat f1 = -r3inv
+                    + exp(-Y)/pow2s(X)
+                    -3*r3inv*Y/pow2s(R)*rxy
+                    +Y*r3inv*rxy_dx/X;
+        wave_term = -r3inv - PI*std::exp(-Y)*(2.0/PI-struve1(X)-bessely1(X)) - 2.0*f1;
     }
 
     return wave_term;
