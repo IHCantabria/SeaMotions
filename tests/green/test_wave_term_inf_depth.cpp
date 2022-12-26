@@ -1,13 +1,67 @@
 
 // Include general usage libraries
+#include <functional>
 #include <iomanip>
 #include <iostream>
+
+// Include general usage scientific libraries
+#include "mkl.h"
 
 // Include local modules
 #include "../../src/config.hpp"
 #include "../../src/green/pulsating.hpp"
 #include "../../src/math_tools.hpp"
 #include "../../src/special_math.hpp"
+
+
+cusfloat _wave_term_inf_depth_num(cusfloat X, cusfloat Y)
+{
+    return wave_term_inf_depth_num(X, Y) + 1/sqrt(pow2s(X)+pow2s(Y));
+}
+
+
+cusfloat _wave_term_inf_depth_num_dx(cusfloat X, cusfloat Y)
+{
+    return wave_term_inf_depth_num_dx(X, Y) - X/std::pow(pow2s(X)+pow2s(Y), 3.0/2.0);
+}
+
+
+void calculate_error_stats(int N, cusfloat* err, cusfloat threshold, int &count_threshold,
+    cusfloat &max_err, cusfloat &mean_err, cusfloat &min_err)
+{
+    // Initialize statistic values
+    count_threshold = 0;
+    max_err = 0.0;
+    mean_err = 0.0;
+    min_err = 1e16;
+
+    // Loop over error vector to calculate statistics
+    for (int i=0; i<N; i++)
+    {
+        // Check if the value goes over threshold
+        if (err[i] > threshold)
+        {
+            count_threshold++;
+        }
+
+        // Check maximum value
+        if (err[i] > max_err)
+        {
+            max_err = err[i];
+        }
+
+        // Check minimum value
+        if (err[i] < min_err)
+        {
+            min_err = err[i];
+        }
+
+        // Add value to account for the mean 
+        mean_err += err[i];
+    }
+    mean_err /= N;
+
+}
 
 
 void generate_domain(int N, cusfloat* X, cusfloat* Y, cusfloat x_min, cusfloat x_max,
@@ -29,38 +83,59 @@ void generate_domain(int N, cusfloat* X, cusfloat* Y, cusfloat x_min, cusfloat x
 }
 
 
-bool launch_test(void)
+bool launch_test(int N, cusfloat* X, cusfloat* Y, std::function<cusfloat(cusfloat,cusfloat)> f_num,
+    std::function<cusfloat(cusfloat,cusfloat)> f_ser)
 {
-    // Generate computational grid
-    constexpr int N = 1000;
-    cusfloat X[N], Y[N];
-    generate_domain(N, X, Y, 0.001, 40.0, 0.001, 40.0);
+    // Allocate space for error statistics
+    cusfloat* err = generate_empty_vector<cusfloat>(N*N);
 
     // Loop over grid points to check the accuracy of the model
     bool pass = true;
-    cusfloat diff = 0.0;
-    cusfloat f_ref = 0.0, f_mod = 0.0;
+    cusfloat diff = 0.0, diff_log = 0.0;
+    cusfloat f_ref = 0.0, f_ref_log = 0.0, f_mod = 0.0;
+    int count = 0;
+    cusfloat threshold = 3e-6;
     for (int i=0; i<N; i++)
     {
         for (int j=0; j<N; j++)
         {
             // Calculate reference value using Romberg integration method
-            f_ref = wave_term_inf_depth_num(X[i], Y[j]) + 1/sqrt(pow2s(X[i])+pow2s(Y[j]));
+            f_ref = f_num(X[i], Y[j]);
+            f_ref_log = std::log10(std::abs(f_ref));
 
             // Calculate model value
-            f_mod = wave_term_inf_depth(X[i], Y[j]);
+            f_mod = f_ser(X[i], Y[j]);
 
             // Evaluate difference
             diff = f_mod - f_ref;
-            if (std::abs(diff) > 3e-6)
+            diff_log = std::log10(std::abs(diff));
+            if (((f_ref_log - diff_log)<6) && (std::abs(diff)>threshold))
             {
-                std::cerr << "X: " << X[i] << " - Y: " << Y[j] << " - f_ref: " << f_ref;
-                std::cerr << " - f_mod: " << f_mod << " - diff: " << diff << std::endl;
-                pass = false;
-                break;
+                err[count] = std::abs(diff);
+                count++;
+                // std::cerr << std::setprecision(6) << "X: " << X[i] << " - Y: " << Y[j] << " - f_ref: " << f_ref;
+                // std::cerr << " - f_mod: " << f_mod << " - diff: " << diff << std::endl;
+                // std::cout << "--> f_ref_log: " << f_ref_log << " - diff_log: " << diff_log << " - diff_order: " << (f_ref_log - diff_log) << std::endl;
             }
         }
     }
+
+    // Calculate error statistics
+    int count_threshold = 0;
+    cusfloat max_err = 0.0, mean_err = 0.0, min_err = 0.0;
+    calculate_error_stats(count, err, threshold, count_threshold, max_err, mean_err, min_err);
+
+    if ((mean_err>7.0e-6) || (max_err>3.5e-5))
+    {
+        std::cout << "Test error statistics:" << std::endl;
+        std::cout << " - Max. Error: " << max_err << std::endl;
+        std::cout << " - Min. Error: " << min_err << std::endl;
+        std::cout << " - Mean Error: " << mean_err << std::endl;
+        std::cout << " - Test threshold: " << threshold << " - Count Over threshold: " << count_threshold << std::endl;
+    }
+
+    // Deallocate heap memory
+    mkl_free(err);
 
     return pass;
 }
@@ -68,11 +143,37 @@ bool launch_test(void)
 
 int main(void)
 {
+    // Declare local variables
+    int pass = false;
+
+    // Generate computational grid
+    constexpr int N = 1000;
+    cusfloat X[N], Y[N];
+    generate_domain(N, X, Y, 0.001, 40.0, 0.001, 40.0);
+
     // Test modelling function over all XY plane
-    int pass = launch_test();
+    pass = launch_test(
+        N, 
+        X, 
+        Y, 
+        _wave_term_inf_depth_num,
+        wave_term_inf_depth);
     if (!pass)
     {
         std::cerr << "test_wave_term_inf_depth failed!" << std::endl;
+        return 1;
+    }
+
+    // Test modelling function derivative over all XY plane
+    pass = launch_test(
+        N, 
+        X, 
+        Y, 
+        _wave_term_inf_depth_num_dx,
+        wave_term_inf_depth_dx);
+    if (!pass)
+    {
+        std::cerr << "test_wave_term_inf_depth_dx failed!" << std::endl;
         return 1;
     }
 
