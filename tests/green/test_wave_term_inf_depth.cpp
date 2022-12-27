@@ -26,6 +26,12 @@ cusfloat _wave_term_inf_depth_num_dx(cusfloat X, cusfloat Y)
 }
 
 
+cusfloat _wave_term_inf_depth_num_dy(cusfloat X, cusfloat Y)
+{
+    return wave_term_inf_depth_num_dy(X, Y) - Y/std::pow(pow2s(X)+pow2s(Y), 3.0/2.0);
+}
+
+
 void calculate_error_stats(int N, cusfloat* err, cusfloat threshold, int &count_threshold,
     cusfloat &max_err, cusfloat &mean_err, cusfloat &min_err)
 {
@@ -84,7 +90,7 @@ void generate_domain(int N, cusfloat* X, cusfloat* Y, cusfloat x_min, cusfloat x
 
 
 bool launch_test(int N, cusfloat* X, cusfloat* Y, std::function<cusfloat(cusfloat,cusfloat)> f_num,
-    std::function<cusfloat(cusfloat,cusfloat)> f_ser)
+    std::function<cusfloat(cusfloat,cusfloat)> f_ser, bool show_stats_force)
 {
     // Allocate space for error statistics
     cusfloat* err = generate_empty_vector<cusfloat>(N*N);
@@ -125,7 +131,7 @@ bool launch_test(int N, cusfloat* X, cusfloat* Y, std::function<cusfloat(cusfloa
     cusfloat max_err = 0.0, mean_err = 0.0, min_err = 0.0;
     calculate_error_stats(count, err, threshold, count_threshold, max_err, mean_err, min_err);
 
-    if ((mean_err>7.0e-6) || (max_err>3.5e-5))
+    if ((mean_err>7.0e-6) || (max_err>3.5e-5) || show_stats_force)
     {
         std::cout << "Test error statistics:" << std::endl;
         std::cout << " - Max. Error: " << max_err << std::endl;
@@ -157,23 +163,42 @@ int main(void)
         X, 
         Y, 
         _wave_term_inf_depth_num,
-        wave_term_inf_depth);
+        wave_term_inf_depth,
+        false
+        );
     if (!pass)
     {
         std::cerr << "test_wave_term_inf_depth failed!" << std::endl;
         return 1;
     }
 
-    // Test modelling function derivative over all XY plane
+    // Test modelling function horizontal derivative over all XY plane
     pass = launch_test(
         N, 
         X, 
         Y, 
         _wave_term_inf_depth_num_dx,
-        wave_term_inf_depth_dx);
+        wave_term_inf_depth_dx,
+        false
+        );
     if (!pass)
     {
         std::cerr << "test_wave_term_inf_depth_dx failed!" << std::endl;
+        return 1;
+    }
+
+    // Test modelling function vertical derivative over all XY plane
+    pass = launch_test(
+        N, 
+        X, 
+        Y, 
+        _wave_term_inf_depth_num_dy,
+        wave_term_inf_depth_dy,
+        false
+        );
+    if (!pass)
+    {
+        std::cerr << "test_wave_term_inf_depth_dy failed!" << std::endl;
         return 1;
     }
 
