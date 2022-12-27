@@ -745,6 +745,18 @@ cusfloat wave_term_inf_depth_dx(cusfloat X, cusfloat Y)
 }
 
 
+cusfloat wave_term_inf_depth_dy(cusfloat X, cusfloat Y)
+{
+    // Calculate derivative terms
+    cusfloat rinv = 1/std::sqrt(pow2s(X)+pow2s(Y));
+    cusfloat wave_term = -Y*pow3s(rinv);
+    wave_term -= wave_term_inf_depth(X, Y);
+    wave_term -= rinv;
+
+    return wave_term;
+}
+
+
 cusfloat wave_term_inf_depth_num(cusfloat X, cusfloat Y)
 {
     return -2*expint_inf_depth_num(X, Y) - PI*std::exp(-Y)*(bessely0(X)+struve0(X));
