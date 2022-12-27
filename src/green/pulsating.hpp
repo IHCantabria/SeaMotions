@@ -18,5 +18,6 @@ cusfloat wave_term_inf_depth_dx(cusfloat X, cusfloat Y);
 cusfloat wave_term_inf_depth_dy(cusfloat X, cusfloat Y);
 cusfloat wave_term_inf_depth_num(cusfloat X, cusfloat Y);
 cusfloat wave_term_inf_depth_num_dx(cusfloat X, cusfloat Y);
+cusfloat wave_term_inf_depth_num_dy(cusfloat X, cusfloat Y);
 
 #endif
