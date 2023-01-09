@@ -210,3 +210,23 @@ add_test(NAME test_exp_int
     COMMAND test_expint_cmd
     ${file_path_expint_i}
 )
+
+
+# Add test to check the generation of the Chebyshev roots
+set(test_chebyshev_roots_src
+    test_chebyshev_roots.cpp
+    ../containers.hpp
+    ../../src/config.hpp
+    ../../src/chebyshev.hpp
+    ../../src/chebyshev.cpp
+    ../../src/math_tools.hpp
+    ../../src/math_tools.cpp
+    ../../src/math_tools.txx
+    ../../src/special_math.hpp
+    ../../src/special_math.cpp
+    ../../src/tools.hpp
+    ../../src/tools.cpp
+    ../../src/tools.txx
+)
+
+add_executable(test_chebyshev_roots_cmd ${test_chebyshev_roots_src})
