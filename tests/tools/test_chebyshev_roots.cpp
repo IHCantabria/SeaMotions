@@ -117,7 +117,7 @@ bool launch_test(RefData &ref_data)
     {
         // Calculate roots points for the i degree of the 
         // Chebyshev polynomial
-        cheby_roots_fun(ref_data.poly_order[i], poly_roots);
+        chebyshev_poly_roots(ref_data.poly_order[i], poly_roots);
 
         // Check roots according to the working precision
         for (int j=0; j<ref_data.poly_order[i]; j++)

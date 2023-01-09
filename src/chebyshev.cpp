@@ -603,7 +603,7 @@ cusfloat chebyshev_poly_der_raw(int n, cusfloat x)
 }
 
 
-void cheby_roots_fun(int num_points, cusfloat* roots)
+void chebyshev_poly_roots(int num_points, cusfloat* roots)
 {
     for (int k=1; k<=num_points; k++)
     {
