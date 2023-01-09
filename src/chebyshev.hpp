@@ -4,6 +4,9 @@
 
 #include "config.hpp"
 
+cusfloat chebyshev_poly_raw(int n, cusfloat x);
+cusfloat chebyshev_poly_der_raw(int n, cusfloat x);
 void cheby_roots_fun(int num_points, cusfloat* roots);
+void get_gauss_chebyshev(int num_points, cusfloat* weights, cusfloat* roots);
 
 #endif
