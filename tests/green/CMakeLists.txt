@@ -1,6 +1,8 @@
 
 # Define common files to compile green function tests
 set(green_common_src
+    ../../src/chebyshev.hpp
+    ../../src/chebyshev.cpp
     ../../src/config.hpp
     ../../src/containers.hpp
     ../../src/green/common.hpp

@@ -11,6 +11,7 @@
 #include "mkl.h"
 
 // Include local modules
+#include "../chebyshev.hpp"
 #include "../config.hpp"
 #include "../math_tools.hpp"
 #include "pulsating.hpp"

@@ -165,6 +165,8 @@ add_test(NAME test_legendre_poly
 # Configure test to check the accuracy of the chebyshev polynomials implementation
 set(test_chebyshev_poly_src
     test_chebyshev_poly.cpp
+    ../../src/chebyshev.hpp
+    ../../src/chebyshev.cpp
     ../containers.hpp
     ../../src/config.hpp
     ../../src/math_tools.hpp

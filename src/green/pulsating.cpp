@@ -4,6 +4,7 @@
 
 // Include local modules
 #include "chebyshev_inf_depth.hpp"
+#include "../../src/chebyshev.hpp"
 #include "../../src/config.hpp"
 #include "../../src/special_math.hpp"
 #include "../../src/math_tools.hpp"
