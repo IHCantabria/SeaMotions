@@ -37,7 +37,9 @@ bool sub_test_1(void)
 
     // Find solution using bisection method to fcn_1
     cusfloat xt = 1.0;
-    cusfloat xs = bisection(fcn_1, 0.01, 1.84, ABS_PREC, 100, false);
+    cusfloat xs = 0.0;
+    int info = 0;
+    bisection(fcn_1, 0.01, 1.84, ABS_PREC, 0.0, 100, false, xs, info);
     if (abs(xt-xs)>ABS_PREC)
     {
         pass = false;
@@ -54,7 +56,9 @@ bool sub_test_2(void)
 
     // Find solution using bisection method to fcn_1
     cusfloat xt = 2.474576787369829;
-    cusfloat xs = bisection(fcn_2, 2.0, 3.0, ABS_PREC, 100, false);
+    cusfloat xs = 0.0;
+    int info = 0;
+    bisection(fcn_2, 2.0, 3.0, ABS_PREC, 0.0, 100, false, xs, info);
     if (abs(xt-xs)>ABS_PREC)
     {
         pass = false;
@@ -71,7 +75,9 @@ bool sub_test_3(void)
 
     // Find solution using bisection method to fcn_1
     cusfloat xt = 0.761594155955765;
-    cusfloat xs = bisection(fcn_3, 0.5, 0.92, ABS_PREC, 100, false);
+    cusfloat xs = 0.0;
+    int info = 0;
+    bisection(fcn_3, 0.5, 0.92, ABS_PREC, 0.0, 100, false, xs, info);
     if (abs(xt-xs)>ABS_PREC)
     {
         pass = false;
