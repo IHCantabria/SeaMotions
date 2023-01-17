@@ -89,14 +89,16 @@ bool sub_test_3(void)
 
 int main(void)
 {
-    // Declare pass flat
+    // Declare system logic flags
     int pass = false;
+    int return_chn = 0;
 
     // Launch test for: f(x)=x^2-1=0
     pass = sub_test_1();
     if (!pass)
     {
         std::cerr << "test_bisection/sub_test_1 failed!" << std::endl;
+        return_chn = 1;
     }
 
     // Launch test for: f(x)=sin(x)-x/4=0
@@ -104,6 +106,7 @@ int main(void)
     if (!pass)
     {
         std::cerr << "test_bisection/sub_test_2 failed!" << std::endl;
+        return_chn = 1;
     }
 
     // Launch test for: f(x)=atan(x)-1=0
@@ -111,8 +114,9 @@ int main(void)
     if (!pass)
     {
         std::cerr << "test_bisection/sub_test_3 failed!" << std::endl;
+        return_chn = 1;
     }
 
 
-    return 0;
+    return return_chn;
 }
