@@ -3,7 +3,7 @@
 add_executable(test_norm
 test_norm.cpp
 ../../src/config.hpp
-../../src/math_interface.hpp
+../../src/math/math_interface.hpp
 )
 set_mkl_lib_target(test_norm)
 
@@ -19,7 +19,7 @@ set_mkl_lib_target(vector_performance)
 add_executable(matrix_vector_mult
     matrix_vector_mult.cpp
     ../../src/config.hpp
-    ../../src/math_interface.hpp
+    ../../src/math/math_interface.hpp
     ../../src/tools.hpp
     ../../src/tools.cpp
 )

@@ -5,8 +5,8 @@
 
 // Include local modules
 #include "config.hpp"
-#include "math_interface.hpp"
-#include "math_tools.hpp"
+#include "./math/math_interface.hpp"
+#include "./math/math_tools.hpp"
 
 
 struct PanelGeom

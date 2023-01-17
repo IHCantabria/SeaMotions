@@ -11,11 +11,11 @@
 #include "mkl.h"
 
 // Include local modules
-#include "../chebyshev.hpp"
+#include "../math/chebyshev.hpp"
 #include "../config.hpp"
-#include "../math_tools.hpp"
+#include "../math/math_tools.hpp"
 #include "pulsating.hpp"
-#include "../special_math.hpp"
+#include "../math/special_math.hpp"
 
 // Redefine-include name spaces
 namespace fs = std::filesystem;

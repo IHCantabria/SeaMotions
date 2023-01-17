@@ -3,7 +3,7 @@
 #include "mkl.h"
 
 // Include local libraries
-#include "config.hpp"
+#include "../config.hpp"
 #include "math_tools.hpp"
 
 

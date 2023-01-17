@@ -4,7 +4,7 @@
 
 // Include local modules
 #include "../../src/containers.hpp"
-#include "../../src/special_math.hpp"
+#include "../../src/math/special_math.hpp"
 #include "../../src/tools.hpp"
 
 

@@ -1,8 +1,8 @@
 
 # Define common files to compile green function tests
 set(green_common_src
-    ../../src/chebyshev.hpp
-    ../../src/chebyshev.cpp
+    ../../src/math/chebyshev.hpp
+    ../../src/math/chebyshev.cpp
     ../../src/config.hpp
     ../../src/containers.hpp
     ../../src/green/common.hpp
@@ -13,11 +13,11 @@ set(green_common_src
     ../../src/green/pulsating.cpp
     ../../src/green/source.hpp
     ../../src/green/source.cpp
-    ../../src/math_interface.hpp
-    ../../src/math_tools.hpp
-    ../../src/math_tools.cpp
-    ../../src/special_math.hpp
-    ../../src/special_math.cpp
+    ../../src/math/math_interface.hpp
+    ../../src/math/math_tools.hpp
+    ../../src/math/math_tools.cpp
+    ../../src/math/special_math.hpp
+    ../../src/math/special_math.cpp
     ../../src/tools.hpp
     ../../src/tools.cpp
     test_panel_geometries.hpp

@@ -3,9 +3,9 @@
 set(test_cross_product_src
     test_cross_product.cpp
     ../../src/config.hpp
-    ../../src/math_tools.hpp
-    ../../src/math_tools.cpp
-    ../../src/math_tools.txx
+    ../../src/math/math_tools.hpp
+    ../../src/math/math_tools.cpp
+    ../../src/math/math_tools.txx
     )
     
 add_executable(test_cross_product_cmd ${test_cross_product_src})
@@ -17,8 +17,8 @@ add_test(NAME test_cross_product COMMAND test_cross_product_cmd)
 set(test_vector_arithmetic_src
     test_vector_arithmetics.cpp
     ../../src/config.hpp
-    ../../src/math_tools.hpp
-    ../../src/math_tools.cpp
+    ../../src/math/math_tools.hpp
+    ../../src/math/math_tools.cpp
 )
 
 add_executable(test_vector_arithmetic_cmd ${test_vector_arithmetic_src})
@@ -30,9 +30,9 @@ add_test(NAME test_vector_arithmetic COMMAND test_vector_arithmetic_cmd)
 set(test_romberg_src
     test_romberg.cpp
     ../../src/config.hpp
-    ../../src/math_tools.hpp
-    ../../src/math_tools.cpp
-    ../../src/math_tools.txx
+    ../../src/math/math_tools.hpp
+    ../../src/math/math_tools.cpp
+    ../../src/math/math_tools.txx
     ../../src/tools.hpp
     ../../src/tools.cpp
     ../../src/tools.txx
@@ -47,9 +47,9 @@ add_test(NAME test_romberg COMMAND test_romberg_cmd)
 set(test_factorial_src
     test_factorial.cpp
     ../../src/config.hpp
-    ../../src/math_tools.hpp
-    ../../src/math_tools.cpp
-    ../../src/math_tools.txx
+    ../../src/math/math_tools.hpp
+    ../../src/math/math_tools.cpp
+    ../../src/math/math_tools.txx
     ../../src/tools.hpp
     ../../src/tools.cpp
     ../../src/tools.txx
@@ -65,8 +65,8 @@ set(performance_aux_bessel_src
         test_performance_aux_bessel.cpp
         ../../src/config.hpp
         ../../src/containers.hpp
-        ../../src/special_math.hpp
-        ../../src/special_math.cpp
+        ../../src/math/special_math.hpp
+        ../../src/math/special_math.cpp
         ../../src/tools.hpp
         ../../src/tools.cpp
         ../../src/tools.txx
@@ -78,11 +78,11 @@ set(test_psi_function_src
     test_psi_function.cpp
     ../containers.hpp
     ../../src/config.hpp
-    ../../src/math_tools.hpp
-    ../../src/math_tools.cpp
-    ../../src/math_tools.txx
-    ../../src/special_math.hpp
-    ../../src/special_math.cpp
+    ../../src/math/math_tools.hpp
+    ../../src/math/math_tools.cpp
+    ../../src/math/math_tools.txx
+    ../../src/math/special_math.hpp
+    ../../src/math/special_math.cpp
     ../../src/tools.hpp
     ../../src/tools.cpp
     ../../src/tools.txx
@@ -98,11 +98,11 @@ set(test_bessel_functions_src
     test_bessel_functions.cpp
     ../containers.hpp
     ../../src/config.hpp
-    ../../src/math_tools.hpp
-    ../../src/math_tools.cpp
-    ../../src/math_tools.txx
-    ../../src/special_math.hpp
-    ../../src/special_math.cpp
+    ../../src/math/math_tools.hpp
+    ../../src/math/math_tools.cpp
+    ../../src/math/math_tools.txx
+    ../../src/math/special_math.hpp
+    ../../src/math/special_math.cpp
     ../../src/tools.hpp
     ../../src/tools.cpp
     ../../src/tools.txx
@@ -140,11 +140,11 @@ set(test_legendre_poly_src
     test_legendre_poly.cpp
     ../containers.hpp
     ../../src/config.hpp
-    ../../src/math_tools.hpp
-    ../../src/math_tools.cpp
-    ../../src/math_tools.txx
-    ../../src/special_math.hpp
-    ../../src/special_math.cpp
+    ../../src/math/math_tools.hpp
+    ../../src/math/math_tools.cpp
+    ../../src/math/math_tools.txx
+    ../../src/math/special_math.hpp
+    ../../src/math/special_math.cpp
     ../../src/tools.hpp
     ../../src/tools.cpp
     ../../src/tools.txx
@@ -165,15 +165,15 @@ add_test(NAME test_legendre_poly
 # Configure test to check the accuracy of the chebyshev polynomials implementation
 set(test_chebyshev_poly_src
     test_chebyshev_poly.cpp
-    ../../src/chebyshev.hpp
-    ../../src/chebyshev.cpp
+    ../../src/math/chebyshev.hpp
+    ../../src/math/chebyshev.cpp
     ../containers.hpp
     ../../src/config.hpp
-    ../../src/math_tools.hpp
-    ../../src/math_tools.cpp
-    ../../src/math_tools.txx
-    ../../src/special_math.hpp
-    ../../src/special_math.cpp
+    ../../src/math/math_tools.hpp
+    ../../src/math/math_tools.cpp
+    ../../src/math/math_tools.txx
+    ../../src/math/special_math.hpp
+    ../../src/math/special_math.cpp
     ../../src/tools.hpp
     ../../src/tools.cpp
     ../../src/tools.txx
@@ -195,11 +195,11 @@ set(test_expint_src
     test_expint.cpp
     ../containers.hpp
     ../../src/config.hpp
-    ../../src/math_tools.hpp
-    ../../src/math_tools.cpp
-    ../../src/math_tools.txx
-    ../../src/special_math.hpp
-    ../../src/special_math.cpp
+    ../../src/math/math_tools.hpp
+    ../../src/math/math_tools.cpp
+    ../../src/math/math_tools.txx
+    ../../src/math/special_math.hpp
+    ../../src/math/special_math.cpp
     ../../src/tools.hpp
     ../../src/tools.cpp
     ../../src/tools.txx
@@ -219,13 +219,13 @@ set(test_chebyshev_roots_src
     test_chebyshev_roots.cpp
     ../containers.hpp
     ../../src/config.hpp
-    ../../src/chebyshev.hpp
-    ../../src/chebyshev.cpp
-    ../../src/math_tools.hpp
-    ../../src/math_tools.cpp
-    ../../src/math_tools.txx
-    ../../src/special_math.hpp
-    ../../src/special_math.cpp
+    ../../src/math/chebyshev.hpp
+    ../../src/math/chebyshev.cpp
+    ../../src/math/math_tools.hpp
+    ../../src/math/math_tools.cpp
+    ../../src/math/math_tools.txx
+    ../../src/math/special_math.hpp
+    ../../src/math/special_math.cpp
     ../../src/tools.hpp
     ../../src/tools.cpp
     ../../src/tools.txx

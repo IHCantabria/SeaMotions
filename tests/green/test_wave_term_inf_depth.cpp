@@ -10,8 +10,8 @@
 // Include local modules
 #include "../../src/config.hpp"
 #include "../../src/green/pulsating.hpp"
-#include "../../src/math_tools.hpp"
-#include "../../src/special_math.hpp"
+#include "../../src/math/math_tools.hpp"
+#include "../../src/math/special_math.hpp"
 
 
 cusfloat _wave_term_inf_depth_num(cusfloat X, cusfloat Y)

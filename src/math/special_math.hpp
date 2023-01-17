@@ -3,7 +3,7 @@
 #define __special_hpp
 
 // Include local modules
-#include "config.hpp"
+#include "../config.hpp"
 
 
 cusfloat besseli0(cusfloat x);

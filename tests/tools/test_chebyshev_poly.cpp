@@ -6,9 +6,9 @@
 
 // Include local modules
 #include "../containers.hpp"
-#include "../../src/chebyshev.hpp"
+#include "../../src/math/chebyshev.hpp"
 #include "../../src/config.hpp"
-#include "../../src/special_math.hpp"
+#include "../../src/math/special_math.hpp"
 #include "../../src/tools.hpp"
 
 #ifdef SIMPLE_PREC

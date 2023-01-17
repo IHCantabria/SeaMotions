@@ -10,8 +10,8 @@
 #include "common.hpp"
 #include "../containers.hpp"
 #include "dipole.hpp"
-#include "../math_interface.hpp"
-#include "../math_tools.hpp"
+#include "../math/math_interface.hpp"
+#include "../math/math_tools.hpp"
 
 
 void calculate_dipole_potential(PanelGeom &panel, cusfloat (&field_point)[3], int fp_local_flag, cusfloat &phi)

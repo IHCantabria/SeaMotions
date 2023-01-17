@@ -3,7 +3,7 @@
 #include "mkl.h"
 
 #include "../../src/config.hpp"
-#include "../../src/math_interface.hpp"
+#include "../../src/math/math_interface.hpp"
 
 
 void print_vector(cusfloat (&v)[3])

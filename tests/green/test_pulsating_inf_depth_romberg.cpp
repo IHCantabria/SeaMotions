@@ -12,7 +12,7 @@
 // Include local modules
 #include "../../src/config.hpp"
 #include "../../src/green/pulsating.hpp"
-#include "../../src/math_tools.hpp"
+#include "../../src/math/math_tools.hpp"
 
 
 struct DataTable

@@ -6,7 +6,7 @@
 #include <string>
 
 // Include local modules
-#include "../../src/chebyshev.hpp"
+#include "../../src/math/chebyshev.hpp"
 #include "../../src/config.hpp"
 #include "../../src/tools.hpp"
 

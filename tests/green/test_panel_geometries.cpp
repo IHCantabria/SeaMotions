@@ -5,7 +5,7 @@
 #include <string>
 
 // Include local modules
-#include "../../src/math_tools.hpp"
+#include "../../src/math/math_tools.hpp"
 #include "test_panel_geometries.hpp"
 
 

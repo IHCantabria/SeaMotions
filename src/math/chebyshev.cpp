@@ -3,7 +3,7 @@
 #include <cmath>
 
 // Include local modules
-#include "config.hpp"
+#include "../config.hpp"
 #include "math_tools.hpp"
 
 

@@ -7,7 +7,7 @@
 #include <string>
 
 // Include local modules
-#include "config.hpp"
+#include "../config.hpp"
 
 //////////////////////////////////////////////
 ////// MATHEMATICAL CONSTANTS BLOCK //////////

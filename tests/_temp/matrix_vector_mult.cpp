@@ -7,7 +7,7 @@
 
 // Include local modules
 #include "../../src/config.hpp"
-#include "../../src/math_interface.hpp"
+#include "../../src/math/math_interface.hpp"
 #include "../../src/tools.hpp"
 
 

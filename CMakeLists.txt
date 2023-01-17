@@ -69,17 +69,17 @@ add_subdirectory(tests)
 # infinite water depth expansion series
 set(chebyshev_inf_depth_src
     ./src/green/fit_chebyshev_inf_depth.cpp
-    ./src/chebyshev.hpp
-    ./src/chebyshev.cpp
+    ./src/math/chebyshev.hpp
+    ./src/math/chebyshev.cpp
     ./src/config.hpp
     ./src/green/common.hpp
     ./src/green/common.cpp
     ./src/green/pulsating.hpp
     ./src/green/pulsating.cpp
-    ./src/math_tools.hpp
-    ./src/math_tools.cpp
-    ./src/special_math.hpp
-    ./src/special_math.cpp
+    ./src/math/math_tools.hpp
+    ./src/math/math_tools.cpp
+    ./src/math/special_math.hpp
+    ./src/math/special_math.cpp
     ./src/tools.hpp
     ./src/tools.cpp
 )

@@ -7,7 +7,7 @@
 
 // Include local modules
 #include "../../src/config.hpp"
-#include "../../src/math_tools.hpp"
+#include "../../src/math/math_tools.hpp"
 
 
 cusfloat NUM_EPS_PRECISION = 1e-8;

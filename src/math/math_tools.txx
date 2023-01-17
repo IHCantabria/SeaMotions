@@ -9,7 +9,7 @@
 #include <cmath>
 
 // Include local modules
-#include "tools.hpp"
+#include "../tools.hpp"
 
 
 template<typename T>

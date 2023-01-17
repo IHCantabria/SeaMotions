@@ -4,7 +4,7 @@
 #include "../../src/containers.hpp"
 #include "../../src/green/dipole.hpp"
 #include "../../src/green/source.hpp"
-#include "../../src/math_tools.hpp"
+#include "../../src/math/math_tools.hpp"
 #include "test_panel_geometries.hpp"
 
 

@@ -7,7 +7,7 @@
 
 // Include local modules
 #include "../../src/config.hpp"
-#include "../../src/math_tools.hpp" 
+#include "../../src/math/math_tools.hpp" 
 
 
 int sub_test_sv_add(cusfloat* u, cusfloat* v)
