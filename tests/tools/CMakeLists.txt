@@ -232,3 +232,23 @@ set(test_chebyshev_roots_src
 )
 
 add_executable(test_chebyshev_roots_cmd ${test_chebyshev_roots_src})
+
+
+# Add test to check the bisection method
+set(test_bisection_src
+    test_bisection.cpp
+    ../containers.hpp
+    ../../src/config.hpp
+    ../../src/math/chebyshev.hpp
+    ../../src/math/chebyshev.cpp
+    ../../src/math/math_tools.hpp
+    ../../src/math/math_tools.cpp
+    ../../src/math/math_tools.txx
+    ../../src/math/special_math.hpp
+    ../../src/math/special_math.cpp
+    ../../src/tools.hpp
+    ../../src/tools.cpp
+    ../../src/tools.txx
+)
+
+add_executable(test_bisection_cmd ${test_bisection_src})
