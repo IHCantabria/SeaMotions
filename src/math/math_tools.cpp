@@ -101,3 +101,71 @@ signed long long factorial(int n)
 
     return pk;
 }
+
+
+void newton_raphson(std::function<cusfloat(cusfloat)> f_def, std::function<cusfloat(cusfloat)> f_der_def,
+    cusfloat x0, cusfloat fabs_tol, cusfloat xrel_tol, int max_iter, bool verbose, cusfloat &sol, 
+    int &info)
+{
+    /**
+     * @brief Newthon-Rapshon method to solve non-linear equations of the type x=T(x).
+     * 
+     * This function implements the Newthon-Rapshon method to solve non-linear equations. The
+     * solver is prepared to solve monoparametric equations (1D). The solver is based on the 
+     * clasical algorithm that can be found at: 
+     *  - Numerical Recipes The Art of Scientific Computing. W.Press S.Teukolsky
+     * 
+     * \param f_def Target function definition
+     * \param f_der_der Target function derivative definition
+     * \param x0 First pont to start iterations
+     * \param fabs_tol Absolute value tolerance of target function value to stop iterations: f_def(x) < fabs_tol
+     * \param xrel_tol Relative tolerance of the independent variable to stop the iterations: dx < x*xrel_tol
+     * \param max_iter Maximum iterations allowed
+     * \param verbose Flag to activate the iterative process print out to screen.
+     * \param sol Solution to the equation provided.
+     * \param info This parameter describes the finish status of the iterative process.
+     *              - info == 0 -> Solution found.
+     *              - info == 1 -> Solution not found or convergence problems.
+     * 
+     */
+    // Set info variable to sucess. It will be set to failed
+    // if the convergence is poor or it fails.
+    info = 0;
+
+    // Perform iterative loop to look for the solution
+    cusfloat x = x0, dx = 0.0;
+    int count_iter = 0;
+    while (true)
+    {
+        // Calculate new increment
+        dx = f_def(x)/f_der_def(x);
+
+        // Calculate new solution point
+        x -= dx;
+
+        // Print-out to screen the iterative process status
+        if (verbose)
+        {
+            std::cout << "Iter: " << count_iter << " - fabs(x): " << f_def(x);
+            std::cout << " - x: " << x << " - dx: " << dx << std::endl; 
+        }
+
+        // Check for convergence
+        if ((std::abs(f_def(x))<fabs_tol && (std::abs(dx)<=std::abs(xrel_tol*x+1e-14))))
+        {
+            break;
+        }
+
+        // Update iterations and check for limits
+        if (count_iter > max_iter)
+        {
+            std::cerr << "WARNING: Newton-Raphson method could not find the solution ";
+            std::cerr << "with the accurancy requested. Residual Value: " << f_def(x) << std::endl;
+            info = 1;
+            break;
+        }
+    }
+
+    // Storage result in output channel
+    sol = x;
+}
