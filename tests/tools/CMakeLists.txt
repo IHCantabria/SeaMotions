@@ -232,6 +232,11 @@ set(test_chebyshev_roots_src
 )
 
 add_executable(test_chebyshev_roots_cmd ${test_chebyshev_roots_src})
+set(file_path_cheby_roots "${CMAKE_SOURCE_DIR}/tests/tests_data/cheby_roots.dat")
+add_test(NAME test_chebyshev_roots
+        COMMAND test_chebyshev_roots_cmd
+        ${file_path_cheby_roots}
+        )
 
 
 # Add test to check the bisection method
@@ -252,3 +257,6 @@ set(test_bisection_src
 )
 
 add_executable(test_bisection_cmd ${test_bisection_src})
+add_test(NAME test_bisection
+        COMMAND test_bisection_cmd
+        )
