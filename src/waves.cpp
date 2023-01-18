@@ -10,6 +10,12 @@
 #include "./math/math_tools.hpp"
 
 
+cusfloat dispersion_imag_zero(cusfloat nu, cusfloat h, cusfloat k)
+{
+    return nu+k*std::tan(k*h);
+}
+
+
 cusfloat dispersion_real_zero(cusfloat nu, cusfloat h, cusfloat k)
 {
     return nu-k*std::tanh(k*h);
@@ -72,4 +78,64 @@ cusfloat w2k(cusfloat w, cusfloat h, cusfloat g)
     }
 
     return k;
+}
+
+
+void w2ki(cusfloat w, cusfloat h, cusfloat g, int n, cusfloat* kn)
+{
+    /**
+     * @brief Calculate imaginary wave numbers using the dispersion relation.
+     * 
+     * This function calculates the imaginary wave number which is the solution 
+     * to the dispersion relation:
+     *                 w^2/g=-k·tg(k·h)
+     * 
+     * \param w Angular frequency of the wave.
+     * \param h Water depth
+     * \param g Gravitational acceleration
+     * \param n Number of imaginary solutions to calculate
+     * \param kn Output channel to get the imaginary wave numbers
+     */
+
+    // Calculate inteval bounds based on finite and 
+    // infinite water depth aproximations of the 
+    // dispersion relation
+    cusfloat nu = pow2s(w)/g;
+
+    // Loop over the N first branches of the tangent function 
+    // to find the N first imaginary solutions
+    int info = -1;
+    cusfloat ki = 0;
+    for (int i=0; i<n; i++)
+    {
+        // Calculate solution at brank i+1
+        bisection(
+                [nu, h](cusfloat k){return dispersion_imag_zero(nu, h, k);},
+                (((i+1)-0.5)*PI)/h+1e-12,
+                (i+1)*PI/h,
+                1e-10,
+                1e-10,
+                100,
+                false,
+                ki,
+                info
+                );
+        
+        // Check for correct convergence
+        if (info != 0)
+        {
+            std::cerr << "Bisection method could not find the solution for the ";
+            std::cerr << "dispersion equation with parameters:" << std::endl;
+            std::cerr << "  -> T: " << 2*PI/w << std::endl;
+            std::cerr << "  -> w: " << w << std::endl;
+            std::cerr << "  -> nu: " << ki << std::endl;
+            std::cerr << "  -> h: " << h << std::endl;
+            std::cerr << "At branch : " << ((i+1)-0.5)*PI << " - " << (i+1)*PI << std::endl;
+            std::cerr << std::endl;
+            throw std::runtime_error("w2ki function had a convergence problem. Check log file for more details.");
+        }
+
+        // Storage the result
+        kn[i] = ki;
+    }
 }
