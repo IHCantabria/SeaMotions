@@ -15,7 +15,7 @@
 
 
 // Define precision for the calculation of the wave number
-
+cusfloat WAVENUM_TOL = 1e-6;
 
 
 struct RefData
@@ -106,7 +106,7 @@ bool test_dispersion_real(std::string file_path)
             // Check wave number with reference data
             k_ref = ref_data.wave_number[i*ref_data.num_period+j];
             diff = std::abs(k-k_ref);
-            if (diff>1e-6)
+            if (diff>WAVENUM_TOL)
             {
                 std::cerr << "The wave number associated to the wave period: ";
                 std::cerr << ref_data.wave_period[j] << " s and depth: " << ref_data.water_depth[i]; 
@@ -140,10 +140,20 @@ int main(int argc, char* argv[])
 
     // 
     pass = test_dispersion_real(file_path_real);
-    // cusfloat T = 15.0;
-    // cusfloat h = 0.1;
+    // cusfloat T = 10.0;
+    // cusfloat h = 100;
     // cusfloat w = 2*PI/T;
     // cusfloat k = w2k(w, h, 9.81);
+    // int n = 10;
+    // cusfloat* k = new cusfloat[n];
+
+    // w2ki(w, h, 9.81, n, k);
+    // for (int i=0; i<n; i++)
+    // {
+    //     std::cout << "n[" << i << "]: " << k[i] << std::endl;
+    // }
+
+    // delete [] k;
 
     return 0;
 }
