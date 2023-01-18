@@ -12,7 +12,7 @@
 /////// FUNCTION DEFINITION BLOCK ////////////
 //////////////////////////////////////////////
 void bisection(std::function<cusfloat(cusfloat)> f_def, cusfloat a, cusfloat b, 
-                cusfloat abs_prec, cusfloat rel_prec, int max_iter, bool verbose,
+                cusfloat fabs_tol, cusfloat xrel_tol, int max_iter, bool verbose,
                 cusfloat &sol, int &info)
 {
     /**
@@ -25,8 +25,8 @@ void bisection(std::function<cusfloat(cusfloat)> f_def, cusfloat a, cusfloat b,
      * \param f_def Target function
      * \param a Lower bound of the interval in which is assumed to have the zero.
      * \param b Upper bound of the interval in which is assumed to have the zero.
-     * \param abs_prec Absolute precision to stop the search of the zero.
-     * \param rel_prec Relative precision to stop the search of the zero.
+     * \param fabs_tol Absolute value tolerance of target function value to stop iterations: f_def(x) < fabs_tol
+     * \param xrel_tol Relative tolerance of the independent variable to stop the iterations: dx < x*xrel_tol
      * \param max_iter Maximum iterations allowed to find the zero of the target function.
      * \param verbose Bool flag to print out to screen the iterative path to find the solution.
      * \param sol Scalar parameter in which store the solution of the iterative process.
@@ -37,7 +37,7 @@ void bisection(std::function<cusfloat(cusfloat)> f_def, cusfloat a, cusfloat b,
 
     // Start the iterative method
     cusfloat fa = f_def(a);
-    cusfloat c, cb=(a+b)/2.0+2*rel_prec+1.0;
+    cusfloat c, cb=(a+b)/2.0+2*xrel_tol+1.0;
     cusfloat fc;
 
     // Start iterative loop
@@ -58,7 +58,7 @@ void bisection(std::function<cusfloat(cusfloat)> f_def, cusfloat a, cusfloat b,
         }
 
         // Check for convergence
-        if ((abs(fc)<=abs_prec) || (abs(c-cb)<rel_prec))
+        if ((abs(fc)<=fabs_tol) || (abs(c-cb)<abs(c*xrel_tol)))
         {
             break;
         }
