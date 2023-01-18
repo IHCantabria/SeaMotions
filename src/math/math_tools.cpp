@@ -41,13 +41,19 @@ void bisection(std::function<cusfloat(cusfloat)> f_def, cusfloat a, cusfloat b,
     cusfloat fc;
 
     // Start iterative loop
+    cusfloat abs_err = 0.0;
     int count_iter = 0;
     info = 0;
+    cusfloat rel_err = 0.0;
     while (true)
     {
         // Calculate new value
         c = (a+b)/2.0;
         fc = f_def(c);
+        
+        // Calculate errors
+        abs_err = abs(fc);
+        rel_err = abs(c-cb);
 
         // Print iterative process
         if (verbose)
@@ -55,10 +61,11 @@ void bisection(std::function<cusfloat(cusfloat)> f_def, cusfloat a, cusfloat b,
             std::cout << "Iter: " << count_iter << " - x: " << c << " - f(x): " << fc << std::endl;
             std::cout << "  -> a: " << a << " - f(a): " << f_def(a) << std::endl;
             std::cout << "  -> b: " << b << " - f(b): " << f_def(b) << std::endl;
+            std::cout << "      - Abs.Error: " << abs_err << " - Rel.Error: " << rel_err << std::endl;
         }
 
         // Check for convergence
-        if ((abs(fc)<=fabs_tol) || (abs(c-cb)<abs(c*xrel_tol)))
+        if ((abs(fc)<=fabs_tol) || (abs(c-cb)<abs(c*xrel_tol+1e-14)))
         {
             break;
         }
@@ -151,7 +158,7 @@ void newton_raphson(std::function<cusfloat(cusfloat)> f_def, std::function<cusfl
         }
 
         // Check for convergence
-        if ((std::abs(f_def(x))<fabs_tol && (std::abs(dx)<=std::abs(xrel_tol*x+1e-14))))
+        if ((std::abs(f_def(x))<fabs_tol || (std::abs(dx)<=std::abs(xrel_tol*x+1e-14))))
         {
             break;
         }
@@ -164,6 +171,7 @@ void newton_raphson(std::function<cusfloat(cusfloat)> f_def, std::function<cusfl
             info = 1;
             break;
         }
+        count_iter++;
     }
 
     // Storage result in output channel
