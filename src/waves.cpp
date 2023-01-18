@@ -16,7 +16,7 @@ cusfloat dispersion_real_zero(cusfloat nu, cusfloat h, cusfloat k)
 }
 
 
-cusfloat dispersion_dk_real_zero(cusfloat nu, cusfloat h, cusfloat k)
+cusfloat dispersion_real_zero_dk(cusfloat nu, cusfloat h, cusfloat k)
 {
     return -(std::tanh(k*h)+k*h*(1-pow2s(tanh(k*h))));
 }
@@ -49,7 +49,7 @@ cusfloat w2k(cusfloat w, cusfloat h, cusfloat g)
     cusfloat k = -1;
     newton_raphson(
         [ki, h](cusfloat k){return dispersion_real_zero(ki, h, k);},
-        [ki, h](cusfloat k){return dispersion_dk_real_zero(ki, h, k);},
+        [ki, h](cusfloat k){return dispersion_real_zero_dk(ki, h, k);},
         ki,
         1e-10,
         1e-6,
