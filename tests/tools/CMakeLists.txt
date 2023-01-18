@@ -240,8 +240,8 @@ add_test(NAME test_chebyshev_roots
 
 
 # Add test to check the bisection method
-set(test_bisection_src
-    test_bisection.cpp
+set(test_nonlinear_1d_solvers_src
+    test_nonlinear_1d_solvers.cpp
     ../containers.hpp
     ../../src/config.hpp
     ../../src/math/chebyshev.hpp
@@ -256,7 +256,7 @@ set(test_bisection_src
     ../../src/tools.txx
 )
 
-add_executable(test_bisection_cmd ${test_bisection_src})
-add_test(NAME test_bisection
-        COMMAND test_bisection_cmd
+add_executable(test_nonlinear_1d_solvers_cmd ${test_nonlinear_1d_solvers_src})
+add_test(NAME test_nonlinear_1d_solvers
+        COMMAND test_nonlinear_1d_solvers_cmd
         )
