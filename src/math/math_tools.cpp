@@ -53,6 +53,8 @@ void bisection(std::function<cusfloat(cusfloat)> f_def, cusfloat a, cusfloat b,
         if (verbose)
         {
             std::cout << "Iter: " << count_iter << " - x: " << c << " - f(x): " << fc << std::endl;
+            std::cout << "  -> a: " << a << " - f(a): " << f_def(a) << std::endl;
+            std::cout << "  -> b: " << b << " - f(b): " << f_def(b) << std::endl;
         }
 
         // Check for convergence
