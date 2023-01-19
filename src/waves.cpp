@@ -75,6 +75,9 @@ cusfloat w2k(cusfloat w, cusfloat h, cusfloat g)
         std::cerr << "  -> nu: " << ki << std::endl;
         std::cerr << "  -> h: " << h << std::endl;
         std::cerr << std::endl;
+        std::string err_message = "w2k function could not find the real rool of the dispersion equation.";
+        err_message += " See log file for more details.";
+        throw std::runtime_error(err_message);
     }
 
     return k;
