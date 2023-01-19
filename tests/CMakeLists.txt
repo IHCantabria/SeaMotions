@@ -22,3 +22,12 @@ set(test_dispersion_src
 )
 
 add_executable(test_dispersion_cmd ${test_dispersion_src})
+set(
+    files_path_dispersion
+    "${CMAKE_SOURCE_DIR}/tests/tests_data/solution_dispersion_real.dat"
+    "${CMAKE_SOURCE_DIR}/tests/tests_data/solution_dispersion_imag.dat"
+    )
+add_test(NAME test_dispersion
+        COMMAND test_dispersion_cmd
+        ${files_path_dispersion}
+        )
