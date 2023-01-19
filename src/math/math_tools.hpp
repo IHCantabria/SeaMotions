@@ -20,6 +20,7 @@ const cusfloat EULERGAMMA = 0.577215664901533;
 //////////////////////////////////////////////
 /////// FUNCTION DEFINITION BLOCK ////////////
 //////////////////////////////////////////////
+int assert_complex_equality(cuscomplex u, cuscomplex v, cusfloat epsilon);
 template<typename T> inline int assert_scalar_equality(T &u, T &v, T epsilon);
 template<typename T> inline int assert_vector_equality(int N, T* u, T* v, T epsilon);
 template<> inline int assert_vector_equality<int>(int N, int* u, int* v, int epsilon);

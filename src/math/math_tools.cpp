@@ -11,6 +11,22 @@
 //////////////////////////////////////////////
 /////// FUNCTION DEFINITION BLOCK ////////////
 //////////////////////////////////////////////
+int assert_complex_equality(cuscomplex u, cuscomplex v, cusfloat epsilon)
+{
+    int pass = 0;
+    if (
+        (std::abs(u.real()-v.real())<epsilon)
+        &&
+        (std::abs(u.imag()-v.imag())<epsilon)
+        )
+    {
+        pass = 1;
+    }
+
+    return pass;
+}
+
+
 void bisection(std::function<cusfloat(cusfloat)> f_def, cusfloat a, cusfloat b, 
                 cusfloat fabs_tol, cusfloat xrel_tol, int max_iter, bool verbose,
                 cusfloat &sol, int &info)
