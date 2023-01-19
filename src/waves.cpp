@@ -46,7 +46,6 @@ cusfloat w2k(cusfloat w, cusfloat h, cusfloat g)
     // infinite water depth aproximations of the 
     // dispersion relation
     cusfloat ki = pow2s(w)/g;
-    cusfloat kf = std::sqrt(ki/h);
 
     // Call bisection algorith to find zero of the dispersion
     // relation for this depth
