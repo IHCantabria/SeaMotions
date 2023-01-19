@@ -163,7 +163,6 @@ bool test_dispersion_imag(std::string file_path)
             w2ki(w, ref_data.water_depth[i], g, ref_data.num_kn, kn);
 
             // Loop over results to compare with the reference ones
-            std::cout << "num_kn: " << ref_data.num_kn << std::endl;
             for (int k=0; k<ref_data.num_kn; k++)
             {
                 index_ref = (
@@ -184,13 +183,17 @@ bool test_dispersion_imag(std::string file_path)
                     std::cerr << " - k_target: " << k_ref << " - Diff" << pow2s(w)/ref_data.grav_acc+k_ref*std::tan(k_ref*ref_data.water_depth[i]) << std::endl;
                     std::cerr << " - ki: " << kn[k] << " - Diff" << pow2s(w)/ref_data.grav_acc+kn[k]*std::tan(kn[k]*ref_data.water_depth[i]) << std::endl;
                     pass = false;
+                    goto exit;
                 }
             }
         }
     }
 
-    // Delete heap memory
-    delete [] kn;
+    exit:
+        // Delete heap memory
+        delete [] kn;
+
+        return pass;
 }
 
 
@@ -233,10 +236,13 @@ bool test_dispersion_real(std::string file_path)
                 std::cerr << " - k_target: " << k_ref << " - Diff" << pow2s(w)/ref_data.grav_acc-k_ref*std::tanh(k_ref*ref_data.water_depth[i]) << std::endl;
                 std::cerr << " - ki: " << k << " - Diff" << pow2s(w)/ref_data.grav_acc-k*std::tanh(k*ref_data.water_depth[i]) << std::endl;
                 pass = false;
+                goto exit;
             }
         }
     }
 
+    exit:
+        return pass;
 }
 
 
@@ -253,25 +259,21 @@ int main(int argc, char* argv[])
 
     // Declare logic system variables
     bool pass = false;
-    // int return_chn = 0;
+    int return_chn = 0;
 
-    // 
-    // pass = test_dispersion_real(file_path_real);
+    // Launch checking the real roots finding
+    pass = test_dispersion_real(file_path_real);
+    if (!pass)
+    {
+        return_chn = 1;
+    }
+
+    // Launch checking the imaginary roots finding
     pass = test_dispersion_imag(file_path_imag);
-    // cusfloat T = 0.001;
-    // cusfloat h = 10000.0;
-    // cusfloat w = 2*PI/T;
-    // // cusfloat k = w2k(w, h, 9.81);
-    // int n = 1;
-    // cusfloat* k = new cusfloat[n];
+    if (!pass)
+    {
+        return_chn = 1;
+    }
 
-    // w2ki(w, h, 9.81, n, k);
-    // for (int i=0; i<n; i++)
-    // {
-    //     std::cout << "n[" << i << "]: " << k[i] << std::endl;
-    // }
-
-    // delete [] k;
-
-    return 0;
+    return return_chn;
 }
