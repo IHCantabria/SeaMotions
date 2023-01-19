@@ -2,13 +2,17 @@
 #ifndef __config_hpp
 #define __config_hpp
 
+#include <complex>
+
 #ifdef SIMPLE_PREC
 typedef float cusfloat;
+typedef std::complex<float> cuscomplex;
 constexpr int FLOATING_PRECISION = 32;
 constexpr cusfloat EPS_PRECISION = 1e-6;
 constexpr cusfloat EPS_PRECISION_ORDER = -6;
 #else
 typedef double cusfloat;
+typedef std::complex<double> cuscomplex;
 constexpr int FLOATING_PRECISION = 32;
 constexpr cusfloat EPS_PRECISION = 1e-14;
 constexpr cusfloat EPS_PRECISION_ORDER = -14;
