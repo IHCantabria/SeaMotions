@@ -100,3 +100,25 @@ set_mkl_lib_target(test_wave_term_inf_depth_cmd)
 
 add_test(NAME test_wave_term_inf_depth
     COMMAND test_wave_term_inf_depth_cmd)
+
+
+# Add test to check the finite water depth 
+# wave term
+set(test_wave_term_fin_depth_src
+    test_wave_term_fin_depth.cpp
+    ../../src/config.hpp
+    ../../src/math/math_tools.hpp
+    ../../src/math/math_tools.cpp
+    ../../src/math/math_tools.txx
+    ../../src/green/pulsating_fin_depth.hpp
+    ../../src/green/pulsating_fin_depth.cpp
+    ../../src/math/special_math.hpp
+    ../../src/math/special_math.cpp
+    ../../src/tools.hpp
+    ../../src/tools.cpp
+    ../../src/tools.txx
+    ../../src/waves.hpp
+    ../../src/waves.cpp
+)
+
+add_executable(test_wave_term_fin_depth_cmd ${test_wave_term_fin_depth_src})
