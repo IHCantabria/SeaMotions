@@ -33,6 +33,13 @@ cuscomplex complex_integration(
                                 cuscomplex b,
                                 cusfloat tol
                                 );
+cuscomplex complex_integration_path(
+                                    std::function <cuscomplex(cuscomplex)> f_def,
+                                    int num_segments,
+                                    cuscomplex* waypoints,
+                                    cusfloat tol,
+                                    bool close_path
+                                    );
 template<typename T> inline T* generate_empty_vector(int size);
 template<typename T> void copy_vector(int n, T* reference_vector, T* target_vector);
 template<typename T> inline void cross(T (&u)[3], T (&v)[3], T (&w)[3]);

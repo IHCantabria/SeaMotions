@@ -44,10 +44,10 @@ cuscomplex complex_integration(
 {
     // Create auxiliary function to calculate the real and 
     // imaginary parts
-    cusfloat jac = std::abs(b-a);
+    cuscomplex jac = b-a;
     auto coord_map = [a, b](cusfloat t)->cuscomplex{return (a+t*(b-a));};
-    auto f_real = [f_def, coord_map, jac](cusfloat t)->cusfloat{return jac*f_def(coord_map(t)).real();};
-    auto f_imag = [f_def, coord_map, jac](cusfloat t)->cusfloat{return jac*f_def(coord_map(t)).imag();};
+    auto f_real = [f_def, coord_map, jac](cusfloat t)->cusfloat{return (jac*f_def(coord_map(t))).real();};
+    auto f_imag = [f_def, coord_map, jac](cusfloat t)->cusfloat{return (jac*f_def(coord_map(t))).imag();};
 
     // Perform integration of the real and imaginary parts
     cusfloat real_part = romberg_quadrature(f_real, 0.0, 1.0, tol);
@@ -55,6 +55,39 @@ cuscomplex complex_integration(
     cuscomplex z0 = real_part + imag_part*1i;
 
     return z0;
+}
+
+
+cuscomplex complex_integration_path(
+                                    std::function <cuscomplex(cuscomplex)> f_def,
+                                    int num_segments,
+                                    cuscomplex* way_points,
+                                    cusfloat tol,
+                                    bool close_path
+                                    )
+{
+    // Declare solution storage variable
+    cuscomplex sol = 0.0 + 0.0i;
+
+    // Calculate limits for loop integration
+    int N = num_segments-1;
+    if (close_path)
+    {
+        N++;
+    }
+
+    // Loop over segments
+    int j = 0;
+    for (int i=0; i<N; i++)
+    {
+        // Calculate forward index
+        j = (i+1)%num_segments;
+
+        // Calculate integral over the segment
+        sol += complex_integration(f_def, way_points[i], way_points[j], tol);
+    }
+
+    return sol;
 }
 
 
