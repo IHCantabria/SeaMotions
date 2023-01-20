@@ -1,4 +1,7 @@
 
+// Include general usage libraries
+#include <functional>
+
 // Include external scientific libraries
 #include <cmath>
 #include "mkl.h"
@@ -6,6 +9,10 @@
 // Include local libraries
 #include "../config.hpp"
 #include "math_tools.hpp"
+
+
+// Include namespaces
+using namespace std::literals::complex_literals;
 
 
 //////////////////////////////////////////////
@@ -24,6 +31,30 @@ int assert_complex_equality(cuscomplex u, cuscomplex v, cusfloat epsilon)
     }
 
     return pass;
+}
+
+
+cuscomplex complex_integration(
+                                std::function <cuscomplex(cuscomplex)> f_def,
+                                cuscomplex a,
+                                cuscomplex b,
+                                cusfloat tol
+                                )
+
+{
+    // Create auxiliary function to calculate the real and 
+    // imaginary parts
+    cusfloat jac = std::abs(b-a);
+    auto coord_map = [a, b](cusfloat t)->cuscomplex{return (a+t*(b-a));};
+    auto f_real = [f_def, coord_map, jac](cusfloat t)->cusfloat{return jac*f_def(coord_map(t)).real();};
+    auto f_imag = [f_def, coord_map, jac](cusfloat t)->cusfloat{return jac*f_def(coord_map(t)).imag();};
+
+    // Perform integration of the real and imaginary parts
+    cusfloat real_part = romberg_quadrature(f_real, 0.0, 1.0, tol);
+    cusfloat imag_part = romberg_quadrature(f_imag, 0.0, 1.0, tol);
+    cuscomplex z0 = real_part + imag_part*1i;
+
+    return z0;
 }
 
 

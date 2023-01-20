@@ -27,6 +27,12 @@ template<> inline int assert_vector_equality<int>(int N, int* u, int* v, int eps
 void bisection(std::function<cusfloat(cusfloat)> f_def, cusfloat a, cusfloat b, 
                 cusfloat abs_prec, cusfloat rel_prec, int max_iter, bool verbose,
                 cusfloat &sol, int &info);
+cuscomplex complex_integration(
+                                std::function <cuscomplex(cuscomplex)> f_def,
+                                cuscomplex a,
+                                cuscomplex b,
+                                cusfloat tol
+                                );
 template<typename T> inline T* generate_empty_vector(int size);
 template<typename T> void copy_vector(int n, T* reference_vector, T* target_vector);
 template<typename T> inline void cross(T (&u)[3], T (&v)[3], T (&w)[3]);
