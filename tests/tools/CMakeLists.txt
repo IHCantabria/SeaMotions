@@ -260,3 +260,21 @@ add_executable(test_nonlinear_1d_solvers_cmd ${test_nonlinear_1d_solvers_src})
 add_test(NAME test_nonlinear_1d_solvers
         COMMAND test_nonlinear_1d_solvers_cmd
         )
+
+
+# Add test to check the complex integration functions
+set(test_complex_integration_src
+    test_complex_integration.cpp
+    ../../src/config.hpp
+    ../../src/math/math_tools.hpp
+    ../../src/math/math_tools.cpp
+    ../../src/math/math_tools.txx
+    ../../src/tools.hpp
+    ../../src/tools.cpp
+    ../../src/tools.txx
+    )
+
+add_executable(test_complex_integration_cmd ${test_complex_integration_src})
+add_test(NAME test_complex_integration  
+        COMMAND test_complex_integration_cmd
+        )
