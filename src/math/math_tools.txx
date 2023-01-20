@@ -183,7 +183,7 @@ template<typename Functor>
 cusfloat romberg_quadrature(Functor f, cusfloat a, cusfloat b, double precision)
 {
     // Define buffers
-    const int max_steps = 30;
+    const int max_steps = 50;
     cusfloat* rp = new cusfloat [max_steps];
     cusfloat* rc = new cusfloat [max_steps];
 
