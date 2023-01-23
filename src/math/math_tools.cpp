@@ -40,6 +40,17 @@ cuscomplex complex_integration(
                                 cuscomplex b,
                                 cusfloat tol
                                 )
+/**
+ * @brief Integrate complex function along the segment [a,b].
+ * 
+ * Perform integration in the complex plane along the segment [a,b]. The integration is performed 
+ * using Romberg's method.
+ * 
+ * \param f_def Target complex function to integate.
+ * \param a First point of the segment.
+ * \param b Second point of the segment.
+ * \param tol Tolerance of integration. The tolerance is measured using Rirchardson Extrapolation.
+ */
 
 {
     // Create auxiliary function to calculate the real and 
@@ -60,19 +71,36 @@ cuscomplex complex_integration(
 
 cuscomplex complex_integration_path(
                                     std::function <cuscomplex(cuscomplex)> f_def,
-                                    int num_segments,
+                                    int num_way_points,
                                     cuscomplex* way_points,
                                     cusfloat tol,
                                     bool close_path,
                                     bool verbose
                                     )
+/**
+ * @brief Integrate function along a path defined by a list of way points.
+ * 
+ * The integration along the way points list is performed using the function 
+ * complex_integration(). Therfore, the integration in between successive 
+ * way points is treated as a straight segment in between them.
+ * 
+ * \param f_def Target complex function to integrate
+ * \param num_way_points Number of way points specified
+ * \param way_points Way points that specify the integration path
+ * \param tol Tolerance for the integration.
+ * \param close_path Flag that specifies if the way points should be treated as closed path.
+ *                   If true the last way point is joint with the first one in the list.
+ * \param verbose Flag to activate the print-out to screen. This print-out specifies the value
+ *                  of the integral at each interval of way-points list.
+ * 
+ */
 {
     // Declare solution storage variable
     cuscomplex ci = 0.0 + 0.0i;
     cuscomplex sol = 0.0 + 0.0i;
 
     // Calculate limits for loop integration
-    int N = num_segments-1;
+    int N = num_way_points-1;
     if (close_path)
     {
         N++;
@@ -83,7 +111,7 @@ cuscomplex complex_integration_path(
     for (int i=0; i<N; i++)
     {
         // Calculate forward index
-        j = (i+1)%num_segments;
+        j = (i+1)%num_way_points;
 
         // Calculate integral over the segment
         ci = complex_integration(f_def, way_points[i], way_points[j], tol);
