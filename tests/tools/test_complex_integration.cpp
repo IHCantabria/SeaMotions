@@ -213,25 +213,25 @@ int main(void)
     bool pass = false;
 
     // Launch test 0 -> int(z^2, 0.0+0.0i, 1.0+1.0i)
-    // pass = launch_test0();
-    // if (!pass)
-    // {
-    //     return 1;
-    // }
+    pass = launch_test0();
+    if (!pass)
+    {
+        return 1;
+    }
 
-    // // Launch test 1 -> int(1/z, -inf+0.0i, inf+0.0i)
-    // pass = launch_test1();
-    // if (!pass)
-    // {
-    //     return 1;
-    // }
+    // Launch test 1 -> int(1/z, -inf+0.0i, inf+0.0i)
+    pass = launch_test1();
+    if (!pass)
+    {
+        return 1;
+    }
 
     // Launch test 2 -> int(1/(z^2-1), -inf+0.0i, inf+0.0i)
-    // pass = launch_test2();
-    // if (!pass)
-    // {
-    //     return 1;
-    // }
+    pass = launch_test2();
+    if (!pass)
+    {
+        return 1;
+    }
 
     // Launch test 3 -> int(1/(z^2+1), -inf+0.0i, inf+0.0i)
     pass = launch_test3();
