@@ -38,7 +38,8 @@ cuscomplex complex_integration_path(
                                     int num_segments,
                                     cuscomplex* waypoints,
                                     cusfloat tol,
-                                    bool close_path
+                                    bool close_path,
+                                    bool verbose
                                     );
 template<typename T> inline T* generate_empty_vector(int size);
 template<typename T> void copy_vector(int n, T* reference_vector, T* target_vector);

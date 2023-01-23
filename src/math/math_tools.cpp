@@ -63,10 +63,12 @@ cuscomplex complex_integration_path(
                                     int num_segments,
                                     cuscomplex* way_points,
                                     cusfloat tol,
-                                    bool close_path
+                                    bool close_path,
+                                    bool verbose
                                     )
 {
     // Declare solution storage variable
+    cuscomplex ci = 0.0 + 0.0i;
     cuscomplex sol = 0.0 + 0.0i;
 
     // Calculate limits for loop integration
@@ -84,7 +86,16 @@ cuscomplex complex_integration_path(
         j = (i+1)%num_segments;
 
         // Calculate integral over the segment
-        sol += complex_integration(f_def, way_points[i], way_points[j], tol);
+        ci = complex_integration(f_def, way_points[i], way_points[j], tol);
+        sol += ci;
+        if (verbose)
+        {
+            std::cout << "Path Segment [" << i << "]: " << std::endl;
+            std::cout << "  -> A: " << way_points[i] << std::endl;
+            std::cout << "  -> B: " << way_points[j] << std::endl;
+            std::cout << "  -> Int. Value: " << ci << std::endl;
+            std::cout << "  -> Int. Value. Cum: " << sol << std::endl;
+        }
     }
 
     return sol;
