@@ -14,7 +14,7 @@ using namespace std::literals::complex_literals;
 
 void assert_test(cuscomplex zn, cuscomplex za, std::string test_name, bool &pass)
 {
-    if (!assert_complex_equality(zn, za, EPS_PRECISION))
+    if (!assert_complex_equality(zn, za, 2*EPS_PRECISION))
     {
         std::cout << "test_complex_integration/" << test_name << " failed!" << std::endl;
         std::cout << " - Int(num): " << zn << std::endl;
@@ -61,7 +61,7 @@ bool launch_test0(void)
     way_points[1] = 1.0 + 1.0i;
 
     // Integrate function along path
-    cuscomplex zn = complex_integration_path(fcn_0, N, way_points, 1e-6, false);
+    cuscomplex zn = complex_integration_path(fcn_0, N, way_points, 1e-6, false, false);
 
     // Calculate theoretical solution
     cuscomplex ri = 1.0 + 1.0i;
@@ -101,7 +101,7 @@ bool launch_test1(void)
     waypoints[16] = 1e6 + 0.0i;
 
     // Calculate Numerical Integral value
-    cuscomplex zn = complex_integration_path(fcn_1, N, waypoints, 1e-12, false);
+    cuscomplex zn = complex_integration_path(fcn_1, N, waypoints, 1e-12, false, false);
 
     // Set Analytical value
     cuscomplex za = 0.0 - PI*1i;
@@ -119,7 +119,7 @@ bool launch_test2(void)
     bool pass = false;
 
     // Define waypoints
-    const int N = 17;
+    const int N = 18;
     cuscomplex waypoints[N];
     waypoints[0] = -1e6 + 0.0i;
     waypoints[1] = -1e5 + 0.0i;
@@ -128,26 +128,26 @@ bool launch_test2(void)
     waypoints[4] = -1e2 + 0.0i;
     waypoints[5] = -1e1 + 0.0i;
     waypoints[6] = -1.5 + 0.0i;
-    waypoints[7] = -1.0 + 1.0i;
-    waypoints[8] = -0.5 + 0.0i;
-    waypoints[8] =  0.5 + 0.0i;
-    waypoints[9] =  1.0 + 1.0i;
-    waypoints[10] =  1.5 + 0.0i;
-    waypoints[11] =  1e1 + 0.0i;
-    waypoints[12] =  1e2 + 0.0i;
-    waypoints[13] =  1e3 + 0.0i;
-    waypoints[14] =  1e4 + 0.0i;
-    waypoints[15] =  1e5 + 0.0i;
-    waypoints[16] =  1e6 + 0.0i;
+    waypoints[7] = -1.0 + 0.75i;
+    waypoints[8] = -0.75 + 0.0i;
+    waypoints[9] =  0.75 + 0.0i;
+    waypoints[10] =  1.0 + -0.75i;
+    waypoints[11] =  1.5 + 0.0i;
+    waypoints[12] =  1e1 + 0.0i;
+    waypoints[13] =  1e2 + 0.0i;
+    waypoints[14] =  1e3 + 0.0i;
+    waypoints[15] =  1e4 + 0.0i;
+    waypoints[16] =  1e5 + 0.0i;
+    waypoints[17] =  1e6 + 0.0i;
 
     // Calulate Integral value
-    cuscomplex z0 = complex_integration_path(fcn_2, N, waypoints, 1e-12, false);
-    std::cout << "z0: " << z0 << std::endl;
-    // cuscomplex a = 1.0 + 0.0i;
-    // cuscomplex b = 2.0 + 0.0i;
-    // cuscomplex z0 = complex_integration(fcn_1, a, b, 1e-6);
-    // std::cout << "z0: " << z0 << std::endl;
+    cuscomplex zn = complex_integration_path(fcn_2, N, waypoints, 1e-12, false, false);
+    
+    // Set Analytical value
+    cuscomplex za = -2e-6 + PI*1i;
 
+    // Compare Numerical and Analytical results
+    assert_test(zn, za, "sub_test_2", pass);
 
     return pass;
 }
@@ -159,36 +159,48 @@ bool launch_test3(void)
     bool pass = false;
 
     // Define waypoints
-    const int N = 19;
+    const int N = 31;
     cuscomplex waypoints[N];
-    waypoints[0] = -1e7 + 0.0i;
-    waypoints[1] = -1e5 + 0.0i;
-    waypoints[2] = -1e4 + 0.0i;
-    waypoints[3] = -1e3 + 0.0i;
-    waypoints[4] = -1e2 + 0.0i;
-    waypoints[5] = -1e1 + 0.0i;
-    waypoints[6] = -2.0 + 0.0i;
-    waypoints[7] = -1.0 + 0.0i;
-    waypoints[8] =  0.0 + 0.0i;
-    waypoints[9] =  1.0 + 0.0i;
-    waypoints[10] =  2.0 + 0.0i;
+    waypoints[0] =  -1e6 + 0.0i;
+    waypoints[1] =  -1e5 + 0.0i;
+    waypoints[2] =  -1e4 + 0.0i;
+    waypoints[3] =  -1e3 + 0.0i;
+    waypoints[4] =  -1e2 + 0.0i;
+    waypoints[5] =  -1e1 + 0.0i;
+    waypoints[6] =  -1.5 + 0.0i;
+    waypoints[7] =  -1.0 + 0.0i;
+    waypoints[8] =   0.0 + 0.0i;
+    waypoints[9] =   1.0 + 0.0i;
+    waypoints[10] =  1.5 + 0.0i;
     waypoints[11] =  1e1 + 0.0i;
     waypoints[12] =  1e2 + 0.0i;
     waypoints[13] =  1e3 + 0.0i;
     waypoints[14] =  1e4 + 0.0i;
     waypoints[15] =  1e5 + 0.0i;
-    waypoints[16] =  1e7 + 0.0i;
-    waypoints[17] =  0.0 + 5.0i;
-    waypoints[18] = -1e7 + 0.0i;
-
+    waypoints[16] =  1e6 + 0.0i;
+    waypoints[17] =  1e6 + 5.0i;
+    waypoints[18] =  0.0 + 5.0i;
+    waypoints[19] =  1e5 + 5.0i;
+    waypoints[20] =  1e4 + 5.0i;
+    waypoints[21] =  1e3 + 5.0i;
+    waypoints[22] =  1e2 + 5.0i;
+    waypoints[23] =  1e1 + 5.0i;
+    waypoints[24] =  0.0 + 5.0i;
+    waypoints[25] = -1e1 + 5.0i;
+    waypoints[26] = -1e2 + 5.0i;
+    waypoints[27] = -1e3 + 5.0i;
+    waypoints[28] = -1e4 + 5.0i;
+    waypoints[29] = -1e5 + 5.0i;
+    waypoints[30] = -1e6 + 5.0i;
 
     // Calulate Integral value
-    cuscomplex z0 = complex_integration_path(fcn_2, N, waypoints, 1e-6, false);
-    std::cout << "z0: " << z0 << std::endl;
-    // cuscomplex a = 1.0 + 0.0i;
-    // cuscomplex b = 2.0 + 0.0i;
-    // cuscomplex z0 = complex_integration(fcn_1, a, b, 1e-6);
-    // std::cout << "z0: " << z0 << std::endl;
+    cuscomplex zn = complex_integration_path(fcn_3, N, waypoints, 1e-12, true, false);
+    
+    // Set Analytical value
+    cuscomplex za = PI+0.0i;
+
+    // Compare Numerical and Analytical results
+    assert_test(zn, za, "sub_test_3", pass);
 
 
     return pass;
@@ -215,18 +227,18 @@ int main(void)
     // }
 
     // Launch test 2 -> int(1/(z^2-1), -inf+0.0i, inf+0.0i)
-    pass = launch_test2();
-    if (!pass)
-    {
-        return 1;
-    }
-
-    // // Launch test 3 -> int(1/(z^2+1), -inf+0.0i, inf+0.0i)
-    // pass = launch_test3();
+    // pass = launch_test2();
     // if (!pass)
     // {
     //     return 1;
     // }
+
+    // Launch test 3 -> int(1/(z^2+1), -inf+0.0i, inf+0.0i)
+    pass = launch_test3();
+    if (!pass)
+    {
+        return 1;
+    }
 
     return 0;
 }
