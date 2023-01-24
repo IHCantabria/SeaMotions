@@ -122,3 +122,13 @@ set(test_wave_term_fin_depth_src
 )
 
 add_executable(test_wave_term_fin_depth_cmd ${test_wave_term_fin_depth_src})
+
+set(
+    test_wave_term_fin_dpeth_files
+    "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/john_series.dat"
+    )
+add_test(
+        NAME test_wave_term_fin_depth
+        COMMAND test_wave_term_fin_depth_cmd
+        ${test_wave_term_fin_dpeth_files}
+        )
