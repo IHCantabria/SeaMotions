@@ -47,7 +47,7 @@ cuscomplex john_series(cusfloat R, cusfloat z, cusfloat zeta, cusfloat h,
 
     // Calculate vertical distances between the source and
     // the field point
-    cusfloat v3 = abs(z+zeta);
+    cusfloat v3 = z+zeta;
     cusfloat v4 = z-zeta+2*h;
     cusfloat v5 = zeta-z+2*h;
     cusfloat v6 = z+zeta+4*h;
@@ -55,7 +55,7 @@ cuscomplex john_series(cusfloat R, cusfloat z, cusfloat zeta, cusfloat h,
     // Calcuate real root series part
     cusfloat k0r = k0*R;
     cusfloat expsum = (
-                        + exp(-k0*v3)
+                        + exp(k0*v3)
                         + exp(-k0*v4)
                         + exp(-k0*v5)
                         + exp(-k0*v6)
@@ -87,6 +87,185 @@ cuscomplex john_series(cusfloat R, cusfloat z, cusfloat zeta, cusfloat h,
         if (count_k > (wave_data.num_kn-2))
         {
             std::cerr << "Jonh series could not converge up to the precision required with" << std::endl;
+            std::cerr << "Input parameters:"  << std::endl;
+            std::cerr << "  - R/h: " << R/h << std::endl;
+            std::cerr << "  - R: " << R << std::endl;
+            std::cerr << "  - z: " << z << std::endl;
+            std::cerr << "  - zeta: " << zeta << std::endl;
+            std::cerr << "  - h: " << h << std::endl;
+            std::cerr << "  - nu: " << wave_data.nu << std::endl;
+            std::cerr << "  - k0: " << k0 << std::endl;
+            std::cerr << "  - num_kn: " << wave_data.num_kn << std::endl;
+            std::cerr << "* Current term value is: " << ci << std::endl;
+            throw std::runtime_error("Jonh series value could not converge. See log file for details.");
+        }
+
+        // Update counter
+        count_k++;
+    }
+    sol += c_imag;
+
+    return sol;
+}
+
+
+cuscomplex john_series_dr(cusfloat R, cusfloat z, cusfloat zeta, cusfloat h,
+                        WaveDispersionData &wave_data)
+{
+    /**
+     * @brief Derivative with respect to R of the John series representation of the 
+     *        finite water depth Green function
+     * 
+     * Check out @see john_series() for more information.
+     * 
+     * \param R Horizontal distance between source and the field point
+     * \param z Vertical coordinate of the field point
+     * \param zeta Vertical coordinate of the source point
+     * \param h Water depth
+     * \param wave_data Wave dispersion data object initialized with John's constants
+     * \return value of the Jonh series derivative with respect to R
+     */
+
+    // Check if John's coeffcients were precalculated
+    assert(wave_data.is_john);
+
+    // Get some data from wave data to have shorter names
+    cusfloat k0 = wave_data.k0;
+
+    // Calculate vertical distances between the source and
+    // the field point
+    cusfloat v3 = z+zeta;
+    cusfloat v4 = z-zeta+2*h;
+    cusfloat v5 = zeta-z+2*h;
+    cusfloat v6 = z+zeta+4*h;
+
+    // Calcuate real root series part
+    cusfloat k0r = k0*R;
+    cusfloat expsum = (
+                        + exp(k0*v3)
+                        + exp(-k0*v4)
+                        + exp(-k0*v5)
+                        + exp(-k0*v6)
+                    );
+    cusfloat c_real = -wave_data.k0nu*expsum;
+    cuscomplex sol = -c_real*k0*(bessely1(k0r)+besselj1(k0r)*1i);
+
+    // Calculate imag root series part
+    cusfloat c_imag = 0.0;
+    cusfloat ci = 0.0;
+    int count_k = 0;
+    cusfloat kni = 0.0;
+    cusfloat zetah = zeta+h;
+    cusfloat zh = z+h;
+    while (true)
+    {
+        // Calculate i term of the series
+        kni = wave_data.kn[count_k];
+        ci = -4*wave_data.knnu[count_k]*cos(kni*zh)*cos(kni*zetah)*kni*besselk1(kni*R);
+        c_imag += ci;
+
+        // Check for convergence
+        if (abs(ci)<EPS_PRECISION)
+        {
+            break;
+        }
+
+        // Check for the limit in imaginary roots
+        if (count_k > (wave_data.num_kn-2))
+        {
+            std::cerr << "Jonh series dG/dR could not converge up to the precision required with" << std::endl;
+            std::cerr << "Input parameters:"  << std::endl;
+            std::cerr << "  - R/h: " << R/h << std::endl;
+            std::cerr << "  - R: " << R << std::endl;
+            std::cerr << "  - z: " << z << std::endl;
+            std::cerr << "  - zeta: " << zeta << std::endl;
+            std::cerr << "  - h: " << h << std::endl;
+            std::cerr << "  - nu: " << wave_data.nu << std::endl;
+            std::cerr << "  - k0: " << k0 << std::endl;
+            std::cerr << "  - num_kn: " << wave_data.num_kn << std::endl;
+            std::cerr << "* Current term value is: " << ci << std::endl;
+            throw std::runtime_error("Jonh series value could not converge. See log file for details.");
+        }
+
+        // Update counter
+        count_k++;
+    }
+    sol += c_imag;
+
+    return sol;
+}
+
+
+cuscomplex john_series_dz(cusfloat R, cusfloat z, cusfloat zeta, cusfloat h,
+                        WaveDispersionData &wave_data)
+{
+    /**
+     * @brief Derivative with respect to Z of the John series representation of the 
+     *        finite water depth Green function
+     * 
+     * This is an eigenfunction expasion generated by Fritz John in the article
+     * "On the Motion of Floating Bodies II". In the current implementation the 
+     * series has been modified to work withou hyperbolic cosines in order to 
+     * reduce numerical problems with big number. It is explained at:
+     * "Consistent expression for the free-surfae Green function in finite water
+     * depth" - Ed Mackay.
+     * 
+     * \param R Horizontal distance between source and the field point
+     * \param z Vertical coordinate of the field point
+     * \param zeta Vertical coordinate of the source point
+     * \param h Water depth
+     * \param wave_data Wave dispersion data object initialized with John's constants
+     * \return value of the Jonh series derivative with repect to Z
+     */
+
+    // Check if John's coeffcients were precalculated
+    assert(wave_data.is_john);
+
+    // Get some data from wave data to have shorter names
+    cusfloat k0 = wave_data.k0;
+
+    // Calculate vertical distances between the source and
+    // the field point
+    cusfloat v3 = z+zeta;
+    cusfloat v4 = z-zeta+2*h;
+    cusfloat v5 = zeta-z+2*h;
+    cusfloat v6 = z+zeta+4*h;
+
+    // Calcuate real root series part
+    cusfloat k0r = k0*R;
+    cusfloat expsum = -k0*(
+                        - exp(k0*v3)
+                        + exp(-k0*v4)
+                        - exp(-k0*v5)
+                        + exp(-k0*v6)
+                    );
+    cusfloat c_real = -wave_data.k0nu*expsum;
+    cuscomplex sol = c_real*(bessely0(k0r)+besselj0(k0r)*1i);
+
+    // Calculate imag root series part
+    cusfloat c_imag = 0.0;
+    cusfloat ci = 0.0;
+    int count_k = 0;
+    cusfloat kni = 0.0;
+    cusfloat zetah = zeta+h;
+    cusfloat zh = z+h;
+    while (true)
+    {
+        // Calculate i term of the series
+        kni = wave_data.kn[count_k];
+        ci = -4*wave_data.knnu[count_k]*kni*sin(kni*zh)*cos(kni*zetah)*besselk0(kni*R);
+        c_imag += ci;
+
+        // Check for convergence
+        if (abs(ci)<EPS_PRECISION)
+        {
+            break;
+        }
+
+        // Check for the limit in imaginary roots
+        if (count_k > (wave_data.num_kn-2))
+        {
+            std::cerr << "Jonh series dG/dz could not converge up to the precision required with" << std::endl;
             std::cerr << "Input parameters:"  << std::endl;
             std::cerr << "  - R/h: " << R/h << std::endl;
             std::cerr << "  - R: " << R << std::endl;
