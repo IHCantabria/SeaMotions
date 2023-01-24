@@ -278,3 +278,23 @@ add_executable(test_complex_integration_cmd ${test_complex_integration_src})
 add_test(NAME test_complex_integration  
         COMMAND test_complex_integration_cmd
         )
+
+
+# Add test to check the sign function
+set(
+    test_sign_src
+    test_sign.cpp
+    ../../src/config.hpp
+    ../../src/math/math_tools.hpp
+    ../../src/math/math_tools.cpp
+    ../../src/math/math_tools.txx
+    ../../src/tools.hpp
+    ../../src/tools.cpp
+    ../../src/tools.txx
+    )
+
+add_executable(test_sign_cmd ${test_sign_src})
+add_test(
+        NAME test_sign
+        COMMAND test_sign_cmd
+        )
