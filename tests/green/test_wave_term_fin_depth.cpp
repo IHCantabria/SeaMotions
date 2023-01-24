@@ -169,7 +169,7 @@ bool launch_john(std::string file_path)
             for (int k=0; k<ref_data.num_z; k++)
             {
                 // Calculate John series value
-                jc = jonh_series(
+                jc = john_series(
                     ref_data.A[i]*ref_data.water_depth,
                     ref_data.z[k],
                     ref_data.zeta[k],
