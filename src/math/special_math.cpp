@@ -258,7 +258,7 @@ cusfloat besselk0(cusfloat x)
     // Check if the input is a real positive number
     if (!(x > 0.0))
     {
-        std::string err_message("Modified Bessel function of second kind and first order not defined for x > 0.0.");
+        std::string err_message("Modified Bessel function of second kind and first order not defined for x <= 0.0.");
         std::cerr << err_message << std::endl;
         throw std::runtime_error(err_message);
     }
