@@ -154,7 +154,6 @@ bool launch_john(std::string file_path)
     cusfloat k0 = 0.0;
     cusfloat nu = 0.0;
     const int num_kn = 30;
-    cusfloat kn[num_kn];
     int rd_index = 0;
     cusfloat w = 0.0;
     for (int i=0; i<ref_data.num_A; i++)
@@ -164,8 +163,9 @@ bool launch_john(std::string file_path)
             // Calculate dependent variables on H parameter
             nu = ref_data.H[j]/h;
             w = std::sqrt(nu*g);
-            k0 = w2k(w, h, g);
-            w2ki(w, h, g, num_kn, kn);
+            WaveDispersionData wave_data(w, num_kn, h, g);
+            wave_data.calculate_john_terms();
+
             for (int k=0; k<ref_data.num_z; k++)
             {
                 // Calculate John series value
@@ -174,10 +174,7 @@ bool launch_john(std::string file_path)
                     ref_data.z[k],
                     ref_data.zeta[k],
                     ref_data.water_depth,
-                    nu,
-                    k0,
-                    num_kn,
-                    kn
+                    wave_data
                     );
 
                 // Get John series reference data

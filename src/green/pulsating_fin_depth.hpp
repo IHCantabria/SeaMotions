@@ -2,7 +2,11 @@
 #ifndef __pulsating_hpp
 #define __pulsating_hpp
 
-cuscomplex john_series(cusfloat R, cusfloat z, cusfloat zeta, cusfloat h, cusfloat nu,
-                    cusfloat k0, int num_kn, cusfloat* kn);
+#include "../config.hpp"
+#include "../waves.hpp"
+
+
+cuscomplex john_series(cusfloat R, cusfloat z, cusfloat zeta, cusfloat h,
+                        WaveDispersionData &wave_data);
 
 #endif

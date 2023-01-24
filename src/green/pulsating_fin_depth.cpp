@@ -1,5 +1,6 @@
 
 // Include general usage libraries
+#include <cassert>
 #include <iostream>
 
 // Include general usage scientific libraries
@@ -10,14 +11,15 @@
 #include "../math/math_tools.hpp"
 #include "pulsating_fin_depth.hpp"
 #include "../math/special_math.hpp"
+#include "../waves.hpp"
 
 // Include namespaces
 using namespace std;
 using namespace std::literals::complex_literals;
 
 
-cuscomplex john_series(cusfloat R, cusfloat z, cusfloat zeta, cusfloat h, cusfloat nu,
-                    cusfloat k0, int num_kn, cusfloat* kn)
+cuscomplex john_series(cusfloat R, cusfloat z, cusfloat zeta, cusfloat h,
+                        WaveDispersionData &wave_data)
 {
     /**
      * @brief John series representation of the finite water depth Green function
@@ -33,12 +35,15 @@ cuscomplex john_series(cusfloat R, cusfloat z, cusfloat zeta, cusfloat h, cusflo
      * \param z Vertical coordinate of the field point
      * \param zeta Vertical coordinate of the source point
      * \param h Water depth
-     * \param nu Wave number at infinite water depth (w^2/g)
-     * \param k0 Real root of the dispersion equation at water depth h
-     * \param num_kn Number of imaginary roots
-     * \param kn Imaginary roots of the dispersion equation at water depth h
+     * \param wave_data Wave dispersion data object initialized with John's constants
      * \return value of the Jonh series
      */
+
+    // Check if John's coeffcients were precalculated
+    assert(wave_data.is_john);
+
+    // Get some data from wave data to have shorter names
+    cusfloat k0 = wave_data.k0;
 
     // Calculate vertical distances between the source and
     // the field point
@@ -48,7 +53,6 @@ cuscomplex john_series(cusfloat R, cusfloat z, cusfloat zeta, cusfloat h, cusflo
     cusfloat v6 = z+zeta+4*h;
 
     // Calcuate real root series part
-    cusfloat k0nu = pow2s(k0)-pow2s(nu);
     cusfloat k0r = k0*R;
     cusfloat expsum = (
                         + exp(-k0*v3)
@@ -56,7 +60,7 @@ cuscomplex john_series(cusfloat R, cusfloat z, cusfloat zeta, cusfloat h, cusflo
                         + exp(-k0*v5)
                         + exp(-k0*v6)
                     );
-    cusfloat c_real = -2*PI*pow2s(k0)*expsum/((k0nu*h+nu)*pow2s(1+exp(-2*k0*h)));
+    cusfloat c_real = -wave_data.k0nu*expsum;
     cuscomplex sol = c_real*(bessely0(k0r)+besselj0(k0r)*1i);
 
     // Calculate imag root series part
@@ -64,15 +68,13 @@ cuscomplex john_series(cusfloat R, cusfloat z, cusfloat zeta, cusfloat h, cusflo
     cusfloat ci = 0.0;
     int count_k = 0;
     cusfloat kni = 0.0;
-    cusfloat knnu = 0.0;
     cusfloat zetah = zeta+h;
     cusfloat zh = z+h;
     while (true)
     {
         // Calculate i term of the series
-        kni = kn[count_k];
-        knnu = pow2s(kni)+pow2s(nu);
-        ci = 4*knnu*cos(kni*zh)*cos(kni*zetah)*besselk0(kni*R)/(knnu*h-nu);
+        kni = wave_data.kn[count_k];
+        ci = 4*wave_data.knnu[count_k]*cos(kni*zh)*cos(kni*zetah)*besselk0(kni*R);
         c_imag += ci;
 
         // Check for convergence
@@ -82,7 +84,7 @@ cuscomplex john_series(cusfloat R, cusfloat z, cusfloat zeta, cusfloat h, cusflo
         }
 
         // Check for the limit in imaginary roots
-        if (count_k > (num_kn-2))
+        if (count_k > (wave_data.num_kn-2))
         {
             std::cerr << "Jonh series could not converge up to the precision required with" << std::endl;
             std::cerr << "Input parameters:"  << std::endl;
@@ -91,9 +93,9 @@ cuscomplex john_series(cusfloat R, cusfloat z, cusfloat zeta, cusfloat h, cusflo
             std::cerr << "  - z: " << z << std::endl;
             std::cerr << "  - zeta: " << zeta << std::endl;
             std::cerr << "  - h: " << h << std::endl;
-            std::cerr << "  - nu: " << nu << std::endl;
+            std::cerr << "  - nu: " << wave_data.nu << std::endl;
             std::cerr << "  - k0: " << k0 << std::endl;
-            std::cerr << "  - num_kn: " << num_kn << std::endl;
+            std::cerr << "  - num_kn: " << wave_data.num_kn << std::endl;
             std::cerr << "* Current term value is: " << ci << std::endl;
             throw std::runtime_error("Jonh series value could not converge. See log file for details.");
         }
