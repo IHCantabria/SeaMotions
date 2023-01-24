@@ -162,7 +162,6 @@ bool launch_john(
     // Loop over refence data to check over all parameter
     // space
     cuscomplex jc, jr;
-    cusfloat k0 = 0.0;
     cusfloat nu = 0.0;
     const int num_kn = 30;
     int rd_index = 0;
@@ -208,7 +207,7 @@ bool launch_john(
                     std::cerr << "  - zeta: " << ref_data.zeta[k] << std::endl;
                     std::cerr << "  - h: " << h << std::endl;
                     std::cerr << "  - nu: " << nu << std::endl;
-                    std::cerr << "  - k0: " << k0 << std::endl;
+                    std::cerr << "  - k0: " << wave_data.k0 << std::endl;
                     std::cerr << "  - num_kn: " << num_kn << std::endl;
                     std::cerr << "Numerical error description: " << std::endl;
                     std::cerr << " - Expected value: " << jr << std::endl;
@@ -229,24 +228,38 @@ bool launch_john(
 int main(int argc, char* argv[])
 {
     // Read command line arguments
-    if (!check_num_cmd_args(argc, 1))
+    if (!check_num_cmd_args(argc, 3))
     {
         return 1;
     }
 
     std::string file_path_john(argv[1]);
+    std::string file_path_john_dr(argv[2]);
+    std::string file_path_john_dz(argv[3]);
 
     // Declare variable for the logic system
     bool pass = false;
-    int return_chn = 0;
 
     // Launch test to check the John eigenfunction
     // expansion
     pass = launch_john(file_path_john, john_series, "G");
     if (!pass)
     {
-        return_chn = 1;
+        return 1;
     }
 
-    return return_chn;
+    pass = launch_john(file_path_john_dr, john_series_dr, "dG_dr");
+    if (!pass)
+    {
+        return 1;
+    }
+
+    pass = launch_john(file_path_john_dz, john_series_dz, "dG_dz");
+    if (!pass)
+    {
+        return 1;
+    }
+    
+
+    return 0;
 }
