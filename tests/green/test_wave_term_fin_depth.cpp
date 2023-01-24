@@ -1,6 +1,7 @@
 
 // Include general usage libraries
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <string>
 
@@ -137,7 +138,17 @@ struct RefData
 };
 
 
-bool launch_john(std::string file_path)
+bool launch_john(
+                std::string file_path, 
+                std::function <cuscomplex(
+                                        cusfloat,
+                                        cusfloat,
+                                        cusfloat,
+                                        cusfloat,
+                                        WaveDispersionData&
+                                        )> f_def,
+                std::string function_type
+                )
 {
     // Define test result flag
     bool pass = true;
@@ -169,7 +180,7 @@ bool launch_john(std::string file_path)
             for (int k=0; k<ref_data.num_z; k++)
             {
                 // Calculate John series value
-                jc = john_series(
+                jc = f_def(
                     ref_data.A[i]*ref_data.water_depth,
                     ref_data.z[k],
                     ref_data.zeta[k],
@@ -188,7 +199,8 @@ bool launch_john(std::string file_path)
                 // Compare values and check with tolerance
                 if (!assert_complex_equality(jc, jr, JOHN_TOL))
                 {
-                    std::cerr << "John series does not converge to the expected value " << std::endl;
+                    std::cerr << "John series " << function_type;
+                    std::cerr <<" does not converge to the expected value " << std::endl;
                     std::cerr << "for the following input parameters: " << std::endl;
                     std::cerr << "  - R/h: " << ref_data.A[i] << std::endl;
                     std::cerr << "  - R: " << ref_data.A[i]*h << std::endl;
@@ -230,7 +242,7 @@ int main(int argc, char* argv[])
 
     // Launch test to check the John eigenfunction
     // expansion
-    pass = launch_john(file_path_john);
+    pass = launch_john(file_path_john, john_series, "G");
     if (!pass)
     {
         return_chn = 1;
