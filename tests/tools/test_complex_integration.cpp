@@ -77,7 +77,7 @@ bool launch_test0(void)
 bool launch_test1(void)
 {
     // Declare test variable
-    bool pass = false;
+    bool pass = true;
 
     // Define waypoints
     const int N = 17;
@@ -116,7 +116,7 @@ bool launch_test1(void)
 bool launch_test2(void)
 {
     // Declare test variable
-    bool pass = false;
+    bool pass = true;
 
     // Define waypoints
     const int N = 18;
@@ -156,7 +156,7 @@ bool launch_test2(void)
 bool launch_test3(void)
 {
     // Declare test variable
-    bool pass = false;
+    bool pass = true;
 
     // Define waypoints
     const int N = 31;
@@ -239,6 +239,6 @@ int main(void)
     {
         return 1;
     }
-
+    
     return 0;
 }
