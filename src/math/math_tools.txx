@@ -244,6 +244,11 @@ cusfloat romberg_quadrature(Functor f, cusfloat a, cusfloat b, double precision)
 }
 
 
+template <typename T> int sign(T val) {
+    return (T(0) < val) - (val < T(0));
+}
+
+
 template<typename T>
 inline void slice_vector(T* parent_vector, int first_pos, int second_pos, T* slice_vector)
 {
