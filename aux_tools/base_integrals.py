@@ -4,7 +4,7 @@ from typing import Callable
 
 # Import general usage scientific libraries
 import matplotlib.pyplot as plt
-from numpy import array, cos, cosh, exp, linspace, log, log10, meshgrid, mod, ndarray, pi, sin, sqrt, tan, tanh, zeros
+from numpy import array, cos, cosh, exp, linspace, log, log10, meshgrid, mod, ndarray, pi, sin, sinh, sqrt, tan, tanh, zeros
 from numpy import abs as np_abs
 from scipy.integrate import quad
 from scipy.special import expi, jv, kn, roots_chebyt, roots_laguerre, struve, yv
@@ -128,11 +128,11 @@ def G_integral(R: float, z: float, zeta: float, T: float, h: float) -> float:
     X = K*R
     v = zeros((6, ))
     v[0] = np_abs(z-zeta)
-    v[1] = np_abs(z+zeta+2*h)
+    v[1] = z+zeta+2*h
     v[2] = np_abs(z+zeta)
-    v[3] = np_abs(z-zeta+2*h)
-    v[4] = np_abs(zeta-z+2*h)
-    v[5] = np_abs(z+zeta+4*h)
+    v[3] = z-zeta+2*h
+    v[4] = zeta-z+2*h
+    v[5] = z+zeta+4*h
     B = v/h
     r = sqrt(R**2.0+v**2.0)
 
@@ -140,11 +140,19 @@ def G_integral(R: float, z: float, zeta: float, T: float, h: float) -> float:
     G = (1/r).sum()
 
     k0 = w2k(w, h, method="bisection")
+    u0 = k0*h
     
+    # Calculate real part
     if B[1] <= 1:
         G += (1/h)*(G1(A, B[0], H)+G1(A, B[1], H))
     else:
         G += (1/h)*(G1(A, B[0], H)+G2(A, B[1], H)) + K*fxy(X, K*v[2])
+    
+    # Calculate john series
+    Ck = -2*pi*k0**2.0/((k0**2.0-K**2.0)*h+K)/(1+exp(-2*k0*h))**2.0
+    gi = Ck*jv(0, k0*R)*(exp(-k0*v[2:])).sum()
+
+    G = G + gi*1j
 
     return G
 
@@ -200,7 +208,7 @@ def G1(A: float, B: float, H: float) -> float:
             -2/sqrt(A**2.0+(2+B)**2.0)
             -2/sqrt(A**2.0+(2-B)**2.0)
             )
-    return int_value
+    return int_value.real
 
 
 def G2(A: float, B: float, H: float) -> float:
@@ -212,7 +220,7 @@ def G2(A: float, B: float, H: float) -> float:
             -2/sqrt(A**2.0+(2+B)**2.0)
         )
 
-    return int_value
+    return int_value.real
 
 
 def guh(u: ndarray, H: float) -> ndarray:
@@ -233,7 +241,7 @@ def L1(A: float, B: float, H: float) -> float:
     ])
 
     # Integrate function
-    if H <= 1e-5:
+    if H <= 1e-6:
         int_value = list(L1_H0_endo(A, B))
         int_value[0] += complex(0.0, 0.0)
     else:
@@ -243,8 +251,62 @@ def L1(A: float, B: float, H: float) -> float:
     return int_value
 
 
+def L1_dA(A: float, B: float, H: float) -> float:
+    # Define way point for the integration
+    H1 = H+1
+    way_points = array([
+        0.0+0j,
+        H+1j,
+        H1+0j,
+        1e2*H1+0j,
+        1e3*H1+0j,
+        1e4*H1+0j,
+        1e5*H1+0j
+    ])
+
+    # Integrate function
+    if H <= 1e-6:
+        raise ValueError("L1_dA Not Implemented for H <= 1e-6")
+    else:
+        l1_def_dummy = lambda u: L1_dA_def(A, B, H, u)
+        int_value = complex_quadrature_line(l1_def_dummy, way_points)
+
+    return int_value
+
+
+def L1_dB(A: float, B: float, H: float) -> float:
+    # Define way point for the integration
+    H1 = H+1
+    way_points = array([
+        0.0+0j,
+        H+1j,
+        H1+0j,
+        1e2*H1+0j,
+        1e3*H1+0j,
+        1e4*H1+0j,
+        1e5*H1+0j
+    ])
+
+    # Integrate function
+    if H <= 1e-6:
+        raise ValueError("L1_dB Not Implemented for H <= 1e-6")
+    else:
+        l1_def_dummy = lambda u: L1_dB_def(A, B, H, u)
+        int_value = complex_quadrature_line(l1_def_dummy, way_points)
+
+    return int_value
+
+
 def L1_def(A: float, B: float, H: float, u: ndarray) -> ndarray:
     return (fuh(u, H)-1)*((exp(-u*(2+B))+exp(-u*(2-B)))*jv(0, u*A)-2*exp(-2*u))
+
+
+def L1_dA_def(A: float, B: float, H: float, u: ndarray) -> ndarray:
+    return -u*(fuh(u, H)-1)*((exp(-u*(2+B))+exp(-u*(2-B)))*jv(1, u*A))
+
+
+def L1_dB_def(A: float, B: float, H: float, u: ndarray) -> ndarray:
+    return -u*(fuh(u, H)-1)*((exp(-u*(2+B))+exp(-u*(2-B)))*jv(0, u*A))
 
 
 def L1_def_H0(A: float, B: float, H: float, u: ndarray) -> ndarray:
@@ -343,7 +405,7 @@ def L2(H: float) -> float:
     ])
 
     # Integrate function
-    if H<=1e-3:
+    if H<=1e-6:
         int_value = (complex(-log(H)/2-log(2)-1, 0.0), 0.0, 0.0)
     else:
         f_def_dummy = lambda u: L2_def(H, u)
