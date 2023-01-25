@@ -6,6 +6,7 @@ from typing import Callable
 from numpy import array, fromstring, pi, sqrt, zeros
 
 # Import local modules
+from hydlib.waves.airy import w2k
 from base_integrals import G_integral
 
 
@@ -107,6 +108,7 @@ def compare(file_path: str, f_def: Callable, f_name: str)->None:
                 abs_diff = gc-gr
                 rel_diff = (gc-gr)/abs(abs_diff)
                 if (abs(abs_diff)>tol) and (abs(rel_diff)>tol):
+                    k0 = w2k(2*pi/T, ref_data.water_depth, method="bisection")
                     B2 = (ref_data.z[k]+ref_data.zeta[k]+2*ref_data.water_depth)/ref_data.water_depth
                     raise ValueError(
                                     "The difference between the actual Green function \n"
@@ -121,7 +123,9 @@ def compare(file_path: str, f_def: Callable, f_name: str)->None:
                                     + f"-> Zeta: {ref_data.zeta[k]}\n"
                                     + f"-> Wave Period: {T}\n" 
                                     + f"-> Water Depth: {ref_data.water_depth}\n"
-                                    + f"-> Grav.Acc: {ref_data.water_depth}\n"
+                                    + f"-> Grav.Acc: {ref_data.grav_acc}\n"
+                                    + f"-> nu: {(2*pi/T)**2.0/ref_data.grav_acc}\n"
+                                    + f"-> k0: {k0:0.16f}\n"
                                     + "Numerical Error Details:\n"
                                     + f"---> Gc: {gc.real:0.16f} {gc.imag:0.16f}i\n"
                                     + f"---> Gr: {gr.real:0.16f} {gr.imag:0.16f}i\n"
