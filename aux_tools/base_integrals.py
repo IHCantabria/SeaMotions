@@ -4,7 +4,7 @@ from typing import Callable
 
 # Import general usage scientific libraries
 import matplotlib.pyplot as plt
-from numpy import array, cos, cosh, exp, linspace, log, log10, meshgrid, mod, ndarray, pi, sin, sinh, sqrt, tan, tanh, zeros
+from numpy import array, cos, cosh, exp, linspace, log, log10, meshgrid, mod, ndarray, pi, sign, sin, sinh, sqrt, tan, tanh, zeros
 from numpy import abs as np_abs
 from scipy.integrate import quad
 from scipy.special import expi, jv, kn, roots_chebyt, roots_laguerre, struve, yv
@@ -107,7 +107,7 @@ def fxy(X: float, Y: float) -> float:
     # Calculate integral value
     int_value = quad(lambda t: wave_term_expint_def(X, Y, t), 0, Y)
 
-    # Caculate function value
+    # Calculate function value
     fun_val = (
                 -pi*exp(-Y)*(struve(0, X)+yv(0, X))
                 -2*int_value[0]
@@ -116,7 +116,24 @@ def fxy(X: float, Y: float) -> float:
     return fun_val
 
 
-def G_integral(R: float, z: float, zeta: float, T: float, h: float) -> float:
+def fxy_dx(X: float, Y: float) -> float:
+    # Calculate the numerical value
+    int_value = quad(lambda t: wave_term_expint_def_dx(X, Y, t), 0, Y)
+
+    # Calculate function value
+    fun_val = (
+                + pi*exp(-Y)*(yv(1, X)+struve(1, X)-2/pi)
+                + 2.0*exp(-Y)*int_value
+                )
+
+    return fun_val
+
+
+def fxy_dy(X: float, Y: float) -> float:
+    return -Y*fxy(X, Y)
+
+
+def G_integral_input_params(R: float, z: float, zeta: float, T: float, h: float) -> list:
     # Calculate required input parameters
     g = 9.81
     w = 2*pi/T
@@ -136,6 +153,32 @@ def G_integral(R: float, z: float, zeta: float, T: float, h: float) -> float:
     B = v/h
     r = sqrt(R**2.0+v**2.0)
 
+    return g, w, K, A, H, X, v, B, r
+
+
+def G_integral_dA_input_params(R: float, z: float, zeta: float, T: float, h: float) -> list:
+    dA_dR = 1/h
+
+    return G_integral_input_params(R, z, zeta, T, h), dA_dR
+
+
+def G_integral_dB_input_params(R: float, z: float, zeta: float, T: float, h: float) -> list:
+    dv_dz = zeros((6, ))
+    dv_dz[0] = sign(z-zeta)
+    dv_dz[1] = 1
+    dv_dz[2] = sign(z+zeta)
+    dv_dz[3] = 1
+    dv_dz[4] = -1
+    dv_dz[5] = 1
+    dB_dz = dv_dz/h
+
+    return G_integral_input_params(R, z, zeta, T, h), dB_dz
+
+
+def G_integral(R: float, z: float, zeta: float, T: float, h: float) -> float:
+    # Get derivative input arguments
+    g, w, K, A, H, X, v, B, r = G_integral_input_params(R, z, zeta, T, h)
+
     # Include radius sumation to green function
     G = (1/r).sum()
 
@@ -147,6 +190,30 @@ def G_integral(R: float, z: float, zeta: float, T: float, h: float) -> float:
         G += (1/h)*(G1(A, B[0], H)+G1(A, B[1], H))
     else:
         G += (1/h)*(G1(A, B[0], H)+G2(A, B[1], H)) + K*fxy(X, K*v[2])
+    
+    # Calculate john series
+    Ck = -2*pi*k0**2.0/((k0**2.0-K**2.0)*h+K)/(1+exp(-2*k0*h))**2.0
+    gi = Ck*jv(0, k0*R)*(exp(-k0*v[2:])).sum()
+
+    G = G + gi*1j
+
+    return G
+
+
+def G_integral_dR(R: float, z: float, zeta: float, T: float, h: float) -> float:
+    # Get derivative input arguments
+    g, w, K, A, H, X, v, B, r, dA_dR = G_integral_dA_input_params(R, z, zeta, T, h)
+
+    # Include radius sumation to green function
+    G = (-R/r**3.0).sum()
+
+    k0 = w2k(w, h, method="bisection")
+    
+    # Calculate real part
+    if B[1] <= 1:
+        G += (1/h)*(G1_dA(A, B[0], H)+G1_dA(A, B[1], H))*dA_dR
+    else:
+        G += (1/h)*(G1_dA(A, B[0], H)+G2_dA(A, B[1], H))*dA_dR + K*fxy(X, K*v[2])
     
     # Calculate john series
     Ck = -2*pi*k0**2.0/((k0**2.0-K**2.0)*h+K)/(1+exp(-2*k0*h))**2.0
@@ -809,6 +876,10 @@ def M3_pole(A: float, B: float, H: float, u0: float) -> float:
 
 def wave_term_expint_def(X: float, Y: float, t: ndarray) -> ndarray:
     return exp(t-Y)/sqrt(X**2.0+t**2.0)
+
+
+def wave_term_expint_def_dx(X: float, Y: float, t: ndarray) -> ndarray:
+    return exp(t)*X/(X**2.0+t**2.0)**(3.0/2.0)
 
 
 def w2ki(w, h, n, g=9.81, abs_err=1e-6, max_iter=1000):
