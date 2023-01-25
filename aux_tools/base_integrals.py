@@ -211,6 +211,30 @@ def G1(A: float, B: float, H: float) -> float:
     return int_value.real
 
 
+def G1_dA(A: float, B: float, H: float) -> float:
+    if H <= 1:
+        int_value = L1_dA(A, B, H)[0] + L2_dA(H)[0]
+    else:
+        int_value = (
+            L3_dA(A, B, H)[0]
+            +2*A/(A**2.0+(2+B)**2.0)**(3.0/2.0)
+            +2*A/(A**2.0+(2-B)**2.0)**(3.0/2.0)
+            )
+    return int_value.real
+
+
+def G1_dB(A: float, B: float, H: float) -> float:
+    if H <= 1:
+        int_value = L1_dB(A, B, H)[0] + L2_dB(H)[0]
+    else:
+        int_value = (
+            L3_dB(A, B, H)[0]
+            +2*(2+B)/(A**2.0+(2+B)**2.0)**(3.0/2.0)
+            -2*(2-B)/(A**2.0+(2-B)**2.0)**(3.0/2.0)
+            )
+    return int_value.real
+
+
 def G2(A: float, B: float, H: float) -> float:
     if H <= 1:
         int_value = M1(A, B, H)[0]+M2(H)[0]
@@ -218,6 +242,30 @@ def G2(A: float, B: float, H: float) -> float:
         int_value = (
             M3(A, B, H)[0]
             -2/sqrt(A**2.0+(2+B)**2.0)
+        )
+
+    return int_value.real
+
+
+def G2_dA(A: float, B: float, H: float) -> float:
+    if H <= 1:
+        int_value = M1_dA(A, B, H)[0]+M2_dA(H)[0]
+    else:
+        int_value = (
+            M3_dA(A, B, H)[0]
+            +2*A/(A**2.0+(2+B)**2.0)**(3.0/2.0)
+        )
+
+    return int_value.real
+
+
+def G2_dB(A: float, B: float, H: float) -> float:
+    if H <= 1:
+        int_value = M1_dB(A, B, H)[0]+M2_dB(H)[0]
+    else:
+        int_value = (
+            M3_dB(A, B, H)[0]
+            +2*(2+B)/(A**2.0+(2+B)**2.0)**(3.0/2.0)
         )
 
     return int_value.real
