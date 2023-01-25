@@ -414,6 +414,14 @@ def L2(H: float) -> float:
     return int_value
 
 
+def L2_dA() -> float:
+    return 0.0
+
+
+def L2_dB() -> float:
+    return 0.0
+
+
 def L2_def(H: float, u: ndarray) -> ndarray:
     return (fuh(u, H)-1)*2.0*exp(-2*u)
 
@@ -447,6 +455,14 @@ def L3(A: float, B: float, H: float) -> float:
 
 def L3_def(A: float, B: float, H: float, u: ndarray) -> float:
     return (fuh(u, H)+1)*(exp(-u*(2+B))+exp(-u*(2-B)))*jv(0, u*A)
+
+
+def L3_dA_def(A: float, B: float, H: float, u: ndarray) -> float:
+    return -u*(fuh(u, H)+1)*(exp(-u*(2+B))+exp(-u*(2-B)))*jv(1, u*A)
+
+
+def L3_dB_def(A: float, B: float, H: float, u: ndarray) -> float:
+    return -u*(fuh(u, H)+1)*(exp(-u*(2+B))-exp(-u*(2-B)))*jv(0, u*A)
 
 
 def L3_pole(A: float, B: float, H: float, u0: float) -> float:
