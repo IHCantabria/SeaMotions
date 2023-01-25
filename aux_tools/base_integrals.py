@@ -453,6 +453,46 @@ def L3(A: float, B: float, H: float) -> float:
     return int_value
 
 
+def L3_dA(A: float, B: float, H: float) -> float:
+    H1 = H+1
+    way_points = array([
+        0.0+0j,
+        H+1j,
+        H1+0j,
+        1e2*H1+0j,
+        1e3*H1+0j,
+        1e4*H1+0j,
+        1e5*H1+0j,
+        1e6*H1+0j,
+    ])
+
+    # Integrate function
+    f_def_dummy = lambda u: L3_dA_def(A, B, H, u)
+    int_value = complex_quadrature_line(f_def_dummy, way_points)
+
+    return int_value
+
+
+def L3_dB(A: float, B: float, H: float) -> float:
+    H1 = H+1
+    way_points = array([
+        0.0+0j,
+        H+1j,
+        H1+0j,
+        1e2*H1+0j,
+        1e3*H1+0j,
+        1e4*H1+0j,
+        1e5*H1+0j,
+        1e6*H1+0j,
+    ])
+
+    # Integrate function
+    f_def_dummy = lambda u: L3_dB_def(A, B, H, u)
+    int_value = complex_quadrature_line(f_def_dummy, way_points)
+
+    return int_value
+
+
 def L3_def(A: float, B: float, H: float, u: ndarray) -> float:
     return (fuh(u, H)+1)*(exp(-u*(2+B))+exp(-u*(2-B)))*jv(0, u*A)
 
@@ -505,10 +545,62 @@ def M1(A: float, B: float, H: float) -> float:
     return int_value
 
 
+def M1_dA(A: float, B: float, H: float) -> float:
+    H1 = H+1
+    way_points = array([
+        0.0+0j,
+        H+1j,
+        H1+0j,
+        1e2*H1+0j,
+        1e3*H1+0j,
+        1e4*H1+0j,
+        1e5*H1+0j,
+        1e6*H1+0j,
+    ])
+
+    # Integrate function
+    f_def_dummy = lambda u: M1_dA_def(A, B, H, u)
+    int_value = complex_quadrature_line(f_def_dummy, way_points)
+
+    return int_value
+
+
+def M1_dB(A: float, B: float, H: float) -> float:
+    H1 = H+1
+    way_points = array([
+        0.0+0j,
+        H+1j,
+        H1+0j,
+        1e2*H1+0j,
+        1e3*H1+0j,
+        1e4*H1+0j,
+        1e5*H1+0j,
+        1e6*H1+0j,
+    ])
+
+    # Integrate function
+    f_def_dummy = lambda u: M1_dB_def(A, B, H, u)
+    int_value = complex_quadrature_line(f_def_dummy, way_points)
+
+    return int_value
+
+
 def M1_def(A: float, B: float, H: float, u: ndarray) -> float:
     c0 = (fuh(u, H)-1)*(exp(-u*(2+B))*jv(0, u*A)-exp(-3*u))
     c1 = guh(u, H)*(exp(-u*(4-B))*jv(0, u*A)-exp(-3*u))
     return c0+c1
+
+
+def M1_dA_def(A: float, B: float, H: float, u: ndarray) -> float:
+    c0 = (fuh(u, H)-1)*(exp(-u*(2+B))*jv(1, u*A))
+    c1 = guh(u, H)*(exp(-u*(4-B))*jv(1, u*A))
+    return -u*(c0+c1)
+
+
+def M1_dB_def(A: float, B: float, H: float, u: ndarray) -> float:
+    c0 = (fuh(u, H)-1)*(exp(-u*(2+B))*jv(0, u*A))
+    c1 = guh(u, H)*(exp(-u*(4-B))*jv(0, u*A))
+    return -u*(c0+c1)
 
 
 def M1_pole(A: float, B: float, H: float, u0: float) -> float:
@@ -547,6 +639,14 @@ def M2(H: float) -> float:
     int_value = complex_quadrature_line(f_def_dummy, way_points)
 
     return int_value
+
+
+def M2_dA() -> float:
+    return 0.0
+
+
+def M2_dB() -> float:
+    return 0.0
 
 
 def M2_def(H: float, u: ndarray) -> ndarray:
@@ -590,8 +690,56 @@ def M3(A: float, B: float, H: float) -> float:
     return int_value
 
 
+def M3_dA(A: float, B: float, H: float) -> float:
+    H1 = H+1
+    way_points = array([
+        0.0+0j,
+        H+1j,
+        H1+0j,
+        1e2*H1+0j,
+        1e3*H1+0j,
+        1e4*H1+0j,
+        1e5*H1+0j,
+        1e6*H1+0j,
+    ])
+    
+    # Integrate function
+    f_def_dummy = lambda u: M3_dA_def(A, B, H, u)
+    int_value = complex_quadrature_line(f_def_dummy, way_points)
+
+    return int_value
+
+
+def M3_dB(A: float, B: float, H: float) -> float:
+    H1 = H+1
+    way_points = array([
+        0.0+0j,
+        H+1j,
+        H1+0j,
+        1e2*H1+0j,
+        1e3*H1+0j,
+        1e4*H1+0j,
+        1e5*H1+0j,
+        1e6*H1+0j,
+    ])
+    
+    # Integrate function
+    f_def_dummy = lambda u: M3_dB_def(A, B, H, u)
+    int_value = complex_quadrature_line(f_def_dummy, way_points)
+
+    return int_value
+
+
 def M3_def(A: float, B: float, H: float, u: ndarray) -> ndarray:
     return ((fuh(u, H)+1)*exp(-u*(2+B))+guh(u, H)*exp(-u*(4-B)))*jv(0, u*A)
+
+
+def M3_dA_def(A: float, B: float, H: float, u: ndarray) -> ndarray:
+    return -u*((fuh(u, H)+1)*exp(-u*(2+B))+guh(u, H)*exp(-u*(4-B)))*jv(1, u*A)
+
+
+def M3_dB_def(A: float, B: float, H: float, u: ndarray) -> ndarray:
+    return -u*((fuh(u, H)+1)*exp(-u*(2+B))+guh(u, H)*exp(-u*(4-B)))*jv(0, u*A)
 
 
 def M3_pole(A: float, B: float, H: float, u0: float) -> float:
