@@ -214,6 +214,7 @@ def G_integral_dR(R: float, z: float, zeta: float, T: float, h: float) -> float:
     G = (-R/r**3.0).sum()
 
     k0 = w2k(w, h, method="bisection")
+    u0 = k0*h
     
     # Calculate real part
     if B[1] <= 1:
@@ -222,8 +223,45 @@ def G_integral_dR(R: float, z: float, zeta: float, T: float, h: float) -> float:
         G += (1/h)*(G1_dA(A, B[0], H)+G2_dA(A, B[1], H))*dA_dR + K**2.0*fxy_dx(X, K*v[2])
     
     # Calculate john series
-    Ck = -2*pi*k0**2.0/((k0**2.0-K**2.0)*h+K)/(1+exp(-2*k0*h))**2.0
-    gi = Ck*jv(0, k0*R)*(exp(-k0*v[2:])).sum()
+    expsum = (
+            + exp(-u0*(2+B[0]))                
+            + exp(-u0*(2-B[0]))                
+            + exp(-u0*(2+B[1]))                
+            + exp(-u0*(2-B[1]))          
+            )
+    Ck = -pi*(u0+H)/(1+exp(-2*u0)*(2*(u0+H)-1.0))
+    gi = -u0*Ck*jv(1, u0*A)*expsum/h
+
+    G = G + gi*1j
+
+    return G
+
+
+def G_integral_dz(R: float, z: float, zeta: float, T: float, h: float) -> float:
+    # Get derivative input arguments
+    g, w, K, A, H, X, v, B, r, dB_dz = G_integral_dB_input_params(R, z, zeta, T, h)
+
+    # Include radius sumation to green function
+    G = (1/r).sum()
+
+    k0 = w2k(w, h, method="bisection")
+    u0 = k0*h
+    
+    # Calculate real part
+    if B[1] <= 1:
+        G += (1/h)*(G1_dB(A, B[0], H)+G1_dB(A, B[1], H))*dB_dz
+    else:
+        G += (1/h)*(G1_dB(A, B[0], H)+G2_dB(A, B[1], H))*dB_dz + K**2.0*fxy_dy(X, K*v[2])*sign(z+zeta)                                                 
+    
+    # Calculate john series
+    expsum = (
+            + exp(-u0*(2+B[0]))                
+            - exp(-u0*(2-B[0]))                
+            + exp(-u0*(2+B[1]))                
+            - exp(-u0*(2-B[1]))          
+            )
+    Ck = -pi*(u0+H)/(1+exp(-2*u0)*(2*(u0+H)-1.0))
+    gi = -u0*Ck*jv(0, u0*A)*expsum/h
 
     G = G + gi*1j
 
