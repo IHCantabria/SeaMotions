@@ -192,8 +192,14 @@ def G_integral(R: float, z: float, zeta: float, T: float, h: float) -> float:
         G += (1/h)*(G1(A, B[0], H)+G2(A, B[1], H)) + K*fxy(X, K*v[2])
     
     # Calculate john series
+    expsum = (
+            + exp(-u0*(2+B[0]))                
+            + exp(-u0*(2-B[0]))                
+            + exp(-u0*(2+B[1]))                
+            + exp(-u0*(2-B[1]))          
+            )
     Ck = -pi*(u0+H)/(1+exp(-2*u0)*(2*(u0+H)-1.0))
-    gi = Ck*jv(0, u0*A)*(exp(-u0*B[2:])).sum()/h
+    gi = Ck*jv(0, u0*A)*expsum/h
 
     G = G + gi*1j
 
