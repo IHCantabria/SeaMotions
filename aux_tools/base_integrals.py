@@ -123,14 +123,14 @@ def fxy_dx(X: float, Y: float) -> float:
     # Calculate function value
     fun_val = (
                 + pi*exp(-Y)*(yv(1, X)+struve(1, X)-2/pi)
-                + 2.0*exp(-Y)*int_value
+                + 2.0*exp(-Y)*int_value[0]
                 )
 
     return fun_val
 
 
 def fxy_dy(X: float, Y: float) -> float:
-    return -Y*fxy(X, Y)
+    return -(2/sqrt(X**2.0+Y**2.0)+fxy(X, Y))
 
 
 def G_integral_input_params(R: float, z: float, zeta: float, T: float, h: float) -> list:
@@ -157,12 +157,18 @@ def G_integral_input_params(R: float, z: float, zeta: float, T: float, h: float)
 
 
 def G_integral_dA_input_params(R: float, z: float, zeta: float, T: float, h: float) -> list:
+    # Define the extra input params for the dA derivative
     dA_dR = 1/h
+    
+    # Extend input parameter list
+    return_args = list(G_integral_input_params(R, z, zeta, T, h))
+    return_args.append(dA_dR)
 
-    return G_integral_input_params(R, z, zeta, T, h), dA_dR
+    return return_args
 
 
 def G_integral_dB_input_params(R: float, z: float, zeta: float, T: float, h: float) -> list:
+    # Define the extra input params for the dB derivative
     dv_dz = zeros((6, ))
     dv_dz[0] = sign(z-zeta)
     dv_dz[1] = 1
@@ -172,7 +178,11 @@ def G_integral_dB_input_params(R: float, z: float, zeta: float, T: float, h: flo
     dv_dz[5] = 1
     dB_dz = dv_dz/h
 
-    return G_integral_input_params(R, z, zeta, T, h), dB_dz
+    # Extend input parameter list
+    return_args = list(G_integral_input_params(R, z, zeta, T, h))
+    return_args.append(dB_dz)
+
+    return return_args
 
 
 def G_integral(R: float, z: float, zeta: float, T: float, h: float) -> float:
@@ -230,7 +240,7 @@ def G_integral_dR(R: float, z: float, zeta: float, T: float, h: float) -> float:
             + exp(-u0*(2-B[1]))          
             )
     Ck = -pi*(u0+H)/(1+exp(-2*u0)*(2*(u0+H)-1.0))
-    gi = -u0*Ck*jv(1, u0*A)*expsum/h
+    gi = -u0*Ck*jv(1, u0*A)*expsum/h*dA_dR
 
     G = G + gi*1j
 
@@ -242,23 +252,23 @@ def G_integral_dz(R: float, z: float, zeta: float, T: float, h: float) -> float:
     g, w, K, A, H, X, v, B, r, dB_dz = G_integral_dB_input_params(R, z, zeta, T, h)
 
     # Include radius sumation to green function
-    G = (1/r).sum()
+    G = (-v*dB_dz*h/r**3.0).sum()
 
     k0 = w2k(w, h, method="bisection")
     u0 = k0*h
     
     # Calculate real part
     if B[1] <= 1:
-        G += (1/h)*(G1_dB(A, B[0], H)+G1_dB(A, B[1], H))*dB_dz
+        G += (1/h)*(G1_dB(A, B[0], H)*dB_dz[0]+G1_dB(A, B[1], H)*dB_dz[1])
     else:
-        G += (1/h)*(G1_dB(A, B[0], H)+G2_dB(A, B[1], H))*dB_dz + K**2.0*fxy_dy(X, K*v[2])*sign(z+zeta)                                                 
-    
+        G += (1/h)*(G1_dB(A, B[0], H)*dB_dz[0]+G2_dB(A, B[1], H)*dB_dz[1]) + K**2.0*fxy_dy(X, K*v[2])*sign(z+zeta)
+
     # Calculate john series
     expsum = (
-            + exp(-u0*(2+B[0]))                
-            - exp(-u0*(2-B[0]))                
-            + exp(-u0*(2+B[1]))                
-            - exp(-u0*(2-B[1]))          
+            + exp(-u0*(2+B[0]))*dB_dz[0]              
+            - exp(-u0*(2-B[0]))*dB_dz[0]       
+            + exp(-u0*(2+B[1]))*dB_dz[1]        
+            - exp(-u0*(2-B[1]))*dB_dz[1]  
             )
     Ck = -pi*(u0+H)/(1+exp(-2*u0)*(2*(u0+H)-1.0))
     gi = -u0*Ck*jv(0, u0*A)*expsum/h
@@ -324,7 +334,7 @@ def G1(A: float, B: float, H: float) -> float:
 
 def G1_dA(A: float, B: float, H: float) -> float:
     if H <= 1:
-        int_value = L1_dA(A, B, H)[0] + L2_dA(H)[0]
+        int_value = L1_dA(A, B, H)[0] + L2_dA()
     else:
         int_value = (
             L3_dA(A, B, H)[0]
@@ -336,7 +346,7 @@ def G1_dA(A: float, B: float, H: float) -> float:
 
 def G1_dB(A: float, B: float, H: float) -> float:
     if H <= 1:
-        int_value = L1_dB(A, B, H)[0] + L2_dB(H)[0]
+        int_value = L1_dB(A, B, H)[0] + L2_dB()
     else:
         int_value = (
             L3_dB(A, B, H)[0]
@@ -360,7 +370,7 @@ def G2(A: float, B: float, H: float) -> float:
 
 def G2_dA(A: float, B: float, H: float) -> float:
     if H <= 1:
-        int_value = M1_dA(A, B, H)[0]+M2_dA(H)[0]
+        int_value = M1_dA(A, B, H)[0]+M2_dA()
     else:
         int_value = (
             M3_dA(A, B, H)[0]
@@ -372,7 +382,7 @@ def G2_dA(A: float, B: float, H: float) -> float:
 
 def G2_dB(A: float, B: float, H: float) -> float:
     if H <= 1:
-        int_value = M1_dB(A, B, H)[0]+M2_dB(H)[0]
+        int_value = M1_dB(A, B, H)[0]+M2_dB()
     else:
         int_value = (
             M3_dB(A, B, H)[0]
@@ -465,7 +475,7 @@ def L1_dA_def(A: float, B: float, H: float, u: ndarray) -> ndarray:
 
 
 def L1_dB_def(A: float, B: float, H: float, u: ndarray) -> ndarray:
-    return -u*(fuh(u, H)-1)*((exp(-u*(2+B))+exp(-u*(2-B)))*jv(0, u*A))
+    return -u*(fuh(u, H)-1)*((exp(-u*(2+B))-exp(-u*(2-B)))*jv(0, u*A))
 
 
 def L1_def_H0(A: float, B: float, H: float, u: ndarray) -> ndarray:
@@ -759,7 +769,7 @@ def M1_dA_def(A: float, B: float, H: float, u: ndarray) -> float:
 def M1_dB_def(A: float, B: float, H: float, u: ndarray) -> float:
     c0 = (fuh(u, H)-1)*(exp(-u*(2+B))*jv(0, u*A))
     c1 = guh(u, H)*(exp(-u*(4-B))*jv(0, u*A))
-    return -u*(c0+c1)
+    return -u*(c0-c1)
 
 
 def M1_pole(A: float, B: float, H: float, u0: float) -> float:
@@ -898,7 +908,7 @@ def M3_dA_def(A: float, B: float, H: float, u: ndarray) -> ndarray:
 
 
 def M3_dB_def(A: float, B: float, H: float, u: ndarray) -> ndarray:
-    return -u*((fuh(u, H)+1)*exp(-u*(2+B))+guh(u, H)*exp(-u*(4-B)))*jv(0, u*A)
+    return -u*((fuh(u, H)+1)*exp(-u*(2+B))-guh(u, H)*exp(-u*(4-B)))*jv(0, u*A)
 
 
 def M3_pole(A: float, B: float, H: float, u0: float) -> float:

@@ -1,5 +1,6 @@
 
 # Import general usage libraries
+import os
 from typing import Callable
 
 # Import general usage scientific libraries
@@ -7,7 +8,7 @@ from numpy import array, fromstring, pi, sqrt, zeros
 
 # Import local modules
 from hydlib.waves.airy import w2k
-from base_integrals import G_integral
+from base_integrals import G_integral, G_integral_dR, G_integral_dz
 
 
 class RefData(object):
@@ -80,6 +81,7 @@ def compare(file_path: str, f_def: Callable, f_name: str)->None:
 
     # Loop over reference data to check the value of 
     # the integrals performed
+    count = 0
     for i in range(ref_data.num_A):
         R = ref_data.A[i]*ref_data.water_depth
 
@@ -88,13 +90,13 @@ def compare(file_path: str, f_def: Callable, f_name: str)->None:
 
             for k in range(ref_data.num_z):
                 # Calculate integral values
-                gc = G_integral(
-                                R,
-                                ref_data.z[k],
-                                ref_data.zeta[k],
-                                T,
-                                ref_data.water_depth
-                                )
+                gc = f_def(
+                            R,
+                            ref_data.z[k],
+                            ref_data.zeta[k],
+                            T,
+                            ref_data.water_depth
+                            )
 
                 # Get reference data
                 index_rd = (
@@ -126,6 +128,7 @@ def compare(file_path: str, f_def: Callable, f_name: str)->None:
                                     + f"-> Grav.Acc: {ref_data.grav_acc}\n"
                                     + f"-> nu: {(2*pi/T)**2.0/ref_data.grav_acc}\n"
                                     + f"-> k0: {k0:0.16f}\n"
+                                    + f"-> Count: {count:d}\n"
                                     + "Numerical Error Details:\n"
                                     + f"---> Gc: {gc.real:0.16f} {gc.imag:0.16f}i\n"
                                     + f"---> Gr: {gr.real:0.16f} {gr.imag:0.16f}i\n"
@@ -135,5 +138,10 @@ def compare(file_path: str, f_def: Callable, f_name: str)->None:
 
 
 if __name__ == "__main__":
-    file_path = r"E:\sergio\developments\SeaMotions\tests\tests_data\green_fin_depth_tables\fin_depth_integral.dat"
-    compare(file_path, G_integral, "G")
+    src_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    file_path_G = os.path.join("tests", "tests_data", "green_fin_depth_tables", "fin_depth_integral.dat")
+    file_path_dG_dR = os.path.join("tests", "tests_data", "green_fin_depth_tables", "fin_depth_integral_dr.dat")
+    file_path_dG_dz = os.path.join("tests", "tests_data", "green_fin_depth_tables", "fin_depth_integral_dz.dat")
+    compare(file_path_G, G_integral, "G")
+    compare(file_path_dG_dR, G_integral_dR, "dG_dR")
+    compare(file_path_dG_dz, G_integral_dz, "dG_dz")
