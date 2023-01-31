@@ -45,7 +45,7 @@ class FitProperties:
             return (y+1)*(self.y_max-self.y_min)/2 + self.y_min
 
 
-def fit_residual_2d(f_residual: Callable,
+def fit_integral_2d(f_residual: Callable,
                 fit_props: FitProperties,
                 region_name: str,
                 show_figs = False
