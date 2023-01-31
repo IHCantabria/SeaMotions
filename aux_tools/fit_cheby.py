@@ -204,6 +204,14 @@ def fit_integral_2d(f_residual: Callable,
     return C_filter, NCX_filter, NCY_filter
 
 
+def eval_chebyshev_1d(x: ndarray, n: int, c: ndarray)->ndarray:
+    sol = 0.0
+    for i in range(n):
+        sol += c[i]*eval_chebyt(i, x)
+
+    return sol
+
+
 def eval_chebyshev_2d(x: ndarray, y: ndarray, n: int, c: ndarray)->ndarray:
     sol = 0.0
     for i in range(n):
@@ -228,6 +236,19 @@ def eval_chebyshev_3d_filter(x: ndarray, y: ndarray, z: ndarray, c: ndarray, ncx
         sol += c[i]*eval_chebyt(ncx[i], x)*eval_chebyt(ncy[i], y)*eval_chebyt(ncz[i], z)
 
     return sol
+
+
+def fit_chebyshev_1d(x: ndarray, f: ndarray, n: int)->ndarray:
+    num_points = x.shape[0]
+    A = zeros((num_points, n))
+    for i in range(n):
+            A[:, i] = eval_chebyt(i, x)
+
+    At = A.T.dot(A)
+    F = A.T.dot(f)
+    C = np_solve(At, F)
+
+    return C
 
 
 def fit_chebyshev_2d(x: ndarray, y: ndarray, f: ndarray, n: int)->ndarray:
