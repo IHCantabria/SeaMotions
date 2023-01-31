@@ -3,6 +3,7 @@
 from typing import Callable
 
 # Import general usage scientific libraries
+from mpl_toolkits.mplot3d import axes3d
 import matplotlib.pyplot as plt
 from numpy import linspace, log10, meshgrid, ndarray, zeros
 from numpy import abs as np_abs
@@ -13,6 +14,10 @@ from scipy.special import eval_chebyt, roots_chebyt
 class FitProperties:
 
     def __init__(self) -> None:
+        self.num_x = 20
+        self.num_x_fit = 20
+        self.num_y = 20
+        self.num_y_fit = 20
         self.x_log_scale = False
         self.x_max = 0
         self.x_map_fcn = None
@@ -60,8 +65,8 @@ def fit_integral_2d(f_residual: Callable,
     cheby_tol = fit_props.cheby_tol
 
     # Define parametric space for function fit
-    num_x_fit = 150
-    num_y_fit = 150
+    num_x_fit = fit_props.num_x_fit
+    num_y_fit = fit_props.num_y_fit
     x_fit_poly = roots_chebyt(num_x_fit)[0]
     y_fit_poly = roots_chebyt(num_y_fit)[0]
     x_fit = fit_props.x_map_lin(x_fit_poly)
@@ -87,8 +92,8 @@ def fit_integral_2d(f_residual: Callable,
     NCY_filter = (NCY.ravel())[pos]
 
     # Define parametric space
-    num_x = 150
-    num_y = 100
+    num_x = fit_props.num_x
+    num_y = fit_props.num_y
     xe = linspace(-1.0, 1.0, num_x)
     ye = linspace(-1.0, 1.0, num_y)
     x = fit_props.x_map_lin(xe)
