@@ -3,8 +3,6 @@
 from typing import Callable
 
 # Import general usage scientific libraries
-from mpl_toolkits.mplot3d import axes3d
-import matplotlib.pyplot as plt
 from numpy import exp, log,pi, sqrt
 from numpy import abs as np_abs
 from scipy.special import jv, roots_chebyt, yv
