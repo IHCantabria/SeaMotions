@@ -11,7 +11,7 @@ from scipy.special import jv, roots_chebyt, yv
 
 # Import local modules
 from base_integrals import fxy
-from fit_cheby import eval_chebyshev, eval_chebyshev_filter, fit_chebyshev
+from fit_cheby import eval_chebyshev_2d, eval_chebyshev_2d_filter, fit_chebyshev_2d
 
 
 class FitProperties:
@@ -256,7 +256,7 @@ def fit_residual(f_residual: Callable,
             Ff[i, j] = f_residual(x_fit[i], y_fit[j])
 
     # Calculate polynomial fit coefficients
-    C = fit_chebyshev(Xfp.ravel(), Yfp.ravel(), Ff.ravel(), cheby_order, fit_props.x_map, fit_props.y_map)
+    C = fit_chebyshev_2d(Xfp.ravel(), Yfp.ravel(), Ff.ravel(), cheby_order, fit_props.x_map, fit_props.y_map)
     
     # Filter coefficients to the precision required
     n_cheby = linspace(0, cheby_order-1, cheby_order, dtype=int)
@@ -284,7 +284,7 @@ def fit_residual(f_residual: Callable,
         for j in range(num_y):
             Fr[i, j] = f_residual(x[i], y[j])
     
-    Ffe = eval_chebyshev_filter(Xe.ravel(), Ye.ravel(), fit_props.x_map, fit_props.y_map, C_filter, NCX_filter, NCY_filter)
+    Ffe = eval_chebyshev_2d_filter(Xe.ravel(), Ye.ravel(), fit_props.x_map, fit_props.y_map, C_filter, NCX_filter, NCY_filter)
     Ffe = Ffe.reshape(num_x, num_y)
     
     y0 = linspace(fit_props.y_min, fit_props.y_max, num_cross_sections)

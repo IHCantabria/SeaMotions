@@ -5,7 +5,7 @@ from numpy.linalg import solve as np_solve
 from scipy.special import eval_chebyt
 
 
-def eval_chebyshev(x: ndarray, y: ndarray, n: int, c: ndarray)->ndarray:
+def eval_chebyshev_2d(x: ndarray, y: ndarray, n: int, c: ndarray)->ndarray:
     sol = 0.0
     for i in range(n):
         for j in range(n):
@@ -14,7 +14,7 @@ def eval_chebyshev(x: ndarray, y: ndarray, n: int, c: ndarray)->ndarray:
     return sol
 
 
-def eval_chebyshev_filter(x: ndarray, y: ndarray, c: ndarray, ncx: ndarray, ncy: ndarray)->ndarray:
+def eval_chebyshev_2d_filter(x: ndarray, y: ndarray, c: ndarray, ncx: ndarray, ncy: ndarray)->ndarray:
     sol = 0.0
     for i in range(c.shape[0]):
         sol += c[i]*eval_chebyt(ncx[i], x)*eval_chebyt(ncy[i], y)
@@ -22,7 +22,7 @@ def eval_chebyshev_filter(x: ndarray, y: ndarray, c: ndarray, ncx: ndarray, ncy:
     return sol
 
 
-def fit_chebyshev(x: ndarray, y: ndarray, f: ndarray, n: int)->ndarray:
+def fit_chebyshev_2d(x: ndarray, y: ndarray, f: ndarray, n: int)->ndarray:
     num_points = x.shape[0]
     A = zeros((num_points, n*n))
     for i in range(n):
