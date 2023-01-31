@@ -58,6 +58,14 @@ def eval_chebyshev_1d(x: ndarray, n: int, c: ndarray)->ndarray:
     return sol
 
 
+def eval_chebyshev_1d_filter(x: ndarray, c: ndarray, ncx: ndarray)->ndarray:
+    sol = 0.0
+    for i in range(c.shape[0]):
+        sol += c[i]*eval_chebyt(ncx[i], x)
+
+    return sol
+
+
 def eval_chebyshev_2d(x: ndarray, y: ndarray, n: int, c: ndarray)->ndarray:
     sol = 0.0
     for i in range(n):
