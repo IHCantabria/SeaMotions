@@ -59,7 +59,7 @@ def eval_chebyshev_1d(x: ndarray, n: int, c: ndarray)->ndarray:
 
 
 def eval_chebyshev_1d_filter(x: ndarray, c: ndarray, ncx: ndarray)->ndarray:
-    sol = 0.0
+    sol = zeros(x.shape)
     for i in range(c.shape[0]):
         sol += c[i]*eval_chebyt(ncx[i], x)
 
@@ -132,6 +132,108 @@ def fit_chebyshev_3d(x: ndarray, y: ndarray, z: ndarray, f: ndarray, nx: int, ny
     C = np_solve(At, F)
 
     return C
+
+
+def fit_integral_1d(f_residual: Callable,
+                fit_props: FitProperties,
+                region_name: str,
+                show_figs = False
+                )->None:
+    # Define parametric space limits
+    num_cross_sections = 5
+    x_max = fit_props.x_max
+    x_min = fit_props.x_min
+    cheby_order = fit_props.cheby_order
+    cheby_tol = fit_props.cheby_tol
+
+    # Define parametric space for function fit
+    num_x_fit = fit_props.num_x_fit
+    x_fit_poly = roots_chebyt(num_x_fit)[0]
+    x_fit = fit_props.x_map_lin(x_fit_poly)
+
+    # Calculate residual function over the fit points
+    Ff = zeros((num_x_fit, ))
+    for i in range(num_x_fit):
+        Ff[i] = f_residual(x_fit[i])
+
+    # Calculate polynomial fit coefficients
+    C = fit_chebyshev_1d(x_fit_poly, Ff, cheby_order)
+    
+    # Filter coefficients to the precision required
+    n_cheby = linspace(0, cheby_order-1, cheby_order, dtype=int)
+    pos = np_abs(C) > cheby_tol
+    C_filter = C[pos]
+    NCX_filter = n_cheby[pos]
+
+    # Define parametric space
+    num_x = fit_props.num_x
+    xe = linspace(-1.0, 1.0, num_x)
+    x = fit_props.x_map_lin(xe)
+    X0 = x_min
+
+    # Calculate residual function over the evaluation points
+    Fr = zeros((num_x, ))
+    for i in range(num_x):
+        Fr[i] = f_residual(x[i])
+    
+    Ffe = eval_chebyshev_1d_filter(xe, C_filter, NCX_filter)
+    
+    # Print error statistics
+    err_tol = 1e-6
+    err_abs = np_abs(Ffe-Fr)
+    pos = err_abs > err_tol
+    err_over_thr = pos.sum()/err_abs.shape[0]*100
+    print("Error Statistics:")
+    print(f" -> Maximum: {err_abs.max()}")
+    print(f" -> Minimum: {err_abs.min()}")
+    print(f" -> Mean: {err_abs.mean()}")
+    print(f" -> Values over threshold [{err_tol:0.1E}]: {err_over_thr} %")
+
+    # Plot residual function
+    fig = plt.figure()
+    fig.suptitle(region_name + f" - Total Coeffs: {C_filter.shape[0]:d}")
+    ax0 = fig.add_subplot(221)
+    ax1 = fig.add_subplot(223)
+    ax2 = fig.add_subplot(222)
+    ax3 = fig.add_subplot(224)
+
+    ax0.plot(x, Fr)
+    ax0.set_xlabel("X")
+    if fit_props.x_log_scale:
+        ax0.set_xscale("log")
+
+    ax1.plot(x, Fr, label="Target")
+    ax1.plot(x, Ffe, label="Fit")
+    ax1.set_xlabel("X")
+    if fit_props.x_log_scale:
+        ax1.set_xscale("log")
+    ax1.legend()
+
+    ax2.set_title("log10(|Ffe-Fr|)")
+    ax2.plot(x, log10(err_abs))
+    ax2.set_xlabel("X")
+    if fit_props.x_log_scale:
+        ax2.set_xscale("log")
+
+    ax3.set_title("log10(|Ffe-Fr|/|Fr|)")
+    ax3.plot(x, log10(np_abs(Ffe-Fr)/np_abs(Fr)))
+    ax3.set_xlabel("X")
+    if fit_props.x_log_scale:
+        ax3.set_xscale("log")
+
+    cheby_order_ticks = linspace(0, cheby_order-1, cheby_order)
+    fig = plt.figure()
+    fig.suptitle("Fit coefficient matrix")
+    ax = fig.add_subplot(111)
+    ax.plot(n_cheby, C, label="Raw")
+    ax.plot(NCX_filter, C_filter, "o", label="Filter")
+    ax.set_xlabel("X")
+    ax.set_xticks(cheby_order_ticks)
+
+    if show_figs:
+        plt.show()
+
+    return C_filter, NCX_filter
 
 
 def fit_integral_2d(f_residual: Callable,
