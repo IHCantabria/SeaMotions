@@ -4,6 +4,7 @@
 
 #include "../config.hpp"
 
+cusfloat chebyshev_poly(int n, cusfloat x);
 cusfloat chebyshev_poly_raw(int n, cusfloat x);
 cusfloat chebyshev_poly_der_raw(int n, cusfloat x);
 void chebyshev_poly_roots(int num_points, cusfloat* roots);

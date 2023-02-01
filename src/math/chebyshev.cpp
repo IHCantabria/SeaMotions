@@ -7,6 +7,38 @@
 #include "math_tools.hpp"
 
 
+cusfloat chebyshev_poly(int n, cusfloat x)
+{
+    // Start recursive relations
+    cusfloat tn0 = 1.0;
+    cusfloat tn1 = x;
+
+    // Calculate chebyshev polynomial
+    if (n == 0)
+    {
+        return tn0;
+    }
+    else if (n == 1)
+    {
+        return tn1;
+    }
+    
+    cusfloat tn2 = 2*x*tn1 - tn0;
+    for (int i=3; i<n+1; i++)
+    {
+        // Shift coefficients up
+        tn0 = tn1;
+        tn1 = tn2;
+
+        // Update coefficient
+        tn2 = 2*x*tn1 - tn0;
+
+    }
+
+    return tn2;
+}
+
+
 cusfloat chebyshev_poly_raw(int n, cusfloat x)
 {
     // Include name
