@@ -100,7 +100,14 @@ int main(int argc, char* argv[])
     bool pass = false;
 
     // Test Chebyshev polynomial function
-    pass = launch_test(file_path_chebyshev, chebyshev_poly_raw, "chebyshev_poly");
+    pass = launch_test(file_path_chebyshev, chebyshev_poly, "chebyshev_poly");
+    if (!pass)
+    {
+        return 1;
+    }
+    
+    // Test Chebyshev polynomial function raw
+    pass = launch_test(file_path_chebyshev, chebyshev_poly_raw, "chebyshev_poly_raw");
     if (!pass)
     {
         return 1;
