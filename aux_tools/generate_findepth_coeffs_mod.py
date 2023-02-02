@@ -1,0 +1,125 @@
+
+# Import general usage libraries
+import h5py
+import os
+
+# Import general usage scientific libraries
+from numpy import array, concatenate, ndarray
+
+
+def generate_coeffs_modules(database_path: str, file_path: str, int_name: str)->None:
+    # Open database file unit
+    fid_db = h5py.File(database_path, "r")
+    dims = fid_db["dims"][()]
+
+    # Open file unit to storage the coefficients in the 
+    # database
+    fid = open(file_path, "w")
+
+    # Add header guard
+    fid.writelines(f"#ifndef __{int_name}_coeffs_hpp\n")
+    fid.writelines(f"#define __{int_name}_coeffs_hpp\n\n")
+
+    # Add includes
+    fid.writelines('#include "../../config.hpp"\n')
+    fid.writelines("\n")
+
+    # Open namespace field
+    fid.writelines(f"namespace {int_name}" + "C\n{\n")
+
+    # Save number of intervals
+    intervals_bounds = fid_db["intervals_bounds"][:]
+    num_intervals = intervals_bounds.shape[0]-1
+    interval_str = ", ".join(f"{i:0.6E}" for i in intervals_bounds)
+    fid.writelines(f"    const int num_intervals = {num_intervals:d};\n")
+    fid.writelines(f"    const cusfloat interval_bounds[{intervals_bounds.shape[0]:d}] = " + "{" + interval_str + "};\n\n")
+
+    # Save number of points
+    num_points = fid_db["num_points"][:]
+    num_points_cum = fid_db["num_points_cum"][:]
+    num_points_str = ", ".join(f"{i:d}" for i in num_points)
+    num_points_cum_str = ", ".join(f"{i:d}" for i in num_points_cum)
+    fid.writelines(f"    const int num_points[{num_points.shape[0]}] = " + "{" + num_points_str + "};\n")
+    fid.writelines(f"    const int num_points_cum[{num_points_cum.shape[0]}] = " + "{" + num_points_cum_str + "};\n\n")
+
+    # Write chebyshev polynomials
+    cheby_coeffs = interval_to_vector(fid_db, "cheby_coeffs", intervals_bounds.shape[0]-1, array([]))
+    fid.writelines(f"    const int num_c = {cheby_coeffs.shape[0]};\n")
+    fid.writelines(f"    const int c[{cheby_coeffs.shape[0]}] = " + "{\n")
+    for i, iv in enumerate(cheby_coeffs):
+        fid.writelines(f"                        {iv:0.16E},  // C[{i}]\n")
+    fid.writelines(f"                        " + "};\n")
+
+    # Write polynomials coefficients
+    ncx = interval_to_vector(fid_db, "ncx", num_intervals, array([]))
+    write_vector(fid, ncx, "ncx")
+    if dims >= 2:
+        ncy = interval_to_vector(fid_db, "ncy", num_intervals, array([]))
+        write_vector(fid, ncy, "ncy")
+        if dims == 3:
+            ncz = interval_to_vector(fid_db, "ncz", num_intervals, array([]))
+            write_vector(fid, ncz, "ncz")
+        else:
+            raise ValueError(f"Number of dimensions: {dims} not available.")
+
+    # Close namespace field
+    fid.writelines("}\n")
+
+    # Close header guard if statement
+    fid.writelines("#endif\n")
+
+    # Close coefficients file unit
+    fid.close()
+
+    # Close database file unit
+    fid_db.close()
+
+
+def generate_test_database()->None:
+    # Define file path for the database
+    this_path = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(this_path, "test_coeffs.h5")
+
+    # Loads coefficients
+    fid = h5py.File(file_path, "r")
+    C_filter = fid["C_filter"][:]
+    NCX_filter = fid["NCX_filter"][:]
+    NCY_filter = fid["NCY_filter"][:]
+    NCZ_filter = fid["NCZ_filter"][:]
+    fid.close()
+
+    # Create database
+    intervals = array([1e-12, 1e-1, 3.0, 10.0, 50.0])
+    database_file_path = os.path.join(this_path, "test_database.h5")
+    fid = h5py.File(database_file_path, "w")
+    fid.create_dataset("intervals", data=intervals)
+    for i in range(intervals.shape[0]):
+        gp_int = fid.create_group(f"I{i:d}")
+        gp_int.create_dataset("C_filter", data=C_filter)
+        gp_int.create_dataset("NCX_filter", data=NCX_filter)
+        gp_int.create_dataset("NCY_filter", data=NCY_filter)
+        gp_int.create_dataset("NCZ_filter", data=NCZ_filter)
+    
+    fid.close()
+
+
+def interval_to_vector(fid_db, field_name: str, num_intervals: int, data: ndarray)->ndarray:
+    for i in range(num_intervals):
+        data = concatenate((data, fid_db[f"I{i:d}"][field_name]))
+
+    return data
+
+
+def write_vector(fid, field: ndarray, field_tag: str)->None:
+    fid.writelines(f"    const int {field_tag}[{field.shape[0]}] = " + "{\n")
+    for i, iv in enumerate(field):
+        fid.writelines(f"                            {int(iv):d},  // {field_tag}[{i}]\n")
+    fid.writelines(f"                            " + "};\n")
+
+
+if __name__ == "__main__":
+    # generate_test_database()
+    this_path = os.path.dirname(os.path.abspath(__file__))
+    database_path = os.path.join(this_path, "L1_database.h5")
+    file_path = os.path.join(os.path.dirname(this_path), "src", "green", "fin_depth_coeffs", "L1.hpp")
+    generate_coeffs_modules(database_path, file_path, "L1")
