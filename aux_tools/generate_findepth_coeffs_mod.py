@@ -45,10 +45,10 @@ def generate_coeffs_modules(database_path: str, file_path: str, int_name: str)->
     # Write chebyshev polynomials
     cheby_coeffs = interval_to_vector(fid_db, "cheby_coeffs", intervals_bounds.shape[0]-1, array([]))
     fid.writelines(f"    const int num_c = {cheby_coeffs.shape[0]};\n")
-    fid.writelines(f"    const int c[{cheby_coeffs.shape[0]}] = " + "{\n")
+    fid.writelines(f"    const cusfloat c[{cheby_coeffs.shape[0]}] = " + "{\n")
     for i, iv in enumerate(cheby_coeffs):
-        fid.writelines(f"                        {iv:0.16E},  // C[{i}]\n")
-    fid.writelines(f"                        " + "};\n")
+        fid.writelines(f"                                {iv:0.16E},  // C[{i}]\n")
+    fid.writelines(f"                                " + "};\n")
 
     # Write polynomials coefficients
     ncx = interval_to_vector(fid_db, "ncx", num_intervals, array([]))
