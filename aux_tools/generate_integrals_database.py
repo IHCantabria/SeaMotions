@@ -305,8 +305,10 @@ def write_intervals(database_path: str, intervals_data: list, dims: int) -> None
         # Fill intervals data
         gp_int.create_dataset("cheby_coeffs", data=intervals_sort[i]["cheby_coeffs"])
         gp_int.create_dataset("ncx", data=intervals_sort[i]["ncx"])
-        gp_int.create_dataset("ncy", data=intervals_sort[i]["ncy"])
-        gp_int.create_dataset("ncz", data=intervals_sort[i]["ncz"])
+        if dims >= 2:
+            gp_int.create_dataset("ncy", data=intervals_sort[i]["ncy"])
+            if dims == 3:
+                gp_int.create_dataset("ncz", data=intervals_sort[i]["ncz"])
 
     # Close file unit
     fid.close()
@@ -317,7 +319,8 @@ if __name__ == "__main__":
     # fit_M1_Hfix()
     # fit_L1_Afix_Bfix()
     # fit_L1()
-    fit_L2()
+    fit_L1_P3()
+    # fit_L2()
     # file_path = r"E:\sergio\developments\SeaMotions\aux_tools\test_coeffs.py"
     # fid = h5py.File(file_path, "w")
     # fid.create_dataset("C_filter", data=C_filter)
