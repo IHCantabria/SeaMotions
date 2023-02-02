@@ -169,7 +169,7 @@ def fit_integral_1d(f_residual: Callable,
     num_cross_sections = 5
     x_max = fit_props.x_max
     x_min = fit_props.x_min
-    cheby_order = fit_props.cheby_order
+    cheby_order = fit_props.cheby_order_x
     cheby_tol = fit_props.cheby_tol
 
     # Define parametric space for function fit
