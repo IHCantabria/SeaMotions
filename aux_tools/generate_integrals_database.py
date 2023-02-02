@@ -284,10 +284,15 @@ def write_intervals(database_path: str, intervals_data: list, dims: int) -> None
 
     # Count folded points
     count_fold = 0
+    count_fold_i = 0
+    max_size_fold = 0
     if fold_chn is not None:
         for i in range(len(intervals_sort)):
             diff = intervals_sort[i][fold_chn][1:]-intervals_sort[i][fold_chn][:-1]
-            count_fold += (diff > 0.1).sum() + 1
+            count_fold_i = (diff > 0.1).sum() + 1
+            count_fold += count_fold
+            if count_fold_i > max_size_fold:
+                max_size_fold = count_fold_i
 
     # Open file unit
     fid = h5py.File(database_path, "w")
@@ -296,6 +301,7 @@ def write_intervals(database_path: str, intervals_data: list, dims: int) -> None
     fid.create_dataset("dims", data=dims)
     fid.create_dataset("count_fold", data=count_fold)
     fid.create_dataset("intervals_bounds", data=intervals_bounds)
+    fid.create_dataset("max_size_fold", data=max_size_fold)
     fid.create_dataset("num_points", data=num_points)
     fid.create_dataset("num_points_cum", data=num_points_cum)
     for i in range(len(intervals_sort)):
@@ -305,10 +311,20 @@ def write_intervals(database_path: str, intervals_data: list, dims: int) -> None
         # Fill intervals data
         gp_int.create_dataset("cheby_coeffs", data=intervals_sort[i]["cheby_coeffs"])
         gp_int.create_dataset("ncx", data=intervals_sort[i]["ncx"])
+        gp_int.create_dataset("x_max", data=getattr(intervals_sort[-1]["fit_props"], "x_max"))
+        gp_int.create_dataset("x_min", data=getattr(intervals_sort[-1]["fit_props"], "x_min"))
+        gp_int.create_dataset("x_log_scale", data=getattr(intervals_sort[-1]["fit_props"], "x_log_scale"))
         if dims >= 2:
             gp_int.create_dataset("ncy", data=intervals_sort[i]["ncy"])
+            gp_int.create_dataset("y_max", data=getattr(intervals_sort[-1]["fit_props"], "y_max"))
+            gp_int.create_dataset("y_min", data=getattr(intervals_sort[-1]["fit_props"], "y_min"))
+            gp_int.create_dataset("y_log_scale", data=getattr(intervals_sort[-1]["fit_props"], "y_log_scale"))
             if dims == 3:
                 gp_int.create_dataset("ncz", data=intervals_sort[i]["ncz"])
+                gp_int.create_dataset("z_max", data=getattr(intervals_sort[-1]["fit_props"], "z_max"))
+                gp_int.create_dataset("z_min", data=getattr(intervals_sort[-1]["fit_props"], "z_min"))
+                gp_int.create_dataset("z_log_scale", data=getattr(intervals_sort[-1]["fit_props"], "z_log_scale"))
+
 
     # Close file unit
     fid.close()
@@ -318,8 +334,8 @@ if __name__ == "__main__":
     # fit_L1_Hfix()
     # fit_M1_Hfix()
     # fit_L1_Afix_Bfix()
-    # fit_L1()
-    fit_L1_P3()
+    fit_L1()
+    # fit_L1_P3()
     # fit_L2()
     # file_path = r"E:\sergio\developments\SeaMotions\aux_tools\test_coeffs.py"
     # fid = h5py.File(file_path, "w")
