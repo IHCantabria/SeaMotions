@@ -4,10 +4,10 @@ import h5py
 import os
 
 # Import general usage scientific libraries
-from numpy import argsort, array, concatenate, ndarray
+from numpy import argsort, array, concatenate, log, ndarray
 
 # Import local modules
-from base_integrals import L1, M1
+from base_integrals import L1, L2, M1
 from fit_cheby import fit_integral_1d, fit_integral_2d, fit_integral_3d, FitProperties
 
 
@@ -49,7 +49,7 @@ def fit_L1()->None:
     # Save coefficients data into a database
     this_path = os.path.dirname(os.path.abspath(__file__))
     database_path = os.path.join(this_path, "L1_database.h5")
-    write_intervals(database_path, intervals_data)
+    write_intervals(database_path, intervals_data, 3)
 
 
 def fit_L1_P0()->None:
@@ -81,7 +81,7 @@ def fit_L1_P1()->None:
     fit_props.x_min = 0.0
     fit_props.y_max = 1.0
     fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
+    fit_props.z_log_scale = False
     fit_props.z_max = 3.0
     fit_props.z_min = 0.1
     fit_props.cheby_order_x = 20
@@ -103,7 +103,7 @@ def fit_L1_P2()->None:
     fit_props.x_min = 0.0
     fit_props.y_max = 1.0
     fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
+    fit_props.z_log_scale = False
     fit_props.z_max = 12.0
     fit_props.z_min = 3.0
     fit_props.cheby_order_x = 20
@@ -125,7 +125,7 @@ def fit_L1_P3()->None:
     fit_props.x_min = 0.0
     fit_props.y_max = 1.0
     fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
+    fit_props.z_log_scale = False
     fit_props.z_max = 50.0
     fit_props.z_min = 12.0
     fit_props.cheby_order_x = 20
@@ -179,6 +179,58 @@ def fit_L1_Hfix()->None:
     fit_integral_2d(lambda x, y: L1(x, y, H)[0].real, fit_props, f"L1_H: {H:0.2E}", show_figs=True)
 
 
+def fit_L2()->None:
+    # Initialize object to storage the data
+    intervals_data = []
+
+    # Calculate coefficients for H = [1e-12, 1.0]
+    intervals_data.append(fit_L2_P0())
+
+    # Calculate coefficients for H = [1.0, 50.0]
+    intervals_data.append(fit_L2_P1())
+
+    # Save coefficients data into a database
+    this_path = os.path.dirname(os.path.abspath(__file__))
+    database_path = os.path.join(this_path, "L2_database.h5")
+    write_intervals(database_path, intervals_data, 3)
+
+
+def fit_L2_P0()->None:
+    # Define parametric space and fit properties
+    fit_props = FitProperties()
+    fit_props.x_log_scale = True
+    fit_props.x_max = 1.0
+    fit_props.x_min = 1e-12
+    fit_props.cheby_order_x = 50
+    fit_props.cheby_tol = 1e-7
+    fit_props.x_map_fcn = lambda x: x
+    fit_props.y_map_fcn = lambda y: y
+    fit_props.fit_points_to_order()
+
+    # Launch fit
+    cheby_coeffs, ncx = fit_integral_1d(lambda z: L2(z)[0].real+log(z)/2, fit_props, f"L2", show_figs=False)
+
+    return data_to_dict(cheby_coeffs, ncx, array([]), array([]))
+
+
+def fit_L2_P1()->None:
+    # Define parametric space and fit properties
+    fit_props = FitProperties()
+    fit_props.x_log_scale = True
+    fit_props.x_max = 50.0
+    fit_props.x_min = 1.0
+    fit_props.cheby_order_x = 50
+    fit_props.cheby_tol = 1e-7
+    fit_props.x_map_fcn = lambda x: x
+    fit_props.y_map_fcn = lambda y: y
+    fit_props.fit_points_to_order()
+
+    # Launch fit
+    cheby_coeffs, ncx = fit_integral_1d(lambda z: L2(z)[0].real+log(z)/2, fit_props, f"L2", show_figs=False)
+
+    return data_to_dict(cheby_coeffs, ncx, array([]), array([]))
+
+
 def fit_M1_Hfix()->None:
     # Define parametric space and fit properties
     fit_props = FitProperties()
@@ -196,11 +248,21 @@ def fit_M1_Hfix()->None:
     fit_integral_2d(lambda x, y: M1(x, y, H)[0].real, fit_props, f"M1_H: {H:0.2E}", show_figs=True)
 
 
-def write_intervals(database_path: str, intervals_data: list) -> None:
+def write_intervals(database_path: str, intervals_data: list, dims: int) -> None:
+    if dims == 1:
+        dim_label = "x"
+        fold_chn = None
+    elif dims == 2:
+        dim_label = "y"
+        fold_chn = "ncx"
+    elif dims == 3:
+        dim_label = "z"
+        fold_chn = "ncy"
+
     # Get intervals min position
     z_min = []
     for int_data in intervals_data:
-        z_min.append(int_data["fit_props"].z_min)
+        z_min.append(getattr(int_data["fit_props"], f"{dim_label}_min"))
     z_min = array(z_min)
 
     # Sort intervals by x_min values
@@ -210,7 +272,7 @@ def write_intervals(database_path: str, intervals_data: list) -> None:
         intervals_sort.append(intervals_data[pos[i]])
 
     # Get intervals bounds
-    intervals_bounds = concatenate((z_min[pos], array([intervals_sort[-1]["fit_props"].z_max])))
+    intervals_bounds = concatenate((z_min[pos], array([getattr(intervals_sort[-1]["fit_props"], f"{dim_label}_max")])))
 
     # Get number of points per interval
     num_points = []
@@ -222,14 +284,16 @@ def write_intervals(database_path: str, intervals_data: list) -> None:
 
     # Count folded points
     count_fold = 0
-    for i in range(len(intervals_sort)):
-        diff = intervals_sort[i]["ncy"][1:]-intervals_sort[i]["ncy"][:-1]
-        count_fold += (diff > 0.1).sum() + 1
+    if fold_chn is not None:
+        for i in range(len(intervals_sort)):
+            diff = intervals_sort[i][fold_chn][1:]-intervals_sort[i][fold_chn][:-1]
+            count_fold += (diff > 0.1).sum() + 1
 
     # Open file unit
     fid = h5py.File(database_path, "w")
 
     # Storage data
+    fid.create_dataset("dims", data=dims)
     fid.create_dataset("count_fold", data=count_fold)
     fid.create_dataset("intervals_bounds", data=intervals_bounds)
     fid.create_dataset("num_points", data=num_points)
@@ -252,7 +316,8 @@ if __name__ == "__main__":
     # fit_L1_Hfix()
     # fit_M1_Hfix()
     # fit_L1_Afix_Bfix()
-    fit_L1()
+    # fit_L1()
+    fit_L2()
     # file_path = r"E:\sergio\developments\SeaMotions\aux_tools\test_coeffs.py"
     # fid = h5py.File(file_path, "w")
     # fid.create_dataset("C_filter", data=C_filter)
