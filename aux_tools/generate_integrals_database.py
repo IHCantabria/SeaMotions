@@ -187,15 +187,15 @@ def fit_L2()->None:
     # Save coefficients data into a database
     this_path = os.path.dirname(os.path.abspath(__file__))
     database_path = os.path.join(this_path, "L2_database.h5")
-    write_intervals(database_path, intervals_data, 3)
+    write_intervals(database_path, intervals_data, 1)
 
 
 def fit_L2_P0()->None:
     # Define parametric space and fit properties
     fit_props = FitProperties()
     fit_props.x_log_scale = True
-    fit_props.x_max = 1.0
-    fit_props.x_min = 1e-12
+    fit_props.x_max = 0.001
+    fit_props.x_min = 1e-16
     fit_props.cheby_order_x = 50
     fit_props.cheby_tol = 1e-7
     fit_props.x_map_fcn = lambda x: x
@@ -203,17 +203,17 @@ def fit_L2_P0()->None:
     fit_props.fit_points_to_order()
 
     # Launch fit
-    cheby_coeffs, ncx = fit_integral_1d(lambda z: L2(z)[0].real+log(z)/2, fit_props, f"L2", show_figs=False)
+    cheby_coeffs, ncx = fit_integral_1d(lambda z: L2(z)[0].real, fit_props, f"L2", show_figs=True)
 
-    return data_to_dict(cheby_coeffs, ncx, array([]), array([]))
+    return data_to_dict(fit_props, cheby_coeffs, ncx, array([]), array([]))
 
 
 def fit_L2_P1()->None:
     # Define parametric space and fit properties
     fit_props = FitProperties()
     fit_props.x_log_scale = True
-    fit_props.x_max = 50.0
-    fit_props.x_min = 1.0
+    fit_props.x_max = 1.0
+    fit_props.x_min = 0.001
     fit_props.cheby_order_x = 50
     fit_props.cheby_tol = 1e-7
     fit_props.x_map_fcn = lambda x: x
@@ -221,9 +221,9 @@ def fit_L2_P1()->None:
     fit_props.fit_points_to_order()
 
     # Launch fit
-    cheby_coeffs, ncx = fit_integral_1d(lambda z: L2(z)[0].real+log(z)/2, fit_props, f"L2", show_figs=False)
+    cheby_coeffs, ncx = fit_integral_1d(lambda z: L2(z)[0].real, fit_props, f"L2", show_figs=True)
 
-    return data_to_dict(cheby_coeffs, ncx, array([]), array([]))
+    return data_to_dict(fit_props, cheby_coeffs, ncx, array([]), array([]))
 
 
 def fit_M1_Hfix()->None:
@@ -428,13 +428,14 @@ if __name__ == "__main__":
     # fit_L1_Hfix()
     # fit_M1_Hfix()
     # fit_L1_Afix_Bfix()
-    fit_L1()
+    # fit_L1()
     # fit_L3()
     # fit_L3_Hfix()
     # fit_L3_Afix_Bfix()
     # fit_L1_P0()
     # fit_L1_P3()
-    # fit_L2()
+    fit_L2()
+    # fit_L2_P1()
     # file_path = r"E:\sergio\developments\SeaMotions\aux_tools\test_coeffs.py"
     # fid = h5py.File(file_path, "w")
     # fid.create_dataset("C_filter", data=C_filter)
