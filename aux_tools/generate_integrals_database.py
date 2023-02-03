@@ -5,9 +5,10 @@ import os
 
 # Import general usage scientific libraries
 from numpy import argsort, array, concatenate, log, ndarray
+from numpy import abs as np_abs
 
 # Import local modules
-from base_integrals import L1, L2, M1
+from base_integrals import L1, L2, L3, M1
 from fit_cheby import fit_integral_1d, fit_integral_2d, fit_integral_3d, FitProperties
 
 
@@ -242,6 +243,105 @@ def fit_M1_Hfix()->None:
     fit_integral_2d(lambda x, y: M1(x, y, H)[0].real, fit_props, f"M1_H: {H:0.2E}", show_figs=True)
 
 
+def fit_L3()->None:
+    # Initialize object to storage the data
+    intervals_data = []
+
+    # Calculate coefficients for H = [1.0, 12.0]
+    intervals_data.append(fit_L3_P0())
+
+    # Calculate coefficients for H = [12.0, 30.0]
+    intervals_data.append(fit_L3_P1())
+
+    # Save coefficients data into a database
+    this_path = os.path.dirname(os.path.abspath(__file__))
+    database_path = os.path.join(this_path, "L3_database.h5")
+    write_intervals(database_path, intervals_data, 3)
+
+
+def fit_L3_Afix_Bfix()->None:
+    # Define parametric space and fit properties
+    fit_props = FitProperties()
+    fit_props.num_x = 100
+    fit_props.num_x_fit = 100
+    fit_props.x_log_scale = True
+    fit_props.x_max = 30.0
+    fit_props.x_min = 1.0
+    fit_props.y_max = 1.0
+    fit_props.y_min = 0.0
+    fit_props.cheby_order_x = 50
+    fit_props.cheby_tol = 1e-7
+    fit_props.x_map_fcn = lambda x: x
+    fit_props.y_map_fcn = lambda y: y
+    A = 1.0
+    B = 1.0
+
+    # Launch fit
+    fit_integral_1d(lambda z: L3(A, B, z)[0].real, fit_props, f"L3_A: {A:0.2E} - B: {B:0.2E}", show_figs=True)
+
+
+def fit_L3_Hfix()->None:
+    # Define parametric space and fit properties
+    fit_props = FitProperties()
+    fit_props.x_max = 1.0
+    fit_props.x_min = 0.0
+    fit_props.y_max = 1.0
+    fit_props.y_min = 0.0
+    fit_props.cheby_order_x = 20
+    fit_props.cheby_order_y = 20
+    fit_props.cheby_tol = 1e-7
+    fit_props.x_map_fcn = lambda x: x
+    fit_props.y_map_fcn = lambda y: y
+    H = 50.0
+
+    # Launch fit
+    fit_integral_2d(lambda x, y: L3(x, y, H)[0].real, fit_props, f"L3_H: {H:0.2E}", show_figs=True)
+
+
+def fit_L3_P0()->None:
+    # Define parametric space and fit properties
+    fit_props = FitProperties()
+    fit_props.x_max = 1.0
+    fit_props.x_min = 0.0
+    fit_props.y_max = 1.0
+    fit_props.y_min = 0.0
+    fit_props.z_log_scale = True
+    fit_props.z_max = 12.0
+    fit_props.z_min = 1.0
+    fit_props.cheby_order_x = 20
+    fit_props.cheby_order_y = 20
+    fit_props.cheby_order_z = 50
+    fit_props.cheby_tol = 1e-8
+    fit_props.fit_points_to_order()
+
+    # Launch fit
+    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L1(x, y, z)[0].real, fit_props, "L1_P0")
+
+    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
+
+
+def fit_L3_P1()->None:
+    # Define parametric space and fit properties
+    fit_props = FitProperties()
+    fit_props.x_max = 1.0
+    fit_props.x_min = 0.0
+    fit_props.y_max = 1.0
+    fit_props.y_min = 0.0
+    fit_props.z_log_scale = True
+    fit_props.z_max = 30.0
+    fit_props.z_min = 12.0
+    fit_props.cheby_order_x = 20
+    fit_props.cheby_order_y = 20
+    fit_props.cheby_order_z = 50
+    fit_props.cheby_tol = 1e-8
+    fit_props.fit_points_to_order()
+
+    # Launch fit
+    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L1(x, y, z)[0].real, fit_props, "L1_P0")
+
+    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
+
+
 def write_intervals(database_path: str, intervals_data: list, dims: int) -> None:
     if dims == 1:
         dim_label = "x"
@@ -282,9 +382,9 @@ def write_intervals(database_path: str, intervals_data: list, dims: int) -> None
     max_size_fold = 0
     if fold_chn is not None:
         for i in range(len(intervals_sort)):
-            diff = intervals_sort[i][fold_chn][1:]-intervals_sort[i][fold_chn][:-1]
+            diff = np_abs(intervals_sort[i][fold_chn][1:]-intervals_sort[i][fold_chn][:-1])
             count_fold_i = (diff > 0.1).sum() + 1
-            count_fold += count_fold
+            count_fold += count_fold_i
             if count_fold_i > max_size_fold:
                 max_size_fold = count_fold_i
 
@@ -329,6 +429,9 @@ if __name__ == "__main__":
     # fit_M1_Hfix()
     # fit_L1_Afix_Bfix()
     fit_L1()
+    # fit_L3()
+    # fit_L3_Hfix()
+    # fit_L3_Afix_Bfix()
     # fit_L1_P0()
     # fit_L1_P3()
     # fit_L2()
