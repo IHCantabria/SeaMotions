@@ -112,6 +112,8 @@ set(test_wave_term_fin_depth_src
     ../../src/math/math_tools.txx
     ../../src/green/pulsating_fin_depth.hpp
     ../../src/green/pulsating_fin_depth.cpp
+    ../../src/math/chebyshev.hpp
+    ../../src/math/chebyshev.cpp
     ../../src/math/special_math.hpp
     ../../src/math/special_math.cpp
     ../../src/tools.hpp
