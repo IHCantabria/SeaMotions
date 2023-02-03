@@ -11,6 +11,7 @@
 // Include local modules
 #include "../../src/config.hpp"
 #include "../../src/green/pulsating_fin_depth.hpp"
+#include "../../src/green/pulsating_fin_depth_cheby.hpp"
 #include "../../src/math/math_tools.hpp"
 #include "../../src/tools.hpp"
 #include "../../src/waves.hpp"
@@ -228,37 +229,97 @@ bool launch_john(
 int main(int argc, char* argv[])
 {
     // Read command line arguments
-    if (!check_num_cmd_args(argc, 3))
+    if (!check_num_cmd_args(argc, 0))
     {
         return 1;
     }
 
-    std::string file_path_john(argv[1]);
-    std::string file_path_john_dr(argv[2]);
-    std::string file_path_john_dz(argv[3]);
+    // std::string file_path_john(argv[1]);
+    // std::string file_path_john_dr(argv[2]);
+    // std::string file_path_john_dz(argv[3]);
 
     // Declare variable for the logic system
     bool pass = false;
 
     // Launch test to check the John eigenfunction
     // expansion
-    pass = launch_john(file_path_john, john_series, "G");
-    if (!pass)
+    // pass = launch_john(file_path_john, john_series, "G");
+    // if (!pass)
+    // {
+    //     return 1;
+    // }
+
+    // pass = launch_john(file_path_john_dr, john_series_dr, "dG_dr");
+    // if (!pass)
+    // {
+    //     return 1;
+    // }
+
+    // pass = launch_john(file_path_john_dz, john_series_dz, "dG_dz");
+    // if (!pass)
+    // {
+    //     return 1;
+    // }
+    std::cout << "here" << std::endl;
+    // L1 l1 = L1();
+    P3 l1 = P3();
+    set_data_l1(l1);
+    std::cout << "here" << std::endl;
+    
+    cusfloat A_max = 1.0;
+    cusfloat A_min = 0.0;
+    cusfloat B_max = 1.0;
+    cusfloat B_min = 0.0;
+    cusfloat H_max = 0.0;
+    cusfloat H_min = -16;
+    int num_a = 50;
+    int num_b = 50;
+    int num_h = 50;
+
+    cusfloat da = (A_max-A_min)/(num_a-1);
+    cusfloat db = (B_max-B_min)/(num_b-1);
+    cusfloat dh = (H_max-H_min)/(num_h-1);
+    cusfloat ai = 0.0;
+    cusfloat bi = 0.0;
+    cusfloat hi = 0.0;
+    cusfloat I = 0.0;
+    double elapased_time_mean = 0.0;
+    int N = 100;
+    for (int n=0; n<N; n++)
     {
-        return 1;
+        double t0 = get_cpu_time();
+        for (int i=0; i<num_a; i++)
+        {
+            hi = std::pow(10.0, (H_min + i*dh));
+            // std::cout << "folding: " << hi << std::endl;
+            l1.fold_h(hi);
+            // std::cout << " -> Done" << std::endl;
+
+            // std::cout << "i: " << i << " - hi:" << hi << std::endl;
+            for (int j=0; j<num_a; j++)
+            {
+                ai = A_min + j*da;
+                // std::cout << "j: " << j << " - ai:" << ai << std::endl;
+                for (int k=0; k<num_b; k++)
+                {
+                    bi = B_min + k*db;
+                    // std::cout << "i: " << i << " - j: " << j << " - k: " << k;
+                    // std::cout << " - ai:" << ai << " - bi:" << bi << " - hi:" << hi << std::endl;
+                    I = l1.get_value_ab(ai, bi);
+                    // std::cout << "-> Done: " << I << std::endl;
+                }
+            }
+
+        }
+        double t1 = get_cpu_time();
+        elapased_time_mean += (t1-t0);
+        // std::cout << "Elapsed Time [s]: " << t1-t0 << std::endl;
     }
 
-    pass = launch_john(file_path_john_dr, john_series_dr, "dG_dr");
-    if (!pass)
-    {
-        return 1;
-    }
-
-    pass = launch_john(file_path_john_dz, john_series_dz, "dG_dz");
-    if (!pass)
-    {
-        return 1;
-    }
+    std::cout << "Elapsed Time Mean [s]: " << elapased_time_mean/N << std::endl;
+    // l1.fold_h(0.184207);
+    // std::cout << "l1: " << l1.get_value_ab(1.0, 1.0) << std::endl;
+    // std::cout << "l1: " << l1.get_value_abh(0.1, 0.1, 20.0) << std::endl;
     
 
     return 0;
