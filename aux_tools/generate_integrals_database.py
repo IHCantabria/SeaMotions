@@ -34,17 +34,11 @@ def fit_L1()->None:
     # Initialize object to storage the data
     intervals_data = []
 
-    # Calculate coefficients for H = [1e-12, 0.1]
+    # Calculate coefficients for H = [1e-16, 0.1]
     intervals_data.append(fit_L1_P0())
 
-    # Calculate coefficients for H = [0.1, 3.0]
+    # Calculate coefficients for H = [0.1, 1.0]
     intervals_data.append(fit_L1_P1())
-
-    # # Calculate coefficients for H = [3.0, 12.0]
-    intervals_data.append(fit_L1_P2())
-
-    # # Calcualte coefficients for H = [12.0, 50.0]
-    intervals_data.append(fit_L1_P3())
 
     # Save coefficients data into a database
     this_path = os.path.dirname(os.path.abspath(__file__))
@@ -61,7 +55,7 @@ def fit_L1_P0()->None:
     fit_props.y_min = 0.0
     fit_props.z_log_scale = True
     fit_props.z_max = 0.1
-    fit_props.z_min = 1e-12
+    fit_props.z_min = 1e-16
     fit_props.cheby_order_x = 20
     fit_props.cheby_order_y = 20
     fit_props.cheby_order_z = 50
@@ -82,7 +76,7 @@ def fit_L1_P1()->None:
     fit_props.y_max = 1.0
     fit_props.y_min = 0.0
     fit_props.z_log_scale = False
-    fit_props.z_max = 3.0
+    fit_props.z_max = 1.0
     fit_props.z_min = 0.1
     fit_props.cheby_order_x = 20
     fit_props.cheby_order_y = 20
@@ -335,6 +329,7 @@ if __name__ == "__main__":
     # fit_M1_Hfix()
     # fit_L1_Afix_Bfix()
     fit_L1()
+    # fit_L1_P0()
     # fit_L1_P3()
     # fit_L2()
     # file_path = r"E:\sergio\developments\SeaMotions\aux_tools\test_coeffs.py"
