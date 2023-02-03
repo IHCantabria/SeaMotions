@@ -35,15 +35,31 @@ def generate_coeffs_modules(database_path: str, file_path: str, int_name: str)->
     fid.writelines(f"    const cusfloat interval_bounds[{intervals_bounds.shape[0]:d}] = " + "{" + interval_str + "};\n\n")
 
     # Save number of points
+    max_size_fold = fid_db["max_size_fold"][()]
     num_points = fid_db["num_points"][:]
     num_points_cum = fid_db["num_points_cum"][:]
     num_points_str = ", ".join(f"{i:d}" for i in num_points)
     num_points_cum_str = ", ".join(f"{i:d}" for i in num_points_cum)
     fid.writelines(f"    const int num_points[{num_points.shape[0]}] = " + "{" + num_points_str + "};\n")
-    fid.writelines(f"    const int num_points_cum[{num_points_cum.shape[0]}] = " + "{" + num_points_cum_str + "};\n\n")
+    fid.writelines(f"    const int num_points_cum[{num_points_cum.shape[0]}] = " + "{" + num_points_cum_str + "};\n")
+    fid.writelines(f"    const int max_size_fold = {max_size_fold:d};\n\n")
+
+    # Save interval bounds
+    write_interval_bounds(fid, fid_db, "x_log_scale", num_intervals, "bool")
+    write_interval_bounds(fid, fid_db, "x_max", num_intervals, "cusfloat")
+    write_interval_bounds(fid, fid_db, "x_min", num_intervals, "cusfloat")
+    if dims >=2:
+        write_interval_bounds(fid, fid_db, "y_log_scale", num_intervals, "bool")
+        write_interval_bounds(fid, fid_db, "y_max", num_intervals, "cusfloat")
+        write_interval_bounds(fid, fid_db, "y_min", num_intervals, "cusfloat")
+        if dims == 3:
+            write_interval_bounds(fid, fid_db, "z_log_scale", num_intervals, "bool")
+            write_interval_bounds(fid, fid_db, "z_max", num_intervals, "cusfloat")
+            write_interval_bounds(fid, fid_db, "z_min", num_intervals, "cusfloat")
+    fid.writelines("\n")
 
     # Write chebyshev polynomials
-    cheby_coeffs = interval_to_vector(fid_db, "cheby_coeffs", intervals_bounds.shape[0]-1, array([]))
+    cheby_coeffs = interval_to_vector(fid_db, "cheby_coeffs", intervals_bounds.shape[0]-1)
     fid.writelines(f"    const int num_c = {cheby_coeffs.shape[0]};\n")
     fid.writelines(f"    const cusfloat c[{cheby_coeffs.shape[0]}] = " + "{\n")
     for i, iv in enumerate(cheby_coeffs):
@@ -51,13 +67,13 @@ def generate_coeffs_modules(database_path: str, file_path: str, int_name: str)->
     fid.writelines(f"                                " + "};\n")
 
     # Write polynomials coefficients
-    ncx = interval_to_vector(fid_db, "ncx", num_intervals, array([]))
+    ncx = interval_to_vector(fid_db, "ncx", num_intervals)
     write_vector(fid, ncx, "ncx")
     if dims >= 2:
-        ncy = interval_to_vector(fid_db, "ncy", num_intervals, array([]))
+        ncy = interval_to_vector(fid_db, "ncy", num_intervals)
         write_vector(fid, ncy, "ncy")
         if dims == 3:
-            ncz = interval_to_vector(fid_db, "ncz", num_intervals, array([]))
+            ncz = interval_to_vector(fid_db, "ncz", num_intervals)
             write_vector(fid, ncz, "ncz")
         else:
             raise ValueError(f"Number of dimensions: {dims} not available.")
@@ -103,11 +119,28 @@ def generate_test_database()->None:
     fid.close()
 
 
-def interval_to_vector(fid_db, field_name: str, num_intervals: int, data: ndarray)->ndarray:
+def interval_to_vector(fid_db, field_name: str, num_intervals: int, dims=1)->ndarray:
+    data = array([])
     for i in range(num_intervals):
-        data = concatenate((data, fid_db[f"I{i:d}"][field_name]))
+        if dims == 0:
+            data = concatenate((data, array([fid_db[f"I{i:d}"][field_name][()]])))
+        elif dims == 1:
+            data = concatenate((data, fid_db[f"I{i:d}"][field_name]))
+        else:
+            raise ValueError("Dimensions error.")
 
     return data
+
+
+def write_interval_bounds(fid, fid_db, field_name: str, num_intervals: int, var_type: str)->None:
+    field_data = interval_to_vector(fid_db, field_name, num_intervals, dims=0)
+    if var_type == "cusfloat":
+        field_data_str = ", ".join(f"{i:0.6E}" for i in field_data)
+    elif var_type == "bool":
+        field_data_str = ", ".join(f"{int(i):d}" for i in field_data)
+    else:
+        raise ValueError("Variable type not recognized!.")
+    fid.writelines(f"    const {var_type} {field_name}[{field_data.shape[0]}] = " + "{" + field_data_str + "};\n")
 
 
 def write_vector(fid, field: ndarray, field_tag: str)->None:
