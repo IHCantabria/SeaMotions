@@ -311,19 +311,19 @@ def write_intervals(database_path: str, intervals_data: list, dims: int) -> None
         # Fill intervals data
         gp_int.create_dataset("cheby_coeffs", data=intervals_sort[i]["cheby_coeffs"])
         gp_int.create_dataset("ncx", data=intervals_sort[i]["ncx"])
-        gp_int.create_dataset("x_max", data=getattr(intervals_sort[-1]["fit_props"], "x_max"))
-        gp_int.create_dataset("x_min", data=getattr(intervals_sort[-1]["fit_props"], "x_min"))
-        gp_int.create_dataset("x_log_scale", data=getattr(intervals_sort[-1]["fit_props"], "x_log_scale"))
+        gp_int.create_dataset("x_max", data=getattr(intervals_sort[i]["fit_props"], "x_max"))
+        gp_int.create_dataset("x_min", data=getattr(intervals_sort[i]["fit_props"], "x_min"))
+        gp_int.create_dataset("x_log_scale", data=getattr(intervals_sort[i]["fit_props"], "x_log_scale"))
         if dims >= 2:
             gp_int.create_dataset("ncy", data=intervals_sort[i]["ncy"])
-            gp_int.create_dataset("y_max", data=getattr(intervals_sort[-1]["fit_props"], "y_max"))
-            gp_int.create_dataset("y_min", data=getattr(intervals_sort[-1]["fit_props"], "y_min"))
-            gp_int.create_dataset("y_log_scale", data=getattr(intervals_sort[-1]["fit_props"], "y_log_scale"))
+            gp_int.create_dataset("y_max", data=getattr(intervals_sort[i]["fit_props"], "y_max"))
+            gp_int.create_dataset("y_min", data=getattr(intervals_sort[i]["fit_props"], "y_min"))
+            gp_int.create_dataset("y_log_scale", data=getattr(intervals_sort[i]["fit_props"], "y_log_scale"))
             if dims == 3:
                 gp_int.create_dataset("ncz", data=intervals_sort[i]["ncz"])
-                gp_int.create_dataset("z_max", data=getattr(intervals_sort[-1]["fit_props"], "z_max"))
-                gp_int.create_dataset("z_min", data=getattr(intervals_sort[-1]["fit_props"], "z_min"))
-                gp_int.create_dataset("z_log_scale", data=getattr(intervals_sort[-1]["fit_props"], "z_log_scale"))
+                gp_int.create_dataset("z_max", data=getattr(intervals_sort[i]["fit_props"], "z_max"))
+                gp_int.create_dataset("z_min", data=getattr(intervals_sort[i]["fit_props"], "z_min"))
+                gp_int.create_dataset("z_log_scale", data=getattr(intervals_sort[i]["fit_props"], "z_log_scale"))
 
 
     # Close file unit
