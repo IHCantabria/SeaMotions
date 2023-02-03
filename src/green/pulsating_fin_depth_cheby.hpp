@@ -19,37 +19,37 @@
 class P3
 {
 public:
-    const cusfloat*     c;
-    cusfloat*           cf;
-    int                 current_inter = -1;
-    const cusfloat*     intervals_bounds;
-    const int*          nx;
-    int*                nxf;
-    const int*          ny;
-    int*                nyf;
-    const int*          nz;
-    const int           num_intervals = 0;
-    const int*          num_points;
-    int                 num_points_f;
-    const int*          num_points_cum;
-    const bool*         x_log_scale;
-    const cusfloat*     x_max;
-    cusfloat*           x_map_scale;
-    cusfloat*           x_map_scale_log;
-    const cusfloat*     x_min;
-    cusfloat*            x_min_l10;
-    const bool*         y_log_scale;
-    const cusfloat*     y_max;
-    cusfloat*           y_map_scale;
-    cusfloat*           y_map_scale_log;
-    const cusfloat*     y_min;
-    cusfloat*           y_min_l10;
-    const bool*         z_log_scale;
-    const cusfloat*     z_max;
-    cusfloat*           z_map_scale;
-    cusfloat*            z_map_scale_log;
-    const cusfloat*     z_min;
-    cusfloat*           z_min_l10;
+    cusfloat*       c;
+    cusfloat*       cf;
+    int             current_inter = -1;
+    cusfloat*       intervals_bounds;
+    int*            nx;
+    int*            nxf;
+    int*            ny;
+    int*            nyf;
+    int*            nz;
+    int             num_intervals = 0;
+    int*            num_points;
+    int             num_points_f = 0;
+    int*            num_points_cum;
+    bool*           x_log_scale;
+    cusfloat*       x_max;
+    cusfloat*       x_map_scale;
+    cusfloat*       x_map_scale_log;
+    cusfloat*       x_min;
+    cusfloat*       x_min_l10;
+    bool*           y_log_scale;
+    cusfloat*       y_max;
+    cusfloat*       y_map_scale;
+    cusfloat*       y_map_scale_log;
+    cusfloat*       y_min;
+    cusfloat*       y_min_l10;
+    bool*           z_log_scale;
+    cusfloat*       z_max;
+    cusfloat*       z_map_scale;
+    cusfloat*       z_map_scale_log;
+    cusfloat*       z_min;
+    cusfloat*       z_min_l10;
 
     void initialize(void)
     {
@@ -273,3 +273,39 @@ public:
 };
 
 #endif
+
+
+void set_data_l1(P3 &l1)
+{
+    l1.c                =   L1C::c;
+    l1.cf               =   L1C::cf;
+    l1.current_inter    =   -1;
+    l1.intervals_bounds =   L1C::interval_bounds;
+    l1.nx               =   L1C::ncx;
+    l1.nxf              =   L1C::ncxf;
+    l1.ny               =   L1C::ncy;
+    l1.nyf              =   L1C::ncyf;
+    l1.nz               =   L1C::ncz;
+    l1.num_intervals    =   L1C::num_intervals;
+    l1.num_points       =   L1C::num_points;
+    l1.num_points_f     =   0;
+    l1.num_points_cum   =   L1C::num_points_cum;
+    l1.x_log_scale      =   L1C::x_log_scale;
+    l1.x_max            =   L1C::x_max;
+    l1.x_map_scale      =   L1C::x_map_scale;
+    l1.x_map_scale_log  =   L1C::x_map_scale_log;
+    l1.x_min            =   L1C::x_min;
+    l1.x_min_l10        =   L1C::x_min_l10;
+    l1.y_log_scale      =   L1C::y_log_scale;
+    l1.y_max            =   L1C::y_max;
+    l1.y_map_scale      =   L1C::y_map_scale;
+    l1.y_map_scale_log  =   L1C::y_map_scale_log;
+    l1.y_min            =   L1C::y_min;
+    l1.y_min_l10        =   L1C::y_min_l10;
+    l1.z_log_scale      =   L1C::z_log_scale;
+    l1.z_max            =   L1C::z_max;
+    l1.z_map_scale      =   L1C::z_map_scale;
+    l1.z_map_scale_log  =   L1C::z_map_scale_log;
+    l1.z_min            =   L1C::z_min;
+    l1.z_min_l10        =   L1C::z_min_l10;
+}
