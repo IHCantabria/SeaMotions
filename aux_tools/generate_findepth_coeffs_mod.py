@@ -192,7 +192,8 @@ def write_vector_line(fid, data: ndarray, field_name: str, var_type: str):
 
 if __name__ == "__main__":
     # generate_test_database()
+    int_name = "L2"
     this_path = os.path.dirname(os.path.abspath(__file__))
-    database_path = os.path.join(this_path, "L1_database.h5")
-    file_path = os.path.join(os.path.dirname(this_path), "src", "green", "fin_depth_coeffs", "L1.hpp")
-    generate_coeffs_modules(database_path, file_path, "L1")
+    database_path = os.path.join(this_path, f"{int_name}_database.h5")
+    file_path = os.path.join(os.path.dirname(this_path), "src", "green", "fin_depth_coeffs", f"{int_name}.hpp")
+    generate_coeffs_modules(database_path, file_path, int_name)
