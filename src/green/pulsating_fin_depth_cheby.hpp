@@ -14,6 +14,7 @@
 #include "../config.hpp"
 #include "../math/chebyshev.hpp"
 #include "./fin_depth_coeffs/L1.hpp"
+#include "./fin_depth_coeffs/L3.hpp"
 
 
 class P3
@@ -308,4 +309,40 @@ void set_data_l1(P3 &l1)
     l1.z_map_scale_log  =   L1C::z_map_scale_log;
     l1.z_min            =   L1C::z_min;
     l1.z_min_l10        =   L1C::z_min_l10;
+}
+
+
+void set_data_l3(P3 &l3)
+{
+    l3.c                =   L3C::c;
+    l3.cf               =   L3C::cf;
+    l3.current_inter    =   -1;
+    l3.intervals_bounds =   L3C::interval_bounds;
+    l3.nx               =   L3C::ncx;
+    l3.nxf              =   L3C::ncxf;
+    l3.ny               =   L3C::ncy;
+    l3.nyf              =   L3C::ncyf;
+    l3.nz               =   L3C::ncz;
+    l3.num_intervals    =   L3C::num_intervals;
+    l3.num_points       =   L3C::num_points;
+    l3.num_points_f     =   0;
+    l3.num_points_cum   =   L3C::num_points_cum;
+    l3.x_log_scale      =   L3C::x_log_scale;
+    l3.x_max            =   L3C::x_max;
+    l3.x_map_scale      =   L3C::x_map_scale;
+    l3.x_map_scale_log  =   L3C::x_map_scale_log;
+    l3.x_min            =   L3C::x_min;
+    l3.x_min_l10        =   L3C::x_min_l10;
+    l3.y_log_scale      =   L3C::y_log_scale;
+    l3.y_max            =   L3C::y_max;
+    l3.y_map_scale      =   L3C::y_map_scale;
+    l3.y_map_scale_log  =   L3C::y_map_scale_log;
+    l3.y_min            =   L3C::y_min;
+    l3.y_min_l10        =   L3C::y_min_l10;
+    l3.z_log_scale      =   L3C::z_log_scale;
+    l3.z_max            =   L3C::z_max;
+    l3.z_map_scale      =   L3C::z_map_scale;
+    l3.z_map_scale_log  =   L3C::z_map_scale_log;
+    l3.z_min            =   L3C::z_min;
+    l3.z_min_l10        =   L3C::z_min_l10;
 }
