@@ -85,12 +85,12 @@ def generate_coeffs_modules(database_path: str, file_path: str, int_name: str)->
     ncx = interval_to_vector(fid_db, "ncx", num_intervals)
     ncxf = zeros((max_size_fold, ))
     write_vector(fid, ncx, "ncx")
-    write_vector(fid, ncxf, "nxf")
+    write_vector(fid, ncxf, "ncxf")
     if dims >= 2:
         ncy = interval_to_vector(fid_db, "ncy", num_intervals)
         ncyf = zeros((max_size_fold, ))
         write_vector(fid, ncy, "ncy")
-        write_vector(fid, ncyf, "nyf")
+        write_vector(fid, ncyf, "ncyf")
         if dims == 3:
             ncz = interval_to_vector(fid_db, "ncz", num_intervals)
             write_vector(fid, ncz, "ncz")
