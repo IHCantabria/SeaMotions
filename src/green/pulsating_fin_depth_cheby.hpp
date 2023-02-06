@@ -14,6 +14,7 @@
 #include "../config.hpp"
 #include "../math/chebyshev.hpp"
 #include "./fin_depth_coeffs/L1.hpp"
+#include "./fin_depth_coeffs/L2.hpp"
 #include "./fin_depth_coeffs/L3.hpp"
 
 
@@ -23,6 +24,8 @@ public:
     cusfloat*       c;
     cusfloat*       cf;
     int             current_inter = -1;
+    int             dims = -1;
+    cusfloat        int_1d = 0.0;
     cusfloat*       intervals_bounds;
     int*            nx;
     int*            nxf;
@@ -52,9 +55,29 @@ public:
     cusfloat*       z_min;
     cusfloat*       z_min_l10;
 
+    void calculate_h_1D(cusfloat H)
+    {
+        // Get working interval
+        this->current_inter = this->get_interval_h(H);
+        std::cout << "current_interval: " << this->current_inter << std::endl;
+        // Calcualte Integral value
+        cusfloat zeta = this->x_map(H);
+        std::cout << "zeta: " << zeta << std::endl;
+        cusfloat coeff_i = 0.0;
+        for (int j=this->num_points_cum[this->current_inter]; j<this->num_points_cum[this->current_inter+1]; j++)
+        {
+            coeff_i += this->c[j]*chebyshev_poly(this->nx[j], zeta);
+        }
+
+        // Storage intergral value
+        this->int_1d = coeff_i;
+
+    }
+
     void initialize(void)
     {
-        // std::cout << "Constructor working..." << std::endl;
+        assert(this->dims == 1 && "Dims value has not been loaded!\n");
+
         // Calculate map scale coefficients
         for (int i=0; i<L1C::num_intervals; i++)
         {
@@ -67,23 +90,30 @@ public:
                                             );
             this->x_min_l10[i] = std::log10(this->x_min[i]);
             
-            // Calculate for y coordinate
-            this->y_map_scale[i] = 2.0/(this->y_max[i]-this->y_min[i]);
-            this->y_map_scale_log[i] = 2.0/(
-                                            std::log10(this->y_max[i])
-                                            -
-                                            std::log10(this->y_min[i])
-                                            );
-            this->y_min_l10[i] = std::log10(this->y_min[i]);
+            if (this->dims >= 2)
+            {
+                // Calculate for y coordinate
+                this->y_map_scale[i] = 2.0/(this->y_max[i]-this->y_min[i]);
+                this->y_map_scale_log[i] = 2.0/(
+                                                std::log10(this->y_max[i])
+                                                -
+                                                std::log10(this->y_min[i])
+                                                );
+                this->y_min_l10[i] = std::log10(this->y_min[i]);
 
-            // Calculate for z coordinate
-            this->z_map_scale[i] = 2.0/(this->z_max[i]-this->z_min[i]);
-            this->z_map_scale_log[i] = 2.0/(
-                                            std::log10(this->z_max[i])
-                                            -
-                                            std::log10(this->z_min[i])
-                                            );
-            this->z_min_l10[i] = std::log10(this->z_min[i]);
+                if (this->dims == 3)
+                {
+                    // Calculate for z coordinate
+                    this->z_map_scale[i] = 2.0/(this->z_max[i]-this->z_min[i]);
+                    this->z_map_scale_log[i] = 2.0/(
+                                                    std::log10(this->z_max[i])
+                                                    -
+                                                    std::log10(this->z_min[i])
+                                                    );
+                    this->z_min_l10[i] = std::log10(this->z_min[i]);
+                }
+
+            }
             
         }
 
@@ -211,7 +241,7 @@ public:
                 (x-this->x_min[this->current_inter])
                 -
                 1.0
-            );
+                );
         }
 
         return xi;
@@ -238,7 +268,7 @@ public:
                 (y-this->y_min[this->current_inter])
                 -
                 1.0
-            );
+                );
         }
 
         return yi;
@@ -265,7 +295,7 @@ public:
                 (z-this->z_min[this->current_inter])
                 -
                 1.0
-            );
+                );
         }
 
         return zi;
@@ -273,14 +303,14 @@ public:
 
 };
 
-#endif
-
 
 void set_data_l1(P3 &l1)
 {
+    // Storage data into target object
     l1.c                =   L1C::c;
     l1.cf               =   L1C::cf;
     l1.current_inter    =   -1;
+    l1.dims             =   L1C::dims;
     l1.intervals_bounds =   L1C::interval_bounds;
     l1.nx               =   L1C::ncx;
     l1.nxf              =   L1C::ncxf;
@@ -309,14 +339,45 @@ void set_data_l1(P3 &l1)
     l1.z_map_scale_log  =   L1C::z_map_scale_log;
     l1.z_min            =   L1C::z_min;
     l1.z_min_l10        =   L1C::z_min_l10;
+
+    // Initialize object
+    l1.initialize();
+}
+
+
+void set_data_l2(P3 &l2)
+{
+    // Storage data into target object
+    l2.c                =   L2C::c;
+    l2.cf               =   L2C::cf;
+    l2.current_inter    =   -1;
+    l2.dims             =   L2C::dims;
+    l2.intervals_bounds =   L2C::interval_bounds;
+    l2.nx               =   L2C::ncx;
+    l2.nxf              =   L2C::ncxf;
+    l2.num_intervals    =   L2C::num_intervals;
+    l2.num_points       =   L2C::num_points;
+    l2.num_points_f     =   0;
+    l2.num_points_cum   =   L2C::num_points_cum;
+    l2.x_log_scale      =   L2C::x_log_scale;
+    l2.x_max            =   L2C::x_max;
+    l2.x_map_scale      =   L2C::x_map_scale;
+    l2.x_map_scale_log  =   L2C::x_map_scale_log;
+    l2.x_min            =   L2C::x_min;
+    l2.x_min_l10        =   L2C::x_min_l10;
+
+    // Initialize object
+    l2.initialize();
 }
 
 
 void set_data_l3(P3 &l3)
 {
+    // Storage data into target object
     l3.c                =   L3C::c;
     l3.cf               =   L3C::cf;
     l3.current_inter    =   -1;
+    l3.dims             =   L3C::dims;
     l3.intervals_bounds =   L3C::interval_bounds;
     l3.nx               =   L3C::ncx;
     l3.nxf              =   L3C::ncxf;
@@ -345,4 +406,9 @@ void set_data_l3(P3 &l3)
     l3.z_map_scale_log  =   L3C::z_map_scale_log;
     l3.z_min            =   L3C::z_min;
     l3.z_min_l10        =   L3C::z_min_l10;
+
+    // Initialize object
+    l3.initialize();
 }
+
+#endif
