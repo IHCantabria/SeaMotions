@@ -5,6 +5,7 @@
 
 namespace L1C
 {
+    int                  dims = 3;
     int                  num_intervals = 2;
     cusfloat             interval_bounds[3] = {1.000000E-16, 1.000000E-01, 1.000000E+00};
 
