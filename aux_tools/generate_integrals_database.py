@@ -8,7 +8,7 @@ from numpy import argsort, array, concatenate, log, ndarray
 from numpy import abs as np_abs
 
 # Import local modules
-from base_integrals import L1, L2, L3, M1
+from base_integrals import L1, L2, L3, M1, M2, M3
 from fit_cheby import fit_integral_1d, fit_integral_2d, fit_integral_3d, FitProperties
 
 
@@ -402,6 +402,118 @@ def fit_M1_Hfix()->None:
     fit_integral_2d(lambda x, y: M1(x, y, H)[0].real, fit_props, f"M1_H: {H:0.2E}", show_figs=True)
 
 
+def fit_M2()->None:
+    # Initialize object to storage the data
+    intervals_data = []
+
+    # Calculate coefficients for H = [1e-12, 1.0]
+    intervals_data.append(fit_M2_P0())
+
+    # Calculate coefficients for H = [1.0, 50.0]
+    intervals_data.append(fit_M2_P1())
+
+    # Save coefficients data into a database
+    this_path = os.path.dirname(os.path.abspath(__file__))
+    database_path = os.path.join(this_path, "M2_database.h5")
+    write_intervals(database_path, intervals_data, 1)
+
+
+def fit_M2_P0()->None:
+    # Define parametric space and fit properties
+    fit_props = FitProperties()
+    fit_props.x_log_scale = True
+    fit_props.x_max = 0.001
+    fit_props.x_min = 1e-16
+    fit_props.cheby_order_x = 50
+    fit_props.cheby_tol = 1e-7
+    fit_props.x_map_fcn = lambda x: x
+    fit_props.y_map_fcn = lambda y: y
+    fit_props.fit_points_to_order()
+
+    # Launch fit
+    cheby_coeffs, ncx = fit_integral_1d(lambda z: M2(z)[0].real, fit_props, f"M2", show_figs=True)
+
+    return data_to_dict(fit_props, cheby_coeffs, ncx, array([]), array([]))
+
+
+def fit_M2_P1()->None:
+    # Define parametric space and fit properties
+    fit_props = FitProperties()
+    fit_props.x_log_scale = True
+    fit_props.x_max = 1.0
+    fit_props.x_min = 0.001
+    fit_props.cheby_order_x = 50
+    fit_props.cheby_tol = 1e-7
+    fit_props.x_map_fcn = lambda x: x
+    fit_props.y_map_fcn = lambda y: y
+    fit_props.fit_points_to_order()
+
+    # Launch fit
+    cheby_coeffs, ncx = fit_integral_1d(lambda z: M2(z)[0].real, fit_props, f"M2", show_figs=True)
+
+    return data_to_dict(fit_props, cheby_coeffs, ncx, array([]), array([]))
+
+
+def fit_M3()->None:
+    # Initialize object to storage the data
+    intervals_data = []
+
+    # Calculate coefficients for H = [1.0, 12.0]
+    intervals_data.append(fit_M3_P0())
+
+    # Calculate coefficients for H = [12.0, 30.0]
+    intervals_data.append(fit_M3_P1())
+
+    # Save coefficients data into a database
+    this_path = os.path.dirname(os.path.abspath(__file__))
+    database_path = os.path.join(this_path, "M3_database.h5")
+    write_intervals(database_path, intervals_data, 3)
+
+
+def fit_M3_P0()->None:
+    # Define parametric space and fit properties
+    fit_props = FitProperties()
+    fit_props.x_max = 1.0
+    fit_props.x_min = 0.0
+    fit_props.y_max = 1.0
+    fit_props.y_min = 0.0
+    fit_props.z_log_scale = True
+    fit_props.z_max = 12.0
+    fit_props.z_min = 1.0
+    fit_props.cheby_order_x = 20
+    fit_props.cheby_order_y = 20
+    fit_props.cheby_order_z = 50
+    fit_props.cheby_tol = 1e-8
+    fit_props.fit_points_to_order()
+
+    # Launch fit
+    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: M3(x, y, z)[0].real, fit_props, "M3_P0")
+
+    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
+
+
+def fit_M3_P1()->None:
+    # Define parametric space and fit properties
+    fit_props = FitProperties()
+    fit_props.x_max = 1.0
+    fit_props.x_min = 0.0
+    fit_props.y_max = 1.0
+    fit_props.y_min = 0.0
+    fit_props.z_log_scale = True
+    fit_props.z_max = 30.0
+    fit_props.z_min = 12.0
+    fit_props.cheby_order_x = 20
+    fit_props.cheby_order_y = 20
+    fit_props.cheby_order_z = 50
+    fit_props.cheby_tol = 1e-8
+    fit_props.fit_points_to_order()
+
+    # Launch fit
+    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: M3(x, y, z)[0].real, fit_props, "M3_P1")
+
+    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
+
+
 def write_intervals(database_path: str, intervals_data: list, dims: int) -> None:
     if dims == 1:
         dim_label = "x"
@@ -503,4 +615,5 @@ if __name__ == "__main__":
     # fid.create_dataset("NCY_filter", data=NCY_filter)
     # fid.create_dataset("NCZ_filter", data=NCZ_filter)
     # fid.close()
-    fit_M1()
+    # fit_M2()
+    fit_M3()
