@@ -34,6 +34,7 @@ def generate_coeffs_modules(database_path: str, file_path: str, int_name: str)->
     intervals_bounds = fid_db["intervals_bounds"][:]
     num_intervals = intervals_bounds.shape[0]-1
     interval_str = ", ".join(f"{i:0.6E}" for i in intervals_bounds)
+    fid.writelines(str_start_col("    int", f"dims = {dims:d};\n", REF_COL))
     fid.writelines(str_start_col("    int", f"num_intervals = {num_intervals:d};\n", REF_COL))
     fid.writelines(str_start_col("    cusfloat", f"interval_bounds[{intervals_bounds.shape[0]:d}] = " + "{" + interval_str + "};\n\n", REF_COL))
 
@@ -192,7 +193,7 @@ def write_vector_line(fid, data: ndarray, field_name: str, var_type: str):
 
 if __name__ == "__main__":
     # generate_test_database()
-    int_name = "L2"
+    int_name = "L3"
     this_path = os.path.dirname(os.path.abspath(__file__))
     database_path = os.path.join(this_path, f"{int_name}_database.h5")
     file_path = os.path.join(os.path.dirname(this_path), "src", "green", "fin_depth_coeffs", f"{int_name}.hpp")
