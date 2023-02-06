@@ -226,23 +226,6 @@ def fit_L2_P1()->None:
     return data_to_dict(fit_props, cheby_coeffs, ncx, array([]), array([]))
 
 
-def fit_M1_Hfix()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 2.0
-    fit_props.y_min = 1.0
-    fit_props.cheby_order = 20
-    fit_props.cheby_tol = 1e-7
-    fit_props.x_map_fcn = lambda x: x
-    fit_props.y_map_fcn = lambda y: y
-    H = 1.5
-
-    # Launch fit
-    fit_integral_2d(lambda x, y: M1(x, y, H)[0].real, fit_props, f"M1_H: {H:0.2E}", show_figs=True)
-
-
 def fit_L3()->None:
     # Initialize object to storage the data
     intervals_data = []
@@ -342,6 +325,83 @@ def fit_L3_P1()->None:
     return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
 
 
+def fit_M1()->None:
+    # Initialize object to storage the data
+    intervals_data = []
+
+    # Calculate coefficients for H = [1e-16, 0.1]
+    intervals_data.append(fit_M1_P0())
+
+    # Calculate coefficients for H = [0.1, 1.0]
+    intervals_data.append(fit_M1_P1())
+
+    # Save coefficients data into a database
+    this_path = os.path.dirname(os.path.abspath(__file__))
+    database_path = os.path.join(this_path, "M1_database.h5")
+    write_intervals(database_path, intervals_data, 3)
+
+
+def fit_M1_P0()->None:
+    # Define parametric space and fit properties
+    fit_props = FitProperties()
+    fit_props.x_max = 1.0
+    fit_props.x_min = 0.0
+    fit_props.y_max = 2.0
+    fit_props.y_min = 1.0
+    fit_props.z_log_scale = True
+    fit_props.z_max = 0.1
+    fit_props.z_min = 1e-16
+    fit_props.cheby_order_x = 20
+    fit_props.cheby_order_y = 20
+    fit_props.cheby_order_z = 50
+    fit_props.cheby_tol = 1e-8
+    fit_props.fit_points_to_order()
+
+    # Launch fit
+    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: M1(x, y, z)[0].real, fit_props, "M1_P0")
+
+    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
+
+
+def fit_M1_P1()->None:
+    # Define parametric space and fit properties
+    fit_props = FitProperties()
+    fit_props.x_max = 1.0
+    fit_props.x_min = 0.0
+    fit_props.y_max = 2.0
+    fit_props.y_min = 1.0
+    fit_props.z_log_scale = False
+    fit_props.z_max = 1.0
+    fit_props.z_min = 0.1
+    fit_props.cheby_order_x = 20
+    fit_props.cheby_order_y = 20
+    fit_props.cheby_order_z = 50
+    fit_props.cheby_tol = 1e-8
+    fit_props.fit_points_to_order()
+
+    # Launch fit
+    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: M1(x, y, z)[0].real, fit_props, "M1_P1")
+
+    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
+
+
+def fit_M1_Hfix()->None:
+    # Define parametric space and fit properties
+    fit_props = FitProperties()
+    fit_props.x_max = 1.0
+    fit_props.x_min = 0.0
+    fit_props.y_max = 2.0
+    fit_props.y_min = 1.0
+    fit_props.cheby_order = 20
+    fit_props.cheby_tol = 1e-7
+    fit_props.x_map_fcn = lambda x: x
+    fit_props.y_map_fcn = lambda y: y
+    H = 1.5
+
+    # Launch fit
+    fit_integral_2d(lambda x, y: M1(x, y, H)[0].real, fit_props, f"M1_H: {H:0.2E}", show_figs=True)
+
+
 def write_intervals(database_path: str, intervals_data: list, dims: int) -> None:
     if dims == 1:
         dim_label = "x"
@@ -434,7 +494,7 @@ if __name__ == "__main__":
     # fit_L3_Afix_Bfix()
     # fit_L1_P0()
     # fit_L1_P3()
-    fit_L2()
+    # fit_L2()
     # fit_L2_P1()
     # file_path = r"E:\sergio\developments\SeaMotions\aux_tools\test_coeffs.py"
     # fid = h5py.File(file_path, "w")
@@ -443,3 +503,4 @@ if __name__ == "__main__":
     # fid.create_dataset("NCY_filter", data=NCY_filter)
     # fid.create_dataset("NCZ_filter", data=NCZ_filter)
     # fid.close()
+    fit_M1()
