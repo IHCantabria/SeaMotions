@@ -2,6 +2,7 @@
 // Include general usage libraries
 #include <cassert>
 #include <iostream>
+#include <tuple>
 
 // Include general usage scientific libraries
 #include <cmath>
@@ -18,8 +19,67 @@ using namespace std;
 using namespace std::literals::complex_literals;
 
 
-cuscomplex john_series(cusfloat R, cusfloat z, cusfloat zeta, cusfloat h,
-                        WaveDispersionData &wave_data)
+cusfloat calculate_dr_dx(cusfloat R, cusfloat dx)
+{
+    /**
+     * @brief Calcualte derivative of R with respect to X
+     * 
+     * dr_dx = -dx/R
+     * where R:sqrt((x-xi)**2.0+(y-yi)**2.0)
+     * 
+     * \param R Euclidean distance between the field and the source points in the horizontal plane.
+     * \param dx X distance in between the field and the source points in the horizontal plane
+     */
+
+    return -dx/R;
+}
+
+
+cusfloat calculate_dr_dy(cusfloat R, cusfloat dy)
+{
+    /**
+     * @brief Calcualte derivative of R with respect to X
+     * 
+     * dr_dy = -dy/R
+     * where R:sqrt((x-xi)**2.0+(y-yi)**2.0)
+     * 
+     * \param R Euclidean distance between the field and the source points in the horizontal plane.
+     * \param dy Y distance in between the field and the source points in the horizontal plane
+     */
+
+    return -dy/R;
+}
+
+
+cusfloat calculate_r(
+                    cusfloat x,
+                    cusfloat y,
+                    cusfloat xi,
+                    cusfloat eta
+                    )
+{
+    /**
+     * @brief Calculate euclidean distance in between field and source point in the
+     *        horizontal plane
+     * 
+     * \param x X Coordinate of the field point
+     * \param y Y Coordinate of the field point
+     * \param xi X Coordinate of the source point
+     * \param eta Y Coordinate of the source point
+    * 
+    */
+
+    return sqrt( pow2s(x-xi) + pow2s(y-eta) );
+}
+
+
+cuscomplex john_series(
+                        cusfloat R,
+                        cusfloat z, 
+                        cusfloat zeta, 
+                        cusfloat h,
+                        WaveDispersionData &wave_data
+                        )
 {
     /**
      * @brief John series representation of the finite water depth Green function
@@ -109,8 +169,94 @@ cuscomplex john_series(cusfloat R, cusfloat z, cusfloat zeta, cusfloat h,
 }
 
 
-cuscomplex john_series_dr(cusfloat R, cusfloat z, cusfloat zeta, cusfloat h,
-                        WaveDispersionData &wave_data)
+cuscomplex john_series(
+                        cusfloat x,
+                        cusfloat y,
+                        cusfloat z,
+                        cusfloat xi,
+                        cusfloat eta,
+                        cusfloat zeta,
+                        cusfloat h,
+                        WaveDispersionData &wave_data
+                        )
+{
+    /**
+     * @brief John series representation of the finite water depth Green function
+     * 
+     * This is an overload for the function @ref john_series that acts as an interface.
+     * 
+     * \param x X Coordinate of the field point
+     * \param y Y Coordinate of the field point
+     * \param z Z Coordinate of the field point
+     * \param xi X Coordinate of the source point
+     * \param eta Y Coordinate of the source point
+     * \param zeta Z Coordinate of the source point
+     * \param h Water depth
+     * \param wave_data Wave dispersion data object initialized with John's constants
+     * \return value of the Jonh series
+     */
+
+    // Calculate dependent parameters
+    cusfloat R = std::sqrt(pow2s(x-xi)+pow2s(y-eta));
+
+    // Call John kernel function
+    return john_series(R, z, zeta, h, wave_data);
+}
+
+
+tuple<cuscomplex, cuscomplex> john_series_dhoriz(
+                                                cusfloat x,
+                                                cusfloat y,
+                                                cusfloat z,
+                                                cusfloat xi,
+                                                cusfloat eta,
+                                                cusfloat zeta,
+                                                cusfloat h,
+                                                WaveDispersionData &wave_data
+                                                )
+{
+    /**
+     * @brief Derivative with respect to X and Y of the John series representation of the 
+     *        finite water depth Green function
+     * 
+     * Check out @see john_series() for more information.
+     * 
+     * \param x X Coordinate of the field point
+     * \param y Y Coordinate of the field point
+     * \param z Z Coordinate of the field point
+     * \param xi X Coordinate of the source point
+     * \param eta Y Coordinate of the source point
+     * \param zeta Z Coordinate of the source point
+     * \param h Water depth
+     * \param wave_data Wave dispersion data object initialized with John's constants
+     * \return value of the Jonh series derivative with respect to R
+     */
+
+    // Calculate dependent parameters
+    cusfloat dx = x-xi;
+    cusfloat dy = y-eta;
+    cusfloat R = sqrt(pow2s(dx)+pow2s(dy));
+
+    // Calculate derivative with respect to R
+    cuscomplex dr = john_series_dr(R, z, zeta, h, wave_data);
+
+    // Calculate John series derivative with respect to X
+    cuscomplex dj_dx = dr * calculate_dr_dx(R, dx);
+
+    // Calculate John series derivative with respect to Y
+    cuscomplex dj_dy = dr * calculate_dr_dy(R, dy);
+
+    return make_tuple(dj_dx, dj_dy);
+}
+
+
+cuscomplex john_series_dr(
+                            cusfloat R,
+                            cusfloat z,
+                            cusfloat zeta,
+                            cusfloat h,
+                            WaveDispersionData &wave_data
+                            )
 {
     /**
      * @brief Derivative with respect to R of the John series representation of the 
@@ -196,8 +342,93 @@ cuscomplex john_series_dr(cusfloat R, cusfloat z, cusfloat zeta, cusfloat h,
 }
 
 
-cuscomplex john_series_dz(cusfloat R, cusfloat z, cusfloat zeta, cusfloat h,
-                        WaveDispersionData &wave_data)
+cuscomplex john_series_dx(
+                            cusfloat x,
+                            cusfloat y,
+                            cusfloat z,
+                            cusfloat xi,
+                            cusfloat eta,
+                            cusfloat zeta,
+                            cusfloat h,
+                            WaveDispersionData &wave_data
+                            )
+{
+    /**
+     * @brief Derivative with respect to X of the John series representation of the 
+     *        finite water depth Green function
+     * 
+     * Check out @see john_series() for more information.
+     * 
+     * \param x X Coordinate of the field point
+     * \param y Y Coordinate of the field point
+     * \param z Z Coordinate of the field point
+     * \param xi X Coordinate of the source point
+     * \param eta Y Coordinate of the source point
+     * \param zeta Z Coordinate of the source point
+     * \param h Water depth
+     * \param wave_data Wave dispersion data object initialized with John's constants
+     * \return value of the Jonh series derivative with respect to R
+     */
+
+    // Calculate dependent parameters
+    cusfloat dx = x-xi;
+    cusfloat dy = y-eta;
+    cusfloat R = sqrt(pow2s(dx)+pow2s(dy));
+
+    // Calculate John series derivative with respect to X
+    cuscomplex dj_dx = john_series_dr(R, z, zeta, h, wave_data) * calculate_dr_dx(R, dx);
+
+    return dj_dx;
+}
+
+
+cuscomplex john_series_dy(
+                            cusfloat x,
+                            cusfloat y,
+                            cusfloat z,
+                            cusfloat xi,
+                            cusfloat eta,
+                            cusfloat zeta,
+                            cusfloat h,
+                            WaveDispersionData &wave_data
+                            )
+{
+    /**
+     * @brief Derivative with respect to Y of the John series representation of the 
+     *        finite water depth Green function
+     * 
+     * Check out @see john_series() for more information.
+     * 
+     * \param x X Coordinate of the field point
+     * \param y Y Coordinate of the field point
+     * \param z Z Coordinate of the field point
+     * \param xi X Coordinate of the source point
+     * \param eta Y Coordinate of the source point
+     * \param zeta Z Coordinate of the source point
+     * \param h Water depth
+     * \param wave_data Wave dispersion data object initialized with John's constants
+     * \return value of the Jonh series derivative with respect to R
+     */
+
+    // Calculate dependent parameters
+    cusfloat dx = x-xi;
+    cusfloat dy = y-eta;
+    cusfloat R = sqrt(pow2s(dx)+pow2s(dy));
+
+    // Calculate John series derivative with respect to Y
+    cuscomplex dj_dy = john_series_dr(R, z, zeta, h, wave_data) * calculate_dr_dy(R, dy);
+
+    return dj_dy;
+}
+
+
+cuscomplex john_series_dz(
+                            cusfloat R,
+                            cusfloat z,
+                            cusfloat zeta,
+                            cusfloat h,
+                            WaveDispersionData &wave_data
+                            )
 {
     /**
      * @brief Derivative with respect to Z of the John series representation of the 
@@ -285,4 +516,45 @@ cuscomplex john_series_dz(cusfloat R, cusfloat z, cusfloat zeta, cusfloat h,
     sol += c_imag;
 
     return sol;
+}
+
+
+cuscomplex john_series_dz(
+                            cusfloat x,
+                            cusfloat y,
+                            cusfloat z,
+                            cusfloat xi,
+                            cusfloat eta,
+                            cusfloat zeta,
+                            cusfloat h,
+                            WaveDispersionData &wave_data
+                            )
+{
+    /**
+     * @brief Derivative with respect to Z of the John series representation of the 
+     *        finite water depth Green function
+     * 
+     * This is an eigenfunction expasion generated by Fritz John in the article
+     * "On the Motion of Floating Bodies II". In the current implementation the 
+     * series has been modified to work withou hyperbolic cosines in order to 
+     * reduce numerical problems with big number. It is explained at:
+     * "Consistent expression for the free-surfae Green function in finite water
+     * depth" - Ed Mackay.
+     * 
+     * \param x X Coordinate of the field point
+     * \param y Y Coordinate of the field point
+     * \param z Z Coordinate of the field point
+     * \param xi X Coordinate of the source point
+     * \param eta Y Coordinate of the source point
+     * \param zeta Z Coordinate of the source point
+     * \param h Water depth
+     * \param wave_data Wave dispersion data object initialized with John's constants
+     * \return value of the Jonh series derivative with repect to Z
+     */
+
+    // Calculate derivative paramerters
+    cusfloat R = calculate_r(x, y, xi, eta);
+
+    // Calculate Z derivative using kernel function
+    return john_series_dz(R, z, zeta, h, wave_data);
 }
