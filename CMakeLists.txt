@@ -87,6 +87,34 @@ set(chebyshev_inf_depth_src
 add_executable(chebyshev_inf_depth_cmd ${chebyshev_inf_depth_src})
 set_mkl_lib_target(chebyshev_inf_depth_cmd)
 
+# Add library for finite water depth green function
+set(
+    lib_finite_water_depth_src
+    ./src/config.hpp
+    ./src/math/math_tools.hpp
+    ./src/math/math_tools.cpp
+    ./src/math/math_tools.txx
+    ./src/green/pulsating_fin_depth.hpp
+    ./src/green/pulsating_fin_depth.cpp
+    ./src/math/chebyshev.hpp
+    ./src/math/chebyshev.cpp
+    ./src/math/special_math.hpp
+    ./src/math/gauss.hpp
+    ./src/math/gauss.cpp
+    ./src/math/special_math.cpp
+    ./src/tools.hpp
+    ./src/tools.cpp
+    ./src/tools.txx
+    ./src/waves.hpp
+    ./src/waves.cpp
+)
+
+add_library(lib_finite_water_depth ${lib_finite_water_depth_src})
+install(
+        TARGETS lib_finite_water_depth
+        DESTINATION "${CMAKE_SOURCE_DIR}/libs"
+        )
+
 # Add test executable to check the version passes to the software
 set(SOURCE_FILES src/main.cpp src/version.hpp src/version.cpp)
 add_executable(version_exec ${SOURCE_FILES})
