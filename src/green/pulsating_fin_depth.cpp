@@ -10,8 +10,9 @@
 // Include local modules
 #include "../config.hpp"
 #include "../math/math_tools.hpp"
-#include "pulsating_fin_depth.hpp"
 #include "../math/special_math.hpp"
+#include "pulsating_inf_depth.hpp"
+#include "pulsating_fin_depth.hpp"
 #include "../waves.hpp"
 
 // Include namespaces
@@ -71,6 +72,84 @@ cusfloat calculate_r(
 
     return sqrt( pow2s(x-xi) + pow2s(y-eta) );
 }
+
+
+// cusfloat G1(cusfloat A,
+//             cusfloat B,
+//             cusfloat H
+//             )
+// {
+//     cusfloat sol = 0.0;
+//     if (H <= 1)
+//     {
+//         sol = L1(A, B, H) + L2(H);
+//     }
+//     else
+//     {
+//         sol = L3(A, B, H);
+//     }
+// }
+
+
+// cuscomplex G_integral(
+//                         cusfloat x,
+//                         cusfloat y,
+//                         cusfloat z,
+//                         cusfloat xi,
+//                         cusfloat eta,
+//                         cusfloat zeta,
+//                         cusfloat h,
+//                         cusfloat nu
+//                         )
+// {
+//     /**
+//      * @brief Integral representation of the finite water depth function.
+//      * 
+//      * The formulation used here (valid for R/h<1.0) is mainly taken from:
+//      * "Consistent expressions for the free surface function in
+//      *  finite water depth - Ed Mackay".
+//      * 
+//      * \param x X Coordinate of the field point
+//      * \param y Y Coordinate of the field point
+//      * \param z Z Coordinate of the field point
+//      * \param xi X Coordinate of the source point
+//      * \param eta Y Coordinate of the source point
+//      * \param zeta Z Coordinate of the source point
+//      * \param h Water depth
+//      * \param nu Infinite water depth wave length (w^2/g)
+//      * \return value of the integral representation
+//      */
+
+//     // Calculate dependent parameters
+//     cusfloat R = calculate_r(x, y, xi, eta);
+//     cusfloat v0 = abs(z-zeta);
+//     cusfloat v1 = z+zeta+2*h;
+
+//     cusfloat A = R/h;
+//     cusfloat B0 = v0/h;
+//     cusfloat B1 = v1/h;
+//     cusfloat H = nu*h;
+
+//     // Check that B0 and  B1 is in between limits
+//     assert( ((B0>=0.0) && (B0<=1.0)) && "B0 is out of interval [0, 1]" );
+//     assert( ((B1>=0.0) && (B1<=2.0)) && "B1 is out of interval [0, 2]" );
+
+//     // Check working interval
+//     cuscomplex G = 0.0 + 0.0i;
+//     if (B1 <= 1)
+//     {
+//         G = (G1(A, B0, H) + G1(A, B1, H))/h;
+//     }
+//     else
+//     {
+//         // Calculate dependent param
+//         cusfloat X = nu*R;
+//         cusfloat Y = nu*abs(z+zeta);
+//         G = (G1(A, B0, H) + G2(A, B1, H))/h + nu*wave_term_inf_depth(X, Y);
+//     }
+
+//     return G;
+// }
 
 
 cuscomplex john_series(
