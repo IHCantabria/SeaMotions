@@ -434,8 +434,8 @@ def L1_dA(A: float, B: float, H: float) -> float:
     ])
 
     # Integrate function
-    if H <= 1e-6:
-        raise ValueError("L1_dA Not Implemented for H <= 1e-6")
+    if H <= 1e-17:
+        raise ValueError("L1_dA Not Implemented for H <= 1e-17")
     else:
         l1_def_dummy = lambda u: L1_dA_def(A, B, H, u)
         int_value = complex_quadrature_line(l1_def_dummy, way_points)
@@ -457,8 +457,8 @@ def L1_dB(A: float, B: float, H: float) -> float:
     ])
 
     # Integrate function
-    if H <= 1e-6:
-        raise ValueError("L1_dB Not Implemented for H <= 1e-6")
+    if H <= 1e-17:
+        raise ValueError("L1_dB Not Implemented for H <= 1e-17")
     else:
         l1_def_dummy = lambda u: L1_dB_def(A, B, H, u)
         int_value = complex_quadrature_line(l1_def_dummy, way_points)
