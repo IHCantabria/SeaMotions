@@ -9,8 +9,8 @@ set(green_common_src
     ../../src/green/common.cpp
     ../../src/green/dipole.hpp
     ../../src/green/dipole.cpp
-    ../../src/green/pulsating.hpp
-    ../../src/green/pulsating.cpp
+    ../../src/green/pulsating_inf_depth.hpp
+    ../../src/green/pulsating_inf_depth.cpp
     ../../src/green/source.hpp
     ../../src/green/source.cpp
     ../../src/math/math_interface.hpp

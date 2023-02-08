@@ -9,7 +9,7 @@
 
 // Include local modules
 #include "../../src/config.hpp"
-#include "../../src/green/pulsating.hpp"
+#include "../../src/green/pulsating_inf_depth.hpp"
 #include "../../src/math/math_tools.hpp"
 #include "../../src/math/special_math.hpp"
 
