@@ -18,9 +18,15 @@
 #include "./fin_depth_coeffs/L1_dB.hpp"
 #include "./fin_depth_coeffs/L2.hpp"
 #include "./fin_depth_coeffs/L3.hpp"
+#include "./fin_depth_coeffs/L3_dA.hpp"
+#include "./fin_depth_coeffs/L3_dB.hpp"
 #include "./fin_depth_coeffs/M1.hpp"
+#include "./fin_depth_coeffs/M1_dA.hpp"
+#include "./fin_depth_coeffs/M1_dB.hpp"
 #include "./fin_depth_coeffs/M2.hpp"
 #include "./fin_depth_coeffs/M3.hpp"
+#include "./fin_depth_coeffs/M3_dA.hpp"
+#include "./fin_depth_coeffs/M3_dB.hpp"
 
 
 class P3
@@ -499,44 +505,208 @@ void set_data_l3(P3 *l3)
 }
 
 
+void set_data_l3_da(P3 *l3_da)
+{
+    // Storage data into target object
+    l3_da->c                =   L3_dAC::c;
+    l3_da->cf               =   L3_dAC::cf;
+    l3_da->current_inter    =   -1;
+    l3_da->dims             =   L3_dAC::dims;
+    l3_da->intervals_bounds =   L3_dAC::interval_bounds;
+    l3_da->nx               =   L3_dAC::ncx;
+    l3_da->nxf              =   L3_dAC::ncxf;
+    l3_da->ny               =   L3_dAC::ncy;
+    l3_da->nyf              =   L3_dAC::ncyf;
+    l3_da->nz               =   L3_dAC::ncz;
+    l3_da->num_intervals    =   L3_dAC::num_intervals;
+    l3_da->num_points       =   L3_dAC::num_points;
+    l3_da->num_points_f     =   0;
+    l3_da->num_points_cum   =   L3_dAC::num_points_cum;
+    l3_da->x_log_scale      =   L3_dAC::x_log_scale;
+    l3_da->x_max            =   L3_dAC::x_max;
+    l3_da->x_map_scale      =   L3_dAC::x_map_scale;
+    l3_da->x_map_scale_log  =   L3_dAC::x_map_scale_log;
+    l3_da->x_min            =   L3_dAC::x_min;
+    l3_da->x_min_l10        =   L3_dAC::x_min_l10;
+    l3_da->y_log_scale      =   L3_dAC::y_log_scale;
+    l3_da->y_max            =   L3_dAC::y_max;
+    l3_da->y_map_scale      =   L3_dAC::y_map_scale;
+    l3_da->y_map_scale_log  =   L3_dAC::y_map_scale_log;
+    l3_da->y_min            =   L3_dAC::y_min;
+    l3_da->y_min_l10        =   L3_dAC::y_min_l10;
+    l3_da->z_log_scale      =   L3_dAC::z_log_scale;
+    l3_da->z_max            =   L3_dAC::z_max;
+    l3_da->z_map_scale      =   L3_dAC::z_map_scale;
+    l3_da->z_map_scale_log  =   L3_dAC::z_map_scale_log;
+    l3_da->z_min            =   L3_dAC::z_min;
+    l3_da->z_min_l10        =   L3_dAC::z_min_l10;
+
+    // Initialize object
+    l3_da->initialize();
+}
+
+
+void set_data_l3_db(P3 *l3_db)
+{
+    // Storage data into target object
+    l3_db->c                =   L3_dBC::c;
+    l3_db->cf               =   L3_dBC::cf;
+    l3_db->current_inter    =   -1;
+    l3_db->dims             =   L3_dBC::dims;
+    l3_db->intervals_bounds =   L3_dBC::interval_bounds;
+    l3_db->nx               =   L3_dBC::ncx;
+    l3_db->nxf              =   L3_dBC::ncxf;
+    l3_db->ny               =   L3_dBC::ncy;
+    l3_db->nyf              =   L3_dBC::ncyf;
+    l3_db->nz               =   L3_dBC::ncz;
+    l3_db->num_intervals    =   L3_dBC::num_intervals;
+    l3_db->num_points       =   L3_dBC::num_points;
+    l3_db->num_points_f     =   0;
+    l3_db->num_points_cum   =   L3_dBC::num_points_cum;
+    l3_db->x_log_scale      =   L3_dBC::x_log_scale;
+    l3_db->x_max            =   L3_dBC::x_max;
+    l3_db->x_map_scale      =   L3_dBC::x_map_scale;
+    l3_db->x_map_scale_log  =   L3_dBC::x_map_scale_log;
+    l3_db->x_min            =   L3_dBC::x_min;
+    l3_db->x_min_l10        =   L3_dBC::x_min_l10;
+    l3_db->y_log_scale      =   L3_dBC::y_log_scale;
+    l3_db->y_max            =   L3_dBC::y_max;
+    l3_db->y_map_scale      =   L3_dBC::y_map_scale;
+    l3_db->y_map_scale_log  =   L3_dBC::y_map_scale_log;
+    l3_db->y_min            =   L3_dBC::y_min;
+    l3_db->y_min_l10        =   L3_dBC::y_min_l10;
+    l3_db->z_log_scale      =   L3_dBC::z_log_scale;
+    l3_db->z_max            =   L3_dBC::z_max;
+    l3_db->z_map_scale      =   L3_dBC::z_map_scale;
+    l3_db->z_map_scale_log  =   L3_dBC::z_map_scale_log;
+    l3_db->z_min            =   L3_dBC::z_min;
+    l3_db->z_min_l10        =   L3_dBC::z_min_l10;
+
+    // Initialize object
+    l3_db->initialize();
+}
+
+
 void set_data_m1(P3 *m1)
 {
     // Storage data into target object
-    m1->c                =   M1C::c;
-    m1->cf               =   M1C::cf;
+    m1->c                =   M1_dAC::c;
+    m1->cf               =   M1_dAC::cf;
     m1->current_inter    =   -1;
-    m1->dims             =   M1C::dims;
-    m1->intervals_bounds =   M1C::interval_bounds;
-    m1->nx               =   M1C::ncx;
-    m1->nxf              =   M1C::ncxf;
-    m1->ny               =   M1C::ncy;
-    m1->nyf              =   M1C::ncyf;
-    m1->nz               =   M1C::ncz;
-    m1->num_intervals    =   M1C::num_intervals;
-    m1->num_points       =   M1C::num_points;
+    m1->dims             =   M1_dAC::dims;
+    m1->intervals_bounds =   M1_dAC::interval_bounds;
+    m1->nx               =   M1_dAC::ncx;
+    m1->nxf              =   M1_dAC::ncxf;
+    m1->ny               =   M1_dAC::ncy;
+    m1->nyf              =   M1_dAC::ncyf;
+    m1->nz               =   M1_dAC::ncz;
+    m1->num_intervals    =   M1_dAC::num_intervals;
+    m1->num_points       =   M1_dAC::num_points;
     m1->num_points_f     =   0;
-    m1->num_points_cum   =   M1C::num_points_cum;
-    m1->x_log_scale      =   M1C::x_log_scale;
-    m1->x_max            =   M1C::x_max;
-    m1->x_map_scale      =   M1C::x_map_scale;
-    m1->x_map_scale_log  =   M1C::x_map_scale_log;
-    m1->x_min            =   M1C::x_min;
-    m1->x_min_l10        =   M1C::x_min_l10;
-    m1->y_log_scale      =   M1C::y_log_scale;
-    m1->y_max            =   M1C::y_max;
-    m1->y_map_scale      =   M1C::y_map_scale;
-    m1->y_map_scale_log  =   M1C::y_map_scale_log;
-    m1->y_min            =   M1C::y_min;
-    m1->y_min_l10        =   M1C::y_min_l10;
-    m1->z_log_scale      =   M1C::z_log_scale;
-    m1->z_max            =   M1C::z_max;
-    m1->z_map_scale      =   M1C::z_map_scale;
-    m1->z_map_scale_log  =   M1C::z_map_scale_log;
-    m1->z_min            =   M1C::z_min;
-    m1->z_min_l10        =   M1C::z_min_l10;
+    m1->num_points_cum   =   M1_dAC::num_points_cum;
+    m1->x_log_scale      =   M1_dAC::x_log_scale;
+    m1->x_max            =   M1_dAC::x_max;
+    m1->x_map_scale      =   M1_dAC::x_map_scale;
+    m1->x_map_scale_log  =   M1_dAC::x_map_scale_log;
+    m1->x_min            =   M1_dAC::x_min;
+    m1->x_min_l10        =   M1_dAC::x_min_l10;
+    m1->y_log_scale      =   M1_dAC::y_log_scale;
+    m1->y_max            =   M1_dAC::y_max;
+    m1->y_map_scale      =   M1_dAC::y_map_scale;
+    m1->y_map_scale_log  =   M1_dAC::y_map_scale_log;
+    m1->y_min            =   M1_dAC::y_min;
+    m1->y_min_l10        =   M1_dAC::y_min_l10;
+    m1->z_log_scale      =   M1_dAC::z_log_scale;
+    m1->z_max            =   M1_dAC::z_max;
+    m1->z_map_scale      =   M1_dAC::z_map_scale;
+    m1->z_map_scale_log  =   M1_dAC::z_map_scale_log;
+    m1->z_min            =   M1_dAC::z_min;
+    m1->z_min_l10        =   M1_dAC::z_min_l10;
 
     // Initialize object
     m1->initialize();
+}
+
+
+void set_data_m1_da(P3 *m1_da)
+{
+    // Storage data into target object
+    m1_da->c                =   M1_dAC::c;
+    m1_da->cf               =   M1_dAC::cf;
+    m1_da->current_inter    =   -1;
+    m1_da->dims             =   M1_dAC::dims;
+    m1_da->intervals_bounds =   M1_dAC::interval_bounds;
+    m1_da->nx               =   M1_dAC::ncx;
+    m1_da->nxf              =   M1_dAC::ncxf;
+    m1_da->ny               =   M1_dAC::ncy;
+    m1_da->nyf              =   M1_dAC::ncyf;
+    m1_da->nz               =   M1_dAC::ncz;
+    m1_da->num_intervals    =   M1_dAC::num_intervals;
+    m1_da->num_points       =   M1_dAC::num_points;
+    m1_da->num_points_f     =   0;
+    m1_da->num_points_cum   =   M1_dAC::num_points_cum;
+    m1_da->x_log_scale      =   M1_dAC::x_log_scale;
+    m1_da->x_max            =   M1_dAC::x_max;
+    m1_da->x_map_scale      =   M1_dAC::x_map_scale;
+    m1_da->x_map_scale_log  =   M1_dAC::x_map_scale_log;
+    m1_da->x_min            =   M1_dAC::x_min;
+    m1_da->x_min_l10        =   M1_dAC::x_min_l10;
+    m1_da->y_log_scale      =   M1_dAC::y_log_scale;
+    m1_da->y_max            =   M1_dAC::y_max;
+    m1_da->y_map_scale      =   M1_dAC::y_map_scale;
+    m1_da->y_map_scale_log  =   M1_dAC::y_map_scale_log;
+    m1_da->y_min            =   M1_dAC::y_min;
+    m1_da->y_min_l10        =   M1_dAC::y_min_l10;
+    m1_da->z_log_scale      =   M1_dAC::z_log_scale;
+    m1_da->z_max            =   M1_dAC::z_max;
+    m1_da->z_map_scale      =   M1_dAC::z_map_scale;
+    m1_da->z_map_scale_log  =   M1_dAC::z_map_scale_log;
+    m1_da->z_min            =   M1_dAC::z_min;
+    m1_da->z_min_l10        =   M1_dAC::z_min_l10;
+
+    // Initialize object
+    m1_da->initialize();
+}
+
+
+void set_data_m1_db(P3 *m1_db)
+{
+    // Storage data into target object
+    m1_db->c                =   M1_dBC::c;
+    m1_db->cf               =   M1_dBC::cf;
+    m1_db->current_inter    =   -1;
+    m1_db->dims             =   M1_dBC::dims;
+    m1_db->intervals_bounds =   M1_dBC::interval_bounds;
+    m1_db->nx               =   M1_dBC::ncx;
+    m1_db->nxf              =   M1_dBC::ncxf;
+    m1_db->ny               =   M1_dBC::ncy;
+    m1_db->nyf              =   M1_dBC::ncyf;
+    m1_db->nz               =   M1_dBC::ncz;
+    m1_db->num_intervals    =   M1_dBC::num_intervals;
+    m1_db->num_points       =   M1_dBC::num_points;
+    m1_db->num_points_f     =   0;
+    m1_db->num_points_cum   =   M1_dBC::num_points_cum;
+    m1_db->x_log_scale      =   M1_dBC::x_log_scale;
+    m1_db->x_max            =   M1_dBC::x_max;
+    m1_db->x_map_scale      =   M1_dBC::x_map_scale;
+    m1_db->x_map_scale_log  =   M1_dBC::x_map_scale_log;
+    m1_db->x_min            =   M1_dBC::x_min;
+    m1_db->x_min_l10        =   M1_dBC::x_min_l10;
+    m1_db->y_log_scale      =   M1_dBC::y_log_scale;
+    m1_db->y_max            =   M1_dBC::y_max;
+    m1_db->y_map_scale      =   M1_dBC::y_map_scale;
+    m1_db->y_map_scale_log  =   M1_dBC::y_map_scale_log;
+    m1_db->y_min            =   M1_dBC::y_min;
+    m1_db->y_min_l10        =   M1_dBC::y_min_l10;
+    m1_db->z_log_scale      =   M1_dBC::z_log_scale;
+    m1_db->z_max            =   M1_dBC::z_max;
+    m1_db->z_map_scale      =   M1_dBC::z_map_scale;
+    m1_db->z_map_scale_log  =   M1_dBC::z_map_scale_log;
+    m1_db->z_min            =   M1_dBC::z_min;
+    m1_db->z_min_l10        =   M1_dBC::z_min_l10;
+
+    // Initialize object
+    m1_db->initialize();
 }
 
 
@@ -604,6 +774,88 @@ void set_data_m3(P3 *m3)
 
     // Initialize object
     m3->initialize();
+}
+
+
+void set_data_m3_da(P3 *m3_da)
+{
+    // Storage data into target object
+    m3_da->c                =   M3_dAC::c;
+    m3_da->cf               =   M3_dAC::cf;
+    m3_da->current_inter    =   -1;
+    m3_da->dims             =   M3_dAC::dims;
+    m3_da->intervals_bounds =   M3_dAC::interval_bounds;
+    m3_da->nx               =   M3_dAC::ncx;
+    m3_da->nxf              =   M3_dAC::ncxf;
+    m3_da->ny               =   M3_dAC::ncy;
+    m3_da->nyf              =   M3_dAC::ncyf;
+    m3_da->nz               =   M3_dAC::ncz;
+    m3_da->num_intervals    =   M3_dAC::num_intervals;
+    m3_da->num_points       =   M3_dAC::num_points;
+    m3_da->num_points_f     =   0;
+    m3_da->num_points_cum   =   M3_dAC::num_points_cum;
+    m3_da->x_log_scale      =   M3_dAC::x_log_scale;
+    m3_da->x_max            =   M3_dAC::x_max;
+    m3_da->x_map_scale      =   M3_dAC::x_map_scale;
+    m3_da->x_map_scale_log  =   M3_dAC::x_map_scale_log;
+    m3_da->x_min            =   M3_dAC::x_min;
+    m3_da->x_min_l10        =   M3_dAC::x_min_l10;
+    m3_da->y_log_scale      =   M3_dAC::y_log_scale;
+    m3_da->y_max            =   M3_dAC::y_max;
+    m3_da->y_map_scale      =   M3_dAC::y_map_scale;
+    m3_da->y_map_scale_log  =   M3_dAC::y_map_scale_log;
+    m3_da->y_min            =   M3_dAC::y_min;
+    m3_da->y_min_l10        =   M3_dAC::y_min_l10;
+    m3_da->z_log_scale      =   M3_dAC::z_log_scale;
+    m3_da->z_max            =   M3_dAC::z_max;
+    m3_da->z_map_scale      =   M3_dAC::z_map_scale;
+    m3_da->z_map_scale_log  =   M3_dAC::z_map_scale_log;
+    m3_da->z_min            =   M3_dAC::z_min;
+    m3_da->z_min_l10        =   M3_dAC::z_min_l10;
+
+    // Initialize object
+    m3_da->initialize();
+}
+
+
+void set_data_m3_db(P3 *m3_db)
+{
+    // Storage data into target object
+    m3_db->c                =   M3_dBC::c;
+    m3_db->cf               =   M3_dBC::cf;
+    m3_db->current_inter    =   -1;
+    m3_db->dims             =   M3_dBC::dims;
+    m3_db->intervals_bounds =   M3_dBC::interval_bounds;
+    m3_db->nx               =   M3_dBC::ncx;
+    m3_db->nxf              =   M3_dBC::ncxf;
+    m3_db->ny               =   M3_dBC::ncy;
+    m3_db->nyf              =   M3_dBC::ncyf;
+    m3_db->nz               =   M3_dBC::ncz;
+    m3_db->num_intervals    =   M3_dBC::num_intervals;
+    m3_db->num_points       =   M3_dBC::num_points;
+    m3_db->num_points_f     =   0;
+    m3_db->num_points_cum   =   M3_dBC::num_points_cum;
+    m3_db->x_log_scale      =   M3_dBC::x_log_scale;
+    m3_db->x_max            =   M3_dBC::x_max;
+    m3_db->x_map_scale      =   M3_dBC::x_map_scale;
+    m3_db->x_map_scale_log  =   M3_dBC::x_map_scale_log;
+    m3_db->x_min            =   M3_dBC::x_min;
+    m3_db->x_min_l10        =   M3_dBC::x_min_l10;
+    m3_db->y_log_scale      =   M3_dBC::y_log_scale;
+    m3_db->y_max            =   M3_dBC::y_max;
+    m3_db->y_map_scale      =   M3_dBC::y_map_scale;
+    m3_db->y_map_scale_log  =   M3_dBC::y_map_scale_log;
+    m3_db->y_min            =   M3_dBC::y_min;
+    m3_db->y_min_l10        =   M3_dBC::y_min_l10;
+    m3_db->z_log_scale      =   M3_dBC::z_log_scale;
+    m3_db->z_max            =   M3_dBC::z_max;
+    m3_db->z_map_scale      =   M3_dBC::z_map_scale;
+    m3_db->z_map_scale_log  =   M3_dBC::z_map_scale_log;
+    m3_db->z_min            =   M3_dBC::z_min;
+    m3_db->z_min_l10        =   M3_dBC::z_min_l10;
+
+    // Initialize object
+    m3_db->initialize();
 }
 
 #endif
