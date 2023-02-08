@@ -82,7 +82,7 @@ public:
         assert(this->dims == 1 && "Dims value has not been loaded!\n");
 
         // Calculate map scale coefficients
-        for (int i=0; i<L1C::num_intervals; i++)
+        for (int i=0; i<this->num_intervals; i++)
         {
             // Calculate for x coordinate
             this->x_map_scale[i] = 2.0/(this->x_max[i]-this->x_min[i]);
