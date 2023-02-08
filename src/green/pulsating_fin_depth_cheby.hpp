@@ -16,6 +16,9 @@
 #include "./fin_depth_coeffs/L1.hpp"
 #include "./fin_depth_coeffs/L2.hpp"
 #include "./fin_depth_coeffs/L3.hpp"
+#include "./fin_depth_coeffs/M1.hpp"
+#include "./fin_depth_coeffs/M2.hpp"
+#include "./fin_depth_coeffs/M3.hpp"
 
 
 class P3
@@ -409,6 +412,114 @@ void set_data_l3(P3 &l3)
 
     // Initialize object
     l3.initialize();
+}
+
+
+void set_data_m1(P3 &m1)
+{
+    // Storage data into target object
+    m1.c                =   M1C::c;
+    m1.cf               =   M1C::cf;
+    m1.current_inter    =   -1;
+    m1.dims             =   M1C::dims;
+    m1.intervals_bounds =   M1C::interval_bounds;
+    m1.nx               =   M1C::ncx;
+    m1.nxf              =   M1C::ncxf;
+    m1.ny               =   M1C::ncy;
+    m1.nyf              =   M1C::ncyf;
+    m1.nz               =   M1C::ncz;
+    m1.num_intervals    =   M1C::num_intervals;
+    m1.num_points       =   M1C::num_points;
+    m1.num_points_f     =   0;
+    m1.num_points_cum   =   M1C::num_points_cum;
+    m1.x_log_scale      =   M1C::x_log_scale;
+    m1.x_max            =   M1C::x_max;
+    m1.x_map_scale      =   M1C::x_map_scale;
+    m1.x_map_scale_log  =   M1C::x_map_scale_log;
+    m1.x_min            =   M1C::x_min;
+    m1.x_min_l10        =   M1C::x_min_l10;
+    m1.y_log_scale      =   M1C::y_log_scale;
+    m1.y_max            =   M1C::y_max;
+    m1.y_map_scale      =   M1C::y_map_scale;
+    m1.y_map_scale_log  =   M1C::y_map_scale_log;
+    m1.y_min            =   M1C::y_min;
+    m1.y_min_l10        =   M1C::y_min_l10;
+    m1.z_log_scale      =   M1C::z_log_scale;
+    m1.z_max            =   M1C::z_max;
+    m1.z_map_scale      =   M1C::z_map_scale;
+    m1.z_map_scale_log  =   M1C::z_map_scale_log;
+    m1.z_min            =   M1C::z_min;
+    m1.z_min_l10        =   M1C::z_min_l10;
+
+    // Initialize object
+    m1.initialize();
+}
+
+
+void set_data_m2(P3 &m2)
+{
+    // Storage data into target object
+    m2.c                =   M2C::c;
+    m2.cf               =   M2C::cf;
+    m2.current_inter    =   -1;
+    m2.dims             =   M2C::dims;
+    m2.intervals_bounds =   M2C::interval_bounds;
+    m2.nx               =   M2C::ncx;
+    m2.nxf              =   M2C::ncxf;
+    m2.num_intervals    =   M2C::num_intervals;
+    m2.num_points       =   M2C::num_points;
+    m2.num_points_f     =   0;
+    m2.num_points_cum   =   M2C::num_points_cum;
+    m2.x_log_scale      =   M2C::x_log_scale;
+    m2.x_max            =   M2C::x_max;
+    m2.x_map_scale      =   M2C::x_map_scale;
+    m2.x_map_scale_log  =   M2C::x_map_scale_log;
+    m2.x_min            =   M2C::x_min;
+    m2.x_min_l10        =   M2C::x_min_l10;
+
+    // Initialize object
+    m2.initialize();
+}
+
+
+void set_data_m3(P3 &m3)
+{
+    // Storage data into target object
+    m3.c                =   M3C::c;
+    m3.cf               =   M3C::cf;
+    m3.current_inter    =   -1;
+    m3.dims             =   M3C::dims;
+    m3.intervals_bounds =   M3C::interval_bounds;
+    m3.nx               =   M3C::ncx;
+    m3.nxf              =   M3C::ncxf;
+    m3.ny               =   M3C::ncy;
+    m3.nyf              =   M3C::ncyf;
+    m3.nz               =   M3C::ncz;
+    m3.num_intervals    =   M3C::num_intervals;
+    m3.num_points       =   M3C::num_points;
+    m3.num_points_f     =   0;
+    m3.num_points_cum   =   M3C::num_points_cum;
+    m3.x_log_scale      =   M3C::x_log_scale;
+    m3.x_max            =   M3C::x_max;
+    m3.x_map_scale      =   M3C::x_map_scale;
+    m3.x_map_scale_log  =   M3C::x_map_scale_log;
+    m3.x_min            =   M3C::x_min;
+    m3.x_min_l10        =   M3C::x_min_l10;
+    m3.y_log_scale      =   M3C::y_log_scale;
+    m3.y_max            =   M3C::y_max;
+    m3.y_map_scale      =   M3C::y_map_scale;
+    m3.y_map_scale_log  =   M3C::y_map_scale_log;
+    m3.y_min            =   M3C::y_min;
+    m3.y_min_l10        =   M3C::y_min_l10;
+    m3.z_log_scale      =   M3C::z_log_scale;
+    m3.z_max            =   M3C::z_max;
+    m3.z_map_scale      =   M3C::z_map_scale;
+    m3.z_map_scale_log  =   M3C::z_map_scale_log;
+    m3.z_min            =   M3C::z_min;
+    m3.z_min_l10        =   M3C::z_min_l10;
+
+    // Initialize object
+    m3.initialize();
 }
 
 #endif
