@@ -7,7 +7,7 @@ import os
 from numpy import array, concatenate, ndarray, zeros
 
 
-REF_COL = 25
+REF_COL = 24
 
 
 def generate_coeffs_modules(database_path: str, folder_path: str, int_name: str)->None:
@@ -31,51 +31,51 @@ def generate_coeffs_modules(database_path: str, folder_path: str, int_name: str)
     # Open namespace field
     fid.writelines(f"namespace {int_name}" + "C\n{\n")
 
-    fid.writelines("    extern int dims;\n")
-    fid.writelines("    extern int num_intervals;\n")
-    fid.writelines("    extern cusfloat interval_bounds[];\n")
+    fid.writelines(str_start_col("    extern int", "dims;\n", REF_COL))
+    fid.writelines(str_start_col("    extern int", "num_intervals;\n", REF_COL))
+    fid.writelines(str_start_col("    extern cusfloat", "interval_bounds[];\n", REF_COL))
 
     # Save number of points
-    fid.writelines("    extern int num_points[];\n")
-    fid.writelines("    extern int num_points_cum[];\n")
-    fid.writelines("    extern int max_size_fold;\n")
+    fid.writelines(str_start_col("    extern int", "num_points[];\n", REF_COL))
+    fid.writelines(str_start_col("    extern int", "num_points_cum[];\n", REF_COL))
+    fid.writelines(str_start_col("    extern int", "max_size_fold;\n", REF_COL))
 
     # Save interval bounds
-    fid.writelines("    extern bool x_log_scale[];\n")
-    fid.writelines("    extern cusfloat x_map_scale[];\n")
-    fid.writelines("    extern cusfloat x_map_scale_log[];\n")
-    fid.writelines("    extern cusfloat x_max[];\n")
-    fid.writelines("    extern cusfloat x_min[];\n")
-    fid.writelines("    extern cusfloat x_min_l10[];\n")
+    fid.writelines(str_start_col("    extern bool", "x_log_scale[];\n", REF_COL))
+    fid.writelines(str_start_col("    extern cusfloat", "x_map_scale[];\n", REF_COL))
+    fid.writelines(str_start_col("    extern cusfloat", "x_map_scale_log[];\n", REF_COL))
+    fid.writelines(str_start_col("    extern cusfloat", "x_max[];\n", REF_COL))
+    fid.writelines(str_start_col("    extern cusfloat", "x_min[];\n", REF_COL))
+    fid.writelines(str_start_col("    extern cusfloat", "x_min_l10[];\n", REF_COL))
     if dims >=2:
-        fid.writelines("    extern bool y_log_scale[];\n")
-        fid.writelines("    extern cusfloat y_map_scale[];\n")
-        fid.writelines("    extern cusfloat y_map_scale_log[];\n")
-        fid.writelines("    extern cusfloat y_max[];\n")
-        fid.writelines("    extern cusfloat y_min[];\n")
-        fid.writelines("    extern cusfloat y_min_l10[];\n")
+        fid.writelines(str_start_col("    extern bool", "y_log_scale[];\n", REF_COL))
+        fid.writelines(str_start_col("    extern cusfloat", "y_map_scale[];\n", REF_COL))
+        fid.writelines(str_start_col("    extern cusfloat", "y_map_scale_log[];\n", REF_COL))
+        fid.writelines(str_start_col("    extern cusfloat", "y_max[];\n", REF_COL))
+        fid.writelines(str_start_col("    extern cusfloat", "y_min[];\n", REF_COL))
+        fid.writelines(str_start_col("    extern cusfloat", "y_min_l10[];\n", REF_COL))
         if dims == 3:
-            fid.writelines("    extern bool z_log_scale[];\n")
-            fid.writelines("    extern cusfloat z_map_scale[];\n")
-            fid.writelines("    extern cusfloat z_map_scale_log[];\n")
-            fid.writelines("    extern cusfloat z_max[];\n")
-            fid.writelines("    extern cusfloat z_min[];\n")
-            fid.writelines("    extern cusfloat z_min_l10[];\n")
+            fid.writelines(str_start_col("    extern bool", "z_log_scale[];\n", REF_COL))
+            fid.writelines(str_start_col("    extern cusfloat", "z_map_scale[];\n", REF_COL))
+            fid.writelines(str_start_col("    extern cusfloat", "z_map_scale_log[];\n", REF_COL))
+            fid.writelines(str_start_col("    extern cusfloat", "z_max[];\n", REF_COL))
+            fid.writelines(str_start_col("    extern cusfloat", "z_min[];\n", REF_COL))
+            fid.writelines(str_start_col("    extern cusfloat", "z_min_l10[];\n", REF_COL))
     fid.writelines("\n")
 
     # Write chebyshev polynomials
-    fid.writelines("    extern int num_c;\n")
-    fid.writelines("    extern cusfloat c[];\n")
-    fid.writelines("    extern cusfloat cf[];\n")
+    fid.writelines(str_start_col("    extern int", "num_c;\n", REF_COL))
+    fid.writelines(str_start_col("    extern cusfloat", "c[];\n", REF_COL))
+    fid.writelines(str_start_col("    extern cusfloat", "cf[];\n", REF_COL))
 
     # Write polynomials coefficients
-    fid.writelines("    extern int ncx[];\n")
-    fid.writelines("    extern int ncxf[];\n")
+    fid.writelines(str_start_col("    extern int", "ncx[];\n", REF_COL))
+    fid.writelines(str_start_col("    extern int", "ncxf[];\n", REF_COL))
     if dims >= 2:
-        fid.writelines("    extern int ncy[];\n")
-        fid.writelines("    extern int ncyf[];\n")
+        fid.writelines(str_start_col("    extern int", "ncy[];\n", REF_COL))
+        fid.writelines(str_start_col("    extern int", "ncyf[];\n", REF_COL))
         if dims == 3:
-            fid.writelines("    extern int ncz[];\n")
+            fid.writelines(str_start_col("    extern int", "ncz[];\n", REF_COL))
         else:
             raise ValueError(f"Number of dimensions: {dims} not available.")
 
@@ -254,7 +254,7 @@ def write_vector_line(fid, data: ndarray, field_name: str, var_type: str, int_na
 
 if __name__ == "__main__":
     # generate_test_database()
-    int_name = "L3_dB"
+    int_name = "M3_dB"
     this_path = os.path.dirname(os.path.abspath(__file__))
     database_path = os.path.join(this_path, f"{int_name}_database.h5")
     files_folder_path = os.path.join(os.path.dirname(this_path), "src", "green", "fin_depth_coeffs")
