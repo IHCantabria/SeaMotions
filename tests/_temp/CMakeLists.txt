@@ -24,3 +24,17 @@ add_executable(matrix_vector_mult
     ../../src/tools.cpp
 )
 set_mkl_lib_target(matrix_vector_mult)
+
+
+# Configure test for class objects heap memory allocation
+add_executable(test_class_heap_cmd test_heap_memory.cpp)
+
+add_executable(test_class_heap_2_cmd test_heap_memory_2.cpp)
+
+add_executable(
+                test_heap_memory_performance_cmd
+                test_heap_memory_performance.cpp
+                ../../src/tools.hpp
+                ../../src/tools.cpp
+                ../../src/tools.txx
+                )     
