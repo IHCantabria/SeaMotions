@@ -58,15 +58,17 @@ public:
 };
 
 
-void operate_heap(IntegralsDb &dbs)
+double operate_heap(IntegralsDb &dbs)
 {
     double a = dbs.l1->a*dbs.l1->b;
     double b = dbs.l2->d*dbs.l2->c;
     double c = 0.0;
     for (int i=0; i<dbs.l1->num_vec; i++)
     {
-        c += dbs.l1->vec[i]*dbs.l2->e;
+        c += dbs.l1->vec[i]*dbs.l2->e*a*b;
     }
+
+    return c;
 }
 
 
