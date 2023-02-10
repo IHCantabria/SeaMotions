@@ -54,6 +54,8 @@ cusfloat                M2C::c[33] = {
                                 };
 cusfloat                M2C::cf[0] = {
                             };
+cusfloat                M2C::cf2[0] = {
+                            };
 int                     M2C::ncx[33] = {
                                    0,  // ncx[0]
                                    1,  // ncx[1]
@@ -90,4 +92,6 @@ int                     M2C::ncx[33] = {
                                    17,  // ncx[32]
                             };
 int                     M2C::ncxf[0] = {
+                            };
+int                     M2C::ncxf2[0] = {
                             };

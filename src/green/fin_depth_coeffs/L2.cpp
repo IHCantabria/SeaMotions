@@ -56,6 +56,8 @@ cusfloat                L2C::c[35] = {
                                 };
 cusfloat                L2C::cf[0] = {
                             };
+cusfloat                L2C::cf2[0] = {
+                            };
 int                     L2C::ncx[35] = {
                                    0,  // ncx[0]
                                    1,  // ncx[1]
@@ -94,4 +96,6 @@ int                     L2C::ncx[35] = {
                                    18,  // ncx[34]
                             };
 int                     L2C::ncxf[0] = {
+                            };
+int                     L2C::ncxf2[0] = {
                             };

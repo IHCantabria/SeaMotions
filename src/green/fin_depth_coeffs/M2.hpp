@@ -21,7 +21,9 @@ namespace M2C
     extern int          num_c;
     extern cusfloat     c[];
     extern cusfloat     cf[];
+    extern cusfloat     cf2[];
     extern int          ncx[];
     extern int          ncxf[];
+    extern int          ncxf2[];
 }
 #endif
