@@ -24,6 +24,38 @@ set(green_common_src
     test_panel_geometries.cpp
 )
 
+set(
+    integrals_src
+    ../../src/green/fin_depth_coeffs/L1.hpp
+    ../../src/green/fin_depth_coeffs/L1.cpp
+    ../../src/green/fin_depth_coeffs/L1_dA.hpp
+    ../../src/green/fin_depth_coeffs/L1_dA.cpp
+    ../../src/green/fin_depth_coeffs/L1_dB.hpp
+    ../../src/green/fin_depth_coeffs/L1_dB.cpp
+    ../../src/green/fin_depth_coeffs/L2.hpp
+    ../../src/green/fin_depth_coeffs/L2.cpp
+    ../../src/green/fin_depth_coeffs/L3.hpp
+    ../../src/green/fin_depth_coeffs/L3.cpp
+    ../../src/green/fin_depth_coeffs/L3_dA.hpp
+    ../../src/green/fin_depth_coeffs/L3_dA.cpp
+    ../../src/green/fin_depth_coeffs/L3_dB.hpp
+    ../../src/green/fin_depth_coeffs/L3_dB.cpp
+    ../../src/green/fin_depth_coeffs/M1.hpp
+    ../../src/green/fin_depth_coeffs/M1.cpp
+    ../../src/green/fin_depth_coeffs/M1_dA.hpp
+    ../../src/green/fin_depth_coeffs/M1_dA.cpp
+    ../../src/green/fin_depth_coeffs/M1_dB.hpp
+    ../../src/green/fin_depth_coeffs/M1_dB.cpp
+    ../../src/green/fin_depth_coeffs/M2.hpp
+    ../../src/green/fin_depth_coeffs/M2.cpp
+    ../../src/green/fin_depth_coeffs/M3.hpp
+    ../../src/green/fin_depth_coeffs/M3.cpp
+    ../../src/green/fin_depth_coeffs/M3_dA.hpp
+    ../../src/green/fin_depth_coeffs/M3_dA.cpp
+    ../../src/green/fin_depth_coeffs/M3_dB.hpp
+    ../../src/green/fin_depth_coeffs/M3_dB.cpp
+    )
+
 # Add test for dipole potential function
 set(test_dipole_potential_src
     test_dipole_potential.cpp
@@ -143,25 +175,32 @@ add_test(
 set(test_wave_term_john_quad_src
     test_wave_term_john_quad.cpp
     ../../src/config.hpp
+    ../../src/green/integrals_db.hpp
+    ../../src/green/integrals_db.cpp
     ../../src/math/math_tools.hpp
     ../../src/math/math_tools.cpp
     ../../src/math/math_tools.txx
+    ../../src/green/pulsating_inf_depth.hpp
+    ../../src/green/pulsating_inf_depth.cpp
     ../../src/green/pulsating_fin_depth.hpp
     ../../src/green/pulsating_fin_depth.cpp
+    ../../src/green/pulsating_fin_depth_cheby.hpp
+    ../../src/green/pulsating_fin_depth_cheby.cpp
     ../../src/math/chebyshev.hpp
     ../../src/math/chebyshev.cpp
-    ../../src/math/special_math.hpp
     ../../src/math/gauss.hpp
     ../../src/math/gauss.cpp
+    ../../src/math/special_math.hpp
     ../../src/math/special_math.cpp
     ../../src/tools.hpp
     ../../src/tools.cpp
     ../../src/tools.txx
     ../../src/waves.hpp
     ../../src/waves.cpp
+    ${integrals_src}
 )
 
 add_executable(
                 test_wave_term_john_quad_cmd
                 ${test_wave_term_john_quad_src}
-                )   
+                )
