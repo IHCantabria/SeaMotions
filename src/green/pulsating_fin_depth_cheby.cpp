@@ -93,6 +93,43 @@ void P3::initialize(void)
 };
 
 
+void P3::fold_b(cusfloat b)
+{
+    // Map coordinate
+    int count = 0;
+    cusfloat eta = this->y_map(b);
+    cusfloat coeff_i = this->cf[0]*chebyshev_poly(this->nyf[0], eta);
+    for (int j=1; j<this->num_points_f; j++)
+    {
+        // Check if there is a change in z branch
+        if (this->nxf[j] != this->nxf[j-1])
+        {
+            // Storage data of the previous coefficient
+            this->cf2[count] = coeff_i;
+            this->nxf2[count] = this->nx[j-1];
+            count++;
+
+            // Restart coefficient for the current index
+            coeff_i = this->cf[j]*chebyshev_poly(this->nyf[j], eta);
+        }
+        else
+        {
+            coeff_i += this->cf[j]*chebyshev_poly(this->nyf[j], eta);
+        }
+    }
+    // Save last coefficient and update count to be the total
+    // number of points (not the position in the vector) and also 
+    // the first index for the next interval
+    this->cf2[count] = coeff_i;
+    this->nxf2[count] = this->nx[this->num_points_cum[this->current_inter+1]-1];
+    count++;
+
+    // Storage intervals length
+    this->num_points_f2 = count;
+
+}
+
+
 void P3::fold_h(cusfloat H)
 {
     // Get H working interval
@@ -172,6 +209,19 @@ int P3::get_interval_h(cusfloat H)
     }
 
     return inter;
+}
+
+
+cusfloat P3::get_value_a(cusfloat a)
+{
+    cusfloat xi = this->x_map(a);
+    cusfloat sol = 0.0;
+    for (int i=0; i<this->num_points_f2; i++)
+    {
+        sol += this->cf2[i]*chebyshev_poly_raw(this->nxf2[i], xi);
+    }
+
+    return sol;
 }
 
 

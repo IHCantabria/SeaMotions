@@ -48,6 +48,7 @@ public:
     int             num_intervals = 0;
     int*            num_points;
     int             num_points_f = 0;
+    int             num_points_f2 = 0;
     int*            num_points_cum;
     bool*           x_log_scale;
     cusfloat*       x_max;
@@ -70,8 +71,10 @@ public:
 
     void calculate_h_1D(cusfloat H);
     void initialize(void);
+    void fold_b(cusfloat b);
     void fold_h(cusfloat H);
     int get_interval_h(cusfloat H);
+    cusfloat get_value_a(cusfloat a);
     cusfloat get_value_ab(cusfloat a, cusfloat b);
     cusfloat get_value_abh(cusfloat a, cusfloat b, cusfloat h);
     cusfloat x_map(cusfloat x);
