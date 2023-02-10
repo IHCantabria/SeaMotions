@@ -67,10 +67,12 @@ def generate_coeffs_modules(database_path: str, folder_path: str, int_name: str)
     fid.writelines(str_start_col("    extern int", "num_c;\n", REF_COL))
     fid.writelines(str_start_col("    extern cusfloat", "c[];\n", REF_COL))
     fid.writelines(str_start_col("    extern cusfloat", "cf[];\n", REF_COL))
+    fid.writelines(str_start_col("    extern cusfloat", "cf2[];\n", REF_COL))
 
     # Write polynomials coefficients
     fid.writelines(str_start_col("    extern int", "ncx[];\n", REF_COL))
     fid.writelines(str_start_col("    extern int", "ncxf[];\n", REF_COL))
+    fid.writelines(str_start_col("    extern int", "ncxf2[];\n", REF_COL))
     if dims >= 2:
         fid.writelines(str_start_col("    extern int", "ncy[];\n", REF_COL))
         fid.writelines(str_start_col("    extern int", "ncyf[];\n", REF_COL))
@@ -146,12 +148,14 @@ def generate_coeffs_modules(database_path: str, folder_path: str, int_name: str)
     fid.writelines(f"                                " + "};\n")
     cf = zeros((max_size_fold, ))
     write_vector(fid, cf, "cf", "cusfloat", int_name_sp)
+    write_vector(fid, cf, "cf2", "cusfloat", int_name_sp)
 
     # Write polynomials coefficients
     ncx = interval_to_vector(fid_db, "ncx", num_intervals)
     ncxf = zeros((max_size_fold, ))
     write_vector(fid, ncx, "ncx", "int", int_name_sp)
     write_vector(fid, ncxf, "ncxf", "int", int_name_sp)
+    write_vector(fid, ncxf, "ncxf2", "int", int_name_sp)
     if dims >= 2:
         ncy = interval_to_vector(fid_db, "ncy", num_intervals)
         ncyf = zeros((max_size_fold, ))
@@ -254,8 +258,24 @@ def write_vector_line(fid, data: ndarray, field_name: str, var_type: str, int_na
 
 if __name__ == "__main__":
     # generate_test_database()
-    int_name = "M3_dB"
-    this_path = os.path.dirname(os.path.abspath(__file__))
-    database_path = os.path.join(this_path, f"{int_name}_database.h5")
-    files_folder_path = os.path.join(os.path.dirname(this_path), "src", "green", "fin_depth_coeffs")
-    generate_coeffs_modules(database_path, files_folder_path, int_name)
+    int_names = [
+                "L1",
+                "L1_dA",
+                "L1_dB",
+                "L2",
+                "L3",
+                "L3_dA",
+                "L3_dB",
+                "M1",
+                "M1_dA",
+                "M1_dB",
+                "M2",
+                "M3",
+                "M3_dA",
+                "M3_dB"
+                ]
+    for int_name in int_names:
+        this_path = os.path.dirname(os.path.abspath(__file__))
+        database_path = os.path.join(this_path, f"{int_name}_database.h5")
+        files_folder_path = os.path.join(os.path.dirname(this_path), "src", "green", "fin_depth_coeffs")
+        generate_coeffs_modules(database_path, files_folder_path, int_name)
