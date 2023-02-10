@@ -1,12 +1,13 @@
 
-#ifndef __pulsating_hpp
-#define __pulsating_hpp
+#ifndef __pulsating_fin_depth
+#define __pulsating_fin_depth
 
 // Include general usage libraries
 #include <tuple>
 
 // Include local modules
 #include "../config.hpp"
+#include "./integrals_db.hpp"
 #include "../waves.hpp"
 
 // Include namespaces objects into the local namespace
@@ -92,5 +93,18 @@ cuscomplex john_series_dz(
                             cusfloat h,
                             WaveDispersionData &wave_data
                             );
+
+
+cuscomplex wave_term_fin_depth(
+                                cusfloat x,
+                                cusfloat y,
+                                cusfloat z,
+                                cusfloat xi,
+                                cusfloat eta,
+                                cusfloat zeta,
+                                cusfloat h,
+                                WaveDispersionData &wave_data,
+                                IntegralsDb &idb
+                                );
 
 #endif

@@ -9,6 +9,7 @@
 
 // Include local modules
 #include "../config.hpp"
+#include "integrals_db.hpp"
 #include "../math/math_tools.hpp"
 #include "../math/special_math.hpp"
 #include "pulsating_inf_depth.hpp"
@@ -74,82 +75,134 @@ cusfloat calculate_r(
 }
 
 
-// cusfloat G1(cusfloat A,
-//             cusfloat B,
-//             cusfloat H
-//             )
-// {
-//     cusfloat sol = 0.0;
-//     if (H <= 1)
-//     {
-//         sol = L1(A, B, H) + L2(H);
-//     }
-//     else
-//     {
-//         sol = L3(A, B, H);
-//     }
-// }
+cusfloat G1(cusfloat A,
+            cusfloat B,
+            cusfloat H,
+            IntegralsDb &idb
+            )
+{
+    cusfloat sol = 0.0;
+    if (H > 1)
+    {
+        cusfloat A2 = pow2s(A);
+        sol = (
+                idb.l3->get_value_abh(A, B, H)
+                -
+                2/sqrt(A2 + pow2s(2+B))
+                -
+                2/sqrt(A2 + pow2s(2-B))
+                );
+    }
+    else
+    {
+        sol = idb.l1->get_value_abh(A, B, H) + idb.l2->int_1d;
+    }
+
+    return sol;
+}
 
 
-// cuscomplex G_integral(
-//                         cusfloat x,
-//                         cusfloat y,
-//                         cusfloat z,
-//                         cusfloat xi,
-//                         cusfloat eta,
-//                         cusfloat zeta,
-//                         cusfloat h,
-//                         cusfloat nu
-//                         )
-// {
-//     /**
-//      * @brief Integral representation of the finite water depth function.
-//      * 
-//      * The formulation used here (valid for R/h<1.0) is mainly taken from:
-//      * "Consistent expressions for the free surface function in
-//      *  finite water depth - Ed Mackay".
-//      * 
-//      * \param x X Coordinate of the field point
-//      * \param y Y Coordinate of the field point
-//      * \param z Z Coordinate of the field point
-//      * \param xi X Coordinate of the source point
-//      * \param eta Y Coordinate of the source point
-//      * \param zeta Z Coordinate of the source point
-//      * \param h Water depth
-//      * \param nu Infinite water depth wave length (w^2/g)
-//      * \return value of the integral representation
-//      */
+cusfloat G2(cusfloat A,
+            cusfloat B,
+            cusfloat H,
+            IntegralsDb &idb
+            )
+{
+    cusfloat sol = 0.0;
+    if (H > 1.0)
+    {
+        sol = (
+                idb.m3->get_value_abh(A, B, H)
+                -
+                2/sqrt(pow2s(A) + pow2s(2+B))
+                );
+    }
+    else
+    {
+        sol = idb.m1->get_value_abh(A, B, H) + idb.l2->int_1d;
+    }
 
-//     // Calculate dependent parameters
-//     cusfloat R = calculate_r(x, y, xi, eta);
-//     cusfloat v0 = abs(z-zeta);
-//     cusfloat v1 = z+zeta+2*h;
+    return sol;
+}
 
-//     cusfloat A = R/h;
-//     cusfloat B0 = v0/h;
-//     cusfloat B1 = v1/h;
-//     cusfloat H = nu*h;
 
-//     // Check that B0 and  B1 is in between limits
-//     assert( ((B0>=0.0) && (B0<=1.0)) && "B0 is out of interval [0, 1]" );
-//     assert( ((B1>=0.0) && (B1<=2.0)) && "B1 is out of interval [0, 2]" );
+cuscomplex G_integral(
+                        cusfloat R,
+                        cusfloat z,
+                        cusfloat zeta,
+                        cusfloat h,
+                        WaveDispersionData &wave_data,
+                        IntegralsDb &idb
+                        )
+{
+    /**
+     * @brief Integral representation of the finite water depth function.
+     * 
+     * The formulation used here (valid for R/h<1.0) is mainly taken from:
+     * "Consistent expressions for the free surface function in
+     *  finite water depth - Ed Mackay".
+     * 
+     * \param R Eucleadian distance in between field and source points in the horizontal plane
+     * \param z Z Coordinate of the field point
+     * \param zeta Z Coordinate of the source point
+     * \param h Water depth
+     * \param wave_data Wave dispersion data object initialized with John's constants
+     * \param idb Integrals Database
+     * \return value of the integral representation
+     */
 
-//     // Check working interval
-//     cuscomplex G = 0.0 + 0.0i;
-//     if (B1 <= 1)
-//     {
-//         G = (G1(A, B0, H) + G1(A, B1, H))/h;
-//     }
-//     else
-//     {
-//         // Calculate dependent param
-//         cusfloat X = nu*R;
-//         cusfloat Y = nu*abs(z+zeta);
-//         G = (G1(A, B0, H) + G2(A, B1, H))/h + nu*wave_term_inf_depth(X, Y);
-//     }
+    // Copy variables to the stack
+    cusfloat k0 = wave_data.k0;
+    cusfloat nu = wave_data.nu;
 
-//     return G;
-// }
+    // Calculate dependent parameters
+    cusfloat v0 = abs(z-zeta);
+    cusfloat v1 = z+zeta+2*h;
+    cusfloat v2 = abs(z+zeta);
+    cusfloat v3 = z-zeta+2*h;
+    cusfloat v4 = zeta-z+2*h;
+    cusfloat v5 = z+zeta+4*h;
+
+    cusfloat A = R/h;
+    cusfloat B0 = v0/h;
+    cusfloat B1 = v1/h;
+    cusfloat H = nu*h;
+
+    // Check that B0 and  B1 is in between limits
+    assert( ((B0>=0.0) && (B0<=1.0)) && "B0 is out of interval [0, 1]" );
+    assert( ((B1>=0.0) && (B1<=2.0)) && "B1 is out of interval [0, 2]" );
+
+    // Calculate real part
+    cusfloat G_real = 0.0;
+    if (B1 <= 1)
+    {
+        G_real = (G1(A, B0, H, idb) + G1(A, B1, H, idb))/h;
+    }
+    else
+    {
+        // Calculate dependent param
+        cusfloat X = nu*R;
+        cusfloat Y = nu*abs(z+zeta);
+        G_real = (G1(A, B0, H, idb) + G2(A, B1, H, idb))/h + nu*wave_term_inf_depth(X, Y);
+    }
+
+    // Calculate imaginary part
+    cusfloat k02 = pow2s(k0);
+    cusfloat scale_imag = -2*PI*k02/((k02-pow2s(nu))*h+nu);
+    scale_imag /= pow2s(1+exp(-2*k0*h));
+    cusfloat G_imag = (
+                        +exp(-k0*v2)
+                        +exp(-k0*v3)
+                        +exp(-k0*v4)
+                        +exp(-k0*v5)
+                        );
+    G_imag = scale_imag * G_imag * bessely0(k0*R);
+
+    // Define G integral as a complex number
+    cuscomplex G = G_real + G_imag*1i;
+
+    return G;
+}
 
 
 cuscomplex john_series(
@@ -636,4 +689,37 @@ cuscomplex john_series_dz(
 
     // Calculate Z derivative using kernel function
     return john_series_dz(R, z, zeta, h, wave_data);
+}
+
+
+cuscomplex wave_term_fin_depth(
+                                cusfloat x,
+                                cusfloat y,
+                                cusfloat z,
+                                cusfloat xi,
+                                cusfloat eta,
+                                cusfloat zeta,
+                                cusfloat h,
+                                WaveDispersionData &wave_data,
+                                IntegralsDb &idb
+                                )
+{
+    // Calculate R value
+    cusfloat R = calculate_r(x, y, xi, eta);
+
+    // Define horizontal distance to depth ratio
+    cusfloat rh = R/h;
+
+    // Use series or integral formulations depending on rh value
+    cuscomplex sol = 0.0;
+    if (rh > 1.0)
+    {
+        sol = john_series(R, z, zeta, h , wave_data);
+    }
+    else
+    {
+        sol = G_integral(R, z, zeta, h, wave_data, idb);
+    }
+
+    return sol;
 }
