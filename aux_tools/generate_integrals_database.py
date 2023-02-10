@@ -309,8 +309,11 @@ def fit_L3()->None:
     # Calculate coefficients for H = [1.0, 12.0]
     intervals_data.append(fit_L3_P0())
 
-    # Calculate coefficients for H = [12.0, 30.0]
+    # Calculate coefficients for H = [12.0, 50.0]
     intervals_data.append(fit_L3_P1())
+
+    # Calculate coefficients for H = [50.0, 1000.0]
+    intervals_data.append(fit_L3_P2())
 
     # Save coefficients data into a database
     this_path = os.path.dirname(os.path.abspath(__file__))
@@ -325,8 +328,11 @@ def fit_L3_dA()->None:
     # Calculate coefficients for H = [1.0, 12.0]
     intervals_data.append(fit_L3_dA_P0())
 
-    # Calculate coefficients for H = [12.0, 30.0]
+    # Calculate coefficients for H = [12.0, 50.0]
     intervals_data.append(fit_L3_dA_P1())
+
+    # Calculate coefficients for H = [50.0, 1000.0]
+    intervals_data.append(fit_L3_dA_P2())
 
     # Save coefficients data into a database
     this_path = os.path.dirname(os.path.abspath(__file__))
@@ -378,6 +384,28 @@ def fit_L3_dA_P1()->None:
     return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
 
 
+def fit_L3_dA_P2()->None:
+    # Define parametric space and fit properties
+    fit_props = FitProperties()
+    fit_props.x_max = 1.0
+    fit_props.x_min = 0.0
+    fit_props.y_max = 1.0
+    fit_props.y_min = 0.0
+    fit_props.z_log_scale = True
+    fit_props.z_max = 1000.0
+    fit_props.z_min = 50.0
+    fit_props.cheby_order_x = 20
+    fit_props.cheby_order_y = 20
+    fit_props.cheby_order_z = 50
+    fit_props.cheby_tol = 1e-8
+    fit_props.fit_points_to_order()
+
+    # Launch fit
+    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dA(x, y, z)[0].real, fit_props, "L3_dA_P2")
+
+    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
+
+
 def fit_L3_dB()->None:
     # Initialize object to storage the data
     intervals_data = []
@@ -385,8 +413,11 @@ def fit_L3_dB()->None:
     # Calculate coefficients for H = [1.0, 12.0]
     intervals_data.append(fit_L3_dB_P0())
 
-    # Calculate coefficients for H = [12.0, 30.0]
+    # Calculate coefficients for H = [12.0, 50.0]
     intervals_data.append(fit_L3_dB_P1())
+
+    # Calculate coefficients for H = [50.0, 1000.0]
+    intervals_data.append(fit_L3_dB_P2())
 
     # Save coefficients data into a database
     this_path = os.path.dirname(os.path.abspath(__file__))
@@ -434,6 +465,28 @@ def fit_L3_dB_P1()->None:
 
     # Launch fit
     cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dB(x, y, z)[0].real, fit_props, "L3_dB_P1")
+
+    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
+
+
+def fit_L3_dB_P2()->None:
+    # Define parametric space and fit properties
+    fit_props = FitProperties()
+    fit_props.x_max = 1.0
+    fit_props.x_min = 0.0
+    fit_props.y_max = 1.0
+    fit_props.y_min = 0.0
+    fit_props.z_log_scale = True
+    fit_props.z_max = 1000.0
+    fit_props.z_min = 50.0
+    fit_props.cheby_order_x = 20
+    fit_props.cheby_order_y = 20
+    fit_props.cheby_order_z = 50
+    fit_props.cheby_tol = 1e-8
+    fit_props.fit_points_to_order()
+
+    # Launch fit
+    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dB(x, y, z)[0].real, fit_props, "L3_dB_P2")
 
     return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
 
@@ -517,6 +570,28 @@ def fit_L3_P1()->None:
 
     # Launch fit
     cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3(x, y, z)[0].real, fit_props, "L3_P1")
+
+    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
+
+
+def fit_L3_P2()->None:
+    # Define parametric space and fit properties
+    fit_props = FitProperties()
+    fit_props.x_max = 1.0
+    fit_props.x_min = 0.0
+    fit_props.y_max = 1.0
+    fit_props.y_min = 0.0
+    fit_props.z_log_scale = True
+    fit_props.z_max = 1000.0
+    fit_props.z_min = 50.0
+    fit_props.cheby_order_x = 20
+    fit_props.cheby_order_y = 20
+    fit_props.cheby_order_z = 50
+    fit_props.cheby_tol = 1e-8
+    fit_props.fit_points_to_order()
+
+    # Launch fit
+    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3(x, y, z)[0].real, fit_props, "L3_P2")
 
     return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
 
@@ -777,8 +852,11 @@ def fit_M3()->None:
     # Calculate coefficients for H = [1.0, 12.0]
     intervals_data.append(fit_M3_P0())
 
-    # Calculate coefficients for H = [12.0, 30.0]
+    # Calculate coefficients for H = [12.0, 50.0]
     intervals_data.append(fit_M3_P1())
+
+    # Calculate coefficients for H = [50.0, 1000.0]
+    intervals_data.append(fit_M3_P2())
 
     # Save coefficients data into a database
     this_path = os.path.dirname(os.path.abspath(__file__))
@@ -793,8 +871,11 @@ def fit_M3_dA()->None:
     # Calculate coefficients for H = [1.0, 12.0]
     intervals_data.append(fit_M3_dA_P0())
 
-    # Calculate coefficients for H = [12.0, 30.0]
+    # Calculate coefficients for H = [12.0, 50.0]
     intervals_data.append(fit_M3_dA_P1())
+
+    # Calculate coefficients for H = [50.0, 1000.0]
+    intervals_data.append(fit_M3_dA_P2())
 
     # Save coefficients data into a database
     this_path = os.path.dirname(os.path.abspath(__file__))
@@ -846,6 +927,28 @@ def fit_M3_dA_P1()->None:
     return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
 
 
+def fit_M3_dA_P2()->None:
+    # Define parametric space and fit properties
+    fit_props = FitProperties()
+    fit_props.x_max = 1.0
+    fit_props.x_min = 0.0
+    fit_props.y_max = 2.0
+    fit_props.y_min = 1.0
+    fit_props.z_log_scale = True
+    fit_props.z_max = 1000.0
+    fit_props.z_min = 50.0
+    fit_props.cheby_order_x = 20
+    fit_props.cheby_order_y = 20
+    fit_props.cheby_order_z = 50
+    fit_props.cheby_tol = 1e-8
+    fit_props.fit_points_to_order()
+
+    # Launch fit
+    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: M3_dA(x, y, z)[0].real, fit_props, "M3_dA_P2")
+
+    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
+
+
 def fit_M3_dB()->None:
     # Initialize object to storage the data
     intervals_data = []
@@ -853,8 +956,11 @@ def fit_M3_dB()->None:
     # Calculate coefficients for H = [1.0, 12.0]
     intervals_data.append(fit_M3_dB_P0())
 
-    # Calculate coefficients for H = [12.0, 30.0]
+    # Calculate coefficients for H = [12.0, 50.0]
     intervals_data.append(fit_M3_dB_P1())
+
+    # Calculate coefficients for H = [50.0, 1000.0]
+    intervals_data.append(fit_M3_dB_P2())
 
     # Save coefficients data into a database
     this_path = os.path.dirname(os.path.abspath(__file__))
@@ -906,6 +1012,28 @@ def fit_M3_dB_P1()->None:
     return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
 
 
+def fit_M3_dB_P2()->None:
+    # Define parametric space and fit properties
+    fit_props = FitProperties()
+    fit_props.x_max = 1.0
+    fit_props.x_min = 0.0
+    fit_props.y_max = 2.0
+    fit_props.y_min = 1.0
+    fit_props.z_log_scale = True
+    fit_props.z_max = 1000.0
+    fit_props.z_min = 50.0
+    fit_props.cheby_order_x = 20
+    fit_props.cheby_order_y = 20
+    fit_props.cheby_order_z = 50
+    fit_props.cheby_tol = 1e-8
+    fit_props.fit_points_to_order()
+
+    # Launch fit
+    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: M3_dB(x, y, z)[0].real, fit_props, "M3_dB_P2")
+
+    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
+
+
 def fit_M3_P0()->None:
     # Define parametric space and fit properties
     fit_props = FitProperties()
@@ -946,6 +1074,28 @@ def fit_M3_P1()->None:
 
     # Launch fit
     cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: M3(x, y, z)[0].real, fit_props, "M3_P1")
+
+    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
+
+
+def fit_M3_P2()->None:
+    # Define parametric space and fit properties
+    fit_props = FitProperties()
+    fit_props.x_max = 1.0
+    fit_props.x_min = 0.0
+    fit_props.y_max = 2.0
+    fit_props.y_min = 1.0
+    fit_props.z_log_scale = True
+    fit_props.z_max = 1000.0
+    fit_props.z_min = 50.0
+    fit_props.cheby_order_x = 20
+    fit_props.cheby_order_y = 20
+    fit_props.cheby_order_z = 50
+    fit_props.cheby_tol = 1e-8
+    fit_props.fit_points_to_order()
+
+    # Launch fit
+    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: M3(x, y, z)[0].real, fit_props, "M3_P2")
 
     return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
 
@@ -1053,6 +1203,9 @@ if __name__ == "__main__":
     # fid.close()
     # fit_M2()
     # fit_L3()
+    # fit_L3_dA()
+    # fit_L3_dB()
+    # fit_L3_P2()
     # fit_M3()
     # fit_L1_dA()
     # fit_L1_dB()
