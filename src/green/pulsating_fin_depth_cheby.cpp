@@ -309,11 +309,13 @@ void set_data_l1(P3 *l1)
     // Storage data into target object
     l1->c                =   L1C::c;
     l1->cf               =   L1C::cf;
+    l1->cf2              =   L1C::cf2;
     l1->current_inter    =   -1;
     l1->dims             =   L1C::dims;
     l1->intervals_bounds =   L1C::interval_bounds;
     l1->nx               =   L1C::ncx;
     l1->nxf              =   L1C::ncxf;
+    l1->nxf2             =   L1C::ncxf2;
     l1->ny               =   L1C::ncy;
     l1->nyf              =   L1C::ncyf;
     l1->nz               =   L1C::ncz;
@@ -350,11 +352,13 @@ void set_data_l1_da(P3 *l1_da)
     // Storage data into target object
     l1_da->c                =   L1_dAC::c;
     l1_da->cf               =   L1_dAC::cf;
+    l1_da->cf2              =   L1_dAC::cf2;
     l1_da->current_inter    =   -1;
     l1_da->dims             =   L1_dAC::dims;
     l1_da->intervals_bounds =   L1_dAC::interval_bounds;
     l1_da->nx               =   L1_dAC::ncx;
     l1_da->nxf              =   L1_dAC::ncxf;
+    l1_da->nxf2             =   L1_dAC::ncxf2;
     l1_da->ny               =   L1_dAC::ncy;
     l1_da->nyf              =   L1_dAC::ncyf;
     l1_da->nz               =   L1_dAC::ncz;
@@ -391,11 +395,13 @@ void set_data_l1_db(P3 *l1_db)
     // Storage data into target object
     l1_db->c                =   L1_dBC::c;
     l1_db->cf               =   L1_dBC::cf;
+    l1_db->cf2              =   L1_dBC::cf2;
     l1_db->current_inter    =   -1;
     l1_db->dims             =   L1_dBC::dims;
     l1_db->intervals_bounds =   L1_dBC::interval_bounds;
     l1_db->nx               =   L1_dBC::ncx;
     l1_db->nxf              =   L1_dBC::ncxf;
+    l1_db->nxf2             =   L1_dBC::ncxf2;
     l1_db->ny               =   L1_dBC::ncy;
     l1_db->nyf              =   L1_dBC::ncyf;
     l1_db->nz               =   L1_dBC::ncz;
@@ -432,11 +438,13 @@ void set_data_l2(P3 *l2)
     // Storage data into target object
     l2->c                =   L2C::c;
     l2->cf               =   L2C::cf;
+    l2->cf2              =   L2C::cf2;
     l2->current_inter    =   -1;
     l2->dims             =   L2C::dims;
     l2->intervals_bounds =   L2C::interval_bounds;
     l2->nx               =   L2C::ncx;
     l2->nxf              =   L2C::ncxf;
+    l2->nxf2             =   L2C::ncxf2;
     l2->num_intervals    =   L2C::num_intervals;
     l2->num_points       =   L2C::num_points;
     l2->num_points_f     =   0;
@@ -458,11 +466,13 @@ void set_data_l3(P3 *l3)
     // Storage data into target object
     l3->c                =   L3C::c;
     l3->cf               =   L3C::cf;
+    l3->cf2              =   L3C::cf2;
     l3->current_inter    =   -1;
     l3->dims             =   L3C::dims;
     l3->intervals_bounds =   L3C::interval_bounds;
     l3->nx               =   L3C::ncx;
     l3->nxf              =   L3C::ncxf;
+    l3->nxf2             =   L3C::ncxf2;
     l3->ny               =   L3C::ncy;
     l3->nyf              =   L3C::ncyf;
     l3->nz               =   L3C::ncz;
@@ -499,11 +509,13 @@ void set_data_l3_da(P3 *l3_da)
     // Storage data into target object
     l3_da->c                =   L3_dAC::c;
     l3_da->cf               =   L3_dAC::cf;
+    l3_da->cf2              =   L3_dAC::cf2;
     l3_da->current_inter    =   -1;
     l3_da->dims             =   L3_dAC::dims;
     l3_da->intervals_bounds =   L3_dAC::interval_bounds;
     l3_da->nx               =   L3_dAC::ncx;
     l3_da->nxf              =   L3_dAC::ncxf;
+    l3_da->nxf2             =   L3_dAC::ncxf2;
     l3_da->ny               =   L3_dAC::ncy;
     l3_da->nyf              =   L3_dAC::ncyf;
     l3_da->nz               =   L3_dAC::ncz;
@@ -540,11 +552,13 @@ void set_data_l3_db(P3 *l3_db)
     // Storage data into target object
     l3_db->c                =   L3_dBC::c;
     l3_db->cf               =   L3_dBC::cf;
+    l3_db->cf2              =   L3_dBC::cf2;
     l3_db->current_inter    =   -1;
     l3_db->dims             =   L3_dBC::dims;
     l3_db->intervals_bounds =   L3_dBC::interval_bounds;
     l3_db->nx               =   L3_dBC::ncx;
     l3_db->nxf              =   L3_dBC::ncxf;
+    l3_db->nxf2             =   L3_dBC::ncxf2;
     l3_db->ny               =   L3_dBC::ncy;
     l3_db->nyf              =   L3_dBC::ncyf;
     l3_db->nz               =   L3_dBC::ncz;
@@ -581,11 +595,13 @@ void set_data_m1(P3 *m1)
     // Storage data into target object
     m1->c                =   M1_dAC::c;
     m1->cf               =   M1_dAC::cf;
+    m1->cf2              =   M1_dAC::cf2;
     m1->current_inter    =   -1;
     m1->dims             =   M1_dAC::dims;
     m1->intervals_bounds =   M1_dAC::interval_bounds;
     m1->nx               =   M1_dAC::ncx;
     m1->nxf              =   M1_dAC::ncxf;
+    m1->nxf2             =   M1_dAC::ncxf2;
     m1->ny               =   M1_dAC::ncy;
     m1->nyf              =   M1_dAC::ncyf;
     m1->nz               =   M1_dAC::ncz;
@@ -622,11 +638,13 @@ void set_data_m1_da(P3 *m1_da)
     // Storage data into target object
     m1_da->c                =   M1_dAC::c;
     m1_da->cf               =   M1_dAC::cf;
+    m1_da->cf2              =   M1_dAC::cf2;
     m1_da->current_inter    =   -1;
     m1_da->dims             =   M1_dAC::dims;
     m1_da->intervals_bounds =   M1_dAC::interval_bounds;
     m1_da->nx               =   M1_dAC::ncx;
     m1_da->nxf              =   M1_dAC::ncxf;
+    m1_da->nxf2             =   M1_dAC::ncxf2;
     m1_da->ny               =   M1_dAC::ncy;
     m1_da->nyf              =   M1_dAC::ncyf;
     m1_da->nz               =   M1_dAC::ncz;
@@ -663,11 +681,13 @@ void set_data_m1_db(P3 *m1_db)
     // Storage data into target object
     m1_db->c                =   M1_dBC::c;
     m1_db->cf               =   M1_dBC::cf;
+    m1_db->cf2              =   M1_dBC::cf2;
     m1_db->current_inter    =   -1;
     m1_db->dims             =   M1_dBC::dims;
     m1_db->intervals_bounds =   M1_dBC::interval_bounds;
     m1_db->nx               =   M1_dBC::ncx;
     m1_db->nxf              =   M1_dBC::ncxf;
+    m1_db->nxf2             =   M1_dBC::ncxf2;
     m1_db->ny               =   M1_dBC::ncy;
     m1_db->nyf              =   M1_dBC::ncyf;
     m1_db->nz               =   M1_dBC::ncz;
@@ -704,11 +724,13 @@ void set_data_m2(P3 *m2)
     // Storage data into target object
     m2->c                =   M2C::c;
     m2->cf               =   M2C::cf;
+    m2->cf2              =   M2C::cf2;
     m2->current_inter    =   -1;
     m2->dims             =   M2C::dims;
     m2->intervals_bounds =   M2C::interval_bounds;
     m2->nx               =   M2C::ncx;
     m2->nxf              =   M2C::ncxf;
+    m2->nxf2             =   M2C::ncxf2;
     m2->num_intervals    =   M2C::num_intervals;
     m2->num_points       =   M2C::num_points;
     m2->num_points_f     =   0;
@@ -730,11 +752,13 @@ void set_data_m3(P3 *m3)
     // Storage data into target object
     m3->c                =   M3C::c;
     m3->cf               =   M3C::cf;
+    m3->cf2              =   M3C::cf2;
     m3->current_inter    =   -1;
     m3->dims             =   M3C::dims;
     m3->intervals_bounds =   M3C::interval_bounds;
     m3->nx               =   M3C::ncx;
     m3->nxf              =   M3C::ncxf;
+    m3->nxf2             =   M3C::ncxf2;
     m3->ny               =   M3C::ncy;
     m3->nyf              =   M3C::ncyf;
     m3->nz               =   M3C::ncz;
@@ -771,11 +795,13 @@ void set_data_m3_da(P3 *m3_da)
     // Storage data into target object
     m3_da->c                =   M3_dAC::c;
     m3_da->cf               =   M3_dAC::cf;
+    m3_da->cf2              =   M3_dAC::cf2;
     m3_da->current_inter    =   -1;
     m3_da->dims             =   M3_dAC::dims;
     m3_da->intervals_bounds =   M3_dAC::interval_bounds;
     m3_da->nx               =   M3_dAC::ncx;
     m3_da->nxf              =   M3_dAC::ncxf;
+    m3_da->nxf2             =   M3_dAC::ncxf2;
     m3_da->ny               =   M3_dAC::ncy;
     m3_da->nyf              =   M3_dAC::ncyf;
     m3_da->nz               =   M3_dAC::ncz;
@@ -812,11 +838,13 @@ void set_data_m3_db(P3 *m3_db)
     // Storage data into target object
     m3_db->c                =   M3_dBC::c;
     m3_db->cf               =   M3_dBC::cf;
+    m3_db->cf2              =   M3_dBC::cf2;
     m3_db->current_inter    =   -1;
     m3_db->dims             =   M3_dBC::dims;
     m3_db->intervals_bounds =   M3_dBC::interval_bounds;
     m3_db->nx               =   M3_dBC::ncx;
     m3_db->nxf              =   M3_dBC::ncxf;
+    m3_db->nxf2             =   M3_dBC::ncxf2;
     m3_db->ny               =   M3_dBC::ncy;
     m3_db->nyf              =   M3_dBC::ncyf;
     m3_db->nz               =   M3_dBC::ncz;

@@ -34,12 +34,14 @@ class P3
 public:
     cusfloat*       c;
     cusfloat*       cf;
+    cusfloat*       cf2;
     int             current_inter = -1;
     int             dims = -1;
     cusfloat        int_1d = 0.0;
     cusfloat*       intervals_bounds;
     int*            nx;
     int*            nxf;
+    int*            nxf2;
     int*            ny;
     int*            nyf;
     int*            nz;
