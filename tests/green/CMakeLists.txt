@@ -142,8 +142,14 @@ set(test_wave_term_fin_depth_src
     ../../src/math/math_tools.hpp
     ../../src/math/math_tools.cpp
     ../../src/math/math_tools.txx
+    ../../src/green/integrals_db.hpp
+    ../../src/green/integrals_db.cpp
     ../../src/green/pulsating_fin_depth.hpp
     ../../src/green/pulsating_fin_depth.cpp
+    ../../src/green/pulsating_fin_depth_cheby.hpp
+    ../../src/green/pulsating_fin_depth_cheby.cpp
+    ../../src/green/pulsating_inf_depth.cpp
+    ../../src/green/pulsating_inf_depth.hpp
     ../../src/math/chebyshev.hpp
     ../../src/math/chebyshev.cpp
     ../../src/math/special_math.hpp
@@ -153,6 +159,7 @@ set(test_wave_term_fin_depth_src
     ../../src/tools.txx
     ../../src/waves.hpp
     ../../src/waves.cpp
+    ${integrals_src}
 )
 
 add_executable(test_wave_term_fin_depth_cmd ${test_wave_term_fin_depth_src})
