@@ -44,6 +44,8 @@ public:
             delete this->m3_db;
         }
     }
+
+    void fold_h(cusfloat H);
 };
 
 

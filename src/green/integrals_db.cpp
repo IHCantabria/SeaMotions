@@ -1,6 +1,34 @@
 
+// Include general usage libraries
+#include <cassert>
+
+// Include local modules
 #include "integrals_db.hpp"
 #include "pulsating_fin_depth_cheby.hpp"
+
+
+void IntegralsDb::fold_h(cusfloat H)
+{
+    // Check if the database is already build
+    assert(this->is_build && "Not build Integrals database.");
+
+    // Fold all integrals with h
+    this->l1->fold_h(H);
+    this->l1_da->fold_h(H);
+    this->l1_db->fold_h(H);
+    this->l2->calculate_h_1D(H);
+    this->l3->fold_h(H);
+    this->l3_da->fold_h(H);
+    this->l3_db->fold_h(H);
+    this->m1->fold_h(H);
+    this->m1_da->fold_h(H);
+    this->m1_db->fold_h(H);
+    this->m2->calculate_h_1D(H);
+    this->m3->fold_h(H);
+    this->m3_da->fold_h(H);
+    this->m3_db->fold_h(H);
+
+}
 
 
 void build_integrals_db(IntegralsDb &idb)
