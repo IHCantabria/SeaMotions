@@ -106,7 +106,7 @@ void P3::fold_b(cusfloat b)
         {
             // Storage data of the previous coefficient
             this->cf2[count] = coeff_i;
-            this->nxf2[count] = this->nx[j-1];
+            this->nxf2[count] = this->nxf[j-1];
             count++;
 
             // Restart coefficient for the current index
@@ -121,7 +121,7 @@ void P3::fold_b(cusfloat b)
     // number of points (not the position in the vector) and also 
     // the first index for the next interval
     this->cf2[count] = coeff_i;
-    this->nxf2[count] = this->nx[this->num_points_cum[this->current_inter+1]-1];
+    this->nxf2[count] = this->nxf[this->num_points_f-1];
     count++;
 
     // Storage intervals length
@@ -243,18 +243,8 @@ cusfloat P3::get_value_abh(cusfloat a, cusfloat b, cusfloat h)
 {
     this->current_inter = this->get_interval_h(h);
     cusfloat sol = 0.0;
-    cusfloat t0 = 0.0;
-    cusfloat t1 = 0.0;
     for (int i=this->num_points_cum[this->current_inter]; i<this->num_points_cum[this->current_inter+1]; i++)
     {
-        // t0 = (
-        //         chebyshev_poly(this->nx[i], this->x_map(a))
-        //         *
-        //         chebyshev_poly(this->ny[i], this->y_map(b))
-        //         *
-        //         chebyshev_poly(this->nz[i], this->z_map(h))
-        //         );
-        // std::cout << "i: " << i << " - c: " << this->c[i] << " - nx: " << this->nx[i] << " - ny: " << this->ny[i] << " - nz: " << this->nz[i] << " - t0: " << t0 << " - int_value: " << sol << std::endl;
         sol += (
                 this->c[i]
                 *
