@@ -30,10 +30,8 @@ void P3::calculate_h_1D(cusfloat H)
 {
     // Get working interval
     this->current_inter = this->get_interval_h(H);
-    std::cout << "current_interval: " << this->current_inter << std::endl;
     // Calcualte Integral value
     cusfloat zeta = this->x_map(H);
-    std::cout << "zeta: " << zeta << std::endl;
     cusfloat coeff_i = 0.0;
     for (int j=this->num_points_cum[this->current_inter]; j<this->num_points_cum[this->current_inter+1]; j++)
     {
@@ -633,40 +631,40 @@ void set_data_l3_db(P3 *l3_db)
 void set_data_m1(P3 *m1)
 {
     // Storage data into target object
-    m1->c                =   M1_dAC::c;
-    m1->cf               =   M1_dAC::cf;
-    m1->cf2              =   M1_dAC::cf2;
+    m1->c                =   M1C::c;
+    m1->cf               =   M1C::cf;
+    m1->cf2              =   M1C::cf2;
     m1->current_inter    =   -1;
-    m1->dims             =   M1_dAC::dims;
-    m1->intervals_bounds =   M1_dAC::interval_bounds;
-    m1->nx               =   M1_dAC::ncx;
-    m1->nxf              =   M1_dAC::ncxf;
-    m1->nxf2             =   M1_dAC::ncxf2;
-    m1->ny               =   M1_dAC::ncy;
-    m1->nyf              =   M1_dAC::ncyf;
-    m1->nz               =   M1_dAC::ncz;
-    m1->num_intervals    =   M1_dAC::num_intervals;
-    m1->num_points       =   M1_dAC::num_points;
+    m1->dims             =   M1C::dims;
+    m1->intervals_bounds =   M1C::interval_bounds;
+    m1->nx               =   M1C::ncx;
+    m1->nxf              =   M1C::ncxf;
+    m1->nxf2             =   M1C::ncxf2;
+    m1->ny               =   M1C::ncy;
+    m1->nyf              =   M1C::ncyf;
+    m1->nz               =   M1C::ncz;
+    m1->num_intervals    =   M1C::num_intervals;
+    m1->num_points       =   M1C::num_points;
     m1->num_points_f     =   0;
-    m1->num_points_cum   =   M1_dAC::num_points_cum;
-    m1->x_log_scale      =   M1_dAC::x_log_scale;
-    m1->x_max            =   M1_dAC::x_max;
-    m1->x_map_scale      =   M1_dAC::x_map_scale;
-    m1->x_map_scale_log  =   M1_dAC::x_map_scale_log;
-    m1->x_min            =   M1_dAC::x_min;
-    m1->x_min_l10        =   M1_dAC::x_min_l10;
-    m1->y_log_scale      =   M1_dAC::y_log_scale;
-    m1->y_max            =   M1_dAC::y_max;
-    m1->y_map_scale      =   M1_dAC::y_map_scale;
-    m1->y_map_scale_log  =   M1_dAC::y_map_scale_log;
-    m1->y_min            =   M1_dAC::y_min;
-    m1->y_min_l10        =   M1_dAC::y_min_l10;
-    m1->z_log_scale      =   M1_dAC::z_log_scale;
-    m1->z_max            =   M1_dAC::z_max;
-    m1->z_map_scale      =   M1_dAC::z_map_scale;
-    m1->z_map_scale_log  =   M1_dAC::z_map_scale_log;
-    m1->z_min            =   M1_dAC::z_min;
-    m1->z_min_l10        =   M1_dAC::z_min_l10;
+    m1->num_points_cum   =   M1C::num_points_cum;
+    m1->x_log_scale      =   M1C::x_log_scale;
+    m1->x_max            =   M1C::x_max;
+    m1->x_map_scale      =   M1C::x_map_scale;
+    m1->x_map_scale_log  =   M1C::x_map_scale_log;
+    m1->x_min            =   M1C::x_min;
+    m1->x_min_l10        =   M1C::x_min_l10;
+    m1->y_log_scale      =   M1C::y_log_scale;
+    m1->y_max            =   M1C::y_max;
+    m1->y_map_scale      =   M1C::y_map_scale;
+    m1->y_map_scale_log  =   M1C::y_map_scale_log;
+    m1->y_min            =   M1C::y_min;
+    m1->y_min_l10        =   M1C::y_min_l10;
+    m1->z_log_scale      =   M1C::z_log_scale;
+    m1->z_max            =   M1C::z_max;
+    m1->z_map_scale      =   M1C::z_map_scale;
+    m1->z_map_scale_log  =   M1C::z_map_scale_log;
+    m1->z_min            =   M1C::z_min;
+    m1->z_min_l10        =   M1C::z_min_l10;
 
     // Initialize object
     m1->initialize();
