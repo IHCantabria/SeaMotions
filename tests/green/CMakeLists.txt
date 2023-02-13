@@ -241,3 +241,26 @@ add_executable(
                 test_wave_term_fin_depth_integrals_cmd
                 ${test_wave_term_fin_depth_integrals_src}
 )
+
+set(
+    test_wave_term_fin_depth_integrals_args
+    "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/L1.dat"
+    "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/L1_dA.dat"
+    "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/L1_dB.dat"
+    "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/L2.dat"
+    "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/L3.dat"
+    "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/L3_dA.dat"
+    "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/L3_dB.dat"
+    "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/M1.dat"
+    "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/M1_dA.dat"
+    "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/M1_dB.dat"
+    "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/M2.dat"
+    "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/M3.dat"
+    "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/M3_dA.dat"
+    "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/M3_dB.dat"
+)
+add_test(
+        NAME test_wave_term_fin_depth_integrals
+        COMMAND test_wave_term_fin_depth_integrals_cmd
+        ${test_wave_term_fin_depth_integrals_args}
+)
