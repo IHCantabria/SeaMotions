@@ -50,20 +50,16 @@ void build_integrals_db(IntegralsDb &idb)
     set_data_l2(idb.l2);
 
     // Load L3 integral
-    idb.l2 = new P3();
-    set_data_l2(idb.l2);
-
-    // Load L3 integral
     idb.l3 = new P3();
     set_data_l3(idb.l3);
 
     // Load L3_dA integral
     idb.l3_da = new P3();
-    set_data_l3(idb.l3_da);
+    set_data_l3_da(idb.l3_da);
 
     // Load L3_dB integral
     idb.l3_db = new P3();
-    set_data_l3(idb.l3_db);
+    set_data_l3_db(idb.l3_db);
 
     // Load M1 integral
     idb.m1 = new P3();
@@ -71,11 +67,11 @@ void build_integrals_db(IntegralsDb &idb)
 
     // Load M1_dA integral
     idb.m1_da = new P3();
-    set_data_m1(idb.m1_da);
+    set_data_m1_da(idb.m1_da);
 
     // Load M1_dB integral
     idb.m1_db = new P3();
-    set_data_m1(idb.m1_db);
+    set_data_m1_db(idb.m1_db);
 
     // Load M2 integral
     idb.m2 = new P3();
@@ -87,11 +83,11 @@ void build_integrals_db(IntegralsDb &idb)
 
     // Load M3_dA integral
     idb.m3_da = new P3();
-    set_data_m3(idb.m3_da);
+    set_data_m3_da(idb.m3_da);
 
     // Load M3_dB integral
     idb.m3_db = new P3();
-    set_data_m3(idb.m3_db);
+    set_data_m3_db(idb.m3_db);
 
     // Set build flag to true
     idb.is_build = true;
