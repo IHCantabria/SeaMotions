@@ -119,7 +119,7 @@ cusfloat G2(cusfloat A,
     }
     else
     {
-        sol = idb.m1->get_value_abh(A, B, H) + idb.l2->int_1d;
+        sol = idb.m1->get_value_abh(A, B, H) + idb.m2->int_1d;
     }
 
     return sol;
@@ -133,75 +133,45 @@ cuscomplex G_integral(
                         cusfloat h,
                         WaveDispersionData &wave_data,
                         IntegralsDb &idb
-                        )
+                    )
 {
     /**
-     * @brief Integral representation of the finite water depth function.
+     * @brief Calculate finite water depth Green function: steady sources + wave term
+     *      at the integral region (R/h>1.0)
      * 
-     * The formulation used here (valid for R/h<1.0) is mainly taken from:
-     * "Consistent expressions for the free surface function in
-     *  finite water depth - Ed Mackay".
-     * 
-     * \param R Eucleadian distance in between field and source points in the horizontal plane
+     * \param R Eucledian distance in the horizontal plane
      * \param z Z Coordinate of the field point
      * \param zeta Z Coordinate of the source point
      * \param h Water depth
      * \param wave_data Wave dispersion data object initialized with John's constants
-     * \param idb Integrals Database
-     * \return value of the integral representation
+     * \param idb Integrals Database 
+     * 
      */
 
-    // Copy variables to the stack
-    cusfloat k0 = wave_data.k0;
-    cusfloat nu = wave_data.nu;
-
-    // Calculate dependent parameters
+    // Calculate derivative properties
     cusfloat v0 = abs(z-zeta);
     cusfloat v1 = z+zeta+2*h;
     cusfloat v2 = abs(z+zeta);
     cusfloat v3 = z-zeta+2*h;
     cusfloat v4 = zeta-z+2*h;
     cusfloat v5 = z+zeta+4*h;
+    cusfloat r0 = sqrt(pow2s(R) + pow2s(v0));
+    cusfloat r1 = sqrt(pow2s(R) + pow2s(v1));
+    cusfloat r2 = sqrt(pow2s(R) + pow2s(v2));
+    cusfloat r3 = sqrt(pow2s(R) + pow2s(v3));
+    cusfloat r4 = sqrt(pow2s(R) + pow2s(v4));
+    cusfloat r5 = sqrt(pow2s(R) + pow2s(v5));
 
-    cusfloat A = R/h;
-    cusfloat B0 = v0/h;
-    cusfloat B1 = v1/h;
-    cusfloat H = nu*h;
+    // Calculate steady part of the Green function
+    cuscomplex green_steady = (1/r0 + 1/r1 + 1/r2 + 1/r3 + 1/r4 + 1/r5) + 0.0i;
 
-    // Check that B0 and  B1 is in between limits
-    assert( ((B0>=0.0) && (B0<=1.0)) && "B0 is out of interval [0, 1]" );
-    assert( ((B1>=0.0) && (B1<=2.0)) && "B1 is out of interval [0, 2]" );
+    // Add wave term
+    cuscomplex green_wave = wave_term_fin_depth_integral(R, z, zeta, h, wave_data, idb);
 
-    // Calculate real part
-    cusfloat G_real = 0.0;
-    if (B1 <= 1)
-    {
-        G_real = (G1(A, B0, H, idb) + G1(A, B1, H, idb))/h;
-    }
-    else
-    {
-        // Calculate dependent param
-        cusfloat X = nu*R;
-        cusfloat Y = nu*abs(z+zeta);
-        G_real = (G1(A, B0, H, idb) + G2(A, B1, H, idb))/h + nu*wave_term_inf_depth(X, Y);
-    }
+    // Compound total solution
+    cuscomplex green_total = green_steady + green_wave;
 
-    // Calculate imaginary part
-    cusfloat k02 = pow2s(k0);
-    cusfloat scale_imag = -2*PI*k02/((k02-pow2s(nu))*h+nu);
-    scale_imag /= pow2s(1+exp(-2*k0*h));
-    cusfloat G_imag = (
-                        +exp(-k0*v2)
-                        +exp(-k0*v3)
-                        +exp(-k0*v4)
-                        +exp(-k0*v5)
-                        );
-    G_imag = scale_imag * G_imag * bessely0(k0*R);
-
-    // Define G integral as a complex number
-    cuscomplex G = G_real + G_imag*1i;
-
-    return G;
+    return green_total;
 }
 
 
@@ -718,8 +688,88 @@ cuscomplex wave_term_fin_depth(
     }
     else
     {
-        sol = G_integral(R, z, zeta, h, wave_data, idb);
+        sol = wave_term_fin_depth_integral(R, z, zeta, h, wave_data, idb);
     }
 
     return sol;
+}
+
+
+cuscomplex wave_term_fin_depth_integral(
+                                        cusfloat R,
+                                        cusfloat z,
+                                        cusfloat zeta,
+                                        cusfloat h,
+                                        WaveDispersionData &wave_data,
+                                        IntegralsDb &idb
+                                        )
+{
+    /**
+     * @brief Integral representation of the finite water depth function.
+     * 
+     * The formulation used here (valid for R/h<1.0) is mainly taken from:
+     * "Consistent expressions for the free surface function in
+     *  finite water depth - Ed Mackay".
+     * 
+     * \param R Eucleadian distance in between field and source points in the horizontal plane
+     * \param z Z Coordinate of the field point
+     * \param zeta Z Coordinate of the source point
+     * \param h Water depth
+     * \param wave_data Wave dispersion data object initialized with John's constants
+     * \param idb Integrals Database
+     * \return value of the integral representation
+     */
+
+    // Copy variables to the stack
+    cusfloat k0 = wave_data.k0;
+    cusfloat nu = wave_data.nu;
+
+    // Calculate dependent parameters
+    cusfloat v0 = abs(z-zeta);
+    cusfloat v1 = z+zeta+2*h;
+    cusfloat v2 = abs(z+zeta);
+    cusfloat v3 = z-zeta+2*h;
+    cusfloat v4 = zeta-z+2*h;
+    cusfloat v5 = z+zeta+4*h;
+
+    cusfloat A = R/h;
+    cusfloat B0 = v0/h;
+    cusfloat B1 = v1/h;
+    cusfloat H = nu*h;
+
+    // Check that B0 and  B1 is in between limits
+    assert( ((B0>=0.0) && (B0<=1.0)) && "B0 is out of interval [0, 1]" );
+    assert( ((B1>=0.0) && (B1<=2.0)) && "B1 is out of interval [0, 2]" );
+
+    // std::cout << "A: " << A << " - B1: " << B1 << " - H: " << H << std::endl;
+
+    // Calculate real part
+    cusfloat G_real = 0.0;
+    if (B1 <= 1)
+    {
+        G_real = (G1(A, B0, H, idb) + G1(A, B1, H, idb))/h;
+    }
+    else
+    {
+        // Calculate dependent param
+        cusfloat X = nu*R;
+        cusfloat Y = nu*abs(z+zeta);
+        cusfloat g1 = G1(A, B0, H, idb);
+        cusfloat g2 = G2(A, B1, H, idb);
+        G_real = (g1 + g2)/h + nu*wave_term_inf_depth(X, Y);
+    }
+
+    // Calculate imaginary part
+    cusfloat expsum = (
+                        +exp(-k0*v2)
+                        +exp(-k0*v3)
+                        +exp(-k0*v4)
+                        +exp(-k0*v5)
+                        );
+    cusfloat G_imag = -wave_data.k0nu*expsum*besselj0(k0*R);
+
+    // Define G integral as a complex number
+    cuscomplex G = G_real + G_imag*1i;
+
+    return G;
 }
