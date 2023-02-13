@@ -75,7 +75,8 @@ cusfloat calculate_r(
 }
 
 
-cusfloat G1(cusfloat A,
+cusfloat G1(
+            cusfloat A,
             cusfloat B,
             cusfloat H,
             IntegralsDb &idb
@@ -102,6 +103,34 @@ cusfloat G1(cusfloat A,
 }
 
 
+cusfloat G1_dA(
+                cusfloat A,
+                cusfloat B,
+                cusfloat H,
+                IntegralsDb &idb
+                )
+    {
+    cusfloat sol = 0.0;
+    if (H > 1)
+    {
+        cusfloat A2 = pow2s(A);
+        sol = (
+                idb.l3_da->get_value_abh(A, B, H)
+                +
+                2*A/pow(A2 + pow2s(2+B), 3.0/2.0)
+                +
+                2*A/pow(A2 + pow2s(2-B), 3.0/2.0)
+                );
+    }
+    else
+    {
+        sol = idb.l1_da->get_value_abh(A, B, H);
+    }
+
+    return sol;
+}
+
+
 cusfloat G2(cusfloat A,
             cusfloat B,
             cusfloat H,
@@ -120,6 +149,31 @@ cusfloat G2(cusfloat A,
     else
     {
         sol = idb.m1->get_value_abh(A, B, H) + idb.m2->int_1d;
+    }
+
+    return sol;
+}
+
+
+cusfloat G2_dA(
+                cusfloat A,
+                cusfloat B,
+                cusfloat H,
+                IntegralsDb &idb
+                )
+{
+    cusfloat sol = 0.0;
+    if (H > 1.0)
+    {
+        sol = (
+                idb.m3_da->get_value_abh(A, B, H)
+                +
+                2*A/pow(pow2s(A) + pow2s(2+B), 3.0/2.0)
+                );
+    }
+    else
+    {
+        sol = idb.m1_da->get_value_abh(A, B, H);
     }
 
     return sol;
@@ -167,6 +221,68 @@ cuscomplex G_integral(
 
     // Add wave term
     cuscomplex green_wave = wave_term_fin_depth_integral(R, z, zeta, h, wave_data, idb);
+
+    // Compound total solution
+    cuscomplex green_total = green_steady + green_wave;
+
+    return green_total;
+}
+
+
+cuscomplex G_integral_dr(
+                        cusfloat R,
+                        cusfloat z,
+                        cusfloat zeta,
+                        cusfloat h,
+                        WaveDispersionData &wave_data,
+                        IntegralsDb &idb
+                        )
+{
+    /**
+     * @brief Calculate the derivative with respect to R of finite water depth 
+     *      Green function: steady sources + wave term at the integral region
+     *      (R/h>1.0)
+     * 
+     * \param R Eucledian distance in the horizontal plane
+     * \param z Z Coordinate of the field point
+     * \param zeta Z Coordinate of the source point
+     * \param h Water depth
+     * \param wave_data Wave dispersion data object initialized with John's constants
+     * \param idb Integrals Database 
+     * 
+     */
+
+    // Calculate derivative properties
+    cusfloat v0 = abs(z-zeta);
+    cusfloat v1 = z+zeta+2*h;
+    cusfloat v2 = abs(z+zeta);
+    cusfloat v3 = z-zeta+2*h;
+    cusfloat v4 = zeta-z+2*h;
+    cusfloat v5 = z+zeta+4*h;
+    cusfloat r0 = sqrt(pow2s(R) + pow2s(v0));
+    cusfloat r1 = sqrt(pow2s(R) + pow2s(v1));
+    cusfloat r2 = sqrt(pow2s(R) + pow2s(v2));
+    cusfloat r3 = sqrt(pow2s(R) + pow2s(v3));
+    cusfloat r4 = sqrt(pow2s(R) + pow2s(v4));
+    cusfloat r5 = sqrt(pow2s(R) + pow2s(v5));
+
+    // Calculate steady part of the Green function
+    cuscomplex green_steady = -R*(
+                                    1/pow3s(r0)
+                                    +
+                                    1/pow3s(r1)
+                                    +
+                                    1/pow3s(r2)
+                                    +
+                                    1/pow3s(r3)
+                                    +
+                                    1/pow3s(r4)
+                                    +
+                                    1/pow3s(r5)
+                                    ) + 0.0i;
+
+    // Add wave term
+    cuscomplex green_wave = wave_term_fin_depth_integral_dr(R, z, zeta, h, wave_data, idb);
 
     // Compound total solution
     cuscomplex green_total = green_steady + green_wave;
@@ -705,7 +821,7 @@ cuscomplex wave_term_fin_depth_integral(
                                         )
 {
     /**
-     * @brief Integral representation of the finite water depth function.
+     * @brief Wave term for the finite water depth function (Integral representation).
      * 
      * The formulation used here (valid for R/h<1.0) is mainly taken from:
      * "Consistent expressions for the free surface function in
@@ -767,6 +883,87 @@ cuscomplex wave_term_fin_depth_integral(
                         +exp(-k0*v5)
                         );
     cusfloat G_imag = -wave_data.k0nu*expsum*besselj0(k0*R);
+
+    // Define G integral as a complex number
+    cuscomplex G = G_real + G_imag*1i;
+
+    return G;
+}
+
+
+cuscomplex wave_term_fin_depth_integral_dr(
+                                            cusfloat R,
+                                            cusfloat z,
+                                            cusfloat zeta,
+                                            cusfloat h,
+                                            WaveDispersionData &wave_data,
+                                            IntegralsDb &idb
+                                            )
+{
+    /**
+     * @brief R derivative of the wave term for the finite water depth 
+     *        function (Integral representation).
+     * 
+     * The formulation used here (valid for R/h<1.0) is mainly taken from:
+     * "Consistent expressions for the free surface function in
+     *  finite water depth - Ed Mackay".
+     * 
+     * \param R Eucleadian distance in between field and source points in the horizontal plane
+     * \param z Z Coordinate of the field point
+     * \param zeta Z Coordinate of the source point
+     * \param h Water depth
+     * \param wave_data Wave dispersion data object initialized with John's constants
+     * \param idb Integrals Database
+     * \return value of the integral representation
+     */
+
+    // Copy variables to the stack
+    cusfloat k0 = wave_data.k0;
+    cusfloat nu = wave_data.nu;
+
+    // Calculate dependent parameters
+    cusfloat v0 = abs(z-zeta);
+    cusfloat v1 = z+zeta+2*h;
+    cusfloat v2 = abs(z+zeta);
+    cusfloat v3 = z-zeta+2*h;
+    cusfloat v4 = zeta-z+2*h;
+    cusfloat v5 = z+zeta+4*h;
+
+    cusfloat A = R/h;
+    cusfloat B0 = v0/h;
+    cusfloat B1 = v1/h;
+    cusfloat H = nu*h;
+
+    // Check that B0 and  B1 is in between limits
+    assert( ((B0>=0.0) && (B0<=1.0)) && "B0 is out of interval [0, 1]" );
+    assert( ((B1>=0.0) && (B1<=2.0)) && "B1 is out of interval [0, 2]" );
+
+    // std::cout << "A: " << A << " - B1: " << B1 << " - H: " << H << std::endl;
+
+    // Calculate real part
+    cusfloat G_real = 0.0;
+    if (B1 <= 1)
+    {
+        G_real = (G1_dA(A, B0, H, idb) + G1_dA(A, B1, H, idb))/pow2s(h);
+    }
+    else
+    {
+        // Calculate dependent param
+        cusfloat X = nu*R;
+        cusfloat Y = nu*abs(z+zeta);
+        cusfloat g1 = G1_dA(A, B0, H, idb);
+        cusfloat g2 = G2_dA(A, B1, H, idb);
+        G_real = (g1 + g2)/pow2s(h) + pow2s(nu)*wave_term_inf_depth_dx(X, Y);
+    }
+
+    // Calculate imaginary part
+    cusfloat expsum = (
+                        +exp(-k0*v2)
+                        +exp(-k0*v3)
+                        +exp(-k0*v4)
+                        +exp(-k0*v5)
+                        );
+    cusfloat G_imag = wave_data.k0nu*expsum*besselj1(k0*R)*k0;
 
     // Define G integral as a complex number
     cuscomplex G = G_real + G_imag*1i;

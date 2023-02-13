@@ -24,6 +24,16 @@ cuscomplex G_integral(
                     );
 
 
+cuscomplex G_integral_dr(
+                        cusfloat R,
+                        cusfloat z,
+                        cusfloat zeta,
+                        cusfloat h,
+                        WaveDispersionData &wave_data,
+                        IntegralsDb &idb
+                        );
+
+
 cuscomplex john_series(
                         cusfloat R,
                         cusfloat z, 
@@ -131,5 +141,15 @@ cuscomplex wave_term_fin_depth_integral(
                                         WaveDispersionData &wave_data,
                                         IntegralsDb &idb
                                         );
+
+
+cuscomplex wave_term_fin_depth_integral_dr(
+                                            cusfloat R,
+                                            cusfloat z,
+                                            cusfloat zeta,
+                                            cusfloat h,
+                                            WaveDispersionData &wave_data,
+                                            IntegralsDb &idb
+                                            );
 
 #endif
