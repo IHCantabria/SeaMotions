@@ -180,7 +180,7 @@ int P3::get_interval_h(cusfloat H)
     {
         inter = this->num_intervals-1;
     }
-    else if (H < 1e-16)
+    else if (H < this->intervals_bounds[0])
     {
         inter = 0;
     }
