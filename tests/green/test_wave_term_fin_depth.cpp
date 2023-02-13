@@ -325,7 +325,7 @@ bool launch_john(
 int main(int argc, char* argv[])
 {
     // Read command line arguments
-    if (!check_num_cmd_args(argc, 4))
+    if (!check_num_cmd_args(argc, 5))
     {
         return 1;
     }
@@ -334,6 +334,7 @@ int main(int argc, char* argv[])
     std::string file_path_john_dr(argv[2]);
     std::string file_path_john_dz(argv[3]);
     std::string file_path_Gint(argv[4]);
+    std::string file_path_Gint_dr(argv[5]);
 
     // Declare variable for the logic system
     bool pass = false;
@@ -379,11 +380,13 @@ int main(int argc, char* argv[])
 
     // Launch test to check the Green function
     // integral approximation method
-    pass = launch_integral(
-                            file_path_Gint,
-                            G_integral,
-                            "G_integral"
-                            );
+    pass = launch_integral(file_path_Gint, G_integral, "G_integral");
+    if (!pass)
+    {
+        return 1;
+    }
+
+    pass = launch_integral(file_path_Gint_dr, G_integral_dr, "G_integral_dr");
     if (!pass)
     {
         return 1;
