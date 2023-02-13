@@ -10,6 +10,9 @@
 #include "../../src/tools.hpp"
 
 
+cusfloat EPS_INTEGRALS = 1e-6;
+
+
 struct RefData
 {
     cusfloat* a;
@@ -92,7 +95,6 @@ bool launch_test_3d(P3* lobj, std::string file_path, std::string test_name)
     cusfloat sol_i = 0.0;
     for (int i=0; i<ref_data.num_points; i++)
     {
-        std::cout << "i: " << std::endl;
         // Check using direct method
         sol_i = lobj->get_value_abh(
                                     ref_data.a[i],
@@ -100,7 +102,7 @@ bool launch_test_3d(P3* lobj, std::string file_path, std::string test_name)
                                     ref_data.h[i]
                                     );
         diff = sol_i-ref_data.g_int[i];
-        if (abs(diff)>1e-6)
+        if (abs(diff)>EPS_INTEGRALS)
         {
             std::cout << "Test " << test_name << " - direct method: has ";
             std::cout << "an error of: " << diff;
@@ -109,14 +111,29 @@ bool launch_test_3d(P3* lobj, std::string file_path, std::string test_name)
             break;
         }
 
-        // Check using folding method
+        // Check using simple folding method
+        lobj->fold_h(ref_data.h[i]);
+        // lobj->fold_b(ref_data.b[i]);
+        // sol_i = lobj->get_value_a(ref_data.a[i]);
+        sol_i = lobj->get_value_ab(ref_data.a[i], ref_data.b[i]);
+        diff = sol_i-ref_data.g_int[i];
+        if (abs(diff)>EPS_INTEGRALS)
+        {
+            std::cout << "Test " << test_name << " - simple fold method: has ";
+            std::cout << "an error of: " << diff;
+            std::cout << " which is above the requested limits." << std::endl;
+            flag = false;
+            break;
+        }
+
+        // Check using simple folding method
         lobj->fold_h(ref_data.h[i]);
         lobj->fold_b(ref_data.b[i]);
         sol_i = lobj->get_value_a(ref_data.a[i]);
         diff = sol_i-ref_data.g_int[i];
-        if (abs(diff)>1e-6)
+        if (abs(diff)>EPS_INTEGRALS)
         {
-            std::cout << "Test " << test_name << " - fold method: has ";
+            std::cout << "Test " << test_name << " - double fold method: has ";
             std::cout << "an error of: " << diff;
             std::cout << " which is above the requested limits." << std::endl;
             flag = false;
