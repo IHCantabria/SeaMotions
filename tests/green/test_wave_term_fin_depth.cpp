@@ -325,7 +325,7 @@ bool launch_john(
 int main(int argc, char* argv[])
 {
     // Read command line arguments
-    if (!check_num_cmd_args(argc, 5))
+    if (!check_num_cmd_args(argc, 6))
     {
         return 1;
     }
@@ -335,6 +335,7 @@ int main(int argc, char* argv[])
     std::string file_path_john_dz(argv[3]);
     std::string file_path_Gint(argv[4]);
     std::string file_path_Gint_dr(argv[5]);
+    std::string file_path_Gint_dz(argv[6]);
 
     // Declare variable for the logic system
     bool pass = false;
@@ -387,6 +388,12 @@ int main(int argc, char* argv[])
     }
 
     pass = launch_integral(file_path_Gint_dr, G_integral_dr, "G_integral_dr");
+    if (!pass)
+    {
+        return 1;
+    }
+
+    pass = launch_integral(file_path_Gint_dz, G_integral_dz, "G_integral_dz");
     if (!pass)
     {
         return 1;
