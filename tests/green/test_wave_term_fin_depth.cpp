@@ -139,6 +139,102 @@ struct RefData
 };
 
 
+bool launch_integral(
+                std::string file_path, 
+                std::function <cuscomplex(
+                                        cusfloat,
+                                        cusfloat,
+                                        cusfloat,
+                                        cusfloat,
+                                        WaveDispersionData&,
+                                        IntegralsDb&
+                                        )> f_def,
+                std::string function_type
+                )
+{
+    // Define test result flag
+    bool pass = true;
+
+    // Read refernce data
+    RefData ref_data;
+    ref_data.load_data(file_path);
+    cusfloat g = ref_data.grav_acc;
+    cusfloat h = ref_data.water_depth;
+
+    // Load integrals database
+    IntegralsDb idb;
+    build_integrals_db(idb);
+
+    // Loop over refence data to check over all parameter
+    // space
+    cuscomplex jc, jr;
+    cusfloat nu = 0.0;
+    const int num_kn = 30;
+    int rd_index = 0;
+    cusfloat w = 0.0;
+    for (int i=0; i<ref_data.num_A; i++)
+    {
+        for (int j=0; j<ref_data.num_H; j++)
+        {
+            // Fold integrals coefficients
+            idb.fold_h(ref_data.H[j]);
+
+            // Calculate dependent variables on H parameter
+            nu = ref_data.H[j]/h;
+            w = std::sqrt(nu*g);
+            WaveDispersionData wave_data(w, num_kn, h, g);
+            wave_data.calculate_john_terms();
+
+            for (int k=0; k<ref_data.num_z; k++)
+            {
+                // Calculate Green function integral value
+                jc = f_def(
+                            ref_data.A[i]*ref_data.water_depth,
+                            ref_data.z[k],
+                            ref_data.zeta[k],
+                            ref_data.water_depth,
+                            wave_data,
+                            idb
+                            );
+
+                // Get reference data
+                rd_index = (
+                            i*(ref_data.num_H*ref_data.num_z)
+                            + j*ref_data.num_z
+                            + k
+                            );
+                jr = ref_data.g_series[rd_index];
+
+                // Compare values and check with tolerance
+                if (!assert_complex_equality(jc, jr, JOHN_TOL))
+                {
+                    std::cerr << "Integral method " << function_type;
+                    std::cerr <<" does not converge to the expected value " << std::endl;
+                    std::cerr << "for the following input parameters: " << std::endl;
+                    std::cerr << "  - R/h: " << ref_data.A[i] << std::endl;
+                    std::cerr << "  - R: " << ref_data.A[i]*h << std::endl;
+                    std::cerr << "  - z: " << ref_data.z[k] << std::endl;
+                    std::cerr << "  - zeta: " << ref_data.zeta[k] << std::endl;
+                    std::cerr << "  - h: " << h << std::endl;
+                    std::cerr << "  - nu: " << nu << std::endl;
+                    std::cerr << "  - k0: " << wave_data.k0 << std::endl;
+                    std::cerr << "  - num_kn: " << num_kn << std::endl;
+                    std::cerr << "Numerical error description: " << std::endl;
+                    std::cerr << " - Expected value: " << jr << std::endl;
+                    std::cerr << " - Calculated value: " << jc << std::endl;
+                    std::cerr << " - Difference value: " << jc-jr << std::endl;
+                    pass = false;
+                    goto exit;
+                }
+            }
+        }
+    }
+
+    exit:
+        return pass;
+}
+
+
 bool launch_john(
                 std::string file_path, 
                 std::function <cuscomplex(
@@ -229,98 +325,69 @@ bool launch_john(
 int main(int argc, char* argv[])
 {
     // Read command line arguments
-    if (!check_num_cmd_args(argc, 0))
+    if (!check_num_cmd_args(argc, 4))
     {
         return 1;
     }
 
-    // std::string file_path_john(argv[1]);
-    // std::string file_path_john_dr(argv[2]);
-    // std::string file_path_john_dz(argv[3]);
+    std::string file_path_john(argv[1]);
+    std::string file_path_john_dr(argv[2]);
+    std::string file_path_john_dz(argv[3]);
+    std::string file_path_Gint(argv[4]);
 
     // Declare variable for the logic system
     bool pass = false;
 
     // Launch test to check the John eigenfunction
     // expansion
-    // pass = launch_john(file_path_john, john_series, "G");
-    // if (!pass)
-    // {
-    //     return 1;
-    // }
-
-    // pass = launch_john(file_path_john_dr, john_series_dr, "dG_dr");
-    // if (!pass)
-    // {
-    //     return 1;
-    // }
-
-    // pass = launch_john(file_path_john_dz, john_series_dz, "dG_dz");
-    // if (!pass)
-    // {
-    //     return 1;
-    // }
-    std::cout << "here" << std::endl;
-    // L1 l1 = L1();
-    P3 l1 = P3();
-    set_data_l1(l1);
-    std::cout << "here" << std::endl;
-    
-    cusfloat A_max = 1.0;
-    cusfloat A_min = 0.0;
-    cusfloat B_max = 1.0;
-    cusfloat B_min = 0.0;
-    cusfloat H_max = 0.0;
-    cusfloat H_min = -16;
-    int num_a = 50;
-    int num_b = 50;
-    int num_h = 50;
-
-    cusfloat da = (A_max-A_min)/(num_a-1);
-    cusfloat db = (B_max-B_min)/(num_b-1);
-    cusfloat dh = (H_max-H_min)/(num_h-1);
-    cusfloat ai = 0.0;
-    cusfloat bi = 0.0;
-    cusfloat hi = 0.0;
-    cusfloat I = 0.0;
-    double elapased_time_mean = 0.0;
-    int N = 100;
-    for (int n=0; n<N; n++)
+    pass = launch_john(
+                        file_path_john, 
+                        static_cast<cuscomplex (*)(
+                                    cusfloat,
+                                    cusfloat,
+                                    cusfloat,
+                                    cusfloat,
+                                    WaveDispersionData&)>(&john_series),
+                        "G"
+                        );
+    if (!pass)
     {
-        double t0 = get_cpu_time();
-        for (int i=0; i<num_a; i++)
-        {
-            hi = std::pow(10.0, (H_min + i*dh));
-            // std::cout << "folding: " << hi << std::endl;
-            l1.fold_h(hi);
-            // std::cout << " -> Done" << std::endl;
-
-            // std::cout << "i: " << i << " - hi:" << hi << std::endl;
-            for (int j=0; j<num_a; j++)
-            {
-                ai = A_min + j*da;
-                // std::cout << "j: " << j << " - ai:" << ai << std::endl;
-                for (int k=0; k<num_b; k++)
-                {
-                    bi = B_min + k*db;
-                    // std::cout << "i: " << i << " - j: " << j << " - k: " << k;
-                    // std::cout << " - ai:" << ai << " - bi:" << bi << " - hi:" << hi << std::endl;
-                    I = l1.get_value_ab(ai, bi);
-                    // std::cout << "-> Done: " << I << std::endl;
-                }
-            }
-
-        }
-        double t1 = get_cpu_time();
-        elapased_time_mean += (t1-t0);
-        // std::cout << "Elapsed Time [s]: " << t1-t0 << std::endl;
+        return 1;
     }
 
-    std::cout << "Elapsed Time Mean [s]: " << elapased_time_mean/N << std::endl;
-    // l1.fold_h(0.184207);
-    // std::cout << "l1: " << l1.get_value_ab(1.0, 1.0) << std::endl;
-    // std::cout << "l1: " << l1.get_value_abh(0.1, 0.1, 20.0) << std::endl;
-    
+    pass = launch_john(file_path_john_dr, john_series_dr, "dG_dr");
+    if (!pass)
+    {
+        return 1;
+    }
+
+    pass = launch_john(
+                        file_path_john_dz,
+                        static_cast<cuscomplex (*)(
+                                    cusfloat,
+                                    cusfloat,
+                                    cusfloat,
+                                    cusfloat,
+                                    WaveDispersionData&)
+                                    >(&john_series_dz),
+                        "dG_dz"
+                        );
+    if (!pass)
+    {
+        return 1;
+    }
+
+    // Launch test to check the Green function
+    // integral approximation method
+    pass = launch_integral(
+                            file_path_Gint,
+                            G_integral,
+                            "G_integral"
+                            );
+    if (!pass)
+    {
+        return 1;
+    }
 
     return 0;
 }
