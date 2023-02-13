@@ -162,7 +162,7 @@ int main(void)
         N, 
         X, 
         Y, 
-        _wave_term_inf_depth_num,
+        wave_term_inf_depth_num,
         wave_term_inf_depth,
         false
         );
@@ -177,7 +177,7 @@ int main(void)
         N, 
         X, 
         Y, 
-        _wave_term_inf_depth_num_dx,
+        wave_term_inf_depth_num_dx,
         wave_term_inf_depth_dx,
         false
         );
@@ -192,7 +192,7 @@ int main(void)
         N, 
         X, 
         Y, 
-        _wave_term_inf_depth_num_dy,
+        wave_term_inf_depth_num_dy,
         wave_term_inf_depth_dy,
         false
         );

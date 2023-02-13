@@ -186,12 +186,12 @@ cusfloat wave_term_inf_depth(cusfloat X, cusfloat Y)
             pn *= static_cast<cusfloat>(i+1);
         }
 
-        wave_term = rfs - PI*std::exp(-Y)*(struve0(X)+bessely0(X))-2.0*wave_term;
+        wave_term = - PI*std::exp(-Y)*(struve0(X)+bessely0(X))-2.0*wave_term;
     }
     else if (Y > 2*X)
     {
         // Add radius term
-        wave_term = 1/std::sqrt(pow2s(X)+pow2s(Y));
+        wave_term = 0.0;
 
         // Define local variables
         cusfloat cumsum_n = 0.0;
@@ -257,7 +257,7 @@ cusfloat wave_term_inf_depth(cusfloat X, cusfloat Y)
             i2n = ty - 2.0*(i+1.0)*ty/Y + 2.0*(i+1.0)*(2.0*(i+1.0)-1.0)*i2n;
         }
         wave_term /= X;
-        wave_term = 1/std::sqrt(pow2s(X)+pow2s(Y)) - PI*std::exp(-Y)*(struve0(X)+bessely0(X)) - 2.0*wave_term;
+        wave_term = - PI*std::exp(-Y)*(struve0(X)+bessely0(X)) - 2.0*wave_term;
     }
     else if ((X>0)&&(X<=3.7)&&(Y>0.0)&&(Y<=2.0))
     {
@@ -309,11 +309,11 @@ cusfloat wave_term_inf_depth(cusfloat X, cusfloat Y)
         cumsum_cmn *= R;
 
         // Addd rest of the function
-        wave_term = 1/R - 2.0*std::exp(-Y)*(besselj0(X)*std::log(Y/X+std::sqrt(1.0+pow2s(Y/X)))
-                                            + PI*bessely0(X)/2.0
-                                            + PI*struve0(X)*R/2.0/X
-                                            + cumsum_cmn
-                                            );
+        wave_term = - 2.0*std::exp(-Y)*(besselj0(X)*std::log(Y/X+std::sqrt(1.0+pow2s(Y/X)))
+                                        + PI*bessely0(X)/2.0
+                                        + PI*struve0(X)*R/2.0/X
+                                        + cumsum_cmn
+                                        );
     }
     else if ((X>=3.7)&&(Y<=2.0))
     {
@@ -339,7 +339,7 @@ cusfloat wave_term_inf_depth(cusfloat X, cusfloat Y)
             i2n = ty - 2.0*(i+1.0)*ty/Y + 2.0*(i+1.0)*(2.0*(i+1.0)-1.0)*i2n;
         }
         wave_term /= X;
-        wave_term = 1/std::sqrt(pow2s(X)+pow2s(Y)) - PI*std::exp(-Y)*(struve0(X)+bessely0(X)) - 2.0*wave_term;
+        wave_term = - PI*std::exp(-Y)*(struve0(X)+bessely0(X)) - 2.0*wave_term;
     }
     else
     {
@@ -411,7 +411,7 @@ cusfloat wave_term_inf_depth(cusfloat X, cusfloat Y)
         // calculate full expint integral
         cusfloat R = std::sqrt(pow2s(X)+pow2s(Y));
         cusfloat f1 = 1/R - std::exp(-Y)/X + Y/pow3s(R)*rxy;
-        wave_term = 1/R - PI*std::exp(-Y)*(struve0(X)+bessely0(X)) - 2.0*f1;
+        wave_term = - PI*std::exp(-Y)*(struve0(X)+bessely0(X)) - 2.0*f1;
     }
 
     return wave_term;
@@ -448,12 +448,12 @@ cusfloat wave_term_inf_depth_dx(cusfloat X, cusfloat Y)
             pn *= static_cast<cusfloat>(i+1);
         }
 
-        wave_term = -X*pow3s(rfs) - PI*std::exp(-Y)*(2.0/PI-struve1(X)-bessely1(X))-2.0*wave_term;
+        wave_term = - PI*std::exp(-Y)*(2.0/PI-struve1(X)-bessely1(X))-2.0*wave_term;
     }
     else if (Y > 1.9*X)
     {
         // Add radius term
-        wave_term = -X/pow3s(std::sqrt(pow2s(X)+pow2s(Y)));
+        wave_term = 0.0;
 
         // Define local variables
         cusfloat cumsum_n = 0.0;
@@ -522,7 +522,7 @@ cusfloat wave_term_inf_depth_dx(cusfloat X, cusfloat Y)
             i2n = ty - 2.0*(i+1.0)*ty/Y + 2.0*(i+1.0)*(2.0*(i+1.0)-1.0)*i2n;
         }
         wave_term = -fx*f0 + fx1*f1;
-        wave_term = -X/pow3s(std::sqrt(pow2s(X)+pow2s(Y))) - PI*std::exp(-Y)*(2.0/PI-struve1(X)-bessely1(X)) - 2.0*wave_term;
+        wave_term = - PI*std::exp(-Y)*(2.0/PI-struve1(X)-bessely1(X)) - 2.0*wave_term;
     }
     else if ((X>0)&&(X<=3.7)&&(Y>0.0)&&(Y<=2.05))
     {
@@ -580,7 +580,6 @@ cusfloat wave_term_inf_depth_dx(cusfloat X, cusfloat Y)
         // Addd rest of the function
         cusfloat ix = 1/X;
         cusfloat ydx = Y*ix;
-        cusfloat f0 = -X/pow3s(R);
         cusfloat s0 = sqrt(1+pow2s(ydx));
         cusfloat s1 = ydx + s0;
         cusfloat f1 = -besselj1(X)*log(s1)
@@ -588,11 +587,11 @@ cusfloat wave_term_inf_depth_dx(cusfloat X, cusfloat Y)
         cusfloat f2 = -PI*bessely1(X)/2.0;
         cusfloat f3 = 0.5*PI*ix*(-ix*struve0(X)+2.0/PI-struve1(X))*R
                     + 0.5*PI*struve0(X)/R;
-        wave_term = f0 - 2.0*std::exp(-Y)*(f1
-                                            + f2
-                                            + f3
-                                            + cumsum_cmn + cumsum_cmn_der
-                                            );
+        wave_term = - 2.0*std::exp(-Y)*(f1
+                                        + f2
+                                        + f3
+                                        + cumsum_cmn + cumsum_cmn_der
+                                        );
     }
     else if ((X>=3.7)&&(Y<=2.05))
     {
@@ -622,7 +621,7 @@ cusfloat wave_term_inf_depth_dx(cusfloat X, cusfloat Y)
             i2n = ty - 2.0*(i+1.0)*ty/Y + 2.0*(i+1.0)*(2.0*(i+1.0)-1.0)*i2n;
         }
         wave_term = -fx*f0 + fx1*f1;
-        wave_term = -X/pow3s(std::sqrt(pow2s(X)+pow2s(Y))) - PI*std::exp(-Y)*(2.0/PI-struve1(X)-bessely1(X)) - 2.0*wave_term;
+        wave_term = - PI*std::exp(-Y)*(2.0/PI-struve1(X)-bessely1(X)) - 2.0*wave_term;
     }
     else
     {
@@ -739,7 +738,7 @@ cusfloat wave_term_inf_depth_dx(cusfloat X, cusfloat Y)
                     + exp(-Y)/pow2s(X)
                     -3*r3inv*Y/pow2s(R)*rxy
                     +Y*r3inv*rxy_dx/X;
-        wave_term = -r3inv - PI*std::exp(-Y)*(2.0/PI-struve1(X)-bessely1(X)) - 2.0*f1;
+        wave_term = - PI*std::exp(-Y)*(2.0/PI-struve1(X)-bessely1(X)) - 2.0*f1;
     }
 
     return wave_term;
@@ -750,9 +749,7 @@ cusfloat wave_term_inf_depth_dy(cusfloat X, cusfloat Y)
 {
     // Calculate derivative terms
     cusfloat rinv = 1/std::sqrt(pow2s(X)+pow2s(Y));
-    cusfloat wave_term = -Y*pow3s(rinv);
-    wave_term -= wave_term_inf_depth(X, Y);
-    wave_term -= rinv;
+    cusfloat wave_term = -(2*rinv + wave_term_inf_depth(X, Y));
 
     return wave_term;
 }
