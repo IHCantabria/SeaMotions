@@ -165,15 +165,18 @@ set(test_wave_term_fin_depth_src
 add_executable(test_wave_term_fin_depth_cmd ${test_wave_term_fin_depth_src})
 
 set(
-    test_wave_term_fin_dpeth_files
+    test_wave_term_fin_depth_files
     "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/john_series.dat"
     "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/john_series_dr.dat"
     "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/john_series_dz.dat"
+    "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/fin_depth_integral.dat"
+    "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/fin_depth_integral_dr.dat"
+    "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/fin_depth_integral_dz.dat"
     )
 add_test(
         NAME test_wave_term_fin_depth
         COMMAND test_wave_term_fin_depth_cmd
-        ${test_wave_term_fin_dpeth_files}
+        ${test_wave_term_fin_depth_files}
         )
 
 # Add test to check the finite water depth 
