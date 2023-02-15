@@ -105,7 +105,7 @@ def fuh(u: ndarray, H: float) -> ndarray:
 
 def fxy(X: float, Y: float) -> float:
     # Calculate integral value
-    ref_value = 10000
+    ref_value = 8000
     if Y < ref_value:
         int_value = quad(lambda t: wave_term_expint_def(X, Y, t), 0, Y)
     else:
