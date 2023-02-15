@@ -4,7 +4,7 @@ from typing import Callable
 
 # Import general usage scientific libraries
 import matplotlib.pyplot as plt
-from numpy import array, cos, cosh, exp, linspace, log, log10, meshgrid, mod, ndarray, pi, sign, sin, sinh, sqrt, tan, tanh, zeros
+from numpy import array, ceil, cos, cosh, exp, linspace, log, log10, meshgrid, mod, ndarray, pi, sign, sin, sinh, sqrt, tan, tanh, zeros
 from numpy import abs as np_abs
 from scipy.integrate import quad
 from scipy.special import expi, jv, kn, roots_chebyt, roots_laguerre, struve, yv
@@ -105,7 +105,17 @@ def fuh(u: ndarray, H: float) -> ndarray:
 
 def fxy(X: float, Y: float) -> float:
     # Calculate integral value
-    int_value = quad(lambda t: wave_term_expint_def(X, Y, t), 0, Y)
+    ref_value = 10000
+    if Y < ref_value:
+        int_value = quad(lambda t: wave_term_expint_def(X, Y, t), 0, Y)
+    else:
+        num_points = int(ceil(Y/ref_value))+2
+        int_points = linspace(0, Y, num_points)
+        int_value = [0.0, 0.0]
+        for i in range(num_points-1):
+            int_value_i = quad(lambda t: wave_term_expint_def(X, Y, t), int_points[i], int_points[i+1])
+            int_value[0] = int_value[0] + int_value_i[0]
+            int_value[1] = int_value[1] + int_value_i[1]
 
     # Calculate function value
     fun_val = (
@@ -955,4 +965,17 @@ def w2ki(w, h, n, g=9.81, abs_err=1e-6, max_iter=1000):
 
 
 if __name__ == "__main__":
-    print(L1(1.0, 1.0, 1.0))
+    # print(L1(1.0, 1.0, 1.0))
+    import matplotlib.pyplot as plt
+    from numpy import linspace
+    num_points = 1000
+    y = linspace(10000, 100000, num_points)
+    X = 3.0
+    Y = 10001
+    fy = zeros((num_points, ))
+    for i in range(num_points):
+        fy[i] = fxy(X, y[i])
+    
+    plt.plot(y, fy)
+    plt.show()
+    # print(fxy(X, Y))
