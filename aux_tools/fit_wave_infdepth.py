@@ -366,7 +366,6 @@ def residual_region_11B_dx(X: float, Y: float)->float:
         +pi*yv(1, X)
         -2*jv(1, X)*log(X)
         +2*jv(0, X)/X
-        +X*residual_region_11(X, Y)/R
         )*exp(-Y)
     
     return (fxy_dx(X, Y)-c0)*exp(Y)/R
