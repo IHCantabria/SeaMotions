@@ -128,7 +128,17 @@ def fxy(X: float, Y: float) -> float:
 
 def fxy_dx(X: float, Y: float) -> float:
     # Calculate the numerical value
-    int_value = quad(lambda t: wave_term_expint_def_dx(X, Y, t), 0, Y)
+    ref_value = 100
+    if Y < ref_value:
+        int_value = quad(lambda t: wave_term_expint_def_dx(X, Y, t), 0, Y)
+    else:
+        num_points = int(ceil(Y/ref_value))+2
+        int_points = linspace(0, Y, num_points)
+        int_value = [0.0, 0.0]
+        for i in range(num_points-1):
+            int_value_i = quad(lambda t: wave_term_expint_def(X, Y, t), int_points[i], int_points[i+1])
+            int_value[0] = int_value[0] + int_value_i[0]
+            int_value[1] = int_value[1] + int_value_i[1]
 
     # Calculate function value
     fun_val = (
