@@ -5,7 +5,7 @@ from typing import Callable
 # Import general usage scientific libraries
 from mpl_toolkits.mplot3d import axes3d
 import matplotlib.pyplot as plt
-from numpy import linspace, log10, meshgrid, ndarray, sqrt, zeros
+from numpy import array, linspace, log10, meshgrid, ndarray, sqrt, zeros
 from numpy import abs as np_abs
 from numpy.linalg import solve as np_solve
 from scipy.special import eval_chebyt, roots_chebyt
@@ -276,7 +276,8 @@ def fit_integral_1d(f_residual: Callable,
 def fit_integral_2d(f_residual: Callable,
                 fit_props: FitProperties,
                 region_name: str,
-                show_figs = False
+                show_figs = False,
+                stop_to_show = False
                 )->None:
     # Define parametric space limits
     num_cross_sections = 5
@@ -323,6 +324,11 @@ def fit_integral_2d(f_residual: Callable,
     C_filter = C[pos]
     NCX_filter = (NCX.ravel())[pos]
     NCY_filter = (NCY.ravel())[pos]
+
+    if C_filter.shape[0] == 0:
+        C_filter = array([0.0])
+        NCX_filter = array([0], dtype=int)
+        NCY_filter = array([0], dtype=int)
 
     # Define parametric space
     num_x = fit_props.num_x
@@ -379,7 +385,7 @@ def fit_integral_2d(f_residual: Callable,
     print("\n")
 
     # Plot residual function
-    if show_figs:
+    if show_figs or stop_to_show:
         fig = plt.figure()
         fig.suptitle(region_name + f" - Total Coeffs: {C_filter.shape[0]:d}")
         ax0 = fig.add_subplot(231)
@@ -442,6 +448,8 @@ def fit_integral_2d(f_residual: Callable,
         ax.set_ylabel("Y")
         ax.set_yticks(cheby_order_y_ticks)
         plt.colorbar(imc, ax=ax)
+    
+    if stop_to_show:
         plt.show()
 
     return C_filter, NCX_filter, NCY_filter, fit_stats, fit_props
