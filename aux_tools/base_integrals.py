@@ -126,7 +126,7 @@ def fxy(X: float, Y: float) -> float:
     return fun_val
 
 
-def fxy_dx(X: float, Y: float) -> float:
+def fxy_dx(X: float, Y: float, only_int=False) -> float:
     # Calculate the numerical value
     ref_value = 150
     if Y < ref_value:
@@ -147,10 +147,14 @@ def fxy_dx(X: float, Y: float) -> float:
             int_value[1] = int_value[1] + int_value_i[1]
 
     # Calculate function value
-    fun_val = (
-                + pi*exp(-Y)*(yv(1, X)+struve(1, X)-2/pi)
-                + 2.0*exp(-Y)*int_value[0]
-                )
+    # print("int_value: ", int_value)
+    if only_int:
+        fun_val = 2.0*exp(-Y)*int_value[0]
+    else:
+        fun_val = (
+                    + pi*exp(-Y)*(yv(1, X)+struve(1, X)-2/pi)
+                    + 2.0*exp(-Y)*int_value[0]
+                    )
 
     return fun_val
 
@@ -985,13 +989,22 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     from numpy import linspace
     num_points = 1000
+    x = 10**linspace(-12, -3, num_points)
     y = linspace(10.0, 200.0, num_points)
     X = 3.0
-    Y = 10001
+    Y = 1e-3
     fy = zeros((num_points, ))
     for i in range(num_points):
-        fy[i] = fxy_dx(X, y[i])
+        fy[i] = fxy_dx(x[i], Y)
     
-    plt.plot(y, fy)
+    plt.plot(log10(x), fy)
     plt.show()
     # print(fxy_dx(3.0, 10))
+
+    # X = 1e-12
+    # Y = 1e-3
+    # print("fxy_dx: ", fxy_dx(X, Y))
+    # t = linspace(0, Y, 1000)
+    # f = wave_term_expint_def(X, Y, t)
+    # plt.plot(t, f)
+    # plt.show()
