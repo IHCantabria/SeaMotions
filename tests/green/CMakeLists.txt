@@ -25,7 +25,29 @@ set(green_common_src
 )
 
 set(
-    integrals_src
+    inf_depth_integrals_src
+    ../../src/green/inf_depth_coeffs/R11.hpp
+    ../../src/green/inf_depth_coeffs/R11.cpp
+    ../../src/green/inf_depth_coeffs/R11A_dX.hpp
+    ../../src/green/inf_depth_coeffs/R11A_dX.cpp
+    ../../src/green/inf_depth_coeffs/R11B_dX.hpp
+    ../../src/green/inf_depth_coeffs/R11B_dX.cpp
+    ../../src/green/inf_depth_coeffs/R12.hpp
+    ../../src/green/inf_depth_coeffs/R12.cpp
+    ../../src/green/inf_depth_coeffs/R12_dX.hpp
+    ../../src/green/inf_depth_coeffs/R12_dX.cpp
+    ../../src/green/inf_depth_coeffs/R21.hpp
+    ../../src/green/inf_depth_coeffs/R21.cpp
+    ../../src/green/inf_depth_coeffs/R21_dX.hpp
+    ../../src/green/inf_depth_coeffs/R21_dX.cpp
+    ../../src/green/inf_depth_coeffs/R22.hpp
+    ../../src/green/inf_depth_coeffs/R22.cpp
+    ../../src/green/inf_depth_coeffs/R22_dX.hpp
+    ../../src/green/inf_depth_coeffs/R22_dX.cpp
+)
+
+set(
+    fin_depth_integrals_src
     ../../src/green/fin_depth_coeffs/L1.hpp
     ../../src/green/fin_depth_coeffs/L1.cpp
     ../../src/green/fin_depth_coeffs/L1_dA.hpp
@@ -159,7 +181,7 @@ set(test_wave_term_fin_depth_src
     ../../src/tools.txx
     ../../src/waves.hpp
     ../../src/waves.cpp
-    ${integrals_src}
+    ${fin_depth_integrals_src}
 )
 
 add_executable(test_wave_term_fin_depth_cmd ${test_wave_term_fin_depth_src})
@@ -207,7 +229,7 @@ set(test_wave_term_john_quad_src
     ../../src/tools.txx
     ../../src/waves.hpp
     ../../src/waves.cpp
-    ${integrals_src}
+    ${fin_depth_integrals_src}
 )
 
 add_executable(
@@ -244,7 +266,7 @@ set(
     ../../src/tools.txx
     ../../src/waves.hpp
     ../../src/waves.cpp
-    ${integrals_src}
+    ${fin_depth_integrals_src}
 )
 
 add_executable(
