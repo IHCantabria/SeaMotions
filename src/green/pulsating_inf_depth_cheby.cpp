@@ -8,7 +8,13 @@
 // Include local modules
 #include "./inf_depth_coeffs/R11.hpp"
 #include "../math/chebyshev.hpp"
+#include "../math/math_tools.hpp"
+#include "../math/special_math.hpp"
 #include "pulsating_inf_depth_cheby.hpp"
+
+
+// Include some namespaces into the local one
+using namespace std;
 
 
 int P2::calculate_interval(cusfloat x, cusfloat y)
@@ -107,6 +113,46 @@ cusfloat P2::calculate_xy_cheby(cusfloat x, cusfloat y)
 }
 
 
+cusfloat P2::fit_boundary_x(cusfloat x)
+{
+    cusfloat xf = 0.0;
+    if (x < this->intervals_bounds_x[0])
+    {
+        xf = this->intervals_bounds_x[0];
+    }
+    else if (x > this->intervals_bounds_x[this->num_intervals_x-1])
+    {
+        xf = this->intervals_bounds_x[this->num_intervals_x-1];
+    }
+    else
+    {
+        xf = x;
+    }
+    
+    return xf;
+}
+
+
+cusfloat P2::fit_boundary_y(cusfloat y)
+{
+    cusfloat yf = 0.0;
+    if (y < this->intervals_bounds_y[0])
+    {
+        yf = this->intervals_bounds_y[0];
+    }
+    else if (y > this->intervals_bounds_y[this->num_intervals_y-1])
+    {
+        yf = this->intervals_bounds_y[this->num_intervals_y-1];
+    }
+    else
+    {
+        yf = y;
+    }
+    
+    return yf;
+}
+
+
 void P2::initialize(void)
 {
     assert(this->is_build != -1 && "Database not loaded into P2!\n");
@@ -196,7 +242,192 @@ cusfloat P2::y_map(cusfloat y)
 }
 
 
-void set_r11(P2* r11)
+cusfloat R11::calculate_xy(cusfloat x, cusfloat y)
+{
+    // Fit input values to boundaries
+    cusfloat xf = this->fit_boundary_x(x);
+    cusfloat yf = this->fit_boundary_y(y);
+
+    // Calculate chebyshev part
+    cusfloat cheby_sol = this->calculate_xy_cheby(xf, yf);
+
+    // Calculate total solution
+    cusfloat R = sqrt(pow2s(xf) + pow2s(yf));
+    cusfloat c0 = (
+                    -2*besselj0(xf)*log(R+yf)
+                    -(PI*bessely0(xf)-2*besselj0(xf)*log(xf))
+                    )*exp(-yf);
+    cusfloat sol = exp(-yf)*R*cheby_sol + c0;
+
+    return sol;
+}
+
+
+cusfloat R11A_dX::calculate_xy(cusfloat x, cusfloat y)
+{
+    // Fit input values to boundaries
+    cusfloat xf = this->fit_boundary_x(x);
+    cusfloat yf = this->fit_boundary_y(y);
+
+    // Calculate chebyshev part
+    cusfloat cheby_sol = this->calculate_xy_cheby(xf, yf);
+
+    // Calculate total solution
+    cusfloat sol = pow(10.0, cheby_sol);
+    sol += PI*exp(-yf)*(bessely1(xf)+struve1(xf)-2.0/PI);
+
+    return sol;
+}
+
+
+cusfloat R11B_dX::calculate_xy(cusfloat x, cusfloat y)
+{
+    // Fit input values to boundaries
+    cusfloat xf = this->fit_boundary_x(x);
+    cusfloat yf = this->fit_boundary_y(y);
+
+    // Calculate chebyshev part
+    cusfloat cheby_sol = this->calculate_xy_cheby(xf, yf);
+
+    // Calculate total solution
+    cusfloat R = sqrt(pow2s(xf) + pow2s(yf));
+    cusfloat c0 = (
+                    +2*besselj1(xf)*log(R+yf)
+                    -2*besselj0(xf)*xf/R/(R+yf)
+                    +PI*bessely1(xf)
+                    -2*besselj1(xf)*log(xf)
+                    +2*besselj0(xf)/xf
+                    )*exp(-yf);
+    cusfloat sol = exp(-yf)*R*cheby_sol + c0;
+
+    return sol;
+}
+
+
+cusfloat R12::calculate_xy(cusfloat x, cusfloat y)
+{
+    // Fit input values to boundaries
+    cusfloat xf = this->fit_boundary_x(x);
+    cusfloat yf = this->fit_boundary_y(y);
+
+    // Calculate chebyshev part
+    cusfloat cheby_sol = this->calculate_xy_cheby(xf, yf);
+
+    return cheby_sol;
+}
+
+
+cusfloat R12_dX::calculate_xy(cusfloat x, cusfloat y)
+{
+    // Fit input values to boundaries
+    cusfloat xf = this->fit_boundary_x(x);
+    cusfloat yf = this->fit_boundary_y(y);
+
+    // Calculate chebyshev part
+    cusfloat cheby_sol = this->calculate_xy_cheby(xf, yf);
+
+    return cheby_sol;
+}
+
+
+cusfloat R21::calculate_xy(cusfloat x, cusfloat y)
+{
+    // Fit input values to boundaries
+    cusfloat xf = this->fit_boundary_x(x);
+    cusfloat yf = this->fit_boundary_y(y);
+
+    // Calculate chebyshev part
+    cusfloat cheby_sol = this->calculate_xy_cheby(xf, yf);
+
+    // Calculate total solution
+    cusfloat sol = cheby_sol - 2*PI*exp(-yf)*bessely0(xf);
+
+    return sol;
+}
+
+
+cusfloat R21_dX::calculate_xy(cusfloat x, cusfloat y)
+{
+    // Fit input values to boundaries
+    cusfloat xf = this->fit_boundary_x(x);
+    cusfloat yf = this->fit_boundary_y(y);
+
+    // Calculate chebyshev part
+    cusfloat cheby_sol = this->calculate_xy_cheby(xf, yf);
+
+    // Calculate total solution
+    cusfloat sol = cheby_sol + 2*PI*exp(-yf)*bessely1(xf);
+
+    return sol;
+}
+
+
+cusfloat R22::calculate_xy(cusfloat x, cusfloat y)
+{
+    // Fit input values to boundaries
+    cusfloat xf = this->fit_boundary_x(x);
+    cusfloat yf = this->fit_boundary_y(y);
+
+    // Calculate chebyshev part
+    cusfloat cheby_sol = this->calculate_xy_cheby(xf, yf);
+
+    // Calculate total solution
+    cusfloat sol = cheby_sol - 2*PI*exp(-yf)*bessely0(xf);
+    cusfloat R = sqrt(pow2s(xf) + pow2s(yf));
+    cusfloat pn = 1.0;
+    cusfloat rf = 1/R;
+    cusfloat rf2 = rf;
+    cusfloat costh = yf*rf2;
+    for (int i=0; i<3; i++)
+    {
+        // Add new series term
+        sol += pn*legendre_poly_raw(i, costh)*rf;
+
+        // Update series coefficients
+        pn *= static_cast<cusfloat>(i+1);
+        rf *= rf2;
+    }
+
+    return sol;
+}
+
+
+cusfloat R22_dX::calculate_xy(cusfloat x, cusfloat y)
+{
+    // Fit input values to boundaries
+    cusfloat xf = this->fit_boundary_x(x);
+    cusfloat yf = this->fit_boundary_y(y);
+
+    // Calculate chebyshev part
+    cusfloat cheby_sol = this->calculate_xy_cheby(xf, yf);
+
+    // Calculate total solution
+    cusfloat sol = cheby_sol + 2*PI*exp(-yf)*bessely1(xf);
+    cusfloat R = sqrt(pow2s(xf) + pow2s(yf));
+    cusfloat pn = 1.0;
+    cusfloat rf = 1/R;
+    cusfloat rf2 = rf;
+    cusfloat costh = yf*rf2;
+    cusfloat costhd = -xf*costh*pow2s(rf2);
+    for (int i=0; i<3; i++)
+    {
+        // Add new series term
+        sol += pn* (
+                    legendre_poly_der_raw(i, xf)*costhd*rf
+                    +
+                    legendre_poly_raw(i, xf)*2*(i+1)*xf*rf*rf2
+                    );
+
+        // Update series coefficients
+        pn *= static_cast<cusfloat>(i+1);
+        rf *= rf2;
+    }
+
+    return sol;
+}
+
+
+void set_r11(R11* r11)
 {
     // Load data into target object
     r11->c                  =   R11C::c;

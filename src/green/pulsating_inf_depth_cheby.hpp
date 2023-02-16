@@ -36,10 +36,84 @@ public:
 
     int calculate_interval(cusfloat x, cusfloat y);
     cusfloat calculate_xy_cheby(cusfloat x, cusfloat y);
+    cusfloat fit_boundary_x(cusfloat x);
+    cusfloat fit_boundary_y(cusfloat x);
     void initialize(void);
     cusfloat x_map(cusfloat x);
     cusfloat y_map(cusfloat y);
 
+};
+
+
+class R11: public P2
+{
+public:
+    
+    cusfloat calculate_xy(cusfloat x, cusfloat y);
+};
+
+
+class R11A_dX: public P2
+{
+public:
+    
+    cusfloat calculate_xy(cusfloat x, cusfloat y);
+};
+
+
+class R11B_dX: public P2
+{
+public:
+    
+    cusfloat calculate_xy(cusfloat x, cusfloat y);
+};
+
+
+class R12: public P2
+{
+public:
+    
+    cusfloat calculate_xy(cusfloat x, cusfloat y);
+};
+
+
+class R12_dX: public P2
+{
+public:
+    
+    cusfloat calculate_xy(cusfloat x, cusfloat y);
+};
+
+
+class R21: public P2
+{
+public:
+
+    cusfloat calculate_xy(cusfloat x, cusfloat y);
+};
+
+
+class R21_dX: public P2
+{
+public:
+
+    cusfloat calculate_xy(cusfloat x, cusfloat y);
+};
+
+
+class R22: public P2
+{
+public:
+
+    cusfloat calculate_xy(cusfloat x, cusfloat y);
+};
+
+
+class R22_dX: public P2
+{
+public:
+
+    cusfloat calculate_xy(cusfloat x, cusfloat y);
 };
 
 #endif
