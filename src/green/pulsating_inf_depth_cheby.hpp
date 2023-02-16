@@ -11,11 +11,14 @@ class P2
 public:
     cusfloat*       c;
     int             current_inter = -1;
-    cusfloat*       intervals_bounds;
+    cusfloat*       intervals_bounds_x;
+    cusfloat*       intervals_bounds_y;
     bool            is_build = false;
     int*            nx;
     int*            ny;
-    int             num_intervals = 0;
+    int             num_c = 0;
+    int             num_intervals_x = 0;
+    int             num_intervals_y = 0;
     int*            num_points;
     int*            num_points_cum;
     bool*           x_log_scale;
@@ -31,6 +34,8 @@ public:
     cusfloat*       y_min;
     cusfloat*       y_min_l10;
 
+    int calculate_interval(cusfloat x, cusfloat y);
+    cusfloat calculate_xy_cheby(cusfloat x, cusfloat y);
     void initialize(void);
     cusfloat x_map(cusfloat x);
     cusfloat y_map(cusfloat y);
