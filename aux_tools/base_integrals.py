@@ -128,9 +128,15 @@ def fxy(X: float, Y: float) -> float:
 
 def fxy_dx(X: float, Y: float) -> float:
     # Calculate the numerical value
-    ref_value = 100
+    ref_value = 150
     if Y < ref_value:
-        int_value = quad(lambda t: wave_term_expint_def_dx(X, Y, t), 0, Y)
+        num_points = 4
+        int_points = linspace(0, Y, num_points)
+        int_value = [0.0, 0.0]
+        for i in range(num_points-1):
+            int_value_i = quad(lambda t: wave_term_expint_def(X, Y, t), int_points[i], int_points[i+1])
+            int_value[0] = int_value[0] + int_value_i[0]
+            int_value[1] = int_value[1] + int_value_i[1]
     else:
         num_points = int(ceil(Y/ref_value))+2
         int_points = linspace(0, Y, num_points)
@@ -979,13 +985,13 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     from numpy import linspace
     num_points = 1000
-    y = linspace(10000, 100000, num_points)
+    y = linspace(10.0, 200.0, num_points)
     X = 3.0
     Y = 10001
     fy = zeros((num_points, ))
     for i in range(num_points):
-        fy[i] = fxy(X, y[i])
+        fy[i] = fxy_dx(X, y[i])
     
     plt.plot(y, fy)
     plt.show()
-    # print(fxy(X, Y))
+    # print(fxy_dx(3.0, 10))
