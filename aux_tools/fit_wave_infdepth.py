@@ -165,7 +165,7 @@ def fit_residual_region_12_dx(show_figs=False):
 
             # Launch fit
             print("Working on: ", region_name)
-            results.append(fit_integral_2d(residual_region_12_dx, fit_props, region_name, show_figs=False))
+            results.append(fit_integral_2d(residual_region_12_dx, fit_props, region_name, show_figs=True))
 
     # Plot results summay
     plot_results_summary(x, y, results, "region_12_dx", log_scale=True, show_figs=show_figs)
@@ -273,356 +273,35 @@ def fit_residual_region_22(show_figs=False):
 
 def fit_residual_region_22_dx(show_figs=False):
     # Define boundary values
-    x = array([3.0, 6.0, 12.0, 30.0, 50.0, 120.0, 200.0, 500.0, 1000.0, 2000.0, 10000.0, 20000.0, 50000.0])
-    y = array([3.0, 6.0, 12.0, 30.0, 50.0, 120.0, 200.0, 500.0])
+    x = array([3.0, 6.0, 12.0, 30.0, 50.0, 200.0, 500.0, 1000.0, 2000.0, 10000.0, 20000.0, 100000.0])
+    y = array([3.0, 6.0, 12.0, 30.0, 50.0, 200.0, 500.0, 1000.0, 2000.0, 10000.0, 20000.0, 100000.0])
+    results = []
     for i in range(x.shape[0]-1):
         for j in range(y.shape[0]-1):
             region_name = f"X: {x[i]:0.1f} - {x[i+1]:0.1f} | Y: {y[j]:0.1f} - {y[j+1]:0.1f}"
-            fit_residual_region_22_subregion_11_dx(x[i], x[i+1], y[j], y[j+1], region_name, show_figs=True)
 
+            # Set up domain extension and fit properties
+            fit_props = FitProperties()
+            fit_props.cheby_order_x = 20
+            fit_props.cheby_order_y = 20
+            fit_props.x_log_scale = False
+            fit_props.x_max = x[i+1]
+            fit_props.x_min = x[i]
+            fit_props.y_log_scale = False
+            fit_props.y_max = y[j+1]
+            fit_props.y_min = y[j]
+            fit_props.cheby_tol = 1e-8
+            fit_props.x_map_fcn = lambda x: x
+            fit_props.y_map_fcn = lambda y: y
 
-def fit_residual_region_22_subregion_11(x_min: float, x_max: float, y_min: float, y_max: float,
-                                        region_name: str, show_figs=False)->None:
-    # Set up domain extension and fit properties
-    fit_props = FitProperties()
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.x_log_scale = False
-    fit_props.x_max = x_max
-    fit_props.x_min = x_min
-    fit_props.y_log_scale = False
-    fit_props.y_max = y_max
-    fit_props.y_min = y_min
-    fit_props.cheby_tol = 1e-8
-    fit_props.x_map_fcn = lambda x: x
-    fit_props.y_map_fcn = lambda y: y
+            # Launch fit
+            print("Working on Region: ", region_name)
+            results.append(fit_integral_2d(residual_region_22_dx, fit_props, region_name, show_figs=True))
 
-    # Launch fit
-    fit_integral_2d(residual_region_22, fit_props, region_name, show_figs=show_figs)
+    # Plot results summay
+    plot_results_summary(x, y, results, "region_22_dx", log_scale=True, show_figs=show_figs)
 
-
-def fit_residual_region_22_subregion_11_dx(x_min: float, x_max: float, y_min: float, y_max: float,
-                                            region_name: str, show_figs=False)->None:
-    # Set up domain extension and fit properties
-    fit_props = FitProperties()
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.x_log_scale = False
-    fit_props.x_max = x_max
-    fit_props.x_min = x_min
-    fit_props.y_log_scale = False
-    fit_props.y_max = y_max
-    fit_props.y_min = y_min
-    fit_props.cheby_tol = 1e-8
-    fit_props.x_map_fcn = lambda x: x
-    fit_props.y_map_fcn = lambda y: y
-
-    # Launch fit
-    fit_integral_2d(residual_region_22_dx, fit_props, region_name, show_figs=show_figs)
-
-
-def fit_residual_region_21_subregion_11(show_figs=False)->None:
-    # Set up domain extension and fit properties
-    fit_props = FitProperties()
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.x_log_scale = False
-    fit_props.x_max = 12.0
-    fit_props.x_min = 3.0
-    fit_props.y_log_scale = False
-    fit_props.y_max = 1e-3
-    fit_props.y_min = 1e-12
-    fit_props.cheby_tol = 1e-8
-    fit_props.x_map_fcn = lambda x: x
-    fit_props.y_map_fcn = lambda y: y
-
-    # Launch fit
-    fit_integral_2d(residual_region_21, fit_props, "region_21_11", show_figs=show_figs)
-
-
-def fit_residual_region_21_subregion_11_dx(show_figs=False)->None:
-    # Set up domain extension and fit properties
-    fit_props = FitProperties()
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.x_log_scale = False
-    fit_props.x_max = 12.0
-    fit_props.x_min = 3.0
-    fit_props.y_log_scale = False
-    fit_props.y_max = 1e-3
-    fit_props.y_min = 1e-12
-    fit_props.cheby_tol = 1e-8
-    fit_props.x_map_fcn = lambda x: x
-    fit_props.y_map_fcn = lambda y: y
-
-    # Launch fit
-    fit_integral_2d(residual_region_21_dx, fit_props, "region_21_11_dx", show_figs=show_figs)
-
-
-def fit_residual_region_21_subregion_12(show_figs=False)->None:
-    # Set up domain extension and fit properties
-    fit_props = FitProperties()
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.x_log_scale = False
-    fit_props.x_max = 12.0
-    fit_props.x_min = 3.0
-    fit_props.y_log_scale = False
-    fit_props.y_max = 4.0
-    fit_props.y_min = 1e-3
-    fit_props.cheby_tol = 1e-8
-    fit_props.x_map_fcn = lambda x: x
-    fit_props.y_map_fcn = lambda y: y
-
-    # Launch fit
-    fit_integral_2d(residual_region_21, fit_props, "region_21_12", show_figs=show_figs)
-
-
-def fit_residual_region_21_subregion_12_dx(show_figs=False)->None:
-    # Set up domain extension and fit properties
-    fit_props = FitProperties()
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.x_log_scale = False
-    fit_props.x_max = 12.0
-    fit_props.x_min = 3.0
-    fit_props.y_log_scale = False
-    fit_props.y_max = 4.0
-    fit_props.y_min = 1e-4
-    fit_props.cheby_tol = 1e-8
-    fit_props.x_map_fcn = lambda x: x
-    fit_props.y_map_fcn = lambda y: y
-
-    # Launch fit
-    fit_integral_2d(residual_region_21_dx, fit_props, "region_21_12_dx", show_figs=show_figs)
-
-
-def fit_residual_region_21_subregion_21(show_figs=False)->None:
-    # Set up domain extension and fit properties
-    fit_props = FitProperties()
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.x_log_scale = False
-    fit_props.x_max = 50.0
-    fit_props.x_min = 12.0
-    fit_props.y_log_scale = False
-    fit_props.y_max = 1e-3
-    fit_props.y_min = 1e-12
-    fit_props.cheby_tol = 1e-8
-    fit_props.x_map_fcn = lambda x: x
-    fit_props.y_map_fcn = lambda y: y
-
-    # Launch fit
-    fit_integral_2d(residual_region_21, fit_props, "region_21_21", show_figs=show_figs)
-
-
-def fit_residual_region_21_subregion_21_dx(show_figs=False)->None:
-    # Set up domain extension and fit properties
-    fit_props = FitProperties()
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.x_log_scale = False
-    fit_props.x_max = 50.0
-    fit_props.x_min = 12.0
-    fit_props.y_log_scale = False
-    fit_props.y_max = 1e-3
-    fit_props.y_min = 1e-12
-    fit_props.cheby_tol = 1e-8
-    fit_props.x_map_fcn = lambda x: x
-    fit_props.y_map_fcn = lambda y: y
-
-    # Launch fit
-    fit_integral_2d(residual_region_21_dx, fit_props, "region_21_21_dx", show_figs=show_figs)
-
-
-def fit_residual_region_21_subregion_22(show_figs=False)->None:
-    # Set up domain extension and fit properties
-    fit_props = FitProperties()
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.x_log_scale = False
-    fit_props.x_max = 50.0
-    fit_props.x_min = 12.0
-    fit_props.y_log_scale = False
-    fit_props.y_max = 4.0
-    fit_props.y_min = 1e-3
-    fit_props.cheby_tol = 1e-8
-    fit_props.x_map_fcn = lambda x: x
-    fit_props.y_map_fcn = lambda y: y
-
-    # Launch fit
-    fit_integral_2d(residual_region_21, fit_props, "region_21_22", show_figs=show_figs)
-
-
-def fit_residual_region_21_subregion_22_dx(show_figs=False)->None:
-    # Set up domain extension and fit properties
-    fit_props = FitProperties()
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.x_log_scale = False
-    fit_props.x_max = 50.0
-    fit_props.x_min = 12.0
-    fit_props.y_log_scale = False
-    fit_props.y_max = 4.0
-    fit_props.y_min = 1e-3
-    fit_props.cheby_tol = 1e-8
-    fit_props.x_map_fcn = lambda x: x
-    fit_props.y_map_fcn = lambda y: y
-
-    # Launch fit
-    fit_integral_2d(residual_region_21_dx, fit_props, "region_21_22_dx", show_figs=show_figs)
-
-
-def fit_residual_region_21_subregion_31(show_figs=False)->None:
-    # Set up domain extension and fit properties
-    fit_props = FitProperties()
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.x_log_scale = False
-    fit_props.x_max = 200.0
-    fit_props.x_min = 50.0
-    fit_props.y_log_scale = False
-    fit_props.y_max = 1e-3
-    fit_props.y_min = 1e-12
-    fit_props.cheby_tol = 1e-8
-    fit_props.x_map_fcn = lambda x: x
-    fit_props.y_map_fcn = lambda y: y
-
-    # Launch fit
-    fit_integral_2d(residual_region_21, fit_props, "region_21_31", show_figs=show_figs)
-
-
-def fit_residual_region_21_subregion_31_dx(show_figs=False)->None:
-    # Set up domain extension and fit properties
-    fit_props = FitProperties()
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.x_log_scale = False
-    fit_props.x_max = 200.0
-    fit_props.x_min = 50.0
-    fit_props.y_log_scale = False
-    fit_props.y_max = 1e-3
-    fit_props.y_min = 1e-12
-    fit_props.cheby_tol = 1e-8
-    fit_props.x_map_fcn = lambda x: x
-    fit_props.y_map_fcn = lambda y: y
-
-    # Launch fit
-    fit_integral_2d(residual_region_21_dx, fit_props, "region_21_31_dx", show_figs=show_figs)
-
-
-def fit_residual_region_21_subregion_32_dx(show_figs=False)->None:
-    # Set up domain extension and fit properties
-    fit_props = FitProperties()
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.x_log_scale = False
-    fit_props.x_max = 200.0
-    fit_props.x_min = 50.0
-    fit_props.y_log_scale = False
-    fit_props.y_max = 4.0
-    fit_props.y_min = 1e-3
-    fit_props.cheby_tol = 1e-8
-    fit_props.x_map_fcn = lambda x: x
-    fit_props.y_map_fcn = lambda y: y
-
-    # Launch fit
-    fit_integral_2d(residual_region_21_dx, fit_props, "region_21_32_dx", show_figs=show_figs)
-
-
-def fit_residual_region_21_subregion_32(show_figs=False)->None:
-    # Set up domain extension and fit properties
-    fit_props = FitProperties()
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.x_log_scale = False
-    fit_props.x_max = 200.0
-    fit_props.x_min = 50.0
-    fit_props.y_log_scale = False
-    fit_props.y_max = 4.0
-    fit_props.y_min = 1e-3
-    fit_props.cheby_tol = 1e-8
-    fit_props.x_map_fcn = lambda x: x
-    fit_props.y_map_fcn = lambda y: y
-
-    # Launch fit
-    fit_integral_2d(residual_region_21, fit_props, "region_21_32", show_figs=show_figs)
-
-
-def fit_residual_region_21_subregion_41(show_figs=False)->None:
-    # Set up domain extension and fit properties
-    fit_props = FitProperties()
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.x_log_scale = False
-    fit_props.x_max = 1000.0
-    fit_props.x_min = 200.0
-    fit_props.y_log_scale = False
-    fit_props.y_max = 1e-3
-    fit_props.y_min = 1e-12
-    fit_props.cheby_tol = 1e-8
-    fit_props.x_map_fcn = lambda x: x
-    fit_props.y_map_fcn = lambda y: y
-
-    # Launch fit
-    fit_integral_2d(residual_region_21, fit_props, "region_21_41", show_figs=show_figs)
-
-
-def fit_residual_region_21_subregion_41_dx(show_figs=False)->None:
-    # Set up domain extension and fit properties
-    fit_props = FitProperties()
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.x_log_scale = False
-    fit_props.x_max = 1000.0
-    fit_props.x_min = 200.0
-    fit_props.y_log_scale = False
-    fit_props.y_max = 1e-3
-    fit_props.y_min = 1e-12
-    fit_props.cheby_tol = 1e-8
-    fit_props.x_map_fcn = lambda x: x
-    fit_props.y_map_fcn = lambda y: y
-
-    # Launch fit
-    fit_integral_2d(residual_region_21_dx, fit_props, "region_21_41_dx", show_figs=show_figs)
-
-
-def fit_residual_region_21_subregion_42(show_figs=False)->None:
-    # Set up domain extension and fit properties
-    fit_props = FitProperties()
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.x_log_scale = False
-    fit_props.x_max = 1000.0
-    fit_props.x_min = 200.0
-    fit_props.y_log_scale = False
-    fit_props.y_max = 4.0
-    fit_props.y_min = 1e-3
-    fit_props.cheby_tol = 1e-8
-    fit_props.x_map_fcn = lambda x: x
-    fit_props.y_map_fcn = lambda y: y
-
-    # Launch fit
-    fit_integral_2d(residual_region_21, fit_props, "region_21_42", show_figs=show_figs)
-
-
-def fit_residual_region_21_subregion_42_dx(show_figs=False)->None:
-    # Set up domain extension and fit properties
-    fit_props = FitProperties()
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.x_log_scale = False
-    fit_props.x_max = 1000.0
-    fit_props.x_min = 200.0
-    fit_props.y_log_scale = False
-    fit_props.y_max = 4.0
-    fit_props.y_min = 1e-3
-    fit_props.cheby_tol = 1e-8
-    fit_props.x_map_fcn = lambda x: x
-    fit_props.y_map_fcn = lambda y: y
-
-    # Launch fit
-    fit_integral_2d(residual_region_21_dx, fit_props, "region_21_42_dx", show_figs=show_figs)
+    return x, y, results
 
 
 def residual_region_0(X: float, Y: float)->float:
@@ -805,8 +484,9 @@ if __name__ == "__main__":
     # fit_residual_region_21_subregion_42_dx(show_figs=True)
 
     # fit_residual_region_11(show_figs=True)
-    fit_residual_region_22(show_figs=True)
-    # fit_residual_region_22_dx(show_figs=True)
+    # fit_residual_region_22(show_figs=True)
+    # fit_residual_region_12_dx(show_figs=True)
+    fit_residual_region_22_dx(show_figs=True)
     # fit_residual_region_22_subregion_11(show_figs=True)
 
     # fit_residual_region_12()
