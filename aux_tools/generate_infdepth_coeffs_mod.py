@@ -9,7 +9,7 @@ from numpy import array, concatenate, ndarray, zeros
 from fit_wave_infdepth import (fit_residual_region_11, fit_residual_region_11_dx,
                                 fit_residual_region_12, fit_residual_region_12_dx,
                                 fit_residual_region_21, fit_residual_region_21_dx,
-                                fit_residual_region_22)
+                                fit_residual_region_22, fit_residual_region_22_dx)
 
 
 REF_COL = 24
@@ -69,6 +69,14 @@ def generate_region_22(folder_path: str, show_figs=False)->None:
 
     # Write coefficients
     write_coeffs_module(x, y, fit_results, folder_path, "R22")
+
+
+def generate_region_22_dx(folder_path: str, show_figs=False)->None:
+    # Fit coefficients
+    x, y, fit_results = fit_residual_region_22_dx(show_figs=show_figs)
+
+    # Write coefficients
+    write_coeffs_module(x, y, fit_results, folder_path, "R22_dX")
 
 
 def str_start_col(str0: str, str1: str, num_col: int)->str:
@@ -257,4 +265,5 @@ if __name__ == "__main__":
     # generate_region_12_dx(folder_path, show_figs=True)
     # generate_region_21(folder_path, show_figs=True)
     # generate_region_21_dx(folder_path, show_figs=True)
-    generate_region_22(folder_path, show_figs=True)
+    # generate_region_22(folder_path, show_figs=True)
+    generate_region_22_dx(folder_path, show_figs=True)
