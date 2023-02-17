@@ -15,24 +15,6 @@
 #include "../../src/math/special_math.hpp"
 
 
-cusfloat _wave_term_inf_depth_num(cusfloat X, cusfloat Y)
-{
-    return wave_term_inf_depth_num(X, Y) + 1/sqrt(pow2s(X)+pow2s(Y));
-}
-
-
-cusfloat _wave_term_inf_depth_num_dx(cusfloat X, cusfloat Y)
-{
-    return wave_term_inf_depth_num_dx(X, Y) - X/std::pow(pow2s(X)+pow2s(Y), 3.0/2.0);
-}
-
-
-cusfloat _wave_term_inf_depth_num_dy(cusfloat X, cusfloat Y)
-{
-    return wave_term_inf_depth_num_dy(X, Y) - Y/std::pow(pow2s(X)+pow2s(Y), 3.0/2.0);
-}
-
-
 void calculate_error_stats(int N, cusfloat* err, cusfloat threshold, int &count_threshold,
     cusfloat &max_err, cusfloat &mean_err, cusfloat &min_err)
 {
