@@ -118,7 +118,15 @@ public:
 
 
 // Declare module functions
-void set_r11(R11* r11);
+void set_data_r11(R11* r11);
+void set_data_r11a_dx(R11A_dX* r11);
+void set_data_r11b_dx(R11B_dX* r11);
+void set_data_r12(R12* r11);
+void set_data_r12_dx(R12_dX* r11);
+void set_data_r21(R21* r11);
+void set_data_r21_dx(R21_dX* r11);
+void set_data_r22(R22* r11);
+void set_data_r22_dx(R22_dX* r11);
 
 
 #endif
