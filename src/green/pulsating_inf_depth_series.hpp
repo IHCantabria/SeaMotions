@@ -1,6 +1,6 @@
 
-#ifndef __pulsating_hpp
-#define __pulsating_hpp
+#ifndef __pulsating_inf_depth_series_hpp
+#define __pulsating_inf_depth_series_hpp
 
 #include "../../src/config.hpp"
 
