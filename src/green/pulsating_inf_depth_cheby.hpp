@@ -1,6 +1,6 @@
 
-#ifndef __pulsating_inf_depth_cheby.hpp
-#define __pulsating_inf_depth_cheby.hpp
+#ifndef __pulsating_inf_depth_cheby_hpp
+#define __pulsating_inf_depth_cheby_hpp
 
 // Include local modules
 #include "../config.hpp"
@@ -115,5 +115,10 @@ public:
 
     cusfloat calculate_xy(cusfloat x, cusfloat y);
 };
+
+
+// Declare module functions
+void set_r11(R11* r11);
+
 
 #endif
