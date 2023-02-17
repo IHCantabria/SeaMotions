@@ -11,6 +11,8 @@ class P2
 public:
     cusfloat*       c;
     int             current_inter = -1;
+    int             current_inter_x = -1;
+    int             current_inter_y = -1;
     cusfloat*       intervals_bounds_x;
     cusfloat*       intervals_bounds_y;
     bool            is_build = false;
@@ -34,7 +36,7 @@ public:
     cusfloat*       y_min;
     cusfloat*       y_min_l10;
 
-    int calculate_interval(cusfloat x, cusfloat y);
+    void calculate_interval(cusfloat x, cusfloat y);
     cusfloat calculate_xy_cheby(cusfloat x, cusfloat y);
     cusfloat fit_boundary_x(cusfloat x);
     cusfloat fit_boundary_y(cusfloat x);

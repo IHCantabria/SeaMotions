@@ -25,7 +25,7 @@
 using namespace std;
 
 
-int P2::calculate_interval(cusfloat x, cusfloat y)
+void P2::calculate_interval(cusfloat x, cusfloat y)
 {
     // Define auxiliar local variables
     cusfloat d0=0.0, d1=0.0;
@@ -94,25 +94,30 @@ int P2::calculate_interval(cusfloat x, cusfloat y)
     }
 
     // Calculate global interval
-    int inter = inter_x*this->num_intervals_y + inter_y;
+    this->current_inter_x = inter_x;
+    this->current_inter_y = inter_y;
+    this->current_inter = inter_x*this->num_intervals_y + inter_y;
 
-    return inter;
 }
 
 
 cusfloat P2::calculate_xy_cheby(cusfloat x, cusfloat y)
 {
     // Get current interval
-    int inter = this->calculate_interval(x, y);
+    this->calculate_interval(x, y);
+    // std::cout << "P2::calculate_xy_cheby->inter: " << this->current_inter << std::endl;
 
     // Map variables from real parametric space to 
     // approximation space
     cusfloat xi = this->x_map(x);
     cusfloat eta = this->y_map(y);
 
+    // std::cout << "P2::calculate_xy_cheby->xi: " << xi << std::endl;
+    // std::cout << "P2::calculate_xy_cheby->eta: " << eta << std::endl;
+
     // Loop over coefficients to calculate integral value
     cusfloat sol = 0.0;
-    for (int i=this->num_points_cum[inter]; i<this->num_points_cum[inter+1]; i++)
+    for (int i=this->num_points_cum[this->current_inter]; i<this->num_points_cum[this->current_inter+1]; i++)
     {
         sol += this->c[i]*chebyshev_poly_raw(this->nx[i], xi)*chebyshev_poly_raw(this->ny[i], eta);
     }
@@ -128,9 +133,9 @@ cusfloat P2::fit_boundary_x(cusfloat x)
     {
         xf = this->intervals_bounds_x[0];
     }
-    else if (x > this->intervals_bounds_x[this->num_intervals_x-1])
+    else if (x > this->intervals_bounds_x[this->num_intervals_x])
     {
-        xf = this->intervals_bounds_x[this->num_intervals_x-1];
+        xf = this->intervals_bounds_x[this->num_intervals_x];
     }
     else
     {
@@ -148,9 +153,9 @@ cusfloat P2::fit_boundary_y(cusfloat y)
     {
         yf = this->intervals_bounds_y[0];
     }
-    else if (y > this->intervals_bounds_y[this->num_intervals_y-1])
+    else if (y > this->intervals_bounds_y[this->num_intervals_y])
     {
-        yf = this->intervals_bounds_y[this->num_intervals_y-1];
+        yf = this->intervals_bounds_y[this->num_intervals_y];
     }
     else
     {
@@ -197,12 +202,12 @@ void P2::initialize(void)
 cusfloat P2::x_map(cusfloat x)
 {
     cusfloat xi = 0.0;
-    if (this->x_log_scale[this->current_inter])
+    if (this->x_log_scale[this->current_inter_x])
     {
         xi = (
-            this->x_map_scale_log[this->current_inter]
+            this->x_map_scale_log[this->current_inter_x]
             *
-            (std::log10(x)-this->x_min_l10[this->current_inter])
+            (std::log10(x)-this->x_min_l10[this->current_inter_x])
             -
             1.0
             );
@@ -210,12 +215,17 @@ cusfloat P2::x_map(cusfloat x)
     else
     {
         xi = (
-            this->x_map_scale[this->current_inter]
+            this->x_map_scale[this->current_inter_x]
             *
-            (x-this->x_min[this->current_inter])
+            (x-this->x_min[this->current_inter_x])
             -
             1.0
             );
+        // std::cout << "x_map_scale: " << this->x_map_scale[this->current_inter_x] << std::endl;
+        // std::cout << "x: " << x << std::endl;
+        // std::cout << "x_max: "  << this->x_max[this->current_inter_x] << std::endl;
+        // std::cout << "x_min: "  << this->x_min[this->current_inter_x] << std::endl;
+        // std::cout << "xi: " << xi << std::endl;
     }
 
     return xi;
@@ -225,12 +235,12 @@ cusfloat P2::x_map(cusfloat x)
 cusfloat P2::y_map(cusfloat y)
 {
     cusfloat yi = 0.0;
-    if (this->y_log_scale[this->current_inter])
+    if (this->y_log_scale[this->current_inter_y])
     {
         yi = (
-            this->y_map_scale_log[this->current_inter]
+            this->y_map_scale_log[this->current_inter_y]
             *
-            (std::log10(y)-this->y_min_l10[this->current_inter])
+            (std::log10(y)-this->y_min_l10[this->current_inter_y])
             -
             1.0
             );
@@ -238,9 +248,9 @@ cusfloat P2::y_map(cusfloat y)
     else
     {
         yi = (
-            this->y_map_scale[this->current_inter]
+            this->y_map_scale[this->current_inter_y]
             *
-            (y-this->y_min[this->current_inter])
+            (y-this->y_min[this->current_inter_y])
             -
             1.0
             );
@@ -256,8 +266,12 @@ cusfloat R11::calculate_xy(cusfloat x, cusfloat y)
     cusfloat xf = this->fit_boundary_x(x);
     cusfloat yf = this->fit_boundary_y(y);
 
+    // std::cout << "R11::calculate_xy->xf: " << xf << std::endl;
+    // std::cout << "R11::calculate_xy->yf: " << yf << std::endl;
+
     // Calculate chebyshev part
     cusfloat cheby_sol = this->calculate_xy_cheby(xf, yf);
+    // std::cout << "R11::calculate_xy->cheby_sol: " << cheby_sol << std::endl;
 
     // Calculate total solution
     cusfloat R = sqrt(pow2s(xf) + pow2s(yf));
