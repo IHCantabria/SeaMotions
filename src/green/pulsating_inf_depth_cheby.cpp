@@ -155,7 +155,7 @@ cusfloat P2::fit_boundary_y(cusfloat y)
 
 void P2::initialize(void)
 {
-    assert(this->is_build != -1 && "Database not loaded into P2!\n");
+    assert(this->is_build && "Database not loaded into P2!\n");
 
     // Calculate map scale coefficients
     for (int i=0; i<this->num_intervals_x; i++)
