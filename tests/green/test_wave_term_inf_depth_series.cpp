@@ -146,12 +146,12 @@ int main(void)
         X, 
         Y, 
         wave_term_inf_depth_num,
-        wave_term_inf_depth,
+        wave_term_inf_depth_series,
         false
         );
     if (!pass)
     {
-        std::cerr << "test_wave_term_inf_depth failed!" << std::endl;
+        std::cerr << "test_wave_term_inf_depth_series failed!" << std::endl;
         return 1;
     }
 
@@ -160,13 +160,13 @@ int main(void)
         N, 
         X, 
         Y, 
-        wave_term_inf_depth_num_dx,
-        wave_term_inf_depth_dx,
+        wave_term_inf_depth_num_dxndim,
+        wave_term_inf_depth_dxndim_series,
         false
         );
     if (!pass)
     {
-        std::cerr << "test_wave_term_inf_depth_dx failed!" << std::endl;
+        std::cerr << "test_wave_term_inf_depth_dxndim_series failed!" << std::endl;
         return 1;
     }
 
@@ -175,13 +175,13 @@ int main(void)
         N, 
         X, 
         Y, 
-        wave_term_inf_depth_num_dy,
-        wave_term_inf_depth_dy,
+        wave_term_inf_depth_num_dyndim,
+        wave_term_inf_depth_dyndim_series,
         false
         );
     if (!pass)
     {
-        std::cerr << "test_wave_term_inf_depth_dy failed!" << std::endl;
+        std::cerr << "test_wave_term_inf_depth_dyndim_series failed!" << std::endl;
         return 1;
     }
 
