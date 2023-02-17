@@ -167,9 +167,12 @@ void get_inf_domain_bounds(cusfloat x, cusfloat y, cusfloat &x0, cusfloat &x1, c
 
 cusfloat wave_term_inf_depth(cusfloat X, cusfloat Y)
 {
+    // std::cout << "X: " << X << " - Y: " << Y << std::endl;
     cusfloat wave_term = 0.0;
     if ((X>=8.0) && (Y>=20.0))
     {
+        // std::cout << "Region 0" << std::endl;
+
         // Calculate formulation parameters
         cusfloat R = std::sqrt(pow2s(X)+pow2s(Y));
         cusfloat sf = Y/R;
@@ -190,8 +193,14 @@ cusfloat wave_term_inf_depth(cusfloat X, cusfloat Y)
     }
     else if (Y > 2*X)
     {
+        // std::cout << "Region 1" << std::endl;
         // Add radius term
         wave_term = 0.0;
+
+        if (Y>100)
+        {
+            Y = 70;
+        }
 
         // Define local variables
         cusfloat cumsum_n = 0.0;
@@ -235,6 +244,8 @@ cusfloat wave_term_inf_depth(cusfloat X, cusfloat Y)
     }
     else if ((X >= 3.7) && (Y <= 0.25*X))
     {
+        // std::cout << "Region 2" << std::endl;
+
         cusfloat fs = 1.0;
         cusfloat fn = 1.0;
         cusfloat fx = 1/pow2s(X);
@@ -261,6 +272,8 @@ cusfloat wave_term_inf_depth(cusfloat X, cusfloat Y)
     }
     else if ((X>0)&&(X<=3.7)&&(Y>0.0)&&(Y<=2.0))
     {
+        // std::cout << "Region 3" << std::endl;
+
         // Define radial distance to be used along the module
         cusfloat R = std::sqrt(pow2s(X)+pow2s(Y));
 
@@ -317,6 +330,8 @@ cusfloat wave_term_inf_depth(cusfloat X, cusfloat Y)
     }
     else if ((X>=3.7)&&(Y<=2.0))
     {
+        // std::cout << "Region 4" << std::endl;
+
         cusfloat fs = 1.0;
         cusfloat fn = 1.0;
         cusfloat fx = 1/pow2s(X);
@@ -343,6 +358,8 @@ cusfloat wave_term_inf_depth(cusfloat X, cusfloat Y)
     }
     else
     {
+        // std::cout << "Region 5" << std::endl;
+
         // Calculate expint residual values - R(x,y)
         cusfloat rxy = 0.0;
         if (Y<=4.0)

@@ -14,7 +14,7 @@
 #include "../math/chebyshev.hpp"
 #include "../config.hpp"
 #include "../math/math_tools.hpp"
-#include "pulsating_inf_depth.hpp"
+#include "pulsating_inf_depth_series.hpp"
 #include "../math/special_math.hpp"
 
 // Redefine-include name spaces

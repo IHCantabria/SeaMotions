@@ -74,8 +74,8 @@ set(chebyshev_inf_depth_src
     ./src/config.hpp
     ./src/green/common.hpp
     ./src/green/common.cpp
-    ./src/green/pulsating_inf_depth.hpp
-    ./src/green/pulsating_inf_depth.cpp
+    ./src/green/pulsating_inf_depth_series.hpp
+    ./src/green/pulsating_inf_depth_series.cpp
     ./src/math/math_tools.hpp
     ./src/math/math_tools.cpp
     ./src/math/special_math.hpp
