@@ -9,6 +9,8 @@ set(green_common_inf_depth_src
     ../../src/green/common.cpp
     ../../src/green/dipole.hpp
     ../../src/green/dipole.cpp
+    ../../src/green/pulsating_inf_depth.hpp
+    ../../src/green/pulsating_inf_depth.cpp
     ../../src/green/pulsating_inf_depth_series.hpp
     ../../src/green/pulsating_inf_depth_series.cpp
     ../../src/green/pulsating_inf_depth_cheby.hpp
@@ -158,11 +160,27 @@ add_test(NAME test_pulsating_inf_depth_romberg
 
 
 # Add test to check the wave term Newman series
-# expansion for infinite water depth
-set(test_wave_term_inf_depth_src
+# expansion for infinite water depth wave term
+set(test_wave_term_inf_depth_series_src
     test_wave_term_inf_depth_series.cpp
     ${green_common_inf_depth_src}
     ${inf_depth_integrals_src}
+)
+
+add_executable(test_wave_term_inf_depth_series_cmd ${test_wave_term_inf_depth_series_src})
+set_mkl_lib_target(test_wave_term_inf_depth_series_cmd)
+
+add_test(NAME test_wave_term_inf_depth_series
+    COMMAND test_wave_term_inf_depth_series_cmd)
+
+
+# Add test to check the chebyshev polynomials 
+# evaluation of the infinite water depth wave term
+set(test_wave_term_inf_depth_src
+    test_wave_term_inf_depth.cpp
+    ${green_common_fin_depth_src}
+    ${inf_depth_integrals_src}
+    ${fin_depth_integrals_src}
 )
 
 add_executable(test_wave_term_inf_depth_cmd ${test_wave_term_inf_depth_src})
@@ -178,6 +196,7 @@ set(test_wave_term_fin_depth_src
     test_wave_term_fin_depth.cpp
     ${green_common_fin_depth_src}
     ${fin_depth_integrals_src}
+    ${inf_depth_integrals_src}
 )
 
 add_executable(test_wave_term_fin_depth_cmd ${test_wave_term_fin_depth_src})
