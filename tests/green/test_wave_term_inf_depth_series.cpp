@@ -150,66 +150,58 @@ bool launch_test(int N, cusfloat* X, cusfloat* Y, std::function<cusfloat(cusfloa
 
 int main(void)
 {
-    // // Declare local variables
-    // int pass = false;
+    // Declare local variables
+    int pass = false;
 
-    // // Generate computational grid
-    // constexpr int N = 1000;
-    // cusfloat X[N], Y[N];
-    // generate_domain(N, X, Y, 0.001, 40.0, 0.001, 40.0);
+    // Generate computational grid
+    constexpr int N = 1000;
+    cusfloat X[N], Y[N];
+    generate_domain(N, X, Y, 0.001, 40.0, 0.001, 40.0);
 
-    // // Test modelling function over all XY plane
-    // pass = launch_test(
-    //     N, 
-    //     X, 
-    //     Y, 
-    //     wave_term_inf_depth_num,
-    //     wave_term_inf_depth,
-    //     false
-    //     );
-    // if (!pass)
-    // {
-    //     std::cerr << "test_wave_term_inf_depth failed!" << std::endl;
-    //     return 1;
-    // }
+    // Test modelling function over all XY plane
+    pass = launch_test(
+        N, 
+        X, 
+        Y, 
+        wave_term_inf_depth_num,
+        wave_term_inf_depth,
+        false
+        );
+    if (!pass)
+    {
+        std::cerr << "test_wave_term_inf_depth failed!" << std::endl;
+        return 1;
+    }
 
-    // // Test modelling function horizontal derivative over all XY plane
-    // pass = launch_test(
-    //     N, 
-    //     X, 
-    //     Y, 
-    //     wave_term_inf_depth_num_dx,
-    //     wave_term_inf_depth_dx,
-    //     false
-    //     );
-    // if (!pass)
-    // {
-    //     std::cerr << "test_wave_term_inf_depth_dx failed!" << std::endl;
-    //     return 1;
-    // }
+    // Test modelling function horizontal derivative over all XY plane
+    pass = launch_test(
+        N, 
+        X, 
+        Y, 
+        wave_term_inf_depth_num_dx,
+        wave_term_inf_depth_dx,
+        false
+        );
+    if (!pass)
+    {
+        std::cerr << "test_wave_term_inf_depth_dx failed!" << std::endl;
+        return 1;
+    }
 
-    // // Test modelling function vertical derivative over all XY plane
-    // pass = launch_test(
-    //     N, 
-    //     X, 
-    //     Y, 
-    //     wave_term_inf_depth_num_dy,
-    //     wave_term_inf_depth_dy,
-    //     false
-    //     );
-    // if (!pass)
-    // {
-    //     std::cerr << "test_wave_term_inf_depth_dy failed!" << std::endl;
-    //     return 1;
-    // }
-
-    R11* r11 = new R11();
-    set_r11(r11);
-
-    int inter = r11->calculate_interval(0.1, 0.1);
-    std::cout << "inter: " << inter << std::endl;
-
-    delete r11;
+    // Test modelling function vertical derivative over all XY plane
+    pass = launch_test(
+        N, 
+        X, 
+        Y, 
+        wave_term_inf_depth_num_dy,
+        wave_term_inf_depth_dy,
+        false
+        );
+    if (!pass)
+    {
+        std::cerr << "test_wave_term_inf_depth_dy failed!" << std::endl;
+        return 1;
+    }
 
     return 0;
 }
