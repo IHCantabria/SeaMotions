@@ -5,6 +5,7 @@
 // Include local modules
 #include "integrals_db.hpp"
 #include "pulsating_fin_depth_cheby.hpp"
+#include "pulsating_inf_depth_cheby.hpp"
 
 
 void IntegralsDb::fold_h(cusfloat H)
@@ -33,6 +34,50 @@ void IntegralsDb::fold_h(cusfloat H)
 
 void build_integrals_db(IntegralsDb &idb)
 {
+    ////////////////////////////////////////////////
+    ////// Load infinite water depth integrals//////
+    ////////////////////////////////////////////////
+
+    // Load R11 integral
+    idb.r11 = new R11();
+    set_data_r11(idb.r11);
+
+    // Load R11A_dX integral
+    idb.r11a_dx = new R11A_dX();
+    set_data_r11a_dx(idb.r11a_dx);
+
+    // Load R11B_dX integral
+    idb.r11b_dx = new R11B_dX();
+    set_data_r11b_dx(idb.r11b_dx);
+
+    // Load R12 integral
+    idb.r12 = new R12();
+    set_data_r12(idb.r12);
+
+     // Load R12_dX integral
+    idb.r12_dx = new R12_dX();
+    set_data_r12_dx(idb.r12_dx);
+
+    // Load R21 integral
+    idb.r21 = new R21();
+    set_data_r21(idb.r21);
+
+    // Load R21_dX integral
+    idb.r21_dx = new R21_dX();
+    set_data_r21_dx(idb.r21_dx);
+
+    // Load R22 integral
+    idb.r22 = new R22();
+    set_data_r22(idb.r22);
+
+    // Load R22_dX integral
+    idb.r22_dx = new R22_dX();
+    set_data_r22_dx(idb.r22_dx);
+
+    ////////////////////////////////////////////////
+    //////// Load finite water depth integrals//////
+    ////////////////////////////////////////////////
+
     // Load L1 integral
     idb.l1 = new P3();
     set_data_l1(idb.l1);
