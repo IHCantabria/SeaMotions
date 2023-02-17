@@ -62,7 +62,7 @@ cusfloat eval_chebyshev_fit(const int num_cheby, const cusfloat cheby_coeffs[num
 }
 
 
-cusfloat eval_chebyshev_fit_dx(const int num_cheby, const cusfloat cheby_coeffs[num_cheby], const int cheby_order_0[num_cheby],
+cusfloat eval_chebyshev_fit_dxndim(const int num_cheby, const cusfloat cheby_coeffs[num_cheby], const int cheby_order_0[num_cheby],
     const int cheby_order_1[num_cheby], cusfloat x, cusfloat y)
 {
     cusfloat sol = 0.0;
@@ -93,7 +93,7 @@ cusfloat expint_inf_depth_num(cusfloat X, cusfloat Y)
 }
 
 
-cusfloat expint_inf_depth_num_dx(cusfloat X, cusfloat Y)
+cusfloat expint_inf_depth_num_dxndim(cusfloat X, cusfloat Y)
 {
     cusfloat expint = romberg_quadrature(
         [X, Y](cusfloat t)->cusfloat {return -X*std::exp(t-Y)/pow3s(std::sqrt(pow2s(X)+pow2s(t)));},
@@ -105,7 +105,7 @@ cusfloat expint_inf_depth_num_dx(cusfloat X, cusfloat Y)
 }
 
 
-cusfloat expint_inf_depth_num_dxt(cusfloat X, cusfloat Y)
+cusfloat expint_inf_depth_num_dxtndim(cusfloat X, cusfloat Y)
 {
     cusfloat expint = romberg_quadrature(
         [X, Y](cusfloat t)->cusfloat {return t*std::exp(t-Y)/std::sqrt(pow2s(X)+pow2s(t));},
@@ -165,7 +165,7 @@ void get_inf_domain_bounds(cusfloat x, cusfloat y, cusfloat &x0, cusfloat &x1, c
 }
 
 
-cusfloat wave_term_inf_depth(cusfloat X, cusfloat Y)
+cusfloat wave_term_inf_depth_series(cusfloat X, cusfloat Y)
 {
     // std::cout << "X: " << X << " - Y: " << Y << std::endl;
     cusfloat wave_term = 0.0;
@@ -435,7 +435,7 @@ cusfloat wave_term_inf_depth(cusfloat X, cusfloat Y)
 }
 
 
-cusfloat wave_term_inf_depth_dx(cusfloat X, cusfloat Y)
+cusfloat wave_term_inf_depth_dxndim_series(cusfloat X, cusfloat Y)
 {
     using namespace std;
 
@@ -657,7 +657,7 @@ cusfloat wave_term_inf_depth_dx(cusfloat X, cusfloat Y)
                     X,
                     Y
                 );
-                rxy_dx = eval_chebyshev_fit_dx(
+                rxy_dx = eval_chebyshev_fit_dxndim(
                     chebyinf::num_cheby_a0,
                     chebyinf::cheby_coeff_a0,
                     chebyinf::cheby_order_0_a0,
@@ -676,7 +676,7 @@ cusfloat wave_term_inf_depth_dx(cusfloat X, cusfloat Y)
                     X,
                     Y
                 );
-                rxy_dx = eval_chebyshev_fit_dx(
+                rxy_dx = eval_chebyshev_fit_dxndim(
                     chebyinf::num_cheby_a1,
                     chebyinf::cheby_coeff_a1,
                     chebyinf::cheby_order_0_a1,
@@ -698,7 +698,7 @@ cusfloat wave_term_inf_depth_dx(cusfloat X, cusfloat Y)
                     X,
                     Y
                 );
-                rxy_dx = eval_chebyshev_fit_dx(
+                rxy_dx = eval_chebyshev_fit_dxndim(
                     chebyinf::num_cheby_b0,
                     chebyinf::cheby_coeff_b0,
                     chebyinf::cheby_order_0_b0,
@@ -717,7 +717,7 @@ cusfloat wave_term_inf_depth_dx(cusfloat X, cusfloat Y)
                     X,
                     Y
                 );
-                rxy_dx = eval_chebyshev_fit_dx(
+                rxy_dx = eval_chebyshev_fit_dxndim(
                     chebyinf::num_cheby_b1,
                     chebyinf::cheby_coeff_b1,
                     chebyinf::cheby_order_0_b1,
@@ -737,7 +737,7 @@ cusfloat wave_term_inf_depth_dx(cusfloat X, cusfloat Y)
                 X,
                 Y
             );
-            rxy_dx = eval_chebyshev_fit_dx(
+            rxy_dx = eval_chebyshev_fit_dxndim(
                 chebyinf::num_cheby_c,
                 chebyinf::cheby_coeff_c,
                 chebyinf::cheby_order_0_c,
@@ -762,11 +762,11 @@ cusfloat wave_term_inf_depth_dx(cusfloat X, cusfloat Y)
 }
 
 
-cusfloat wave_term_inf_depth_dy(cusfloat X, cusfloat Y)
+cusfloat wave_term_inf_depth_dyndim_series(cusfloat X, cusfloat Y)
 {
     // Calculate derivative terms
     cusfloat rinv = 1/std::sqrt(pow2s(X)+pow2s(Y));
-    cusfloat wave_term = -(2*rinv + wave_term_inf_depth(X, Y));
+    cusfloat wave_term = -(2*rinv + wave_term_inf_depth_series(X, Y));
 
     return wave_term;
 }
@@ -778,16 +778,16 @@ cusfloat wave_term_inf_depth_num(cusfloat X, cusfloat Y)
 }
 
 
-cusfloat wave_term_inf_depth_num_dx(cusfloat X, cusfloat Y)
+cusfloat wave_term_inf_depth_num_dxndim(cusfloat X, cusfloat Y)
 {
-    cusfloat sol = -2.0/X*expint_inf_depth_num_dxt(X, Y)
+    cusfloat sol = -2.0/X*expint_inf_depth_num_dxtndim(X, Y)
                 + 2.0*Y/(X*std::sqrt(pow2s(X)+pow2s(Y)))
                 + PI*std::exp(-Y)*(bessely1(X)+struve1(X)-2.0/PI);
     return sol;
 }
 
 
-cusfloat wave_term_inf_depth_num_dy(cusfloat X, cusfloat Y)
+cusfloat wave_term_inf_depth_num_dyndim(cusfloat X, cusfloat Y)
 {
     return -2/std::sqrt(pow2s(X)+pow2s(Y))-wave_term_inf_depth_num(X, Y);
 }
