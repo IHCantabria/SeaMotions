@@ -24,6 +24,19 @@ cuscomplex G_integral(
                     );
 
 
+cuscomplex G_integral(
+                        cusfloat x,
+                        cusfloat y,
+                        cusfloat z,
+                        cusfloat xi,
+                        cusfloat eta,
+                        cusfloat zeta,
+                        cusfloat h,
+                        WaveDispersionData &wave_data,
+                        IntegralsDb &idb
+                    );
+
+
 cuscomplex G_integral_dr(
                         cusfloat R,
                         cusfloat z,

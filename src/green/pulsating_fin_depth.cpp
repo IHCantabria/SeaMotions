@@ -21,60 +21,6 @@ using namespace std;
 using namespace std::literals::complex_literals;
 
 
-cusfloat calculate_dr_dx(cusfloat R, cusfloat dx)
-{
-    /**
-     * @brief Calcualte derivative of R with respect to X
-     * 
-     * dr_dx = -dx/R
-     * where R:sqrt((x-xi)**2.0+(y-yi)**2.0)
-     * 
-     * \param R Euclidean distance between the field and the source points in the horizontal plane.
-     * \param dx X distance in between the field and the source points in the horizontal plane
-     */
-
-    return -dx/R;
-}
-
-
-cusfloat calculate_dr_dy(cusfloat R, cusfloat dy)
-{
-    /**
-     * @brief Calcualte derivative of R with respect to X
-     * 
-     * dr_dy = -dy/R
-     * where R:sqrt((x-xi)**2.0+(y-yi)**2.0)
-     * 
-     * \param R Euclidean distance between the field and the source points in the horizontal plane.
-     * \param dy Y distance in between the field and the source points in the horizontal plane
-     */
-
-    return -dy/R;
-}
-
-
-cusfloat calculate_r(
-                    cusfloat x,
-                    cusfloat y,
-                    cusfloat xi,
-                    cusfloat eta
-                    )
-{
-    /**
-     * @brief Calculate euclidean distance in between field and source point in the
-     *        horizontal plane
-     * 
-     * \param x X Coordinate of the field point
-     * \param y Y Coordinate of the field point
-     * \param xi X Coordinate of the source point
-     * \param eta Y Coordinate of the source point
-    * 
-    */
-
-    return sqrt( pow2s(x-xi) + pow2s(y-eta) );
-}
-
-
 cusfloat G1(
             cusfloat A,
             cusfloat B,
@@ -278,6 +224,42 @@ cuscomplex G_integral(
     cuscomplex green_total = green_steady + green_wave;
 
     return green_total;
+}
+
+
+cuscomplex G_integral(
+                        cusfloat x,
+                        cusfloat y,
+                        cusfloat z,
+                        cusfloat xi,
+                        cusfloat eta,
+                        cusfloat zeta,
+                        cusfloat h,
+                        WaveDispersionData &wave_data,
+                        IntegralsDb &idb
+                    )
+{
+    /**
+     * @brief Calculate finite water depth Green function: steady sources + wave term
+     *      at the integral region (R/h>1.0)
+     * 
+     * \param x X Coordinate of the field point
+     * \param y Y Coordinate of the field point
+     * \param z Z Coordinate of the field point
+     * \param xi X Coordinate of the source point
+     * \param eta Y Coordinate of the source point
+     * \param zeta Z Coordinate of the source point
+     * \param h Water depth
+     * \param wave_data Wave dispersion data object initialized with John's constants
+     * \param idb Integrals Database 
+     * 
+     */
+
+    // Calculate derivative properties
+    cusfloat R = calculate_r(x, y, xi, eta);
+    
+
+    return G_integral(R, z, zeta, h, wave_data, idb);
 }
 
 
@@ -576,7 +558,7 @@ tuple<cuscomplex, cuscomplex> john_series_dhoriz(
     cuscomplex dj_dx = dr * calculate_dr_dx(R, dx);
 
     // Calculate John series derivative with respect to Y
-    cuscomplex dj_dy = dr * calculate_dr_dy(R, dy);
+    cuscomplex dj_dy = dr * calculate_dr_dx(R, dy);
 
     return make_tuple(dj_dx, dj_dy);
 }
@@ -748,7 +730,7 @@ cuscomplex john_series_dy(
     cusfloat R = sqrt(pow2s(dx)+pow2s(dy));
 
     // Calculate John series derivative with respect to Y
-    cuscomplex dj_dy = john_series_dr(R, z, zeta, h, wave_data) * calculate_dr_dy(R, dy);
+    cuscomplex dj_dy = john_series_dr(R, z, zeta, h, wave_data) * calculate_dr_dx(R, dy);
 
     return dj_dy;
 }
@@ -986,7 +968,7 @@ cuscomplex wave_term_fin_depth_integral(
         cusfloat Y = nu*abs(z+zeta);
         cusfloat g1 = G1(A, B0, H, idb);
         cusfloat g2 = G2(A, B1, H, idb);
-        G_real = (g1 + g2)/h + nu*wave_term_inf_depth(X, Y);
+        G_real = (g1 + g2)/h + nu*wave_term_inf_depth(X, Y, idb);
     }
 
     // Calculate imaginary part
@@ -1067,7 +1049,7 @@ cuscomplex wave_term_fin_depth_integral_dr(
         cusfloat Y = nu*abs(z+zeta);
         cusfloat g1 = G1_dA(A, B0, H, idb);
         cusfloat g2 = G2_dA(A, B1, H, idb);
-        G_real = (g1 + g2)/pow2s(h) + pow2s(nu)*wave_term_inf_depth_dx(X, Y);
+        G_real = (g1 + g2)/pow2s(h) + pow2s(nu)*wave_term_inf_depth_dxndim(X, Y, idb);
     }
 
     // Calculate imaginary part
@@ -1148,7 +1130,7 @@ cuscomplex wave_term_fin_depth_integral_dz(
         cusfloat Y = nu*abs(z+zeta);
         cusfloat g1 = G1_dB(A, B0, H, idb)*sign(z-zeta);
         cusfloat g2 = G2_dB(A, B1, H, idb);
-        G_real = (g1 + g2)/pow2s(h) + pow2s(nu)*wave_term_inf_depth_dy(X, Y)*sign(z+zeta);
+        G_real = (g1 + g2)/pow2s(h) + pow2s(nu)*wave_term_inf_depth_dyndim(X, Y, idb)*sign(z+zeta);
     }
 
     // Calculate imaginary part
