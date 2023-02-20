@@ -130,30 +130,40 @@ def fxy_dx(X: float, Y: float, only_int=False) -> float:
     # Calculate the numerical value
     ref_value = 150
     if Y < ref_value:
-        num_points = 4
-        int_points = linspace(0, Y, num_points)
-        int_value = [0.0, 0.0]
-        for i in range(num_points-1):
-            int_value_i = quad(lambda t: wave_term_expint_def(X, Y, t), int_points[i], int_points[i+1])
-            int_value[0] = int_value[0] + int_value_i[0]
-            int_value[1] = int_value[1] + int_value_i[1]
+        if X < 0.5:
+            num_points = 70
+            int_points = 10**linspace(-30, log10(Y), num_points)
+            # int_points = linspace(0, Y, num_points)
+            int_value = [0.0, 0.0]
+            for i in range(num_points-1):
+                int_value_i = quad(lambda t: wave_term_expint_def_dx(X, Y, t), int_points[i], int_points[i+1])
+                int_value[0] = int_value[0] + int_value_i[0]
+                int_value[1] = int_value[1] + int_value_i[1]
+        else:
+            num_points = 10
+            int_points = linspace(0, Y, num_points)
+            int_value = [0.0, 0.0]
+            for i in range(num_points-1):
+                int_value_i = quad(lambda t: wave_term_expint_def_dx(X, Y, t), int_points[i], int_points[i+1])
+                int_value[0] = int_value[0] + int_value_i[0]
+                int_value[1] = int_value[1] + int_value_i[1]
     else:
-        num_points = int(ceil(Y/ref_value))+2
+        num_points = int(ceil(Y/ref_value))+20
         int_points = linspace(0, Y, num_points)
         int_value = [0.0, 0.0]
         for i in range(num_points-1):
-            int_value_i = quad(lambda t: wave_term_expint_def(X, Y, t), int_points[i], int_points[i+1])
+            int_value_i = quad(lambda t: wave_term_expint_def_dx(X, Y, t), int_points[i], int_points[i+1])
             int_value[0] = int_value[0] + int_value_i[0]
             int_value[1] = int_value[1] + int_value_i[1]
 
     # Calculate function value
     # print("int_value: ", int_value)
     if only_int:
-        fun_val = 2.0*exp(-Y)*int_value[0]
+        fun_val = 2.0*int_value[0]
     else:
         fun_val = (
                     + pi*exp(-Y)*(yv(1, X)+struve(1, X)-2/pi)
-                    + 2.0*exp(-Y)*int_value[0]
+                    + 2.0*int_value[0]
                     )
 
     return fun_val
@@ -963,7 +973,7 @@ def wave_term_expint_def(X: float, Y: float, t: ndarray) -> ndarray:
 
 
 def wave_term_expint_def_dx(X: float, Y: float, t: ndarray) -> ndarray:
-    return exp(t)*X/(X**2.0+t**2.0)**(3.0/2.0)
+    return exp(t-Y)*X/(X**2.0+t**2.0)**(3.0/2.0)
 
 
 def w2ki(w, h, n, g=9.81, abs_err=1e-6, max_iter=1000):
@@ -986,25 +996,30 @@ def w2ki(w, h, n, g=9.81, abs_err=1e-6, max_iter=1000):
 
 if __name__ == "__main__":
     # print(L1(1.0, 1.0, 1.0))
+    # X = 1e-6
+    # Y = 1e-6
+    # print(f"X: {X:0.6f} - Y: {Y:0.6f} - int_value: ", fxy_dx(X, Y))
     import matplotlib.pyplot as plt
     from numpy import linspace
     num_points = 1000
-    x = 10**linspace(-12, -3, num_points)
-    y = linspace(10.0, 200.0, num_points)
-    X = 3.0
-    Y = 1e-3
+    # x = 10**linspace(-8, -3.0, num_points)
+    # x = linspace(1e-3, 3.0, num_points)
+    y = linspace(0.001, 1.0, num_points)
+    X = 1e-8
+    Y = 4.0
     fy = zeros((num_points, ))
     for i in range(num_points):
-        fy[i] = fxy_dx(x[i], Y)
+        fy[i] = fxy_dx(X, y[i], only_int=False)
     
-    plt.plot(log10(x), fy)
+    print(fxy_dx(X, Y))
+    # plt.plot(log10(x), log10(-fy))
+    plt.plot(y, fy)
     plt.show()
-    # print(fxy_dx(3.0, 10))
 
-    # X = 1e-12
-    # Y = 1e-3
+    # X = 1e-8
+    # Y = 0.1
     # print("fxy_dx: ", fxy_dx(X, Y))
-    # t = linspace(0, Y, 1000)
-    # f = wave_term_expint_def(X, Y, t)
+    # t = 10**linspace(-16, log10(Y), 1000)
+    # f = wave_term_expint_def_dx(X, Y, t)
     # plt.plot(t, f)
     # plt.show()
