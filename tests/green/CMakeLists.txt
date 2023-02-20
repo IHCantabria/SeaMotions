@@ -17,6 +17,8 @@ set(green_common_inf_depth_src
     ../../src/green/pulsating_inf_depth_cheby.cpp
     ../../src/green/source.hpp
     ../../src/green/source.cpp
+    ../../src/math/gauss.hpp
+    ../../src/math/gauss.cpp
     ../../src/math/math_interface.hpp
     ../../src/math/math_tools.hpp
     ../../src/math/math_tools.cpp
@@ -223,12 +225,14 @@ set(test_wave_term_john_quad_src
     test_wave_term_john_quad.cpp
     ${green_common_fin_depth_src}
     ${fin_depth_integrals_src}
+    ${inf_depth_integrals_src}
 )
 
 add_executable(
                 test_wave_term_john_quad_cmd
                 ${test_wave_term_john_quad_src}
                 )
+set_mkl_lib_target(test_wave_term_john_quad_cmd)
 
 
 # Configure test to check the value of the wave term integrals
