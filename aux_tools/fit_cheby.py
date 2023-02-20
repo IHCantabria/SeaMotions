@@ -82,6 +82,7 @@ class FitStats:
         self.err_over_thr = 0
         self.err_tol = 1e-6
         self.max_err = 0.0
+        self.max_value = 0.0
         self.mean_err = 0.0
         self.min_err = 0.0
         self.num_coeffs = 0
@@ -357,7 +358,7 @@ def fit_integral_2d(f_residual: Callable,
         for j in range(num_x):
             FY0[i, j] = f_residual(x[j], y0[i])
 
-    x0 = linspace(fit_props.y_min, fit_props.y_max, num_cross_sections)
+    x0 = linspace(fit_props.x_min, fit_props.x_max, num_cross_sections)
     FX0 = zeros((num_cross_sections, num_y))
     for i in range(num_cross_sections):
         for j in range(num_y):
@@ -366,11 +367,13 @@ def fit_integral_2d(f_residual: Callable,
     # Calculate and storage fit statistics
     err_tol = 1e-6
     err_abs = np_abs(Ffe-Fr)
-    pos = err_abs > err_tol
+    err_rel = err_abs/np_abs(Fr).max()
+    pos = (err_abs*err_rel) > err_tol
     err_over_thr = pos.sum()/err_abs.shape[0]/err_abs.shape[1]*100
     fit_stats = FitStats()
     fit_stats.err_tol = err_tol
     fit_stats.max_err = err_abs.max()
+    fit_stats.max_value = Fr.max()
     fit_stats.mean_err = err_abs.mean()
     fit_stats.min_err = err_abs.min()
     fit_stats.err_over_thr = err_over_thr
@@ -404,7 +407,7 @@ def fit_integral_2d(f_residual: Callable,
             ax0.set_yscale("log")
         plt.colorbar(cfx, ax=ax0)
 
-        psf = ax1.plot_surface(X, Y, Fr, cmap="jet")
+        psf = ax1.plot_surface(X, Y, Ffe, cmap="jet")
         ax1.set_xlabel("X")
         ax1.set_ylabel("Y")
         plt.colorbar(psf, ax=ax1)
