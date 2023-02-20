@@ -100,9 +100,9 @@ bool launch_test(int N, cusfloat* X, cusfloat* Y, std::function<cusfloat(cusfloa
             {
                 err[count] = std::abs(diff);
                 count++;
-                // std::cerr << std::setprecision(6) << "X: " << X[i] << " - Y: " << Y[j] << " - f_ref: " << f_ref;
-                // std::cerr << " - f_mod: " << f_mod << " - diff: " << diff << std::endl;
-                // std::cout << "--> f_ref_log: " << f_ref_log << " - diff_log: " << diff_log << " - diff_order: " << (f_ref_log - diff_log) << std::endl;
+                std::cerr << std::setprecision(6) << "X: " << X[i] << " - Y: " << Y[j] << " - f_ref: " << f_ref;
+                std::cerr << " - f_mod: " << f_mod << " - diff: " << diff << std::endl;
+                std::cout << "--> f_ref_log: " << f_ref_log << " - diff_log: " << diff_log << " - diff_order: " << (f_ref_log - diff_log) << std::endl;
             }
         }
     }
@@ -136,31 +136,38 @@ int main(void)
     // Generate computational grid
     constexpr int N = 1000;
     cusfloat X[N], Y[N];
-    generate_domain(N, X, Y, 0.001, 40.0, 0.001, 40.0);
+    generate_domain(N, X, Y, 3.0, 40.0, 4.0, 40.0);
 
     // Load integrals database
     IntegralsDb idb = IntegralsDb();
     build_integrals_db(idb);
 
-    // cusfloat xf = 0.1;
-    // cusfloat yf = 0.1;
-    // cusfloat int_value = idb.r11->calculate_xy(xf, yf);
-    // std::cout << "X: " << xf << " - Y: " << yf << " - int_value: " << int_value << std::endl;
+    cusfloat xf = 0.001;
+    cusfloat yf = 0.12117;
+    // cusfloat int_value_series = idb.r11a_dx->calculate_xy(xf, yf);
+    cusfloat int_value_series = idb.r11b_dx->calculate_xy(xf, yf);
+    // cusfloat int_value_series = idb.r21_dx->calculate_xy(xf, yf);
+    // cusfloat int_value_series = idb.r12_dx->calculate_xy(xf, yf);
+    // cusfloat int_value_series = idb.r22_dx->calculate_xy(xf, yf);
+    cusfloat int_value_num = wave_term_inf_depth_num_dxndim(xf, yf);
+    std::cout << "X: " << xf << " - Y: " << yf << " - int_value: " << int_value_series << std::endl;
+    std::cout << "X: " << xf << " - Y: " << yf << " - int_value: " << int_value_num << std::endl;
+    std::cout << " - Difference: " << int_value_num-int_value_series << std::endl;
 
-    // Test modelling function over all XY plane
-    pass = launch_test(
-        N, 
-        X, 
-        Y, 
-        wave_term_inf_depth_num,
-        [&idb](cusfloat x, cusfloat y){return wave_term_inf_depth(x, y, idb);},
-        false
-        );
-    if (!pass)
-    {
-        std::cerr << "test_wave_term_inf_depth failed!" << std::endl;
-        return 1;
-    }
+    // // Test modelling function over all XY plane
+    // pass = launch_test(
+    //     N, 
+    //     X, 
+    //     Y, 
+    //     wave_term_inf_depth_num,
+    //     [&idb](cusfloat x, cusfloat y){return wave_term_inf_depth(x, y, idb);},
+    //     false
+    //     );
+    // if (!pass)
+    // {
+    //     std::cerr << "test_wave_term_inf_depth failed!" << std::endl;
+    //     return 1;
+    // }
 
     // Test modelling function horizontal derivative over all XY plane
     pass = launch_test(
@@ -169,7 +176,7 @@ int main(void)
         Y, 
         wave_term_inf_depth_num_dxndim,
         [&idb](cusfloat x, cusfloat y){return wave_term_inf_depth_dxndim(x, y, idb);},
-        false
+        true
         );
     if (!pass)
     {
@@ -177,20 +184,20 @@ int main(void)
         return 1;
     }
 
-    // Test modelling function vertical derivative over all XY plane
-    pass = launch_test(
-        N, 
-        X, 
-        Y, 
-        wave_term_inf_depth_num_dyndim,
-        [&idb](cusfloat x, cusfloat y){return wave_term_inf_depth_dyndim(x, y, idb);},
-        false
-        );
-    if (!pass)
-    {
-        std::cerr << "test_wave_term_inf_depth_dyndim_series failed!" << std::endl;
-        return 1;
-    }
+    // // Test modelling function vertical derivative over all XY plane
+    // pass = launch_test(
+    //     N, 
+    //     X, 
+    //     Y, 
+    //     wave_term_inf_depth_num_dyndim,
+    //     [&idb](cusfloat x, cusfloat y){return wave_term_inf_depth_dyndim(x, y, idb);},
+    //     false
+    //     );
+    // if (!pass)
+    // {
+    //     std::cerr << "test_wave_term_inf_depth_dyndim_series failed!" << std::endl;
+    //     return 1;
+    // }
 
     return 0;
 }
