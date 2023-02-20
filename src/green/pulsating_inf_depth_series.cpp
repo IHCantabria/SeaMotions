@@ -780,9 +780,11 @@ cusfloat wave_term_inf_depth_num(cusfloat X, cusfloat Y)
 
 cusfloat wave_term_inf_depth_num_dxndim(cusfloat X, cusfloat Y)
 {
-    cusfloat sol = -2.0/X*expint_inf_depth_num_dxtndim(X, Y)
-                + 2.0*Y/(X*std::sqrt(pow2s(X)+pow2s(Y)))
-                + PI*std::exp(-Y)*(bessely1(X)+struve1(X)-2.0/PI);
+    cusfloat sol = (
+                    -2.0/X*expint_inf_depth_num_dxtndim(X, Y)
+                    + 2.0*Y/(X*std::sqrt(pow2s(X)+pow2s(Y)))
+                    + PI*std::exp(-Y)*(bessely1(X)+struve1(X)-2.0/PI)
+                    );
     return sol;
 }
 
