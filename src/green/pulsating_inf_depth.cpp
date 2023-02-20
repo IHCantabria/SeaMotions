@@ -141,7 +141,7 @@ cusfloat wave_term_inf_depth_dxndim(
     cusfloat sol = 0.0;
     if (x_ndim < 3.0 && y_ndim < 4.0)
     {
-        if (x_ndim < 1.0)
+        if ((x_ndim < 0.3) && (y_ndim < 0.3))
         {
             sol = idb.r11a_dx->calculate_xy(x_ndim, y_ndim);
         }
