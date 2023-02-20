@@ -320,7 +320,7 @@ cusfloat R11B_dX::calculate_xy(cusfloat x, cusfloat y)
                     -2*besselj1(xf)*log(xf)
                     +2*besselj0(xf)/xf
                     )*exp(-yf);
-    cusfloat sol = exp(-yf)*R*cheby_sol + c0;
+    cusfloat sol = exp(-yf)*cheby_sol + c0;
 
     return sol;
 }
@@ -435,9 +435,9 @@ cusfloat R22_dX::calculate_xy(cusfloat x, cusfloat y)
     {
         // Add new series term
         sol += pn* (
-                    legendre_poly_der_raw(i, xf)*costhd*rf
-                    +
-                    legendre_poly_raw(i, xf)*2*(i+1)*xf*rf*rf2
+                    legendre_poly_der_raw(i, costh)*costhd*rf
+                    -
+                    legendre_poly_raw(i, costh)*2*(i+1)*xf*rf*rf2
                     );
 
         // Update series coefficients
