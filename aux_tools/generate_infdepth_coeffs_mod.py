@@ -6,7 +6,7 @@ import os
 from numpy import array, concatenate, ndarray, zeros
 
 # Import local modules
-from fit_wave_infdepth import (fit_residual_region_11, fit_residual_region_11A_dx, fit_residual_region_11B_dx,
+from fit_wave_infdepth import (fit_residual_region_11, fit_residual_region_11_dx, fit_residual_region_11A_dx, fit_residual_region_11B_dx,
                                 fit_residual_region_12, fit_residual_region_12_dx,
                                 fit_residual_region_21, fit_residual_region_21_dx,
                                 fit_residual_region_22, fit_residual_region_22_dx)
@@ -21,6 +21,14 @@ def generate_region_11(folder_path: str, show_summary_fig=False, show_figs=False
 
     # Write coefficients
     write_coeffs_module(x, y, fit_results, folder_path, "R11")
+
+
+def generate_region_11_dx(folder_path: str, show_summary_fig=False, show_figs=False)->None:
+    # Fit coefficients
+    x, y, fit_results = fit_residual_region_11_dx(show_summary_fig=show_summary_fig, show_figs=show_figs)
+
+    # Write coefficients
+    write_coeffs_module(x, y, fit_results, folder_path, "R11_dX")
 
 
 def generate_region_11A_dx(folder_path: str, show_summary_fig=False, show_figs=False)->None:
@@ -268,11 +276,12 @@ if __name__ == "__main__":
     this_path = os.path.dirname(os.path.abspath(__file__))
     folder_path = os.path.join(os.path.dirname(this_path), "src", "green", "inf_depth_coeffs")
     # generate_region_11(folder_path, show_figs=False, show_summary_fig=True)
+    # generate_region_11_dx(folder_path, show_figs=False, show_summary_fig=True)
     # generate_region_11A_dx(folder_path, show_figs=False, show_summary_fig=True)
-    # generate_region_11B_dx(folder_path, show_figs=False, show_summary_fig=True)
+    generate_region_11B_dx(folder_path, show_figs=False, show_summary_fig=True)
     # generate_region_12(folder_path, show_figs=False, show_summary_fig=True)
-    # generate_region_12_dx(folder_path, show_figs=False, show_summary_fig=True)
+    # generate_region_12_dx(folder_path, show_figs=True, show_summary_fig=True)
     # generate_region_21(folder_path, show_figs=False, show_summary_fig=True)
     # generate_region_21_dx(folder_path, show_figs=False, show_summary_fig=True)
     # generate_region_22(folder_path, show_figs=False, show_summary_fig=True)
-    generate_region_22_dx(folder_path, show_figs=False, show_summary_fig=True)
+    # generate_region_22_dx(folder_path, show_figs=False, show_summary_fig=True)

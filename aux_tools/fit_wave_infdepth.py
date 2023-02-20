@@ -75,12 +75,44 @@ def fit_residual_region_11(show_figs=False, show_summary_fig=False):
     return x, y, results
 
 
+def fit_residual_region_11_dx(show_figs=False, show_summary_fig=False):
+    # Define boundary values
+    x = array([1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 3e-1])
+    y = array([1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 3e-1])
+    results = []
+    for i in range(x.shape[0]-1):
+        for j in range(y.shape[0]-1):
+            region_name = f"X: {x[i]:0.1f} - {x[i+1]:0.1f} | Y: {y[j]:0.1f} - {y[j+1]:0.1f}"
+
+            # Set up domain extension and fit properties
+            fit_props = FitProperties()
+            fit_props.cheby_order_x = 20
+            fit_props.cheby_order_y = 20
+            fit_props.x_log_scale = True
+            fit_props.x_max = x[i+1]
+            fit_props.x_min = x[i]
+            fit_props.y_log_scale = True
+            fit_props.y_max = y[j+1]
+            fit_props.y_min = y[j]
+            fit_props.cheby_tol = 1e-8
+            fit_props.x_map_fcn = lambda x: x
+            fit_props.y_map_fcn = lambda y: y
+
+            # Launch fit
+            results.append(fit_integral_2d(residual_region_11_dx, fit_props, region_name, show_figs=show_figs))
+
+    # Plot results summay
+    plot_results_summary(x, y, results, "region_11_dx", log_scale=True, show_figs=show_summary_fig)
+
+    return x, y, results
+
+
 def fit_residual_region_11A_dx(show_figs=False, show_summary_fig=False):
     # Define boundary values
-    x = array([1e-12, 1e-11, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1.0])
-    y = array([1e-12, 1e-11, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-1, 4.0])
-    # x = array([1e-8, 1e-5])
-    # y = array([1e-8, 1e-4])
+    x = array([1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 3e-1, 1.0])
+    y = array([1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 3e-1])
+    # x = array([1e-8, 1e-7])
+    # y = array([1e-3, 3e-1])
     results = []
     for i in range(x.shape[0]-1):
         for j in range(y.shape[0]-1):
@@ -111,10 +143,8 @@ def fit_residual_region_11A_dx(show_figs=False, show_summary_fig=False):
 
 def fit_residual_region_11B_dx(show_figs=False, show_summary_fig=False):
     # Define boundary values
-    x = array([1.0, 3.0])
-    y = array([1e-12, 1e-11, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-1, 4.0])
-    # x = array([1e-8, 1e-5])
-    # y = array([1e-8, 1e-4])
+    x = array([1e-8, 1.0, 3.0])
+    y = array([1e-8, 0.3, 1.0, 4.0])
     results = []
     for i in range(x.shape[0]-1):
         for j in range(y.shape[0]-1):
@@ -136,6 +166,17 @@ def fit_residual_region_11B_dx(show_figs=False, show_summary_fig=False):
 
             # Launch fit
             results.append(fit_integral_2d(residual_region_11B_dx, fit_props, region_name, show_figs=show_figs))
+            
+
+    # Overwrite coefficients data
+    results_i = [
+                array([0.0]),
+                array([0], dtype=int),
+                array([0], dtype=int),
+                results[0][3],
+                results[0][4]
+                ]
+    results[0] = results_i
 
     # Plot results summay
     plot_results_summary(x, y, results, "region_11_dx", log_scale=True, show_figs=show_summary_fig)
@@ -178,8 +219,8 @@ def fit_residual_region_12(show_figs=False, show_summary_fig=False):
 
 def fit_residual_region_12_dx(show_figs=False, show_summary_fig=False):
     # Define boundary values
-    x = array([1e-12, 1e-11, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-7, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 3.0])
-    y = array([4.0, 12.0, 50.0, 200.0])
+    x = array([1e-8, 1e-7, 1e-6, 1e-7, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1.0, 3.0])
+    y = array([4.0, 12.0, 37.0, 120.0, 200.0, 500.0, 1000.0])
     results = []
     for i in range(x.shape[0]-1):
         for j in range(y.shape[0]-1):
@@ -195,13 +236,26 @@ def fit_residual_region_12_dx(show_figs=False, show_summary_fig=False):
             fit_props.y_log_scale = False
             fit_props.y_max = y[j+1]
             fit_props.y_min = y[j]
-            fit_props.cheby_tol = 1e-8
+            fit_props.cheby_tol = 1e-7
             fit_props.x_map_fcn = lambda x: x
             fit_props.y_map_fcn = lambda y: y
 
             # Launch fit
             print("Working on: ", region_name)
-            results.append(fit_integral_2d(residual_region_12_dx, fit_props, region_name, show_figs=show_figs))
+            results_i = fit_integral_2d(residual_region_12_dx, fit_props, region_name, show_figs=show_figs)
+
+            # Check if the value of the function is above a prescribed limit or not
+            if results_i[3].max_value < -8:
+                print(" WARNING: \n - Maximum value is below the threshold to take into account the fit coeffs.")
+                results_i = [
+                            array([0.0]),
+                            array([0], dtype=int),
+                            array([0], dtype=int),
+                            results_i[3],
+                            results_i[4]
+                            ]
+
+            results.append(results_i)
 
     # Plot results summay
     plot_results_summary(x, y, results, "region_12_dx", log_scale=True, show_figs=show_summary_fig)
@@ -244,7 +298,7 @@ def fit_residual_region_21(show_figs=False, show_summary_fig=False):
 
 def fit_residual_region_21_dx(show_figs=False, show_summary_fig=False):
     # Define boundary values
-    x = array([3.0, 12.0, 50.0, 200.0, 500.0])
+    x = array([3.0, 12.0, 50.0, 200.0, 500.0, 1000.0])
     y = array([1e-12, 1e-3, 4.0])
     results = []
     for i in range(x.shape[0]-1):
@@ -309,8 +363,10 @@ def fit_residual_region_22(show_figs=False, show_summary_fig=False):
 
 def fit_residual_region_22_dx(show_figs=False, show_summary_fig=False):
     # Define boundary values
-    x = array([3.0, 6.0, 12.0, 30.0, 50.0, 200.0, 500.0, 1000.0, 2000.0, 10000.0, 20000.0, 100000.0])
-    y = array([3.0, 6.0, 12.0, 30.0, 50.0, 200.0, 500.0, 1000.0, 2000.0, 10000.0, 20000.0, 100000.0])
+    # x = array([3.0, 6.0, 12.0, 30.0, 50.0, 200.0, 500.0, 1000.0, 2000.0, 10000.0, 20000.0, 100000.0])
+    # y = array([3.0, 6.0, 12.0, 30.0, 50.0, 200.0, 500.0, 1000.0, 2000.0, 10000.0, 20000.0, 100000.0])
+    x = array([3.0, 12.0, 50.0, 200.0, 1000.0, 10000.0, 100000.0])
+    y = array([3.0, 12.0, 50.0, 200.0, 1000.0, 10000.0, 100000.0])
     results = []
     for i in range(x.shape[0]-1):
         for j in range(y.shape[0]-1):
@@ -320,10 +376,10 @@ def fit_residual_region_22_dx(show_figs=False, show_summary_fig=False):
             fit_props = FitProperties()
             fit_props.cheby_order_x = 20
             fit_props.cheby_order_y = 20
-            fit_props.x_log_scale = False
+            fit_props.x_log_scale = True
             fit_props.x_max = x[i+1]
             fit_props.x_min = x[i]
-            fit_props.y_log_scale = False
+            fit_props.y_log_scale = True
             fit_props.y_max = y[j+1]
             fit_props.y_min = y[j]
             fit_props.cheby_tol = 1e-8
@@ -354,6 +410,21 @@ def residual_region_11(X: float, Y: float)->float:
     return (fxy(X, Y)-c0)*exp(Y)/R
 
 
+def residual_region_11_dx(X: float, Y: float)->float:
+    R = sqrt(X**2.0+Y**2.0)
+    c0 = (
+        +2*jv(1, X)*log(R+Y)
+        -2*jv(0, X)*X/R/(R+Y)
+        +pi*yv(1, X)
+        -2*jv(1, X)*log(X)
+        +2*jv(0, X)/X
+        )*exp(-Y)
+    
+    return (fxy_dx(X, Y)-c0)*exp(Y)/R
+    # return log10(-fxy_dx(X, Y, only_int=False))
+    # return fxy_dx(X, Y, only_int=False)
+
+
 def residual_region_11A_dx(X: float, Y: float)->float:
     return log10(fxy_dx(X, Y, only_int=True))
 
@@ -368,7 +439,7 @@ def residual_region_11B_dx(X: float, Y: float)->float:
         +2*jv(0, X)/X
         )*exp(-Y)
     
-    return (fxy_dx(X, Y)-c0)*exp(Y)/R
+    return (fxy_dx(X, Y)-c0)*exp(Y)
 
 
 def residual_region_12(X: float, Y: float)->float:
@@ -376,7 +447,7 @@ def residual_region_12(X: float, Y: float)->float:
 
 
 def residual_region_12_dx(X: float, Y: float)->float:
-    return log10(fxy_dx(X, Y, only_int=True))
+    return fxy_dx(X, Y, only_int=False)
 
 
 def residual_region_21(X: float, Y: float)->float:
@@ -404,6 +475,11 @@ def residual_region_22_dx(X: float, Y: float)->float:
     for i in range(3):
         poly = legendre(i)
         polyd = poly.deriv()
+        print(f"i: {i:d} - pn: ", factorial(i))
+        print(f"i: {i:d} - l_der_raw: ", polyval(polyd, costh))
+        print(f"i: {i:d} - l_raw: ", eval_legendre(i, costh))
+        print(f"i: {i:d} - l1: ", polyval(polyd, costh)*costhd/R**(i+1))
+        print(f"i: {i:d} - l2: ", eval_legendre(i, costh)*2*(i+1)*X/R**(i+2))
         f -= factorial(i)*(
                             polyval(polyd, costh)*costhd/R**(i+1)
                             -
@@ -523,7 +599,7 @@ if __name__ == "__main__":
     # fit_residual_region_21_subregion_42_dx(show_figs=True)
 
     # fit_residual_region_11(show_figs=True)
-    fit_residual_region_11A_dx(show_figs=False)
+    # fit_residual_region_11A_dx(show_figs=False)
     # fit_residual_region_11B_dx(show_figs=True)
     # fit_residual_region_22(show_figs=True)
     # fit_residual_region_12_dx(show_figs=True)
@@ -537,7 +613,9 @@ if __name__ == "__main__":
     # fit_residual_region_21_subregion_12(show_figs=True)
     # fit_residual_region_21_subregion_21(show_figs=True)
 
-    # X = 1e-3
-    # Y = 1e-3
-    # ri = residual_region_11_dx(X, Y)
-    # print("residual_region_11_dx: ", ri)
+    X = 0.1
+    Y = 0.1
+    # ri = residual_region_11(X, Y)
+    # ri = residual_region_11A_dx(1e-6, 1e-6)
+    ri = residual_region_22_dx(4.0, 5.0)
+    print("residual_region_11: ", ri)
