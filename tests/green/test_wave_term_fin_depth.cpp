@@ -139,16 +139,10 @@ struct RefData
 };
 
 
+template<typename T>
 bool launch_integral(
                 std::string file_path, 
-                std::function <cuscomplex(
-                                        cusfloat,
-                                        cusfloat,
-                                        cusfloat,
-                                        cusfloat,
-                                        WaveDispersionData&,
-                                        IntegralsDb&
-                                        )> f_def,
+                T f_def,
                 std::string function_type
                 )
 {
@@ -381,7 +375,18 @@ int main(int argc, char* argv[])
 
     // Launch test to check the Green function
     // integral approximation method
-    pass = launch_integral(file_path_Gint, G_integral, "G_integral");
+    pass = launch_integral(
+                            file_path_Gint, 
+                            static_cast<cuscomplex(*)(
+                                                    cusfloat,
+                                                    cusfloat,
+                                                    cusfloat,
+                                                    cusfloat,
+                                                    WaveDispersionData&,
+                                                    IntegralsDb&
+                                                    )>(G_integral), 
+                            "G_integral"
+                        );
     if (!pass)
     {
         return 1;

@@ -211,6 +211,7 @@ set(test_wave_term_fin_depth_src
 )
 
 add_executable(test_wave_term_fin_depth_cmd ${test_wave_term_fin_depth_src})
+set_mkl_lib_target( test_wave_term_fin_depth_cmd )
 
 set(
     test_wave_term_fin_depth_files
