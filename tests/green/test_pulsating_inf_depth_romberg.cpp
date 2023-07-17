@@ -11,7 +11,7 @@
 
 // Include local modules
 #include "../../src/config.hpp"
-#include "../../src/green/pulsating.hpp"
+#include "../../src/green/pulsating_inf_depth_series.hpp"
 #include "../../src/math/math_tools.hpp"
 
 
@@ -149,7 +149,7 @@ int main(int argc, char* argv[])
     }
 
     // Launch test for integral table 2
-    pass = launch_test(file_path_table_2, expint_inf_depth_num_dx, 1e-12);
+    pass = launch_test(file_path_table_2, expint_inf_depth_num_dxndim, 1e-12);
     if (!pass)
     {
         std::cerr << "test_pulsating_inf_depth_romberg/sub_test_table_2 failed!" << std::endl;
@@ -165,7 +165,7 @@ int main(int argc, char* argv[])
     }
 
     // Launch test for integral table 4
-    pass = launch_test(file_path_table_4, wave_term_inf_depth_num_dx, 1e-6);
+    pass = launch_test(file_path_table_4, wave_term_inf_depth_num_dxndim, 1e-6);
     if (!pass)
     {
         std::cerr << "test_pulsating_inf_depth_romberg/sub_test_table_4 failed!" << std::endl;
