@@ -49,8 +49,17 @@ message(STATUS "Floating precision: ${PRECISION}")
 find_package(MKL CONFIG REQUIRED)
 
 function(set_mkl_lib_target target)
-    target_compile_options(${target} PUBLIC ${PRECISION_FLAG} -Wall -Wextra)
+    # Set target compile options
+    if ( WIN32 )
+        target_compile_options(${target} PUBLIC ${PRECISION_FLAG} /Wall /Wextra /EHsc)
+    elseif ( UNIX )
+        target_compile_options(${target} PUBLIC ${PRECISION_FLAG} -Wall -Wextra -EHsc)
+    endif()
+
+    # Add target include directories to work with external libraries
     target_include_directories(${target} PUBLIC ${MKL_INCLUDE})
+
+    # Add target libraries to link with
     target_link_libraries(${target} PUBLIC mkl_intel_lp64_dll mkl_intel_thread_dll mkl_core_dll)
 endfunction()
 
