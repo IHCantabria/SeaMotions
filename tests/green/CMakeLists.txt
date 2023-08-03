@@ -100,7 +100,10 @@ set(
 # Add test for dipole potential function
 set(test_dipole_potential_src
     test_dipole_potential.cpp
+    test_panel_geometries.hpp
+    test_panel_geometries.cpp
     ${green_common_inf_depth_src}
+    ${inf_depth_integrals_src}
     )
 add_executable(test_dipole_potential ${test_dipole_potential_src})
 set_mkl_lib_target(test_dipole_potential)
