@@ -63,13 +63,11 @@ function(set_mkl_lib_target target)
     target_link_libraries(${target} PUBLIC mkl_intel_lp64_dll mkl_intel_thread_dll mkl_core_dll)
 endfunction()
 
-function(kkk)
-    message(STATUS "function kkk working")
-    foreach (arg IN LISTS ARGN)
-        message(STATUS "Arg " ${arg})
-    endforeach()
-    # message(STATUS arg1)
-endfunction()
+###########################################################
+################ Configure Module Files ###################
+###########################################################
+include( ModuleFiles )
+message( STATUS "module files:" ${test_module_files} )
 
 # Add tests
 add_subdirectory(tests)
