@@ -6,9 +6,11 @@
 // Include local modules
 #include "common.hpp"
 #include "../config.hpp"
-#include "../containers.hpp"
+#include "../containers/containers.hpp"
 #include "dipole.hpp"
 #include "source.hpp"
+#include "../math/math_interface.hpp"
+#include "../math/math_tools.hpp"
 
 
 void calculate_source_monopole_potential(PanelGeom &panel, cusfloat r0, cusfloat &phi)

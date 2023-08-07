@@ -2,6 +2,18 @@ cmake_minimum_required(VERSION 3.9)
 project(SEAMOTIONS CXX)
 
 ###########################################################
+################# Include CMake Modules ###################
+###########################################################
+# Appends the cmake/modules path to MAKE_MODULE_PATH variable.
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules ${CMAKE_MODULE_PATH})
+
+# Include modules
+include( AuxTools )
+include( GetGitRevisionDescription )
+include( ModuleFiles )
+
+
+###########################################################
 #################### Configure project ####################
 ###########################################################
 # Configure project to work with ctest
@@ -12,11 +24,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Appends the cmake/modules path to MAKE_MODULE_PATH variable.
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules ${CMAKE_MODULE_PATH})
-
 # Include  Get Git Version
-include(GetGitRevisionDescription)
 git_describe(VERSION --tags --dirty=-d)
 
 # Parse the version information into pieces
@@ -64,31 +72,24 @@ function(set_mkl_lib_target target)
 endfunction()
 
 ###########################################################
-################ Configure Module Files ###################
+################### Configure Tests #######################
 ###########################################################
-include( ModuleFiles )
-message( STATUS "module files:" ${test_module_files} )
-
-# Add tests
 add_subdirectory(tests)
+
+
+###########################################################
+################ SeaMotions Executables ###################
+###########################################################
 
 # Add executable to calculate chebyshev coefficients for the 
 # infinite water depth expansion series
 set(chebyshev_inf_depth_src
-    ./src/green/fit_chebyshev_inf_depth.cpp
-    ./src/math/chebyshev.hpp
-    ./src/math/chebyshev.cpp
     ./src/config.hpp
-    ./src/green/common.hpp
-    ./src/green/common.cpp
-    ./src/green/pulsating_inf_depth_series.hpp
-    ./src/green/pulsating_inf_depth_series.cpp
-    ./src/math/math_tools.hpp
-    ./src/math/math_tools.cpp
-    ./src/math/special_math.hpp
-    ./src/math/special_math.cpp
-    ./src/tools.hpp
-    ./src/tools.cpp
+    ./src/green/fit_chebyshev_inf_depth.cpp
+    ${containers_module_files}
+    ${green_module_files}
+    ${math_module_files}
+    ${tools_module_files}
 )
 
 add_executable(chebyshev_inf_depth_cmd ${chebyshev_inf_depth_src})

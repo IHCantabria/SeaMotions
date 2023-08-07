@@ -3,7 +3,7 @@
 #define __source_hpp
 
 #include "../config.hpp"
-#include "../containers.hpp"
+#include "../containers/containers.hpp"
 
 
 void calculate_source_potential_newman(PanelGeom &panel, cusfloat (&field_point)[3], int fp_local_flag, int multipole_flag, cusfloat &phi);

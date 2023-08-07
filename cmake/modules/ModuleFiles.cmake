@@ -1,3 +1,12 @@
+# Pack containers class definition
+set(
+        containers_module_files
+        ${CMAKE_SOURCE_DIR}/src/containers/containers.hpp
+        ${CMAKE_SOURCE_DIR}/src/containers/panel_geom.hpp
+        ${CMAKE_SOURCE_DIR}/src/containers/panel_geom.cpp
+        ${CMAKE_SOURCE_DIR}/src/containers/performance_stats.hpp
+        ${CMAKE_SOURCE_DIR}/src/containers/performance_stats.cpp
+    )
 
 # Pack green finite water depth integral coefficients
 set(

@@ -4,8 +4,9 @@
 
 // Include local modules
 #include "../../src/config.hpp"
-#include "../../src/containers.hpp"
+#include "../../src/containers/containers.hpp"
 #include "../../src/green/source.hpp"
+#include "../../src/math/math_tools.hpp"
 #include "test_panel_geometries.hpp"
 
 

@@ -1,6 +1,7 @@
 
 #include "../config.hpp"
-#include "../containers.hpp"
+#include "../containers/containers.hpp"
+#include "../math/math_tools.hpp"
 
 
 void calculate_distance_node_field(PanelGeom &panel, cusfloat (&field_point_local)[3], cusfloat* node_fieldp_mod,

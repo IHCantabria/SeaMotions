@@ -8,7 +8,7 @@
 
 // Include local modules
 #include "common.hpp"
-#include "../containers.hpp"
+#include "../containers/containers.hpp"
 #include "dipole.hpp"
 #include "../math/math_interface.hpp"
 #include "../math/math_tools.hpp"
