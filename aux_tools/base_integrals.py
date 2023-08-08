@@ -136,7 +136,7 @@ def fxy_dx(X: float, Y: float, only_int=False) -> float:
             # int_points = linspace(0, Y, num_points)
             int_value = [0.0, 0.0]
             for i in range(num_points-1):
-                int_value_i = quad(lambda t: wave_term_expint_def_dx(X, Y, t), int_points[i], int_points[i+1])
+                int_value_i = quad(lambda t: wave_term_expint_def_dxt(X, Y, t), int_points[i], int_points[i+1])
                 int_value[0] = int_value[0] + int_value_i[0]
                 int_value[1] = int_value[1] + int_value_i[1]
         else:
@@ -144,7 +144,7 @@ def fxy_dx(X: float, Y: float, only_int=False) -> float:
             int_points = linspace(0, Y, num_points)
             int_value = [0.0, 0.0]
             for i in range(num_points-1):
-                int_value_i = quad(lambda t: wave_term_expint_def_dx(X, Y, t), int_points[i], int_points[i+1])
+                int_value_i = quad(lambda t: wave_term_expint_def_dxt(X, Y, t), int_points[i], int_points[i+1])
                 int_value[0] = int_value[0] + int_value_i[0]
                 int_value[1] = int_value[1] + int_value_i[1]
     else:
@@ -152,18 +152,18 @@ def fxy_dx(X: float, Y: float, only_int=False) -> float:
         int_points = linspace(0, Y, num_points)
         int_value = [0.0, 0.0]
         for i in range(num_points-1):
-            int_value_i = quad(lambda t: wave_term_expint_def_dx(X, Y, t), int_points[i], int_points[i+1])
+            int_value_i = quad(lambda t: wave_term_expint_def_dxt(X, Y, t), int_points[i], int_points[i+1])
             int_value[0] = int_value[0] + int_value_i[0]
             int_value[1] = int_value[1] + int_value_i[1]
 
     # Calculate function value
-    # print("int_value: ", int_value)
     if only_int:
         fun_val = 2.0*int_value[0]
     else:
         fun_val = (
+                    - 2.0/X*int_value[0]
+                    + (2/X)*Y/sqrt(X**2.0+Y**2.0)
                     + pi*exp(-Y)*(yv(1, X)+struve(1, X)-2/pi)
-                    + 2.0*int_value[0]
                     )
 
     return fun_val
@@ -974,6 +974,9 @@ def wave_term_expint_def(X: float, Y: float, t: ndarray) -> ndarray:
 
 def wave_term_expint_def_dx(X: float, Y: float, t: ndarray) -> ndarray:
     return exp(t-Y)*X/(X**2.0+t**2.0)**(3.0/2.0)
+
+def wave_term_expint_def_dxt(X: float, Y: float, t: ndarray) -> ndarray:
+    return exp(t-Y)*t/(X**2.0+t**2.0)**(1.0/2.0)
 
 
 def w2ki(w, h, n, g=9.81, abs_err=1e-6, max_iter=1000):
