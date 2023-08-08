@@ -260,3 +260,28 @@ add_test(
             COMMAND test_wave_term_fin_depth_integrals_cmd
             ${test_wave_term_fin_depth_integrals_args}
         )
+
+
+# Add test to check the evaluation of the chebyshev polynomials with the input
+# format of the integral databases
+set(
+        test_chebyshev_integraldb_src
+        test_chebyshev_integraldb.cpp
+        ${containers_module_files}
+        ${green_module_files}
+        ${math_module_files}
+        ${tools_module_files}
+    )
+
+add_executable( test_chebyshev_integraldb_cmd ${test_chebyshev_integraldb_src} )
+set_mkl_lib_target( test_chebyshev_integraldb_cmd )
+
+set(
+        test_chebyshev_dbeval_args
+        "E:/sergio/developments/SeaMotions/tests/tests_data/chebyshev_integral_db.dat"
+    )
+add_test(
+            NAME    test_chebyshev_integraldb
+            COMMAND test_chebyshev_integraldb_cmd
+            ${test_chebyshev_dbeval_args}
+        )
