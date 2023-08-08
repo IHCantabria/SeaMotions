@@ -105,15 +105,12 @@ cusfloat P2::calculate_xy_cheby(cusfloat x, cusfloat y)
 {
     // Get current interval
     this->calculate_interval(x, y);
-    // std::cout << "P2::calculate_xy_cheby->inter: " << this->current_inter << std::endl;
 
     // Map variables from real parametric space to 
     // approximation space
     cusfloat xi = this->x_map(x);
     cusfloat eta = this->y_map(y);
 
-    // std::cout << "P2::calculate_xy_cheby->xi: " << xi << std::endl;
-    // std::cout << "P2::calculate_xy_cheby->eta: " << eta << std::endl;
 
     // Loop over coefficients to calculate integral value
     cusfloat sol = 0.0;
