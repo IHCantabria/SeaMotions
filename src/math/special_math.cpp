@@ -186,16 +186,18 @@ cusfloat besselj0(cusfloat x)
         cusfloat pc = p2;
 
         // Calculate polynomial approximation
-        sol += 0.99999990;
-        sol -= 2.24999239*pc;
+        sol += 0.999999999;
+        sol -= 2.249999879*pc;
         pc *= p2;
-        sol += 1.26553572*pc;
+        sol += 1.265623060*pc;
         pc *= p2;
-        sol -= 0.31602189*pc;
+        sol -= 0.316394552*pc;
         pc *= p2;
-        sol += 0.04374224*pc;
+        sol += 0.044460948*pc;
         pc *= p2;
-        sol -= 0.00331563*pc;
+        sol -= 0.003954479*pc;
+        pc *= p2;
+        sol += 0.000212950*pc;
     }
     else
     {
@@ -232,16 +234,18 @@ cusfloat besselj1(cusfloat x)
         cusfloat pc = p2;
 
         // Calculate polynomial approximation
-        sol += 0.49999999;
-        sol -= 0.56249945*pc;
+        sol += 0.500000000;
+        sol -= 0.562499992*pc;
         pc *= p2;
-        sol += 0.21093101*pc;
+        sol += 0.210937377*pc;
         pc *= p2;
-        sol -= 0.03952287*pc;
+        sol -= 0.039550040*pc;
         pc *= p2;
-        sol += 0.00439494*pc;
+        sol += 0.004447331*pc;
         pc *= p2;
-        sol -= 0.00028397*pc;
+        sol -= 0.000330547*pc;
+        pc *= p2;
+        sol += 0.000015525*pc;
         sol *= x;
     }
     else
@@ -420,16 +424,18 @@ cusfloat bessely0(cusfloat x)
 
         // Calculate polynomial approximation
         sol += (2.0/PI)*std::log(x/2.0)*besselj0(x);
-        sol += 0.36746703;
-        sol += 0.60558498*pc;
+        sol += 0.367466907;
+        sol += 0.605593797*pc;
         pc *= p2;
-        sol -= 0.74340225*pc;
+        sol -= 0.743505078*pc;
         pc *= p2;
-        sol += 0.25256673*pc;
+        sol += 0.253005481*pc;
         pc *= p2;
-        sol -= 0.04177345*pc;
+        sol -= 0.042619616*pc;
         pc *= p2;
-        sol += 0.00353354*pc;
+        sol += 0.004285691*pc;
+        pc *= p2;
+        sol -= 0.000250716*pc;
     }
     else
     {
@@ -467,17 +473,19 @@ cusfloat bessely1(cusfloat x)
 
         // Calculate polynomial approximation
         sol += (2.0/PI)*(std::log(x/2.0)*besselj1(x)-1/x);
-        sol += 0.07373571*pc;
+        sol += 0.073735531*pc;
         pc *= p2;
-        sol += 0.72276433*pc;
+        sol += 0.722769344*pc;
         pc *= p2;
-        sol -= 0.43885620*pc;
+        sol -= 0.438896337*pc;
         pc *= p2;
-        sol += 0.10418264*pc;
+        sol += 0.104320251*pc;
         pc *= p2;
-        sol -= 0.01340825*pc;
+        sol -= 0.013637596*pc;
         pc *= p2;
-        sol += 0.00094249*pc;
+        sol += 0.001125970*pc;
+        pc *= p2;
+        sol -= 0.000056455*pc;
     }
     else
     {
