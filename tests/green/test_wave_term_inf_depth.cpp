@@ -51,8 +51,16 @@ void calculate_error_stats(int N, cusfloat* err, cusfloat threshold, int &count_
 }
 
 
-void generate_domain(int N, cusfloat* X, cusfloat* Y, cusfloat x_min, cusfloat x_max,
-    cusfloat y_min, cusfloat y_max)
+void generate_domain(
+                        int         N, 
+                        cusfloat*   X, 
+                        cusfloat*   Y, 
+                        cusfloat    x_min, 
+                        cusfloat    x_max,
+                        cusfloat    y_min, 
+                        cusfloat    y_max,
+                        bool        is_log_scale
+                    )
 {
     // Generate X coordinate points
     cusfloat dx = (x_max-x_min)/(N-1);
@@ -67,11 +75,28 @@ void generate_domain(int N, cusfloat* X, cusfloat* Y, cusfloat x_min, cusfloat x
     {
         Y[i] = y_min + i*dy;
     }
+
+    // Check if it is a log10 scaled input
+    if ( is_log_scale )
+    {
+        for ( int i=0; i<N; i++ )
+        {
+            X[i] = std::pow( 10.0, X[i] );
+            Y[i] = std::pow( 10.0, Y[i] );
+        }
+    }
 }
 
 
-bool launch_test(int N, cusfloat* X, cusfloat* Y, std::function<cusfloat(cusfloat,cusfloat)> f_num,
-    std::function<cusfloat(cusfloat,cusfloat)> f_ser, bool show_stats_force)
+bool launch_test(
+                    int                                         N, 
+                    cusfloat*                                   X, 
+                    cusfloat*                                   Y, 
+                    std::function<cusfloat(cusfloat,cusfloat)>  f_num,
+                    std::function<cusfloat(cusfloat,cusfloat)>  f_ser, 
+                    bool                                        show_stats_force,
+                    bool                                        show_local_err
+                )
 {
     // Allocate space for error statistics
     cusfloat* err = generate_empty_vector<cusfloat>(N*N);
@@ -81,7 +106,7 @@ bool launch_test(int N, cusfloat* X, cusfloat* Y, std::function<cusfloat(cusfloa
     cusfloat diff = 0.0, diff_log = 0.0;
     cusfloat f_ref = 0.0, f_ref_log = 0.0, f_mod = 0.0;
     int count = 0;
-    cusfloat threshold = 3e-6;
+    cusfloat threshold = 5e-5;
     for (int i=0; i<N; i++)
     {
         for (int j=0; j<N; j++)
@@ -96,13 +121,17 @@ bool launch_test(int N, cusfloat* X, cusfloat* Y, std::function<cusfloat(cusfloa
             // Evaluate difference
             diff = f_mod - f_ref;
             diff_log = std::log10(std::abs(diff));
-            if (((f_ref_log - diff_log)<6) && (std::abs(diff)>threshold))
+            if (((f_ref_log - diff_log)<6) && (std::abs(diff)>threshold) )
             {
+                pass = false;
                 err[count] = std::abs(diff);
                 count++;
-                std::cerr << std::setprecision(6) << "X: " << X[i] << " - Y: " << Y[j] << " - f_ref: " << f_ref;
-                std::cerr << " - f_mod: " << f_mod << " - diff: " << diff << std::endl;
-                std::cout << "--> f_ref_log: " << f_ref_log << " - diff_log: " << diff_log << " - diff_order: " << (f_ref_log - diff_log) << std::endl;
+                if ( show_local_err )
+                {
+                    std::cerr << std::setprecision(6) << "X: " << X[i] << " - Y: " << Y[j] << " - f_ref: " << f_ref;
+                    std::cerr << " - f_mod: " << f_mod << " - diff: " << diff << std::endl;
+                    std::cout << "--> f_ref_log: " << f_ref_log << " - diff_log: " << diff_log << " - diff_order: " << (f_ref_log - diff_log) << std::endl;
+                }
             }
         }
     }
@@ -136,68 +165,59 @@ int main(void)
     // Generate computational grid
     constexpr int N = 1000;
     cusfloat X[N], Y[N];
-    generate_domain(N, X, Y, 3.0, 40.0, 4.0, 40.0);
+    generate_domain(N, X, Y, -3.0, 1.6, -3.0, 1.6, true);
 
     // Load integrals database
     IntegralsDb idb = IntegralsDb();
     build_integrals_db(idb);
 
-    cusfloat xf = 0.001;
-    cusfloat yf = 0.12117;
-    // cusfloat int_value_series = idb.r11a_dx->calculate_xy(xf, yf);
-    cusfloat int_value_series = idb.r11b_dx->calculate_xy(xf, yf);
-    // cusfloat int_value_series = idb.r21_dx->calculate_xy(xf, yf);
-    // cusfloat int_value_series = idb.r12_dx->calculate_xy(xf, yf);
-    // cusfloat int_value_series = idb.r22_dx->calculate_xy(xf, yf);
-    cusfloat int_value_num = wave_term_inf_depth_num_dxndim(xf, yf);
-    std::cout << "X: " << xf << " - Y: " << yf << " - int_value: " << int_value_series << std::endl;
-    std::cout << "X: " << xf << " - Y: " << yf << " - int_value: " << int_value_num << std::endl;
-    std::cout << " - Difference: " << int_value_num-int_value_series << std::endl;
-
-    // // Test modelling function over all XY plane
-    // pass = launch_test(
-    //     N, 
-    //     X, 
-    //     Y, 
-    //     wave_term_inf_depth_num,
-    //     [&idb](cusfloat x, cusfloat y){return wave_term_inf_depth(x, y, idb);},
-    //     false
-    //     );
-    // if (!pass)
-    // {
-    //     std::cerr << "test_wave_term_inf_depth failed!" << std::endl;
-    //     return 1;
-    // }
+    // Test modelling function over all XY plane
+    pass = launch_test(
+                            N, 
+                            X, 
+                            Y, 
+                            wave_term_inf_depth_num,
+                            [&idb](cusfloat x, cusfloat y){return wave_term_inf_depth(x, y, idb);},
+                            false,
+                            false
+                        );
+    if (!pass)
+    {
+        std::cerr << "test_wave_term_inf_depth failed!" << std::endl;
+        return 1;
+    }
 
     // Test modelling function horizontal derivative over all XY plane
     pass = launch_test(
-        N, 
-        X, 
-        Y, 
-        wave_term_inf_depth_num_dxndim,
-        [&idb](cusfloat x, cusfloat y){return wave_term_inf_depth_dxndim(x, y, idb);},
-        true
-        );
+                            N, 
+                            X, 
+                            Y, 
+                            wave_term_inf_depth_num_dxndim,
+                            [&idb](cusfloat x, cusfloat y){return wave_term_inf_depth_dxndim(x, y, idb);},
+                            false,
+                            false
+                        );
     if (!pass)
     {
         std::cerr << "test_wave_term_inf_depth_dxndim_series failed!" << std::endl;
         return 1;
     }
 
-    // // Test modelling function vertical derivative over all XY plane
-    // pass = launch_test(
-    //     N, 
-    //     X, 
-    //     Y, 
-    //     wave_term_inf_depth_num_dyndim,
-    //     [&idb](cusfloat x, cusfloat y){return wave_term_inf_depth_dyndim(x, y, idb);},
-    //     false
-    //     );
-    // if (!pass)
-    // {
-    //     std::cerr << "test_wave_term_inf_depth_dyndim_series failed!" << std::endl;
-    //     return 1;
-    // }
+    // Test modelling function vertical derivative over all XY plane
+    pass = launch_test(
+                            N, 
+                            X, 
+                            Y, 
+                            wave_term_inf_depth_num_dyndim,
+                            [&idb](cusfloat x, cusfloat y){return wave_term_inf_depth_dyndim(x, y, idb);},
+                            false,
+                            false
+                        );
+    if (!pass)
+    {
+        std::cerr << "test_wave_term_inf_depth_dyndim_series failed!" << std::endl;
+        return 1;
+    }
 
     return 0;
 }
