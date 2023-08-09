@@ -38,11 +38,15 @@
 }
 
 
-std::string align_str(std::string input, int width, int align);
-template<typename T> inline std::string align_num(T number, int width, int precision, int align, int scientific_flag);
-bool check_num_cmd_args(int argc, int req_argc);
-double get_wall_time();
-double get_cpu_time();
+///////////////////////////////////////////////
+/************ FUNCTION DEFINITION ************/
+///////////////////////////////////////////////
+                                std::string align_str( std::string input, int width, int align );
+template<typename T>    inline  std::string align_num( T number, int width, int precision, int align, int scientific_flag );
+                                bool        check_num_cmd_args( int argc, int req_argc );
+                                double      get_wall_time( );
+                                double      get_cpu_time( );
+                                bool        is_empty_line( std::string );
 
 #include "tools.txx"
 

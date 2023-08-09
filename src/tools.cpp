@@ -66,6 +66,24 @@ bool check_num_cmd_args(int argc, int req_argc)
 }
 
 
+bool is_empty_line( std::string line )
+{
+    bool is_empty = (
+                        line.empty( )
+                        ||
+                        line.compare( " " ) == 0
+                        ||
+                        line.compare( "  " ) == 0
+                        ||
+                        line.compare( "\t" ) == 0
+                        ||
+                        line.compare( "\n" ) == 0
+                    );
+
+    return is_empty;
+}
+
+
 //  Windows
 #ifdef _WIN32
 #include <Windows.h>
