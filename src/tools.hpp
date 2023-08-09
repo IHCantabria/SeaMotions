@@ -2,8 +2,41 @@
 #ifndef __tools_hpp
 #define __tools_hpp
 
-
+// Include general usage libraries
 #include <string>
+
+// Include local modules
+#include "config.hpp"
+
+
+///////////////////////////////////////////////
+/************** MACRO DEFINITION *************/
+///////////////////////////////////////////////
+#define GET_PROGRAM_POINT()(                \
+    std::stringstream ss;                   \
+    ss << "FILE: " << __FILE__;             \
+    ss << " - LINE: " << __LINE__ << "\n";  \
+    ss.str();                               \
+)                                           \
+
+
+#define CHECK_FILE_UNIT_STATUS( condition, file_path ){                         \
+    if ( condition )                                                            \
+    {                                                                           \
+        std::cerr << "\nERROR - INPUT DATA:" << std::endl;                      \
+        std::cerr << " -> INPUT FILE PATH: " << file_path;                      \
+        std::cerr << " - does not exits. Check input parameters." << std::endl; \
+                                                                                \
+        if ( _DEBUG_BUILD )                                                     \
+        {                                                                       \
+            std::cerr << "FILE: " << __FILE__ << " - ";                         \
+            std::cerr << "LINE: " << __LINE__;                                  \
+        }                                                                       \
+        std::cerr << std::endl;                                                 \
+        exit(10);                                                               \
+    }                                                                           \
+}
+
 
 std::string align_str(std::string input, int width, int align);
 template<typename T> inline std::string align_num(T number, int width, int precision, int align, int scientific_flag);
