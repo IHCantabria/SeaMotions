@@ -109,8 +109,8 @@ def fit_residual_region_11_dx(show_figs=False, show_summary_fig=False):
 
 def fit_residual_region_11A_dx(show_figs=False, show_summary_fig=False):
     # Define boundary values
-    x = array([1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 3e-1, 1.0])
-    y = array([1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 3e-1])
+    x = array([1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 2e-1, 3e-1, 5e-1])
+    y = array([1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 2e-1, 3e-1, 5e-1])
     # x = array([1e-8, 1e-7])
     # y = array([1e-3, 3e-1])
     results = []
@@ -143,8 +143,8 @@ def fit_residual_region_11A_dx(show_figs=False, show_summary_fig=False):
 
 def fit_residual_region_11B_dx(show_figs=False, show_summary_fig=False):
     # Define boundary values
-    x = array([1e-8, 1.0, 3.0])
-    y = array([1e-8, 0.3, 1.0, 4.0])
+    x = array([1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 0.3, 0.5, 1.0, 3.0])
+    y = array([1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 0.3, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0])
     results = []
     for i in range(x.shape[0]-1):
         for j in range(y.shape[0]-1):
@@ -165,18 +165,19 @@ def fit_residual_region_11B_dx(show_figs=False, show_summary_fig=False):
             fit_props.y_map_fcn = lambda y: y
 
             # Launch fit
-            results.append(fit_integral_2d(residual_region_11B_dx, fit_props, region_name, show_figs=show_figs))
-            
+            results_i = fit_integral_2d( residual_region_11B_dx, fit_props, region_name, show_figs=show_figs )
 
-    # Overwrite coefficients data
-    results_i = [
-                array([0.0]),
-                array([0], dtype=int),
-                array([0], dtype=int),
-                results[0][3],
-                results[0][4]
-                ]
-    results[0] = results_i
+            # Overwrite coefficients data if any
+            # if x[i] < 0.3 and y[j] < 0.3:
+            #     results_i = [
+            #                     array([0.0]),
+            #                     array([0], dtype=int),
+            #                     array([0], dtype=int),
+            #                     results_i[3],
+            #                     results_i[4]
+            #                 ]
+            
+            results.append( results_i )
 
     # Plot results summay
     plot_results_summary(x, y, results, "region_11_dx", log_scale=True, show_figs=show_summary_fig)
@@ -613,9 +614,11 @@ if __name__ == "__main__":
     # fit_residual_region_21_subregion_12(show_figs=True)
     # fit_residual_region_21_subregion_21(show_figs=True)
 
-    X = 0.1
-    Y = 0.1
+    X = 0.001
+    Y = 0.116384
     # ri = residual_region_11(X, Y)
-    # ri = residual_region_11A_dx(1e-6, 1e-6)
-    ri = residual_region_22_dx(4.0, 5.0)
-    print("residual_region_11: ", ri)
+    ri = residual_region_11A_dx(X, Y)
+    # ri = residual_region_22_dx(4.0, 5.0)
+    print("residual_region_11A_dx: ", ri, 10**ri)
+    # fit_residual_region_11A_dx(show_figs=True, show_summary_fig=True)
+    # residual_region_11B_dx( X, Y )
