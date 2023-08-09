@@ -20,8 +20,8 @@
 )                                           \
 
 
-#define CHECK_FILE_UNIT_STATUS( condition, file_path ){                         \
-    if ( condition )                                                            \
+#define CHECK_FILE_UNIT_STATUS( file_id, file_path ){                           \
+    if ( !file_id.good( ) )                                                     \
     {                                                                           \
         std::cerr << "\nERROR - INPUT DATA:" << std::endl;                      \
         std::cerr << " -> INPUT FILE PATH: " << file_path;                      \
