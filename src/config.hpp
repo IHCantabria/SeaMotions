@@ -4,6 +4,13 @@
 
 #include <complex>
 
+// Check if the program has been build in debug mode
+#ifdef DEBUG_BUILD
+constexpr bool      _DEBUG_BUILD        = true;
+#else
+constexpr bool      _DEBUG_BUILD        = false;
+#endif
+
 #ifdef SIMPLE_PREC
 typedef float cusfloat;
 typedef std::complex<float> cuscomplex;
