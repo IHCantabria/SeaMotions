@@ -84,6 +84,17 @@ bool is_empty_line( std::string line )
 }
 
 
+void renew_stream( 
+                    std::istringstream& iss,
+                    std::string         line 
+                )
+{
+    iss.str( std::string() );
+    iss.clear( );
+    iss.str( line );
+}
+
+
 //  Windows
 #ifdef _WIN32
 #include <Windows.h>
