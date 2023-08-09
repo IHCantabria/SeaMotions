@@ -293,7 +293,11 @@ cusfloat R11A_dX::calculate_xy(cusfloat x, cusfloat y)
 
     // Calculate total solution
     cusfloat sol = pow(10.0, cheby_sol);
-    sol += PI*exp(-yf)*(bessely1(xf)+struve1(xf)-2.0/PI);
+    sol = (
+                - sol/xf
+                + (2/xf)*yf/sqrt( pow2s( xf ) + pow2s( yf ) )
+                + PI*exp( -yf )*( bessely1( xf ) + struve1( xf ) - 2.0/PI )
+            );
 
     return sol;
 }
