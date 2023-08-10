@@ -6,7 +6,7 @@
 
 
 // Add method to calculate the geometric propertiess
-void PanelGeom::calculate_properties(void)
+void PanelGeom::calculate_properties( void )
 {
     // Calculate ceter of the panel
     for (int i=0; i<this->num_nodes; i++)
@@ -153,21 +153,21 @@ void PanelGeom::calculate_properties(void)
 
 }
 
-void PanelGeom::get_node_position(int num_node, cusfloat (&node_pos)[3])
+void PanelGeom::get_node_position( int num_node, cusfloat* node_pos )
 {
     node_pos[0] = this->x[num_node];
     node_pos[1] = this->y[num_node];
     node_pos[2] = this->z[num_node];
 }
 
-void PanelGeom::get_node_local_position(int num_node, cusfloat (&node_pos)[3])
+void PanelGeom::get_node_local_position( int num_node, cusfloat* node_pos )
 {
     node_pos[0] = this->xl[num_node];
     node_pos[1] = this->yl[num_node];
     node_pos[2] = this->zl[num_node];
 }
 
-int PanelGeom::is_inside(cusfloat (&field_point)[3])
+int PanelGeom::is_inside( cusfloat* field_point )
 {
     // Check if the field point is inside of the bounding box
     // of the panel.

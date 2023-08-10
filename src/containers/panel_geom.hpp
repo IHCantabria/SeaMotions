@@ -24,9 +24,9 @@ struct PanelGeom
 
     // Add method to calculate the geometric propertiess
     void calculate_properties( void );
-    void get_node_position( int num_node, cusfloat (&node_pos)[3] );
-    void get_node_local_position( int num_node, cusfloat (&node_pos)[3] );
-    int is_inside( cusfloat (&field_point)[3] );
+    void get_node_position( int num_node, cusfloat* node_pos );
+    void get_node_local_position( int num_node, cusfloat* node_pos );
+    int is_inside( cusfloat* field_point );
 };
 
 #endif
