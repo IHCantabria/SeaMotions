@@ -105,6 +105,8 @@ set(
         ${CMAKE_SOURCE_DIR}/src/math/math_tools.txx
         ${CMAKE_SOURCE_DIR}/src/math/special_math.hpp
         ${CMAKE_SOURCE_DIR}/src/math/special_math.cpp
+        ${CMAKE_SOURCE_DIR}/src/math/topology.hpp
+        ${CMAKE_SOURCE_DIR}/src/math/topology.cpp
     )
 
 # Pack tools module files
