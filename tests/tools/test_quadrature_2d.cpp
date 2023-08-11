@@ -9,7 +9,10 @@
 #include "mkl.h"
 
 // Include local modules
+#include "../../src/containers/panel_geom.hpp"
+#include "../../src/math/gauss.hpp"
 #include "../../src/math/math_tools.hpp"
+#include "../../src/math/topology.hpp"
 #include "../../src/tools.hpp"
 
 
@@ -277,6 +280,30 @@ int main( int argc, char* argv[] )
 
     // Read data
     Mesh quad_msh( quad_fipath );
+
+    // Generate the panel
+    PanelGeom panel_geom;
+
+    // cusfloat xn[4] = { -1.0, 1.0, 1.0, -1.0 };
+    // cusfloat yn[4] = { -1.0, -1.0, 1.0, 1.0 };
+    cusfloat xn[3] = { -1.0, 1.0, -1.0 };
+    cusfloat yn[3] = { -1.0, -1.0, 1.0 };
+    
+    const int gp_np = 1;
+    cusfloat gp_roots[gp_np], gp_weights[gp_np];
+    get_gauss_legendre( gp_np, gp_roots, gp_weights );
+
+    cusfloat int_value = 0.0;
+    for ( int i=0; i<gp_np; i++ )
+    {
+        for ( int j=0; j<gp_np; j++ )
+        {
+            // std::cout << "WWW: " <<  gp_weights[i] << " - " <<  gp_weights[j] << " - " << jacobi_det_2d( 4, xn, yn, gp_roots[i], gp_roots[j] ) << std::endl;
+            int_value += gp_weights[i]*gp_weights[j]*jacobi_det_2d( 3, xn, yn, gp_roots[i], gp_roots[j] );
+        }
+    }
+    
+    std::cout << "jac_det: " << int_value << std::endl;
 
     return 0;
 }
