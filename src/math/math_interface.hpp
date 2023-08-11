@@ -26,6 +26,17 @@ template<>
 inline const auto& lv_add<std::complex<double>> = vzAdd;
 
 
+// Interface for cblas_dot - Dot product
+template<typename T>
+inline const auto& cblas_dot = cblas_sdot;
+
+template<>
+inline const auto& cblas_dot<float> = cblas_sdot;
+
+template<>
+inline const auto& cblas_dot<double> = cblas_ddot;
+
+
 // Interface for cblas_gemv - Matrix-vector product
 template<typename T>
 inline const auto& cblas_gemv = cblas_sgemv;
