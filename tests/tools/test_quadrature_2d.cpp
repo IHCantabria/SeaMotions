@@ -16,6 +16,10 @@
 #include "../../src/tools.hpp"
 
 
+// Define reference area to check the results
+cusfloat REF_AREA = 0.5477;
+
+
 struct Mesh
 {
 private:
@@ -63,6 +67,33 @@ public:
     }
 
     // Define class methods
+    void get_elem_nodes( 
+                            int         elem_num, 
+                            int&        npe, 
+                            cusfloat*   xn, 
+                            cusfloat*   yn,
+                            cusfloat*   zn
+                        )
+    {
+        // Get nodes per element
+        int elem_off = elem_num*this->enrl;
+        npe = this->elems[elem_off];
+
+        // Loop over nodes
+        int node_i = 0;
+        for ( int i=0; i<npe; i++ )
+        {
+            // Get node ith of the element
+            node_i  = this->elems[elem_off+(i+1)];
+
+            // Get coordinates of the ith node
+            xn[i]   = this->x[node_i];
+            yn[i]   = this->y[node_i];
+            zn[i]   = this->z[node_i];
+
+        }
+    }
+
     void load_poly_mesh( std::string file_path )
     {
         // Define auxiliar variable to help in the file parsing
@@ -237,6 +268,7 @@ public:
                     for ( int i=1; i<npe+1; i++ )
                     {
                         iss >> this->elems[ this->enrl*elem_count + i ];
+                        this->elems[ this->enrl*elem_count + i ]--;
                     }
 
                     // Update valid element counter
@@ -257,13 +289,57 @@ public:
 };
 
 
+cusfloat calculate_area( int np, cusfloat* xn, cusfloat* yn )
+{
+    // Define gauss points for the integration
+    const int gp_np = 3;
+    cusfloat gp_roots[gp_np], gp_weights[gp_np];
+    get_gauss_legendre( gp_np, gp_roots, gp_weights );
+
+    // Loop over gauss points to perform the area integration
+    cusfloat int_value = 0.0;
+    for ( int i=0; i<gp_np; i++ )
+    {
+        for ( int j=0; j<gp_np; j++ )
+        {
+            int_value += gp_weights[i]*gp_weights[j]*jacobi_det_2d( np, xn, yn, gp_roots[i], gp_roots[j] );
+        }
+    }
+
+    return int_value;
+}
+
+
 void launch_integration( std::string msh_fipath )
 {
     // Load mesh
     Mesh msh( msh_fipath );
 
-    // Perform integration
-    
+    // Define local variables
+    int         npe     = 0;
+    cusfloat    xn[4]   = { 0.0, 0.0, 0.0, 0.0 };
+    cusfloat    yn[4]   = { 0.0, 0.0, 0.0, 0.0 };
+    cusfloat    zn[4]   = { 0.0, 0.0, 0.0, 0.0 };
+
+    // Loop over mesh elements definition to calculate
+    // the cumulative area of all of them
+    cusfloat area = 0.0;
+    for ( int i=0; i<msh.elems_np; i++ )
+    {
+        // Get element nodes
+        msh.get_elem_nodes( i, npe, xn, yn, zn );
+
+        // Calcualte area of the current element
+        area += calculate_area( npe, xn, yn );
+    }
+
+    // Compare total area with the reference value
+    if ( !assert_scalar_equality( area, REF_AREA, 1e-4 ) )
+    {
+        std::cerr << "test_quadrature_2d failed!" << std::endl;
+        throw std::runtime_error( " " );
+    }
+
 }
 
 
@@ -278,32 +354,11 @@ int main( int argc, char* argv[] )
     std::string tri_fipath( argv[1] );
     std::string quad_fipath( argv[2] );
 
-    // Read data
-    Mesh quad_msh( quad_fipath );
+    // Launch test for triangular elements
+    launch_integration( tri_fipath );
 
-    // Generate the panel
-    PanelGeom panel_geom;
-
-    // cusfloat xn[4] = { -1.0, 1.0, 1.0, -1.0 };
-    // cusfloat yn[4] = { -1.0, -1.0, 1.0, 1.0 };
-    cusfloat xn[3] = { -1.0, 1.0, -1.0 };
-    cusfloat yn[3] = { -1.0, -1.0, 1.0 };
-    
-    const int gp_np = 1;
-    cusfloat gp_roots[gp_np], gp_weights[gp_np];
-    get_gauss_legendre( gp_np, gp_roots, gp_weights );
-
-    cusfloat int_value = 0.0;
-    for ( int i=0; i<gp_np; i++ )
-    {
-        for ( int j=0; j<gp_np; j++ )
-        {
-            // std::cout << "WWW: " <<  gp_weights[i] << " - " <<  gp_weights[j] << " - " << jacobi_det_2d( 4, xn, yn, gp_roots[i], gp_roots[j] ) << std::endl;
-            int_value += gp_weights[i]*gp_weights[j]*jacobi_det_2d( 3, xn, yn, gp_roots[i], gp_roots[j] );
-        }
-    }
-    
-    std::cout << "jac_det: " << int_value << std::endl;
+    // Launch test for quadrilateral elements
+    launch_integration( quad_fipath );
 
     return 0;
 }

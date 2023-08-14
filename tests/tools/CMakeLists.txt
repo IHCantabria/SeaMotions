@@ -317,7 +317,22 @@ add_executable( test_haar_quad_cmd ${test_haar_quad_src} )
 set(
         test_quadrature_2d
         test_quadrature_2d.cpp
+        ../../src/config.hpp
+        ${math_module_files}
         ${tools_module_files}
     )
 
 add_executable( test_quadrature_2d_cmd ${test_quadrature_2d} )
+set_mkl_lib_target( test_quadrature_2d_cmd )
+
+set( 
+        test_quadrature_2d_files
+        E:/sergio/developments/SeaMotions/tests/tests_data/triangle_elems_mesh.poly 
+        E:/sergio/developments/SeaMotions/tests/tests_data/square_elems_mesh.poly
+    )
+
+add_test(
+            NAME    test_quadrature_2d
+            COMMAND test_quadrature_2d_cmd
+            ${test_quadrature_2d_files}
+        )
