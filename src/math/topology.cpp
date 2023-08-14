@@ -30,6 +30,8 @@ cusfloat    jacobi_det_2d(
 
     // Calculate jacobi matrix
     cusfloat jac_mat[4] = { 0.0, 0.0, 0.0, 0.0 };
+    cusfloat jac_det    = 0.0;
+
     jacobi_mat_2d(  
                     np,
                     xn,
@@ -40,12 +42,7 @@ cusfloat    jacobi_det_2d(
                 );
 
     // Calculate the determinant
-    cusfloat jac_det = jac_mat[0] * jac_mat[3] - jac_mat[1] * jac_mat[2];
-    jac_det *= ( 1-eta )/2.0;
-
-    // std::cout << "xi: " << xi << " - eta: " << eta << std::endl;
-    // std::cout << "jac_mat: "; print_vector( 4, jac_mat, 0, 6 );
-    // std::cout << "jac_det: " << jac_det << std::endl;
+    jac_det = jac_mat[0] * jac_mat[3] - jac_mat[1] * jac_mat[2];
 
     return jac_det;
 }
@@ -81,13 +78,7 @@ void jacobi_mat_2d(
     cusfloat* dNdxi  = generate_empty_vector<cusfloat>( np );
     cusfloat* dNdeta = generate_empty_vector<cusfloat>( np );
     
-    // std::cout << "xi2: " << xi << " - eta2: " << eta << std::endl;
     shape_fcn_der_2d( np, xi, eta, dNdxi, dNdeta );
-
-    // std::cout << "dNdxi: "; print_vector( np, dNdxi, 0, 6 );
-    // std::cout << "dNdeta: "; print_vector( np, dNdeta, 0, 6 );
-    // std::cout << "xn: "; print_vector( np, xn, 0, 6 );
-    // std::cout << "yn: "; print_vector( np, yn, 0, 6 );
 
     // Calculate jacobi matrix entries
     jac_mat[0] = cblas_dot<cusfloat>( npc, xn, icnx, dNdxi, icnx );
@@ -119,21 +110,15 @@ void shape_fcn_2d(
      * @param N     OUT: Shape functions value.
      * 
      */
-    // Define local variables
-    double xm = 0.0, ym = 0.0;
 
     // Switch in between elements type
     switch ( np )
     {
         case 3:
-            // Convert input collapsed coordinates into the cartesian
-            // cordinate system
-            simplex_to_cartesian( xi, eta, xm, ym );
-
             // Calculate shape function values for simplex regions
-            N[0] = ( 1 - xm ) * ( 1 - ym ) / 4.0;
-            N[1] = ( 1 + xm ) * ( 1 - ym ) / 4.0;
-            N[2] = ( 1 - xm ) * ( 1 + ym ) / 4.0;
+            N[0] = ( 1 - xi ) * ( 1 - eta ) / 4.0;
+            N[1] = ( 1 + xi ) * ( 1 - eta ) / 4.0;
+            N[2] = ( 1 + eta ) / 2.0;
             break;
 
         case 4:
@@ -171,10 +156,10 @@ void shape_fcn_der_2d(
      */
 
     // Calculate derivative with respect to the first dimension
-    shape_fcn_dxi_2d( np, xi, eta, dNdxi );
+    shape_fcn_dxi_2d( np, eta, dNdxi );
 
     // Calculate derivative with respect to the first dimension
-    shape_fcn_deta_2d( np, xi, eta, dNdeta );
+    shape_fcn_deta_2d( np, xi, dNdeta );
     
 }
 
@@ -182,7 +167,6 @@ void shape_fcn_der_2d(
 void shape_fcn_deta_2d( 
                             int         np, 
                             cusfloat    xi, 
-                            cusfloat    eta,
                             cusfloat*   N
                         )
 {
@@ -192,25 +176,18 @@ void shape_fcn_deta_2d(
      * 
      * @param np    IN: Number of vertexes of the polygon
      * @param xi    IN: First dimension value
-     * @param eta   IN: Second dimension value
      * @param N     OUT: Shape functions derivative value.
      * 
      */
-    // Define local variables
-    double xm = 0.0, ym = 0.0;
 
     // Switch in between elements type
     switch ( np )
     {
     case 3:
-        // Convert input collapsed coordinates into the cartesian
-        // cordinate system
-        simplex_to_cartesian( xi, eta, xm, ym );
-
         // Calculate shape function values for simplex regions
-        N[0] = -( 1 - xm ) / 4.0;
-        N[1] = -( 1 + xm ) / 4.0;
-        N[2] =  ( 1 - xm ) / 4.0;
+        N[0] = -( 1 - xi ) / 4.0;
+        N[1] = -( 1 + xi ) / 4.0;
+        N[2] =  0.5;
         break;
 
     case 4:
@@ -228,7 +205,6 @@ void shape_fcn_deta_2d(
 
 void shape_fcn_dxi_2d( 
                         int         np, 
-                        cusfloat    xi, 
                         cusfloat    eta,
                         cusfloat*   N
                     )
@@ -238,26 +214,19 @@ void shape_fcn_dxi_2d(
      *        for a given point in the local frame of reference
      * 
      * @param np    IN: Number of vertexes of the polygon
-     * @param xi    IN: First dimension value
      * @param eta   IN: Second dimension value
      * @param N     OUT: Shape functions derivative value.
      * 
      */
-    // Define local variables
-    double xm = 0.0, ym = 0.0;
 
     // Switch in between elements type
     switch ( np )
     {
     case 3:
-        // Convert input collapsed coordinates into the cartesian
-        // cordinate system
-        simplex_to_cartesian( xi, eta, xm, ym );
-
         // Calculate shape function values for simplex regions
-        N[0] = -( 1 - ym ) / 4.0;
-        N[1] =  ( 1 - ym ) / 4.0;
-        N[2] = -( 1 + ym ) / 4.0;
+        N[0] = -( 1 - eta ) / 4.0;
+        N[1] =  ( 1 - eta ) / 4.0;
+        N[2] = 0.0;
         break;
 
     case 4:

@@ -41,13 +41,11 @@ void        shape_fcn_der_2d(
 void        shape_fcn_deta_2d( 
                                     int         np, 
                                     cusfloat    xi, 
-                                    cusfloat    eta,
                                     cusfloat*   N
                             );
 
 void        shape_fcn_dxi_2d( 
                                     int         np, 
-                                    cusfloat    xi, 
                                     cusfloat    eta,
                                     cusfloat*   N
                         );
