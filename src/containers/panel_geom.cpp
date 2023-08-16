@@ -2,6 +2,7 @@
 // Include local modules
 #include "../math/math_interface.hpp"
 #include "../math/math_tools.hpp"
+#include "../math/topology.hpp"
 #include "panel_geom.hpp"
 
 
@@ -128,6 +129,11 @@ void PanelGeom::calculate_properties( void )
         this->local_to_global_mat[3*i+2] = v2[i];
     }
 
+    // Take the local reference system centre
+    this->sysref_centre[0] = this->x[0];
+    this->sysref_centre[1] = this->y[0];
+    this->sysref_centre[2] = this->z[0];
+
     // Declare auxiliar vectors to perform the vector rotations
     cusfloat global_pos[3];
     cusfloat local_pos[3];
@@ -137,9 +143,9 @@ void PanelGeom::calculate_properties( void )
     {
         // Remove mean point of the panel in order to rotate the panel
         // around a point inside of it
-        global_pos[0] = this->x[i] - this->center[0];
-        global_pos[1] = this->y[i] - this->center[1];
-        global_pos[2] = this->z[i] - this->center[2];
+        global_pos[0] = this->x[i] - this->sysref_centre[0];
+        global_pos[1] = this->y[i] - this->sysref_centre[1];
+        global_pos[2] = this->z[i] - this->sysref_centre[2];
 
         // Rotate node position to express the node coordinates in
         // the local coordinate system
@@ -250,4 +256,29 @@ int PanelGeom::is_inside( cusfloat* field_point )
     }
 
     return is_inside;
+}
+
+
+void PanelGeom::local_to_global( 
+                                    cusfloat    xi, 
+                                    cusfloat    eta,
+                                    cusfloat*   global_pos
+                                )
+{
+    // Generate shape functions value container
+    cusfloat N[MAX_LIN_NODES]; clear_vector( MAX_LIN_NODES, N );
+
+    // Get shape functions value
+    shape_fcn_2d( this->num_nodes, xi, eta, N );
+
+    // Get global coordinates
+    cusfloat x2d[3]         = { 0.0, 0.0, 0.0 };
+    x2d[0]                  = cblas_dot<cusfloat>( this->num_nodes, this->xl, 1, N, 1 );
+    x2d[1]                  = cblas_dot<cusfloat>( this->num_nodes, this->yl, 1, N, 1 );
+
+    clear_vector( 3, global_pos );
+    cblas_gemv<cusfloat>(CblasRowMajor, CblasNoTrans, 3, 3, 1.0, this->local_to_global_mat, 3, x2d, 1, 0, global_pos, 1);
+
+    sv_add( 3, global_pos, this->sysref_centre, global_pos );
+
 }
