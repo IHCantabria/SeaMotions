@@ -58,6 +58,15 @@ inline int assert_vector_equality<int>(int N, int* u, int* v, int epsilon)
 
 
 template<typename T>
+void clear_vector( int n, T* vec )
+{
+    for ( int i=0; i<n; i++ )
+    {
+        vec[i] = 0.0;
+    }
+}
+
+template<typename T>
 void copy_vector(int n, T* reference_vector, T* target_vector)
 {
     for(int i=0; i<n; i++)
