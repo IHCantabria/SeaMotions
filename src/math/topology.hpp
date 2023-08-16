@@ -6,6 +6,14 @@
 #include "../config.hpp"
 
 
+/*******************************************/
+/******* CONSTANTS DECLARATION  BLOCK*******/
+/*******************************************/
+const int MAX_LIN_NODES = 4;
+
+/*******************************************/
+/******* FUNCTION DECLARATION  BLOCK********/
+/*******************************************/
 cusfloat    jacobi_det_2d(
                                     int         np,
                                     cusfloat*   xn,
