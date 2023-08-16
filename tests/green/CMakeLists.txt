@@ -202,8 +202,8 @@ add_test(
 # wave term (John series) integration using
 # quadrature rules.
 set(
-        test_wave_term_john_quad_src
-        test_wave_term_john_quad.cpp
+        test_quad_green_element_src
+        test_quad_green_element.cpp
         ${containers_module_files}
         ${panel_geometry_src}
         ${green_module_files}
@@ -213,10 +213,10 @@ set(
     )
 
 add_executable(
-                    test_wave_term_john_quad_cmd
-                    ${test_wave_term_john_quad_src}
+                    test_quad_green_element_cmd
+                    ${test_quad_green_element_src}
                 )
-set_mkl_lib_target( test_wave_term_john_quad_cmd )
+set_mkl_lib_target( test_quad_green_element_cmd )
 
 
 # Configure test to check the value of the wave term integrals
