@@ -1,6 +1,204 @@
 
 // Include local modules
 #include "../config.hpp"
+#include "../containers/panel_geom_list.hpp"
+#include "gauss.hpp"
+#include "topology.hpp"
+#include "../mesh/tools.hpp"
+
+// Include namespaces
+using namespace std::literals::complex_literals;
+
+
+template<typename T>   
+inline cuscomplex   _adaptive_quadrature_panel(
+                                                    PanelGeom*      panel,
+                                                    T               target_fcn,
+                                                    cuscomplex      prev_int,
+                                                    cusfloat        tol,
+                                                    GaussPoints*    gp,
+                                                    int             adapt_level
+                                            )
+{
+    // Re-mesh current panel
+    PanelGeomList* panel_list;
+    refine_element( 
+                        panel,
+                        panel_list
+                    );
+
+    // Loop over child panels to integrate the target function
+    // over them
+    cuscomplex    int_sol     = 0.0 + 0.0i;
+    cuscomplex*   int_values  = generate_empty_vector<cuscomplex>( panel_list->panel_np );
+    for ( int i=0; i<panel_list->panel_np; i++ )
+    {
+        int_values[i]   = quadrature_panel(
+                                              panel,
+                                              target_fcn,
+                                              gp
+                                          );
+        int_sol         += int_values[i];
+    }
+
+    // Compare the cumulative integral value with the previous
+    // solution
+    if ( 
+            !assert_complex_equality( prev_int, int_sol, tol )
+            &&
+            ( adapt_level < 3 )
+        )
+    {
+        // Increase adaption level
+        adapt_level += 1;
+
+        // Loop over child panels
+        int_sol = 0.0;
+        for ( int i=0; i<panel_list->panel_np; i++ )
+        {
+            int_sol +=  _adaptive_quadrature_panel(
+                                                        panel,
+                                                        target_fcn,
+                                                        int_values[i],
+                                                        tol,
+                                                        gp,
+                                                        adapt_level
+                                                    );
+        }
+    }
+
+    // Delete local heap memory
+    mkl_free( int_values );
+
+    return int_sol;
+}
+
+
+template<typename T>   
+inline cuscomplex   adaptive_quadrature_panel(
+                                                    PanelGeom*  panel,
+                                                    T           target_fcn,
+                                                    cusfloat    tol,
+                                                    int         gp_order
+                                            )
+{
+    // Start gauss points
+    GaussPoints* gp = new GaussPoints( gp_order );
+
+    // Launch adaptive interation
+    cuscomplex  int_sol =  adaptive_quadrature_panel(
+                                                        panel,
+                                                        target_fcn,
+                                                        tol,
+                                                        gp
+                                                    );
+    
+    // Delete local heap memory
+    delete gp;
+
+    return int_sol;
+}
+
+
+template<typename T>   
+inline cuscomplex adaptive_quadrature_panel(
+                                                    PanelGeom*      panel,
+                                                    T               target_fcn,
+                                                    cusfloat        tol,
+                                                    GaussPoints*    gp
+                                            )
+{
+    // Integrate parent panel
+    cuscomplex int_sol  =  quadrature_panel(
+                                                panel,
+                                                target_fcn,
+                                                gp
+                                            );
+
+    // Define adaption level
+    int adapt_level = 0;
+                                        
+    // Launch adaptive interation
+    int_sol     =   _adaptive_quadrature_panel(
+                                                    panel,
+                                                    target_fcn,
+                                                    int_sol,
+                                                    tol,
+                                                    gp,
+                                                    adapt_level
+                                                );
+
+    return int_sol;
+}
+
+
+template<typename T>
+cuscomplex  quadrature_panel(
+                                PanelGeom*  panel,
+                                T           target_fcn,
+                                int         gp_order
+                            )
+{
+    // Define Gauss points
+    GaussPoints* gp = new GaussPoints( gp_order );
+
+    // Launch quadrature calculation
+    cuscomplex  int_value   = quadrature_panel(
+                                                    panel,
+                                                    target_fcn,
+                                                    gp
+                                                );
+
+    return int_value;
+}
+
+
+template<typename T>
+cuscomplex  quadrature_panel(
+                                PanelGeom*      panel,
+                                T               target_fcn,
+                                GaussPoints*    gp
+                            )
+{
+    // Define variable to hold the integration value
+    cuscomplex int_value        = 0.0;
+
+    // Loop over gauss points to perform the integration
+    cuscomplex  fcn_val          = 0.0;
+    cusfloat    gp_global[3]     = { 0.0, 0.0, 0.0 };
+    for ( int i=0; i<gp->np; i++ )
+    {
+        for ( int j=0; j<gp->np; j++ )
+        {
+            // Get global coordinates for the gauss points
+            panel->local_to_global( 
+                                        gp->roots[i],
+                                        gp->roots[j],
+                                        gp_global
+                                    );
+
+            
+            // Calculate target function value
+            fcn_val = target_fcn( gp_global[0], gp_global[1], gp_global[2] );
+            std::cout << std::endl;
+            std::cout << "xi: " << gp->roots[i] << " - eta: " << gp->roots[j] << std::endl;
+            std::cout << "Int point: (" << i << "," << j << ")" << std::endl;
+            std::cout << "X: " << gp_global[0] << " - Y: " << gp_global[1] << " - Z: " << gp_global[2] << std::endl;
+            std::cout << " - Value: " << fcn_val << std::endl;
+
+            // Calculate function integral function value
+            int_value += gp->weights[i]*gp->weights[j]*fcn_val*jacobi_det_2d( 
+                                                                                panel->num_nodes,
+                                                                                panel->x,
+                                                                                panel->y,
+                                                                                gp->roots[i],
+                                                                                gp->roots[j]
+                                                                            );
+        }
+    }
+
+    return int_value;
+}
 
 
 template<typename Functor>
@@ -8,7 +206,7 @@ cusfloat romberg_quadrature(
                                 Functor f, 
                                 cusfloat a, 
                                 cusfloat b, 
-                                double precision
+                                cusfloat precision
                             )
 {
     // Define buffers
