@@ -10,10 +10,10 @@ using namespace std::literals::complex_literals;
 
 
 cuscomplex complex_integration(
-                                std::function <cuscomplex(cuscomplex)> f_def,
-                                cuscomplex a,
-                                cuscomplex b,
-                                cusfloat tol
+                                fcc_type    f_def,
+                                cuscomplex  a,
+                                cuscomplex  b,
+                                cusfloat    tol
                                 )
 /**
  * @brief Integrate complex function along the segment [a,b].
@@ -45,12 +45,12 @@ cuscomplex complex_integration(
 
 
 cuscomplex complex_integration_path(
-                                    std::function <cuscomplex(cuscomplex)> f_def,
-                                    int num_way_points,
-                                    cuscomplex* way_points,
-                                    cusfloat tol,
-                                    bool close_path,
-                                    bool verbose
+                                        fcc_type    f_def,
+                                        int         num_way_points,
+                                        cuscomplex* way_points,
+                                        cusfloat    tol,
+                                        bool        close_path,
+                                        bool    verbose
                                     )
 /**
  * @brief Integrate function along a path defined by a list of way points.
