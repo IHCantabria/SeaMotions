@@ -336,3 +336,21 @@ add_test(
             COMMAND test_quadrature_2d_cmd
             ${test_quadrature_2d_files}
         )
+
+# Add test to check the elements refinement
+set(
+        test_refine_element_src
+        test_refine_element.cpp
+        ${containers_module_files}
+        ${math_module_files}
+        ${mesh_module_files}
+        ${tools_module_files}
+    )
+
+add_executable( test_refine_element_cmd ${test_refine_element_src} )
+set_mkl_lib_target( test_refine_element_cmd )
+
+add_test(
+            NAME    test_refine_element
+            COMMAND test_refine_element_cmd
+        )
