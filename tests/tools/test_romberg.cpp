@@ -7,6 +7,7 @@
 
 // Include local modules
 #include "../../src/config.hpp"
+#include "../../src/math/integration.hpp"
 #include "../../src/math/math_tools.hpp"
 
 

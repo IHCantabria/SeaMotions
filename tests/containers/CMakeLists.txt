@@ -11,6 +11,7 @@ set(test_inside_polygon_src
     test_inside_polygon.cpp
     ${containers_module_files}
     ${containers_common_src}
+    ${math_module_files}
 )
 
 add_executable( test_inside_polygon_cmd ${test_inside_polygon_src} )

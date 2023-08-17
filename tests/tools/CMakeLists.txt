@@ -312,6 +312,7 @@ set(
     )
 
 add_executable( test_haar_quad_cmd ${test_haar_quad_src} )
+set_mkl_lib_target( test_haar_quad_cmd )
 
 # Add test to check quadrature integration for 2D shapes
 set(

@@ -4,10 +4,11 @@
 
 // Include local modules
 #include "chebyshev_inf_depth.hpp"
-#include "../../src/math/chebyshev.hpp"
 #include "../../src/config.hpp"
-#include "../../src/math/special_math.hpp"
+#include "../../src/math/chebyshev.hpp"
+#include "../../src/math/integration.hpp"
 #include "../../src/math/math_tools.hpp"
+#include "../../src/math/special_math.hpp"
 
 
 #ifdef SIMPLE_PREC
