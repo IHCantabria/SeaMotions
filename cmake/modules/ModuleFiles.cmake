@@ -4,6 +4,7 @@ set(
         ${CMAKE_SOURCE_DIR}/src/containers/containers.hpp
         ${CMAKE_SOURCE_DIR}/src/containers/panel_geom.hpp
         ${CMAKE_SOURCE_DIR}/src/containers/panel_geom.cpp
+        ${CMAKE_SOURCE_DIR}/src/containers/panel_geom_list.hpp
         ${CMAKE_SOURCE_DIR}/src/containers/performance_stats.hpp
         ${CMAKE_SOURCE_DIR}/src/containers/performance_stats.cpp
     )
@@ -107,6 +108,13 @@ set(
         ${CMAKE_SOURCE_DIR}/src/math/special_math.cpp
         ${CMAKE_SOURCE_DIR}/src/math/topology.hpp
         ${CMAKE_SOURCE_DIR}/src/math/topology.cpp
+    )
+
+# Pack mesh module files
+set(
+        mesh_module_files
+        ${CMAKE_SOURCE_DIR}/src/mesh/tools.hpp
+        ${CMAKE_SOURCE_DIR}/src/mesh/tools.cpp
     )
 
 # Pack tools module files
