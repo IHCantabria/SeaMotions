@@ -40,7 +40,7 @@ template<typename T>    inline  int         assert_vector_equality(
                                                                             T* v, 
                                                                             T epsilon
                                                                     );
-template<>              inline int          assert_vector_equality<int>(
+template<>              inline  int          assert_vector_equality<int>(
                                                                             int N, 
                                                                             int* u, 
                                                                             int* v, 
