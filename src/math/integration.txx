@@ -34,7 +34,7 @@ inline cuscomplex   _adaptive_quadrature_panel(
     for ( int i=0; i<panel_list->panel_np; i++ )
     {
         int_values[i]   = quadrature_panel(
-                                              panel,
+                                              panel_list->panels[i],
                                               target_fcn,
                                               gp
                                           );
@@ -57,7 +57,7 @@ inline cuscomplex   _adaptive_quadrature_panel(
         for ( int i=0; i<panel_list->panel_np; i++ )
         {
             int_sol +=  _adaptive_quadrature_panel(
-                                                        panel,
+                                                        panel_list->panels[i],
                                                         target_fcn,
                                                         int_values[i],
                                                         tol,
@@ -180,11 +180,6 @@ cuscomplex  quadrature_panel(
             
             // Calculate target function value
             fcn_val = target_fcn( gp_global[0], gp_global[1], gp_global[2] );
-            std::cout << std::endl;
-            std::cout << "xi: " << gp->roots[i] << " - eta: " << gp->roots[j] << std::endl;
-            std::cout << "Int point: (" << i << "," << j << ")" << std::endl;
-            std::cout << "X: " << gp_global[0] << " - Y: " << gp_global[1] << " - Z: " << gp_global[2] << std::endl;
-            std::cout << " - Value: " << fcn_val << std::endl;
 
             // Calculate function integral function value
             int_value += gp->weights[i]*gp->weights[j]*fcn_val*jacobi_det_2d( 
