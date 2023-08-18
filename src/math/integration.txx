@@ -43,10 +43,11 @@ inline cuscomplex   _adaptive_quadrature_panel(
 
     // Compare the cumulative integral value with the previous
     // solution
+    bool is_equal = !assert_complex_equality( prev_int, int_sol, tol );
     if ( 
-            !assert_complex_equality( prev_int, int_sol, tol )
+            is_equal
             &&
-            ( adapt_level < 3 )
+            ( adapt_level < 6 )
         )
     {
         // Increase adaption level
@@ -65,6 +66,14 @@ inline cuscomplex   _adaptive_quadrature_panel(
                                                         adapt_level
                                                     );
         }
+    }
+    else if ( is_equal )
+    {
+        std::cerr << std::endl;
+        std::cerr << "ERROR: Adaptive quadrature could not find the solution ";
+        std::cerr << "with the required accuracy. Maxim adaption levels reached";
+        std::cerr << std::endl;
+        std::runtime_error( "" );
     }
 
     // Delete local heap memory
