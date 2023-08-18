@@ -208,6 +208,7 @@ set(
         ${panel_geometry_src}
         ${green_module_files}
         ${math_module_files}
+        ${mesh_module_files}
         ${tools_module_files}
         ${waves_module_files}
     )
