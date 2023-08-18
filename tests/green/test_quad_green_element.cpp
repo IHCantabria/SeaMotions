@@ -18,7 +18,7 @@
 #include "../../src/waves.hpp"
 
 
-void sub_test_2( void )
+void sub_test_0( void )
 {
     // Define source input parameters
     cusfloat T = 0.0001;
@@ -124,101 +124,7 @@ void sub_test_2( void )
 
 int main(void)
 {
-    sub_test_2( );
-
-    // // Set test configuration
-    // const int N = 20;
-    // cusfloat int_values[N-1];
-
-    // // Define source input parameters
-    // cusfloat T = 0.01;
-    // cusfloat h = 100.0;
-    // cusfloat x = 0.0;
-    // cusfloat y = 0.0;
-    // cusfloat z = -h/100.0;
-
-    // cusfloat w0 = 2*PI/T;
-    // WaveDispersionData wd = WaveDispersionData(w0, 30, h, 9.81);
-    // wd.calculate_john_terms();
-    // cusfloat H = wd.nu*h;
-
-    // IntegralsDb idb = IntegralsDb();
-    // build_integrals_db(idb);
-    // idb.fold_h(H);
-
-    // std::cout << "H: " << H << std::endl;
-    // std::cout << "L1: " << idb.l1->get_value_abh(1.0, 0.0, H) << std::endl;
-    // std::cout << "L2: " << idb.l2->get_value_abh(H) << std::endl;
-    // std::cout << "L3: " << idb.l3->get_value_abh(1.0, 0.0, H) << std::endl;
-    // cusfloat t0 = chebyshev_poly(11, 1.0);
-    // cusfloat t1 = chebyshev_poly(0, 0.0);
-    // cusfloat t2 = chebyshev_poly(3, H);
-    // std::cout << "t0: " << t0 << std::endl;
-    // std::cout << "t1: " << t1 << std::endl;
-    // std::cout << "t2: " << t2 << std::endl;
-
-    // // Perform test
-    // auto f_def = [&wd]()->cusfloat {return john_series(1.0, 1.0, 2.0, 3.0, 4.0, 5.0, 10.0, wd).real();};
-    // for (int i=1; i<N; i++)
-    // {
-    //     int_values[i-1] = quadrature_unit_2d(
-    //                                         [
-    //                                             x,
-    //                                             y,
-    //                                             z,
-    //                                             h,
-    //                                             &wd,
-    //                                             &idb
-    //                                         ](
-    //                                             cusfloat xi,
-    //                                             cusfloat eta
-    //                                             )-> cusfloat 
-    //                                             {
-    //                                                 // return john_series(
-    //                                                 //                 x,
-    //                                                 //                 y,
-    //                                                 //                 z,
-    //                                                 //                 xi,
-    //                                                 //                 eta,
-    //                                                 //                 -0.1,
-    //                                                 //                 h,
-    //                                                 //                 wd
-    //                                                 //                 ).real();
-    //                                                 return G_integral(
-    //                                                                     x,
-    //                                                                     y,
-    //                                                                     z,
-    //                                                                     xi,
-    //                                                                     eta,
-    //                                                                     -h/99,
-    //                                                                     h,
-    //                                                                     wd,
-    //                                                                     idb
-    //                                                                     ).real();
-    //                                                 // return wave_term_fin_depth(
-    //                                                 //                             x,
-    //                                                 //                             y,
-    //                                                 //                             z,
-    //                                                 //                             xi,
-    //                                                 //                             eta,
-    //                                                 //                             -h/3,
-    //                                                 //                             h,
-    //                                                 //                             wd,
-    //                                                 //                             idb
-    //                                                 //                             ).real();
-    //                                                 // return std::pow(xi, 2.0)+std::pow(eta, 2.0);
-    //                                             }, 
-    //                                             i
-    //                                         );
-    // }
-
-    // // Print-out results
-    // for (int i=1; i<N; i++)
-    // {
-    //     std::cout.precision(6);
-    //     std::cout << "Gauss-Order: " << i << " - Integral Value: ";
-    //     std::cout << std::scientific << int_values[i-1] << std::endl;
-    // }
+    sub_test_0( );
 
     return 0;
 }
