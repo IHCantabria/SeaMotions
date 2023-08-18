@@ -355,3 +355,23 @@ add_test(
             NAME    test_refine_element
             COMMAND test_refine_element_cmd
         )
+
+# Add test to check the adaptive quadrature function over panel
+# geometries
+set(
+        test_adaptive_quad_src
+        test_adaptive_quadrature.cpp
+        ../../src/config.hpp
+        ${containers_module_files}
+        ${math_module_files}
+        ${mesh_module_files}
+        ${tools_module_files}
+    )
+
+add_executable( test_adaptive_quad_cmd ${test_adaptive_quad_src} )
+set_mkl_lib_target( test_adaptive_quad_cmd )
+
+add_test(
+            NAME    test_adaptive_quad
+            COMMAND test_adaptive_quad_cmd
+        )
