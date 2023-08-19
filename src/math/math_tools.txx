@@ -7,6 +7,7 @@
 
 // Include general usage scientific libraries
 #include <cmath>
+#include "mkl.h"
 
 // Include local modules
 #include "../tools.hpp"
