@@ -17,7 +17,7 @@ typedef std::complex<float> cuscomplex;
 
     #ifdef _MPI_BUILD
     #include "mpi.h"
-    typedef MPI_FLOAT mpi_float;
+    #define mpi_float MPI_FLOAT
     #endif
 
 constexpr int FLOATING_PRECISION = 32;
@@ -29,7 +29,7 @@ typedef std::complex<double> cuscomplex;
 
     #ifdef _MPI_BUILD
     #include "mpi.h"
-    typedef MPI_DOUBLE mpi_double;
+    #define mpi_float MPI_DOUBLE
     #endif
 
 constexpr int FLOATING_PRECISION = 32;
