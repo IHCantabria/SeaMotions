@@ -319,7 +319,9 @@ set(
         test_quadrature_2d
         test_quadrature_2d.cpp
         ../../src/config.hpp
+        ${containers_module_files}
         ${math_module_files}
+        ${mesh_module_files}
         ${tools_module_files}
     )
 
