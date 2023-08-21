@@ -29,7 +29,35 @@ set(
         test_status_probe.cpp
         ../../src/config.hpp
         ${math_module_files}
-)
+    )
+
 add_executable( test_mpi_status_probe_cmd ${test_mpi_status_probe_src} )
 set_mpi_target( test_mpi_status_probe_cmd )
 set_mkl_lib_target( test_mpi_status_probe_cmd )
+
+
+add_executable( test_mpi_bcast_cmd test_broadcast.cpp )
+set_mpi_target( test_mpi_bcast_cmd )
+
+
+set(
+        test_mpi_scatter_src
+        test_scatter.cpp
+        ../../src/config.hpp
+        ${math_module_files}
+    )
+add_executable( test_mpi_scatter_cmd ${test_mpi_scatter_src} )
+set_mpi_target( test_mpi_scatter_cmd )
+set_mkl_lib_target( test_mpi_scatter_cmd )
+
+
+set(
+        test_mpi_avg_scatter_gather_src
+        test_avg_scatter_gather.cpp
+        ../../src/config.hpp
+        ${math_module_files}
+    )
+
+add_executable( test_mpi_avg_scatter_gather_cmd ${test_mpi_avg_scatter_gather_src} )
+set_mpi_target( test_mpi_avg_scatter_gather_cmd )
+set_mkl_lib_target( test_mpi_avg_scatter_gather_cmd )
