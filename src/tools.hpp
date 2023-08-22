@@ -61,6 +61,7 @@ template<typename T>    inline  std::string align_num( T number, int width, int 
                                 double      get_cpu_time( );
                                 bool        is_empty_line( std::string );
                                 void        renew_stream( std::istringstream& iss, std::string line );
+                                bool        str_to_bool( std::string v );
 
 #include "tools.txx"
 

@@ -95,6 +95,28 @@ void renew_stream(
 }
 
 
+bool str_to_bool( std::string v )
+{
+    bool v_bool = false;
+    if ( v.compare( std::string("true") ) == 0 )
+    {
+        v_bool = true;
+    }
+    else if ( v.compare( std::string("false") ) == 0 )
+    {
+        v_bool = false;
+    }
+    else
+    {
+        std::cerr << "Not possible to convert: " << v << " to boolean value." << std::endl;
+        std::cerr << "Accepted values are: true | false" << std::endl;
+        exit(10);
+    }
+
+    return v_bool;
+}
+
+
 //  Windows
 #ifdef _WIN32
 #include <Windows.h>
