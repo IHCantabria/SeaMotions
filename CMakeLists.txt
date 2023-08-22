@@ -48,7 +48,26 @@ else()
     message(FATAL_ERROR "PRECISION VALUE: ${PRECISION} not valid. Accepted values: SIMPLE | DOUBLE")
 endif()
 
-message(STATUS "Floating precision: ${PRECISION}")
+###########################################################
+########## Define Compilation configuration ###############
+###########################################################
+# Add precision flag to the compilation options
+set( compile_option_flags ${PRECISION_FLAG} )
+
+# Add warning options to the compiler
+if ( WIN32 )
+    set( compile_option_flags /Wall /Wextra /EHsc)
+elseif ( UNIX )
+    set( compile_option_flags -Wall -Wextra -EHsc)
+endif()
+
+# Check for Debug or release build
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set( compile_option_flags ${compile_option_flags} "-DDEBUG_BUILD")
+endif()
+
+# Apply compile options
+add_compile_options( ${compile_option_flags} )
 
 ###########################################################
 #################### Find Dependencies ####################
@@ -57,13 +76,6 @@ message(STATUS "Floating precision: ${PRECISION}")
 find_package(MKL CONFIG REQUIRED)
 
 function(set_mkl_lib_target target)
-    # Set target compile options
-    if ( WIN32 )
-        target_compile_options(${target} PUBLIC ${PRECISION_FLAG} /Wall /Wextra /EHsc)
-    elseif ( UNIX )
-        target_compile_options(${target} PUBLIC ${PRECISION_FLAG} -Wall -Wextra -EHsc)
-    endif()
-
     # Add target include directories to work with external libraries
     target_include_directories(${target} PUBLIC ${MKL_INCLUDE})
 
