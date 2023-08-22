@@ -38,6 +38,19 @@
 }
 
 
+#define CHECK_INPUT_FILE_VERSION( current_version, file_version, file_path )    \
+    if ( current_version.compare( file_version ) != 0 )                         \
+    {                                                                           \
+        std::cerr << std::endl;                                                 \
+        std::cerr << "ERROR - INPUT FILE VERSION" << std::endl;                 \
+        std::cerr << " - Input file: " << file_path << std::endl;               \
+        std::cerr << "has an unexpected file version: " << file_version;        \
+        std::cerr << ". The current program is expecting: " << current_version; \
+        std::cerr << std::endl;                                                 \
+        exit(12);                                                               \
+    }                                                                           \
+
+
 ///////////////////////////////////////////////
 /************ FUNCTION DEFINITION ************/
 ///////////////////////////////////////////////
