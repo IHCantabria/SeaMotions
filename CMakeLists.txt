@@ -88,7 +88,7 @@ endfunction()
 find_package( MPI REQUIRED )
 
 function( set_mpi_target target )
-    target_compile_options( ${target} PUBLIC "-D_MPI_BUILD" )
+    target_compile_options( ${target} PUBLIC "-DMPI_BUILD" )
     target_include_directories( ${target} PRIVATE ${mpi_include_path} )
     target_link_libraries( ${target} PRIVATE MPI::MPI_CXX )
 endfunction( )

@@ -15,7 +15,7 @@ constexpr bool      _DEBUG_BUILD        = false;
 typedef float cusfloat;
 typedef std::complex<float> cuscomplex;
 
-    #ifdef _MPI_BUILD
+    #ifdef MPI_BUILD
     #include "mpi.h"
     #define mpi_cusfloat MPI_FLOAT
     #endif
@@ -27,7 +27,7 @@ constexpr cusfloat EPS_PRECISION_ORDER = -6;
 typedef double cusfloat;
 typedef std::complex<double> cuscomplex;
 
-    #ifdef _MPI_BUILD
+    #ifdef MPI_BUILD
     #include "mpi.h"
     #define mpi_cusfloat MPI_DOUBLE
     #endif
