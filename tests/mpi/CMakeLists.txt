@@ -36,10 +36,12 @@ set_mpi_target( test_mpi_status_probe_cmd )
 set_mkl_lib_target( test_mpi_status_probe_cmd )
 
 
+# Add example on the use of mpi broadcasting
 add_executable( test_mpi_bcast_cmd test_broadcast.cpp )
 set_mpi_target( test_mpi_bcast_cmd )
 
 
+# Add example on the use of the mpi scatter
 set(
         test_mpi_scatter_src
         test_scatter.cpp
@@ -51,6 +53,8 @@ set_mpi_target( test_mpi_scatter_cmd )
 set_mkl_lib_target( test_mpi_scatter_cmd )
 
 
+# Add example on how to use scatter and gather to compute the
+# average of a series of numbers
 set(
         test_mpi_avg_scatter_gather_src
         test_avg_scatter_gather.cpp
