@@ -68,3 +68,10 @@ inline std::string align_num(T number, int width, int precision, int align, int 
 
     return align_data;
 }
+
+
+template<typename T>
+inline bool is_string( void )
+{
+    return std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, std::string>;
+}

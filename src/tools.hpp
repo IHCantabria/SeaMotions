@@ -60,7 +60,9 @@ template<typename T>    inline  std::string align_num( T number, int width, int 
                                 double      get_wall_time( );
                                 double      get_cpu_time( );
                                 bool        is_empty_line( std::string );
+template<typename T>    inline  bool        is_string( void );
                                 void        renew_stream( std::istringstream& iss, std::string line );
+                                void        squeeze_string( std::string& str );
                                 bool        str_to_bool( std::string v );
 
 #include "tools.txx"

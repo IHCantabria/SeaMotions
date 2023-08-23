@@ -1,5 +1,7 @@
 
 // Include general usage libraries
+#include <algorithm>
+#include <cctype>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -92,6 +94,12 @@ void renew_stream(
     iss.str( std::string() );
     iss.clear( );
     iss.str( line );
+}
+
+
+void squeeze_string( std::string& str )
+{
+    str.erase(std::remove_if(str.begin( ), str.end( ), std::isspace), str.end( ));
 }
 
 
