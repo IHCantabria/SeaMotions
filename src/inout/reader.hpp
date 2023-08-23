@@ -58,6 +58,18 @@ template<typename T>    inline  void        _read_channel_matrix(
                                                                     T                   channel
                                                                 );
 
+template<typename T>    inline  void        _read_list_contraction(
+                                                                    std::ifstream&  infile,
+                                                                    int&            line_count,
+                                                                    std::string     target_file,
+                                                                    std::vector<T>& container
+                                                                );
+
+template<typename T>    inline  void        _read_compact_list(
+                                                                    std::string     item,
+                                                                    std::vector<T>& container
+                                                                );
+
                                 void        _skip_header(           
                                                                     std::ifstream&      infile, 
                                                                     int&                line_count, 

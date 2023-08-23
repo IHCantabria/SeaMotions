@@ -2,6 +2,7 @@
 // Include general usage libraries
 #include <iostream>
 #include <sstream>
+#include <type_traits>
 #include <vector>
 
 // Include local modules
@@ -112,4 +113,197 @@ inline  void    _read_channel_matrix(
         } 
     }
 
+}
+
+
+template<typename T>
+inline  void    _read_list_contraction(
+                                        std::ifstream&  infile,
+                                        int&            line_count,
+                                        std::string     target_file,
+                                        std::vector<T>& container
+                                    )
+{
+    // Check input data type
+    static_assert( 
+                    std::disjunction<
+                                        std::is_same<cusfloat, T>,
+                                        std::is_same<int, T>
+                                    >( ),
+                    "Not valid type. Function only accepts: int | cusfloat"
+                );
+    
+    // Loop over lines until the next section header is found
+    T                           aux_val         ;
+    std::vector<std::string>    aux_vec         ;
+    std::vector<cusfloat>       cmp_list        ;
+    int                         _count          = 0;
+    std::string                 line            ;
+    int                         max_count       = 1e4;
+    while ( true )
+    {
+        // Read the current file position
+        auto read_pos = infile.tellg( );
+
+        // Check if reading a heder line
+        std::getline( infile, line );
+        int pos = line.find( "/***" );
+        infile.seekg( read_pos );
+        if ( !( pos < 0 ) )
+        {
+            break;
+        }
+
+        // Process line
+        squeeze_string( line );
+        split_string( 
+                        line,
+                        aux_vec,
+                        ','
+                    );
+
+        // Loop over line items
+        for ( auto item: aux_vec )
+        {
+            // Check if the item is a compact list
+            if ( !( item.find( ":" ) < 0 ) )
+            {
+                _read_compact_list(
+                                        item,
+                                        container
+                                    );
+            }
+            else
+            {
+                // Convert from string to the target value
+                convert_number( 
+                                    item, 
+                                    aux_val 
+                                );
+                
+                // Storage in the target container
+                container.push_back( aux_val )
+            }
+
+        }
+
+        // Storage signal value
+        list.push_back( aux_var );
+
+        // Check maximum number of iterations
+        _count++;
+        if ( _count > max_count )
+        {
+            std::cerr << std::endl;
+            std::cerr << "Not posible to find the end of the list that begins at line: " << _first_line;
+            std::cerr << " of the file: " << target_file << std::endl;
+            std::runtime_error( "" );
+        }
+
+    }
+}
+
+
+template<typename T>
+inline  void    _read_compact_list(
+                                    std::string     item,
+                                    std::vector<T>& container
+                                )
+{
+    // Check input types
+    static_assert(
+                    std::disjunction<
+                                        std::is_same<T, cusfloat>,
+                                        std::is_same<T, int>
+                                    >( ),
+                    "Input type not allowed!"
+                );
+    
+    // Declare local variables
+    int             bound_set_end   = 0;
+    int             bound_set_init  = 0;
+    std::vector<T>  cmp_list;
+    T               cmp_list_val    = 0;
+    int             count_cmp_list  = 0;
+    int             last_char       = 0;
+
+    // Check boundary type of the set
+    if ( item[0] == '(' )
+    {
+        bound_set_init = 0;
+    }
+    else if ( item[0] == '[' )
+    {
+        bound_set_init = 1;
+    }
+    else
+    {
+        std::cerr << std::endl;
+        std::cerr << "ERROR: " << std::endl;
+        std::cerr << "Not possible to find the correct set init boundary symbol";
+        std::cerr << std::endl;
+        std::runtime_error( "" );
+    }
+    item.erase( 0, 1 );
+
+    last_char = item.length( ) - 1;
+    if ( item[last_char] == ')' ) 
+    {
+        bound_set_init = 0;
+    }
+    else if ( item[last_char] == ']' )
+    {
+        bound_set_init = 1;
+    }
+    else
+    {
+        std::cerr << std::endl;
+        std::cerr << "ERROR: " << std::endl;
+        std::cerr << "Not possible to find the correct set end boundary symbol";
+        std::cerr << std::endl;
+        std::runtime_error( "" );
+    }
+    item.erase( last_char, 1 );
+
+    // Split line using double dot character
+    split_string(
+                    item,
+                    cmp_list,
+                    ':'
+                );
+    
+    // Use compact form of the cmp_list to define 
+    // a list of floating values attached to the container
+    if ( bound_set_init == 0 )
+    {
+        count_cmp_list = 1;
+    }
+    else
+    {
+        count_cmp_list = 0;
+    }
+    
+    while ( true  )
+    {
+        // Generate new list value
+        cmp_list_val = cmp_list[0] + count_cmp_list*cmp_list[1];
+
+        // Check end bounds
+        if ( !( cmp_list_val < cmp_list[2] ) )
+        {
+            break;
+        }
+
+        // Storage new value
+        container.push_back( cmp_list_val );
+
+        // Advance counter
+        count_cmp_list++;
+
+    }
+
+    if ( bound_set_end == 1 )
+    {
+        container.push_back( cmp_list[2] );
+    }
 }
