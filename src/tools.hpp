@@ -4,6 +4,7 @@
 
 // Include general usage libraries
 #include <string>
+#include <vector>
 
 // Include local modules
 #include "config.hpp"
@@ -54,16 +55,75 @@
 ///////////////////////////////////////////////
 /************ FUNCTION DEFINITION ************/
 ///////////////////////////////////////////////
-                                std::string align_str( std::string input, int width, int align );
-template<typename T>    inline  std::string align_num( T number, int width, int precision, int align, int scientific_flag );
-                                bool        check_num_cmd_args( int argc, int req_argc );
+                                std::string align_str( 
+                                                                            std::string input, 
+                                                                            int width, 
+                                                                            int align
+                                                        );
+
+template<typename T>    inline  std::string align_num( 
+                                                                            T number, 
+                                                                            int width, 
+                                                                            int precision, 
+                                                                            int align, 
+                                                                            int scientific_flag 
+                                                        );
+
+                                bool        check_num_cmd_args( 
+                                                                            int argc, 
+                                                                            int req_argc 
+                                                                );
+
+template<typename T>    inline  void        convert_number( 
+                                                                            std::string str, 
+                                                                            T& val 
+                                                        );
+                                                        
+template<>              inline  void        convert_number<std::string>( 
+                                                                            std::string str,
+                                                                            std::string& val 
+                                                                        );
+                                                                
+template<>              inline  void        convert_number<int>( 
+                                                                            std::string str, 
+                                                                            int& val 
+                                                                );
+
+template<>              inline  void        convert_number<cusfloat>( 
+                                                                            std::string str, 
+                                                                            cusfloat& val 
+                                                                    );
+
                                 double      get_wall_time( );
+
                                 double      get_cpu_time( );
-                                bool        is_empty_line( std::string );
-template<typename T>    inline  bool        is_string( void );
-                                void        renew_stream( std::istringstream& iss, std::string line );
-                                void        squeeze_string( std::string& str );
-                                bool        str_to_bool( std::string v );
+
+                                bool        is_empty_line( 
+                                                                            std::string
+                                                        );
+
+template<typename T>    inline  bool        is_string( 
+                                                                            void 
+                                                        );
+
+                                void        renew_stream( 
+                                                                            std::istringstream& iss, 
+                                                                            std::string line 
+                                                        );
+
+template<typename T>    inline  void        split_string( 
+                                                                            std::string     str,
+                                                                            std::vector<T>& vec,
+                                                                            char            sep
+                                                        );
+
+                                void        squeeze_string( 
+                                                                            std::string& str 
+                                                            );
+
+                                bool        str_to_bool( 
+                                                                            std::string v 
+                                                        );
 
 #include "tools.txx"
 

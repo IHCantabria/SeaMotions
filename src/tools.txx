@@ -3,6 +3,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <vector>
 
 
 template<typename T>
@@ -71,7 +72,87 @@ inline std::string align_num(T number, int width, int precision, int align, int 
 
 
 template<typename T>
-inline bool is_string( void )
+inline  void    convert_number( std::string str, T& val )
+{
+    static_assert( std::_Always_false<T>::value, "Not valid type!" );
+}
+
+
+template<>
+inline  void    convert_number<std::string>( std::string str, std::string& val )
+{
+    val = str;
+}
+
+
+template<>
+inline  void    convert_number<int>( std::string str, int& val )
+{
+    val = std::atoi( str.c_str( ) );
+}
+
+
+template<>
+inline  void    convert_number<cusfloat>( std::string str, cusfloat& val )
+{
+    val = std::atof( str.c_str( ) );
+}
+
+
+template<typename T>
+inline  bool    is_string( void )
 {
     return std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, std::string>;
+}
+
+
+template<typename T>
+inline  void    split_string( 
+                                std::string     str,
+                                std::vector<T>& vec,
+                                char            sep
+                            )
+{
+    // Declare position indexes
+    int pos0 = 0;
+    int pos1 = 0;
+
+    // Check if the separators are at the begining and the end of the
+    // line are present
+    if ( str[0] == sep )
+    {
+        str.erase( 0, 1 );
+    }
+
+    if ( str[str.length( )-1] != sep )
+    {
+        str = str + sep;
+    }
+
+    // Loop over string to be the substring
+    std::string substr( "" );
+    T           val;
+    while ( true )
+    {
+        // Find position of the next separator character
+        pos1 = str.find( sep );
+
+        // Check if there is no more items delimited
+        // by the specified separator
+        if ( pos1 < 0 )
+        {
+            break;
+        }
+
+        // Read substring
+        convert_number<T>( 
+                            str.substr( pos0, pos1 - pos0 ), 
+                            val 
+                        );
+        vec.push_back( val );
+
+        // Renew str
+        str = str.substr( pos1+1, str.length( ) - (pos1+1) );
+
+    }
 }
