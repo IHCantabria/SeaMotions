@@ -138,23 +138,31 @@ inline  void    _read_list_contraction(
     std::vector<std::string>    aux_vec         ;
     std::vector<cusfloat>       cmp_list        ;
     int                         _count          = 0;
+    int                         _first_line     = line_count;
     std::string                 line            ;
-    int                         max_count       = 1e4;
+    int                         max_count       = 2;
+    int                         pos_ddot        = 0;
     while ( true )
     {
         // Read the current file position
         auto read_pos = infile.tellg( );
 
-        // Check if reading a heder line
-        std::getline( infile, line );
-        int pos = line.find( "/***" );
-        infile.seekg( read_pos );
-        if ( !( pos < 0 ) )
+        // Check if there is more lines to read
+        if (!( std::getline( infile, line ) ))
         {
             break;
         }
 
+        // Check if reading a header line
+        int pos = line.find( "/***" );
+        if ( !( pos < 0 ) )
+        {
+            infile.seekg( read_pos );
+            break;
+        }
+
         // Process line
+        aux_vec.clear( );
         squeeze_string( line );
         split_string( 
                         line,
@@ -166,7 +174,8 @@ inline  void    _read_list_contraction(
         for ( auto item: aux_vec )
         {
             // Check if the item is a compact list
-            if ( !( item.find( ":" ) < 0 ) )
+            pos_ddot = item.find( ":" );
+            if ( !( pos_ddot < 0 ) )
             {
                 _read_compact_list(
                                         item,
@@ -182,16 +191,14 @@ inline  void    _read_list_contraction(
                                 );
                 
                 // Storage in the target container
-                container.push_back( aux_val )
+                container.push_back( aux_val );
             }
 
         }
 
-        // Storage signal value
-        list.push_back( aux_var );
-
         // Check maximum number of iterations
         _count++;
+        line_count++;
         if ( _count > max_count )
         {
             std::cerr << std::endl;
@@ -249,11 +256,11 @@ inline  void    _read_compact_list(
     last_char = item.length( ) - 1;
     if ( item[last_char] == ')' ) 
     {
-        bound_set_init = 0;
+        bound_set_end = 0;
     }
     else if ( item[last_char] == ']' )
     {
-        bound_set_init = 1;
+        bound_set_end = 1;
     }
     else
     {
@@ -283,7 +290,7 @@ inline  void    _read_compact_list(
         count_cmp_list = 0;
     }
     
-    while ( true  )
+    while ( true )
     {
         // Generate new list value
         cmp_list_val = cmp_list[0] + count_cmp_list*cmp_list[1];
