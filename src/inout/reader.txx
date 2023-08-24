@@ -204,7 +204,7 @@ inline  void    _read_list_contraction(
             std::cerr << std::endl;
             std::cerr << "Not posible to find the end of the list that begins at line: " << _first_line;
             std::cerr << " of the file: " << target_file << std::endl;
-            std::runtime_error( "" );
+            throw std::runtime_error( "" );
         }
 
     }
@@ -249,7 +249,7 @@ inline  void    _read_compact_list(
         std::cerr << "ERROR: " << std::endl;
         std::cerr << "Not possible to find the correct set init boundary symbol";
         std::cerr << std::endl;
-        std::runtime_error( "" );
+        throw std::runtime_error( "" );
     }
     item.erase( 0, 1 );
 
@@ -268,7 +268,7 @@ inline  void    _read_compact_list(
         std::cerr << "ERROR: " << std::endl;
         std::cerr << "Not possible to find the correct set end boundary symbol";
         std::cerr << std::endl;
-        std::runtime_error( "" );
+        throw std::runtime_error( "" );
     }
     item.erase( last_char, 1 );
 
