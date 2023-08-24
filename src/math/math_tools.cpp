@@ -129,6 +129,12 @@ void bisection(
 }
 
 
+cusfloat deg_to_rad(  cusfloat deg )
+{
+    return deg*PI/180.0;
+}
+
+
 signed long long factorial( int n )
 {
     signed long long pk = 1;
@@ -138,6 +144,12 @@ signed long long factorial( int n )
     }
 
     return pk;
+}
+
+
+cusfloat freq_to_angfreq( cusfloat freq )
+{
+    return 2*PI*freq;
 }
 
 
@@ -215,4 +227,10 @@ void newton_raphson(
 
     // Storage result in output channel
     sol = x;
+}
+
+
+cusfloat period_to_angfreq( cusfloat period )
+{
+    return 2*PI/period;
 }

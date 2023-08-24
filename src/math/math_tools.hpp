@@ -79,11 +79,19 @@ template<typename T>    inline  void            cross(
                                                                                 T (&v)[3], 
                                                                                 T (&w)[3]
                                                     );
+
+                                cusfloat        deg_to_rad(    
+                                                                                cusfloat deg 
+                                                        );
         
                                 sll_type        factorial(
                                                                                 int n
+                                                        );
+                                
+                                cusfloat        freq_to_angfreq( 
+                                                                                cusfloat freq 
                                                                 );
-        
+
                                 void            newton_raphson(
                                                                                 std::function<cusfloat(cusfloat)> f_def, 
                                                                                 std::function<cusfloat(cusfloat)> f_der_def,
@@ -95,6 +103,10 @@ template<typename T>    inline  void            cross(
                                                                                 cusfloat &sol, 
                                                                                 int &info
                                                                );
+
+                                cusfloat        period_to_angfreq( 
+                                                                                cusfloat period 
+                                                                );
         
 template<typename T>    inline  T               pow2s(
                                                                                 T x
