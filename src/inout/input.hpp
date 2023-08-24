@@ -30,10 +30,12 @@ public:
     std::vector<std::string>    bodies_finame   ;
     std::string                 folder_path     = "";
     int                         bodies_np       = 0;
-    cusfloat*                   freqs           = nullptr;
-    int                         freqs_np        = 0;
-    cusfloat*                   heads           = nullptr;
+    std::vector<cusfloat>       angfreqs        ;
+    int                         angfreqs_np     = 0;
+    std::string                 freqs_unit      = "";
+    std::vector<cusfloat>       heads           ;
     int                         heads_np        = 0;
+    std::string                 heads_units     = "";
     cusfloat                    grav_acc        = 0.0;
     cusfloat                    water_density   = 0.0;
     cusfloat                    water_depth     = 0.0;
@@ -41,7 +43,13 @@ public:
     // Define class constructors and destructors
 
     // Define class methods
-    void print( void );
+    void    configure( 
+                        void
+                    );
+
+    void    print(     
+                        void 
+                );
 
 };
 
