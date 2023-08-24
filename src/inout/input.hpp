@@ -4,43 +4,36 @@
 
 // Include general usage libraries
 #include <iostream>
+#include <string>
 
 // Import local modules
 #include "../config.hpp"
+#include "../containers/body_def.hpp"
 #include "../mesh/mesh.hpp"
-
-
-struct BodyDef
-{
-public:
-    // Define class attributes
-    Mesh*       mesh            = nullptr;
-
-    // Define class constructor and destructor
-
-
-};
 
 
 struct Input
 {
 public:
     // Define class attributes
-    std::string                 case_fopath     = "";
+    BodyDef**                   bodies          = nullptr;
     std::vector<std::string>    bodies_finame   ;
-    std::string                 folder_path     = "";
     int                         bodies_np       = 0;
+    std::string                 case_fopath     = "";
+    std::string                 folder_path     = "";
     std::vector<cusfloat>       angfreqs        ;
     int                         angfreqs_np     = 0;
     std::string                 freqs_unit      = "";
     std::vector<cusfloat>       heads           ;
     int                         heads_np        = 0;
     std::string                 heads_units     = "";
+    bool                        is_bodies       = false;
     cusfloat                    grav_acc        = 0.0;
     cusfloat                    water_density   = 0.0;
     cusfloat                    water_depth     = 0.0;
 
     // Define class constructors and destructors
+    ~Input( void );
 
     // Define class methods
     void    configure( 

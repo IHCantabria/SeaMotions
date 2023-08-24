@@ -5,6 +5,7 @@
 #include <sstream>
 
 // Include local modules
+#include "../containers/body_def.hpp"
 #include "input.hpp"
 #include "reader.hpp"
 #include "../tools.hpp"
@@ -14,85 +15,129 @@
 namespace fs = std::filesystem;
 
 
-// void read_body( Input* input )
-// {
-//     // Generate auxiliar variables
-//     int     line_count      = 0;
-//     string  read_signal     = "";
-//     string  target_file     = "body_dynamics.input.dat";
-//     string  target_signal   = "";
-//     string  _version        = "";
+void read_bodies( 
+                    std::string folder_path,
+                    Input*      input
+                )
+{
+    // Allocate space for the bodies description
+    input->bodies = new BodyDef*[input->bodies_np];
 
-//     // Compose file path of the target file
-//     fs::path file_name( target_file );
-//     fs::path file_path = input->plant_descr_path / file_name;
+    // Loop over body definitions to load them
+    for ( int i=0; i<input->bodies_np; i++ )
+    {
+        // Create new body instance
+        input->bodies[i] = new BodyDef;
 
-//     // Open file unit
-//     ifstream infile;
-//     infile.open( file_path, ios_base::in );
-//     CHECK_FILE_UNIT_STATUS( infile, file_path );
+        // Load body data
+        read_body(
+                    folder_path,
+                    input->bodies_finame[i],
+                    input->bodies[i]
+                );
 
-//     // Read file header
-//     _skip_header( infile, line_count, 1 );
+    }
 
-//     // Read file version
-//     target_signal   = "version";
-//     read_signal     = _read_channel_value( infile, _version );
-//     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
-//     CHECK_INPUT_FILE_VERSION( VERSION_LABEL, _version, file_path );
+    // Set bodies as read
+    input->is_bodies = true;
+}
 
-//     //////////////////////////////////////////////
-//     /************** Body Properties *************/
-//     //////////////////////////////////////////////
-//     _skip_header( infile, line_count, 3 );
 
-//     // Read rigid body model: Rigid or flexible
-//     target_signal   = "BodyModel";
-//     read_signal     = _read_channel_value( infile, input->body_model );
-//     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+void read_body(
+                    std::string folder_path,
+                    std::string target_file,
+                    BodyDef*    body
+                )
+{
+    // Generate auxiliar variables
+    int         line_count      = 0;
+    std::string read_signal     = "";
+    std::string target_signal   = "";
+    std::string _version        = "";
 
-//     if ( input->body_model > 1)
-//     {
-//         cerr << "Unknown body model: " << input->body_model << endl;
-//         cerr << ". Acepted values are-> 0: Rigid - 1: Flexible" << endl;
-//         exit( 10 );
-//     }
-//     else if ( input->body_model == 0 )
-//     {
-//         input->body_dofs_np = 1;
-//     }
+    // Generate case.input.dat file path
+    fs::path folder_path_( folder_path );
+    fs::path file_name( target_file );
+    fs::path file_path = folder_path_ / file_name;
 
-//     //////////////////////////////////////////////
-//     /********* Rigid Body properties ************/
-//     //////////////////////////////////////////////
-//     _skip_header( infile, line_count, 3 );
+    // Open file unit
+    std::ifstream infile;
+    infile.open( file_path, std::ios_base::in );
+    CHECK_FILE_UNIT_STATUS( infile, file_path );
 
-//     // Read rigid body COG X position
-//     target_signal   = "RBCOGX";
-//     read_signal     = _read_channel_value( infile, input->cog_x );
-//     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+    // Read file header line
+    _skip_header( infile, line_count, 1 );
 
-//     // Read rigid body COG Y position
-//     target_signal   = "RBCOGY";
-//     read_signal     = _read_channel_value( infile, input->cog_y );
-//     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+    // Read file version
+    target_signal   = "version";
+    read_signal     = _read_channel_value( infile, _version );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+    CHECK_INPUT_FILE_VERSION( VERSION_LABEL, _version, file_path );
 
-//     // Read inertia matrix
-//     target_signal   = "RigidInertiaMat";
-//     read_signal     = _read_channel_name( infile );
-//     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
-//     _read_channel_matrix( infile, 3, 3, input->inertia );
+    //////////////////////////////////////////////
+    /************* Mesh Description *************/
+    //////////////////////////////////////////////
 
-//     // Read damping matrix
-//     target_signal   = "RigidDampingMat";
-//     read_signal     = _read_channel_name( infile );
-//     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
-//     _read_channel_matrix( infile, 3, 3, input->damping );
+    // Skip header
+    _skip_header( infile, line_count, 3 );
 
-//     // Close file unit
-//     infile.close();
+    // Read mesh
+    target_signal   = "MeshFile";
+    read_signal     = _read_channel_value( infile, body->mesh_finame );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
-// }
+    fs::path mesh_foname_( std::string( "mesh" ) );
+    fs::path mesh_finame_( body->mesh_finame );
+    fs::path mesh_fipath_ = folder_path_ / mesh_foname_ / mesh_finame_;
+    body->mesh      = new Mesh( mesh_fipath_.string( ) );
+    body->is_mesh   = true;
+
+    //////////////////////////////////////////////
+    /************* Mass Properties **************/
+    //////////////////////////////////////////////
+
+    // Skip header
+    _skip_header( infile, line_count, 3 );
+
+    // Read mass
+    target_signal   = "BodyMass";
+    read_signal     = _read_channel_value( infile, body->mass );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read COGX
+    target_signal   = "COGX";
+    read_signal     = _read_channel_value( infile, body->cog_x );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read COGY
+    target_signal   = "COGY";
+    read_signal     = _read_channel_value( infile, body->cog_y );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read COGZ
+    target_signal   = "COGZ";
+    read_signal     = _read_channel_value( infile, body->cog_z );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read RXX
+    target_signal   = "RXX";
+    read_signal     = _read_channel_value( infile, body->rxx );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read RYY
+    target_signal   = "RYY";
+    read_signal     = _read_channel_value( infile, body->ryy );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read RZZ
+    target_signal   = "RZZ";
+    read_signal     = _read_channel_value( infile, body->rzz );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Close file unit
+    infile.close();
+
+}
 
 
 void    read_case( 
@@ -240,6 +285,9 @@ Input* read_input_files( std::string folder_path )
 
     // Read case.input.dat file
     read_case( folder_path, input );
+
+    // Read bodies
+    read_bodies( folder_path, input );
 
     // Configure inputs
     input->configure( );

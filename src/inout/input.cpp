@@ -54,6 +54,23 @@ void Input::configure( void )
 }
 
 
+Input::~Input( void )
+{
+    if ( this->is_bodies )
+    {
+        // Delete BodyDef object instances
+        for ( int i=0; i<this->bodies_np; i++ )
+        {
+            delete this->bodies[i];
+        }
+        
+        // Delete vector of BodyDef pointers
+        delete [] this->bodies;
+
+    }
+}
+
+
 void Input::print( void )
 {
     std::cout << std::endl;
@@ -61,6 +78,7 @@ void Input::print( void )
     for ( int i=0; i<this->bodies_np; i++ )
     {
         std::cout << " - Body " << i << ": " << this->bodies_finame[i] << std::endl;
+        this->bodies[i]->print( );
     }
 
     std::cout << std::endl;

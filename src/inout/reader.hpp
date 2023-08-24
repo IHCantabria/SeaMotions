@@ -30,51 +30,57 @@
 } while (0)
 
 
-                                Input*      read_input_files( 
-                                                                    std::string         folder_path
-                                                            );
-
-template<typename T>    inline  void        _read_channel_list( 
-                                                                    std::ifstream&      infile,
-                                                                    std::string         target_file,
-                                                                    std::string         target_signal,
-                                                                    int&                line_count,
-                                                                    std::vector<T>&     list
-                                                                );
-
-                                std::string      _read_channel_name( 
-                                                                    std::ifstream&      infile 
-                                                                );
-
-template<typename T>    inline  std::string      _read_channel_value( 
-                                                                    std::ifstream&      infile, 
-                                                                    T&                  channel
-                                                                );
-
-template<typename T>    inline  void        _read_channel_matrix( 
-                                                                    std::ifstream&      infile, 
-                                                                    int                 rows_np, 
-                                                                    int                 cols_np, 
-                                                                    T                   channel
-                                                                );
-
-template<typename T>    inline  void        _read_list_contraction(
-                                                                    std::ifstream&  infile,
-                                                                    int&            line_count,
-                                                                    std::string     target_file,
-                                                                    std::vector<T>& container
-                                                                );
-
-template<typename T>    inline  void        _read_compact_list(
-                                                                    std::string     item,
-                                                                    std::vector<T>& container
-                                                                );
-
-                                void        _skip_header(           
-                                                                    std::ifstream&      infile, 
-                                                                    int&                line_count, 
-                                                                    int                 np 
+                                void            read_body(
+                                                                        std::string folder_path,
+                                                                        std::string target_file,
+                                                                        BodyDef*    body
                                                         );
+
+template<typename T>    inline  void            _read_channel_list( 
+                                                                        std::ifstream&      infile,
+                                                                        std::string         target_file,
+                                                                        std::string         target_signal,
+                                                                        int&                line_count,
+                                                                        std::vector<T>&     list
+                                                                    );
+
+                                std::string     _read_channel_name( 
+                                                                        std::ifstream&      infile 
+                                                                );
+
+template<typename T>    inline  std::string     _read_channel_value( 
+                                                                        std::ifstream&      infile, 
+                                                                        T&                  channel
+                                                                    );
+
+template<typename T>    inline  void            _read_channel_matrix( 
+                                                                        std::ifstream&      infile, 
+                                                                        int                 rows_np, 
+                                                                        int                 cols_np, 
+                                                                        T                   channel
+                                                                    );
+
+template<typename T>    inline  void            _read_list_contraction(
+                                                                        std::ifstream&  infile,
+                                                                        int&            line_count,
+                                                                        std::string     target_file,
+                                                                        std::vector<T>& container
+                                                                        );
+
+template<typename T>    inline  void            _read_compact_list(
+                                                                        std::string     item,
+                                                                        std::vector<T>& container
+                                                                    );
+
+                                Input*          read_input_files( 
+                                                                        std::string         folder_path
+                                                                );
+
+                                void            _skip_header(           
+                                                                        std::ifstream&      infile, 
+                                                                        int&                line_count, 
+                                                                        int                 np 
+                                                            );
 
 
 // Include temaplates definition
