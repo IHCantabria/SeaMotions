@@ -166,6 +166,48 @@ void    read_case(
     read_signal     = _read_channel_value( infile, input->water_depth );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
+    //////////////////////////////////////////////
+    /****************** Heading *****************/
+    //////////////////////////////////////////////
+
+    // Skip header
+    _skip_header( infile, line_count, 3 );
+
+    // Read headings units
+    target_signal   = "HeadUnits";
+    read_signal     = _read_channel_value( infile, input->heads_units );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read list contraction
+    _read_list_contraction(
+                                infile,
+                                line_count,
+                                target_file,
+                                input->heads
+                            );
+    input->heads_np = input->heads.size( );
+
+    //////////////////////////////////////////////
+    /*************** Frequencies ****************/
+    //////////////////////////////////////////////
+
+    // Skip header
+    _skip_header( infile, line_count, 3 );
+
+    // Read headings units
+    target_signal   = "FreqUnit";
+    read_signal     = _read_channel_value( infile, input->freqs_unit );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read list contraction
+    _read_list_contraction(
+                                infile,
+                                line_count,
+                                target_file,
+                                input->angfreqs
+                            );
+    input->angfreqs_np = input->angfreqs.size( );
+ 
     // Close file unit
     infile.close();
 }
@@ -198,6 +240,9 @@ Input* read_input_files( std::string folder_path )
 
     // Read case.input.dat file
     read_case( folder_path, input );
+
+    // Configure inputs
+    input->configure( );
 
     return input;
 }
