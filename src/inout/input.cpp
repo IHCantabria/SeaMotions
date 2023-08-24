@@ -24,7 +24,7 @@ void Input::configure( void )
         std::cout << "HeadUnits: " << this->heads_units << " is not a valid parameter." << std::endl;
         std::cout << "Valid heading units are: deg | rad." << std::endl;
         std::cout << std::endl;
-        std::runtime_error( "" );
+        throw std::runtime_error( "" );
     }
 
     // Check input frequencies units
@@ -49,7 +49,7 @@ void Input::configure( void )
         std::cout << "FreqUnit: " << this->freqs_unit << " is not a valid parameter." << std::endl;
         std::cout << "Valid frequency units are: period | freq | angfreq." << std::endl;
         std::cout << std::endl;
-        std::runtime_error( "" );
+        throw std::runtime_error( "" );
     }
 }
 
