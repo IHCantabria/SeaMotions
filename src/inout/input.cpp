@@ -10,28 +10,46 @@
 void Input::configure( void )
 {
     // Check headings input units
-    if ( this->heads_units.compare( "deg" ) )
+    if ( this->heads_units.compare( "deg" ) == 0 )
     {
         for ( int i=0; i<this->heads_np; i++ )
         {
             this->heads[i] = deg_to_rad( this->heads[i] );
         }
     }
+    else if ( this->heads_units.compare( "rad" ) != 0 )
+    {
+        std::cout << std::endl;
+        std::cout << "ERROR - INPUT:" << std::endl;
+        std::cout << "HeadUnits: " << this->heads_units << " is not a valid parameter." << std::endl;
+        std::cout << "Valid heading units are: deg | rad." << std::endl;
+        std::cout << std::endl;
+        std::runtime_error( "" );
+    }
 
     // Check input frequencies units
-    if ( this->freqs_unit.compare( "period" ) )
+    if ( this->freqs_unit.compare( "period" ) == 0 )
     {
         for ( int i=0; i<this->angfreqs_np; i++ )
         {
             this->angfreqs[i] = period_to_angfreq( this->angfreqs[i] );
         }
     }
-    else if ( this->freqs_unit.compare( "freqs" ) )
+    else if ( this->freqs_unit.compare( "freq" ) == 0 )
     {
         for ( int i=0; i<this->angfreqs_np; i++ )
         {
             this->angfreqs[i] = freq_to_angfreq( this->angfreqs[i] );
         }
+    }
+    else if ( this->freqs_unit.compare( "angfreq" ) != 0 )
+    {
+        std::cout << std::endl;
+        std::cout << "ERROR - INPUT:" << std::endl;
+        std::cout << "FreqUnit: " << this->freqs_unit << " is not a valid parameter." << std::endl;
+        std::cout << "Valid frequency units are: period | freq | angfreq." << std::endl;
+        std::cout << std::endl;
+        std::runtime_error( "" );
     }
 }
 
