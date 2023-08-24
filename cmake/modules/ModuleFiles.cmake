@@ -4,6 +4,7 @@ set(
         ${CMAKE_SOURCE_DIR}/src/containers/body_def.hpp
         ${CMAKE_SOURCE_DIR}/src/containers/body_def.cpp
         ${CMAKE_SOURCE_DIR}/src/containers/containers.hpp
+        ${CMAKE_SOURCE_DIR}/src/containers/mpi_config.hpp
         ${CMAKE_SOURCE_DIR}/src/containers/panel_geom.hpp
         ${CMAKE_SOURCE_DIR}/src/containers/panel_geom.cpp
         ${CMAKE_SOURCE_DIR}/src/containers/panel_geom_list.hpp
