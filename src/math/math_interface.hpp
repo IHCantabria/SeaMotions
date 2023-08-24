@@ -7,6 +7,7 @@
 
 // Include general usage scientific libraries
 #include "mkl.h"
+#include "mkl_scalapack.h"
 
 
 // Interface for vAdd - Vector addition
@@ -69,6 +70,23 @@ inline const auto& cblas_nrm2<std::complex<float>> = cblas_scnrm2;
 
 template<>
 inline const auto& cblas_nrm2<std::complex<double>> = cblas_dznrm2;
+
+
+// Interface for ScaLapack routines
+template<typename T>
+inline const auto& pgesv = psgesv;
+
+template<>
+inline const auto& pgesv<float> = psgesv;
+
+template<>
+inline const auto& pgesv<double> = pdgesv;
+
+template<>
+inline const auto& pgesv<std::complex<float>> = pcgesv;
+
+template<>
+inline const auto& pgesv<std::complex<double>> = pzgesv;
 
 
 #endif
