@@ -4,6 +4,7 @@ add_executable(test_intel_compiler_version test_intel_compiler_version.cpp)
 
 add_subdirectory(_temp)
 add_subdirectory(containers)
+add_subdirectory(inout)
 add_subdirectory(green)
 add_subdirectory(mpi)
 add_subdirectory(tools)
