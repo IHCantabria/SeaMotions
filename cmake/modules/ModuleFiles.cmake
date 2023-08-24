@@ -93,6 +93,16 @@ set(
         ${green_infdepth_coeffs_src}
     )
 
+# Pack inout module files
+set(
+        inout_module_files
+        ${CMAKE_SOURCE_DIR}/src/inout/input.hpp
+        ${CMAKE_SOURCE_DIR}/src/inout/input.cpp
+        ${CMAKE_SOURCE_DIR}/src/inout/reader.hpp
+        ${CMAKE_SOURCE_DIR}/src/inout/reader.cpp
+        ${CMAKE_SOURCE_DIR}/src/inout/reader.txx
+)
+
 # Pack math module files
 set(
         math_module_files
@@ -135,3 +145,10 @@ set(
         ${CMAKE_SOURCE_DIR}/src/waves.hpp
         ${CMAKE_SOURCE_DIR}/src/waves.cpp
     )
+
+# Pack version files
+set(
+        version_module_files
+        ${CMAKE_SOURCE_DIR}/src/version.hpp
+        ${CMAKE_SOURCE_DIR}/src/version.cpp
+)
