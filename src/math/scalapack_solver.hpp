@@ -12,15 +12,9 @@
 #include "mkl_blacs.h"
 #include "mkl_pblas.h"
 
-// extern "C" void blacs_get_(int*, int*, int*);
-// extern "C" void blacs_pinfo_(int*, int*);
-// extern "C" void blacs_gridinit_(int*, char*, int*, int*);
-// extern "C" void blacs_gridinfo_(int*, int*, int*, int*, int*);
-// extern "C" void descinit_(int*, int*, int*, int*, int*, int*, int*, int*, int*, int*);
-// extern "C" void pdpotrf_(char*, int*, double*, int*, int*, int*, int*);
-// extern "C" void blacs_gridexit_(int*);
-// extern "C" int numroc_(int*, int*, int*, int*, int*);
-// extern "C" void pdgesv(int* , int* , double*, int*, int*, int*, int*, double*, int*, int*, int*, int*);
+// Include local libraries
+#include "../../src/math/math_interface.hpp"
+
 
 template <class T>
 class ScalapackSolver
@@ -58,7 +52,7 @@ public:
     void GenerateRhsComm(void);
     T* GetGlobalRhs(T* subrhs, T* sol_vec);
     void Initialize(void);
-    T* Solve(T* subsysmat, T* subrhs);
+    void Solve(T* subsysmat, T* subrhs);
 };
 
 
@@ -261,12 +255,12 @@ ScalapackSolver<T>::ScalapackSolver(int num_rows_inc, int num_procs_inc, int pro
 
 
 template <class T>
-T* ScalapackSolver<T>::Solve(T* subsysmat, T* subrhs)
+void ScalapackSolver<T>::Solve(T* subsysmat, T* subrhs)
 {
     int startrow = 1;
     int startcol = 1;
     int* ipiv = new int[num_rows_local + num_block_size];
-    pdgesv(&num_rows, &num_cols_rhs, subsysmat, &startrow, &startcol, descA, ipiv, subrhs, &startrow, &startrow, descB, &info);
+    pgesv<T>(&num_rows, &num_cols_rhs, subsysmat, &startrow, &startcol, descA, ipiv, subrhs, &startrow, &startrow, descB, &info);
 
     std::cout << "ScaLAPACK solution status: " << info << "\n";
 }
