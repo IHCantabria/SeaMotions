@@ -21,32 +21,32 @@ class ScalapackSolver
 {
 public:
     // Declare public variables
-    int* descA;
-    int* descB;
-    int iam = -1;
-    int info;
-    int izero = 0;
+    MKL_INT* descA;
+    MKL_INT* descB;
+    MKL_INT iam = -1;
+    MKL_INT info;
+    MKL_INT izero = 0;
     char layout='R'; // Block cyclic, Row major processor mapping
-    int lddA;
-    int proc_rank;
-    int num_block_size;
-    int num_cols_rhs = 1;
-    int num_cols_local;
-    int num_procs;
-    int num_procs_blas;
-    int num_procs_col;
-    int num_procs_row;
-    int num_rows;
-    int num_rows_local;
+    MKL_INT lddA;
+    MKL_INT proc_rank;
+    MKL_INT num_block_size;
+    MKL_INT num_cols_rhs = 1;
+    MKL_INT num_cols_local;
+    MKL_INT num_procs;
+    MKL_INT num_procs_blas;
+    MKL_INT num_procs_col;
+    MKL_INT num_procs_row;
+    MKL_INT num_rows;
+    MKL_INT num_rows_local;
     MPI_Comm rhs_comm;
     MPI_Group rhs_group;
-    int start_col;
-    int start_row;
-    int ictxt, myrow, mycol;
-    int zero = 0;
+    MKL_INT start_col;
+    MKL_INT start_row;
+    MKL_INT ictxt, myrow, mycol;
+    MKL_INT zero = 0;
 
     // Declare Constructors
-    ScalapackSolver(int num_rows, int num_procs, int proc_rank);
+    ScalapackSolver(MKL_INT num_rows, MKL_INT num_procs, MKL_INT proc_rank);
 
     // Declare Class Methdos
     void GenerateRhsComm(void);
@@ -59,8 +59,8 @@ public:
 template <class T>
 void ScalapackSolver<T>::GenerateRhsComm(void)
 {
-    int* cols_position = NULL;
-    cols_position = new int[num_procs];
+    MKL_INT* cols_position = NULL;
+    cols_position = new MKL_INT[num_procs];
     
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Allgather(&mycol, 1, MPI_INT, cols_position, 1, MPI_INT, MPI_COMM_WORLD);
@@ -69,10 +69,10 @@ void ScalapackSolver<T>::GenerateRhsComm(void)
     // Get the group of processes in MPI_COMM_WORLD
     MPI_Group world_group;
     MPI_Comm_group(MPI_COMM_WORLD, &world_group);
-    int new_ranks[num_procs_row];
+    MKL_INT new_ranks[num_procs_row];
 
-    int count = 0;
-    for (int i=0; i<num_procs; i++)
+    MKL_INT count = 0;
+    for (MKL_INT i=0; i<num_procs; i++)
     {
         if (cols_position[i] == 0)
         {
@@ -118,8 +118,8 @@ void ScalapackSolver<T>::Initialize(void)
     num_cols_local = numroc(&num_rows, &num_block_size, &mycol, &izero, &num_procs_col); // My proc -> col of local A
 
     // Create matrix descriptor 
-    descA = new int [9];
-    descB = new int [9];
+    descA = new MKL_INT [9];
+    descB = new MKL_INT [9];
     lddA = num_rows_local > 1 ? num_rows_local : 1;
     descinit_(descA, &num_rows, &num_rows, &num_block_size, &num_block_size, &izero, &izero, &ictxt, &lddA, &info);
     descinit_(descB, &num_rows, &num_cols_rhs, &num_block_size, &num_block_size, &izero, &izero, &ictxt, &lddA, &info);
@@ -145,16 +145,16 @@ void ScalapackSolver<T>::Initialize(void)
     // descB[8] = num_rows_local; // leading dimension of local array
 
     // Distribute matrix
-    int* num_rows_div = NULL;
-    int* num_cols_div = NULL;
-    int* rows_position = NULL;
-    int* cols_position = NULL;
+    MKL_INT* num_rows_div = NULL;
+    MKL_INT* num_cols_div = NULL;
+    MKL_INT* rows_position = NULL;
+    MKL_INT* cols_position = NULL;
     if (proc_rank == 0)
     {
-        num_rows_div = new int[num_procs];
-        num_cols_div = new int[num_procs];
-        rows_position = new int[num_procs];
-        cols_position = new int[num_procs];
+        num_rows_div = new MKL_INT[num_procs];
+        num_cols_div = new MKL_INT[num_procs];
+        rows_position = new MKL_INT[num_procs];
+        cols_position = new MKL_INT[num_procs];
     }
 
     MPI_Barrier(MPI_COMM_WORLD);
@@ -165,25 +165,25 @@ void ScalapackSolver<T>::Initialize(void)
     MPI_Barrier(MPI_COMM_WORLD);
 
     // Allocate variables
-    int* start_cols = NULL;
-    int* start_rows = NULL;
+    MKL_INT* start_cols = NULL;
+    MKL_INT* start_rows = NULL;
     if (proc_rank == 0)
     {
-        start_cols = new int [num_procs];
-        start_rows = new int [num_procs];
+        start_cols = new MKL_INT [num_procs];
+        start_rows = new MKL_INT [num_procs];
 
-        for (int i=0; i<num_procs; i++)
+        for (MKL_INT i=0; i<num_procs; i++)
         {
             // Calculate rows
             start_rows[i] = 1;
-            for (int j=0; j<rows_position[i]; j++)
+            for (MKL_INT j=0; j<rows_position[i]; j++)
             {
                 start_rows[i] += num_rows_div[j];
             }
 
             // Calculate cols
             start_cols[i] = 1;
-            for (int j=0; j<cols_position[i]; j++)
+            for (MKL_INT j=0; j<cols_position[i]; j++)
             {
                 start_cols[i] += num_cols_div[j];
             }
@@ -199,7 +199,7 @@ void ScalapackSolver<T>::Initialize(void)
     // Delete vectors
     if (proc_rank == 0)
     {
-        for (int i=0; i<num_procs; i++)
+        for (MKL_INT i=0; i<num_procs; i++)
         {
             std::cout << "Processor Rank: " << i << " - Start_Row: " << start_rows[i] << " - Start_Col: " << start_cols[i] << "\n";
         }
@@ -217,7 +217,7 @@ void ScalapackSolver<T>::Initialize(void)
 
 
 template <class T>
-ScalapackSolver<T>::ScalapackSolver(int num_rows_inc, int num_procs_inc, int proc_rank_inc)
+ScalapackSolver<T>::ScalapackSolver(MKL_INT num_rows_inc, MKL_INT num_procs_inc, MKL_INT proc_rank_inc)
 {
     // Assing variables
     proc_rank = proc_rank_inc;
@@ -234,6 +234,10 @@ ScalapackSolver<T>::ScalapackSolver(int num_rows_inc, int num_procs_inc, int pro
         num_procs_row = 1;
         num_procs_col = 1;
     }
+    else if ( num_procs > num_rows )
+    {
+        throw "ERROR SCALAPACK:\n More processors than rows\n";
+    }
     else if (num_procs < 4)
     {
         num_procs_row = 1;
@@ -245,8 +249,8 @@ ScalapackSolver<T>::ScalapackSolver(int num_rows_inc, int num_procs_inc, int pro
         num_procs_col = num_procs/2;
     }
 
-    // Calculate block size
-    num_block_size = num_rows/num_procs_row + num_rows%num_procs_row;
+    num_block_size = num_rows/num_procs_col;
+    num_block_size = num_block_size > 0 ? num_block_size: 1;
     
     // Initalize solver
     this->Initialize();
@@ -257,9 +261,9 @@ ScalapackSolver<T>::ScalapackSolver(int num_rows_inc, int num_procs_inc, int pro
 template <class T>
 void ScalapackSolver<T>::Solve(T* subsysmat, T* subrhs)
 {
-    int startrow = 1;
-    int startcol = 1;
-    int* ipiv = new int[num_rows_local + num_block_size];
+    MKL_INT startrow = 1;
+    MKL_INT startcol = 1;
+    MKL_INT* ipiv = new MKL_INT[num_rows_local + num_block_size];
     pgesv<T>(&num_rows, &num_cols_rhs, subsysmat, &startrow, &startcol, descA, ipiv, subrhs, &startrow, &startrow, descB, &info);
 
     std::cout << "ScaLAPACK solution status: " << info << "\n";
