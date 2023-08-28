@@ -245,11 +245,11 @@ ScalapackSolver<T>::ScalapackSolver(MKL_INT num_rows_inc, MKL_INT num_procs_inc,
     }
     else
     {
-        num_procs_row = num_procs/2;
-        num_procs_col = num_procs/2;
+        num_procs_row = 1;
+        num_procs_col = num_procs;
     }
 
-    num_block_size = num_rows/num_procs_col;
+    num_block_size = num_rows/num_procs_col + num_rows%num_procs_col;
     num_block_size = num_block_size > 0 ? num_block_size: 1;
     
     // Initalize solver
