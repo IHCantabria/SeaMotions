@@ -14,6 +14,7 @@ constexpr bool      _DEBUG_BUILD        = false;
 #ifdef SIMPLE_PREC
 typedef float cusfloat;
 typedef std::complex<float> cuscomplex;
+#define MKL_Complex8 std::complex<float>
 
     #ifdef MPI_BUILD
     #include "mpi.h"
@@ -26,6 +27,7 @@ constexpr cusfloat EPS_PRECISION_ORDER = -6;
 #else
 typedef double cusfloat;
 typedef std::complex<double> cuscomplex;
+#define MKL_Complex16 std::complex<double>
 
     #ifdef MPI_BUILD
     #include "mpi.h"
