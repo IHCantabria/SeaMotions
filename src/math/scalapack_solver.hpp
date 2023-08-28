@@ -200,11 +200,6 @@ void ScalapackSolver<T>::Initialize(void)
     // Delete vectors
     if (proc_rank == 0)
     {
-        for (MKL_INT i=0; i<num_procs; i++)
-        {
-            std::cout << "Processor Rank: " << i << " - Start_Row: " << start_rows[i] << " - Start_Col: " << start_cols[i] << "\n";
-        }
-
         delete [] num_rows_div;
         delete [] num_cols_div;
         delete [] rows_position;
@@ -252,7 +247,7 @@ ScalapackSolver<T>::ScalapackSolver(MKL_INT num_rows_inc, MKL_INT num_procs_inc,
 
     num_block_size = num_rows/num_procs_col + num_rows%num_procs_col;
     num_block_size = num_block_size > 0 ? num_block_size: 1;
-    
+
     // Initalize solver
     this->Initialize();
 
@@ -267,7 +262,12 @@ void ScalapackSolver<T>::Solve(T* subsysmat, T* subrhs)
     MKL_INT* ipiv = new MKL_INT[num_rows_local + num_block_size];
     pgesv<T>(&num_rows, &num_cols_rhs, subsysmat, &startrow, &startcol, descA, ipiv, subrhs, &startrow, &startrow, descB, &info);
 
-    std::cout << "ScaLAPACK solution status: " << info << "\n";
+    if ( info != 0 )
+    {
+        std::cerr << "ERROR - Scalapack Solver" << std::endl;
+        std::cout << "Scalapack solver finished abnormally with code: " << info << std::endl;
+        throw std::runtime_error( "" );
+    }
 }
 
 #endif // scalapack_real_solver_hpp__
