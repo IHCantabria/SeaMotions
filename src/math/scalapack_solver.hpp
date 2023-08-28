@@ -14,6 +14,7 @@
 
 // Include local libraries
 #include "../../src/math/math_interface.hpp"
+#include "../../src/mpi_interface.hpp"
 
 
 template <class T>
@@ -96,7 +97,7 @@ T* ScalapackSolver<T>::GetGlobalRhs(T* subrhs, T* sol_vec)
     MPI_Barrier(MPI_COMM_WORLD);
     if (rhs_comm != MPI_COMM_NULL)
     {
-        MPI_Gather(subrhs, num_rows_local, MPI_DOUBLE, sol_vec, num_rows_local, MPI_DOUBLE, 0, rhs_comm);
+        cmpi_gather<T>( subrhs, num_rows_local, sol_vec, num_rows_local, 0, rhs_comm );
     }
     MPI_Barrier(MPI_COMM_WORLD);
 
