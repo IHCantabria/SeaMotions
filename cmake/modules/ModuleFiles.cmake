@@ -120,6 +120,7 @@ set(
         ${CMAKE_SOURCE_DIR}/src/math/math_tools.hpp
         ${CMAKE_SOURCE_DIR}/src/math/math_tools.cpp
         ${CMAKE_SOURCE_DIR}/src/math/math_tools.txx
+        ${CMAKE_SOURCE_DIR}/src/math/scalapack_solver.hpp
         ${CMAKE_SOURCE_DIR}/src/math/special_math.hpp
         ${CMAKE_SOURCE_DIR}/src/math/special_math.cpp
         ${CMAKE_SOURCE_DIR}/src/math/topology.hpp
@@ -132,6 +133,13 @@ set(
         ${CMAKE_SOURCE_DIR}/src/mesh/mesh.hpp
         ${CMAKE_SOURCE_DIR}/src/mesh/tools.hpp
         ${CMAKE_SOURCE_DIR}/src/mesh/tools.cpp
+    )
+
+
+# Pack mpi interface files
+set(
+        mpiint_module_files
+        ${CMAKE_SOURCE_DIR}/src/mpi_interface.hpp
     )
 
 # Pack tools module files
