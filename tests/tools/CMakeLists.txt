@@ -377,3 +377,20 @@ add_test(
             NAME    test_adaptive_quad
             COMMAND test_adaptive_quad_cmd
         )
+
+
+# Add test to check the ScalapackSolver
+set(
+        test_scalapack_solver_src
+        test_scalapack.cpp
+        ${math_module_files}
+        ${mpiint_module_files}
+        ${tools_module_files}
+    )
+
+add_executable(
+                    test_scalapack_cmd
+                    ${test_scalapack_solver_src}
+                )
+set_mpi_target( test_scalapack_cmd )
+set_mkl_lib_target( test_scalapack_cmd )
