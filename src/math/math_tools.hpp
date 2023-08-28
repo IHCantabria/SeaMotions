@@ -38,12 +38,12 @@ template<typename T>    inline  int             assert_vector_equality(
                                                                                 int N, 
                                                                                 T* u, 
                                                                                 T* v, 
-                                                                                T epsilon
+                                                                                cusfloat epsilon
                                                                         );
-template<>              inline  int              assert_vector_equality<int>(
+template<typename T>    inline  int              assert_vector_equality(
                                                                                 int N, 
-                                                                                int* u, 
-                                                                                int* v, 
+                                                                                T* u, 
+                                                                                T* v, 
                                                                                 int epsilon
                                                                             );
         

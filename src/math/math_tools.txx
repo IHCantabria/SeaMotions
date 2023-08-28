@@ -27,7 +27,7 @@ inline int assert_scalar_equality(T &u, T &v, T epsilon)
 
 
 template<typename T>
-inline int assert_vector_equality(int N, T* u, T* v, T epsilon)
+inline int assert_vector_equality(int N, T* u, T* v, cusfloat epsilon)
 {
     int pass = 1;
     for (int i=0; i<N; i++)
@@ -42,8 +42,8 @@ inline int assert_vector_equality(int N, T* u, T* v, T epsilon)
 }
 
 
-template<>
-inline int assert_vector_equality<int>(int N, int* u, int* v, int epsilon)
+template<typename T>
+inline int assert_vector_equality(int N, int* u, int* v, int epsilon)
 {
     int pass = 1;
     for (int i=0; i<N; i++)
