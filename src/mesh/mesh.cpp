@@ -339,6 +339,9 @@ Mesh::Mesh(
     // Load mesh
     this->_load_poly_mesh( file_path );
 
+    // Calculate bounding box of the mesh
+    this->_calculate_bounding_box( );
+
     // Create panels for each element
     this->_create_panels( );
 }
