@@ -295,8 +295,19 @@ Mesh::~Mesh(
                             void 
             )
 {
+    // Delete panels
+    for ( int i=0; i<this->elems_np; i++ )
+    {
+        delete this->panels[i];
+    }
+    delete [ ] this->panels;
+
+    // Delete elements
+    mkl_free( this->elems );
+
     // Delete nodal positions
     mkl_free( this->x );
     mkl_free( this->y );
     mkl_free( this->z );
+
 }
