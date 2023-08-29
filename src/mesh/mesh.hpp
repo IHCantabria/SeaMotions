@@ -26,16 +26,20 @@ private:
     int valid_elem_type_np  = 2;
 
     // Define class methods
+    void    _calculate_bounding_box(
+                                        void
+                                    );
+    
     void    _create_panels(
-                                void
+                                        void
                             );
     
     bool    _is_valid_type( 
-                                int elem_type 
+                                        int elem_type 
                            );
 
     void    _load_poly_mesh( 
-                                std::string file_path 
+                                        std::string file_path 
                            );
 
 public:
@@ -47,8 +51,14 @@ public:
     int         nodes_np    = 0;
     PanelGeom** panels      = nullptr;
     cusfloat*   x           = nullptr;
+    cusfloat    x_max       = 0.0;
+    cusfloat    x_min       = 0.0;
     cusfloat*   y           = nullptr;
+    cusfloat    y_max       = 0.0;
+    cusfloat    y_min       = 0.0;
     cusfloat*   z           = nullptr;
+    cusfloat    z_max       = 0.0;
+    cusfloat    z_min       = 0.0;
 
     // Define class constructor and destructor
     Mesh( std::string file_path );

@@ -3,6 +3,59 @@
 #include "mesh.hpp"
 
 
+void Mesh::_calculate_bounding_box(
+                                        void
+                                    )
+{
+    // Restart bounding box values
+    this->x_max = -1e302;
+    this->x_min =  1e302;
+    this->y_max = -1e302;
+    this->y_min =  1e302;
+    this->z_max = -1e302;
+    this->z_min =  1e302;
+
+    // Loop over mesh nodes to get the coordinates
+    // positions of the mesh
+    for ( int i=0; i<this->nodes_np; i++ )
+    {
+        // Check for X Coordinate
+        if ( this->x[i] > this->x_max )
+        {
+            this->x_max = this->x[i];
+        }
+
+        if ( this->x[i] < this->x_min )
+        {
+            this->x_min = this->x[i];
+        }
+
+        // Check for Y Coordinate
+        if ( this->y[i] > this->y_max )
+        {
+            this->y_max = this->y[i];
+        }
+
+        if ( this->y[i] < this->y_min )
+        {
+            this->y_min = this->y[i];
+        }
+
+        // Check for Z Coordinate
+        if ( this->z[i] > this->z_max )
+        {
+            this->z_max = this->z[i];
+        }
+
+        if ( this->z[i] < this->z_min )
+        {
+            this->z_min = this->z[i];
+        }
+    }
+
+}
+
+
 void Mesh::_create_panels(
                             void
                         )
