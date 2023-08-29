@@ -129,6 +129,9 @@ void PanelGeom::calculate_properties( void )
         this->local_to_global_mat[3*i+2] = v2[i];
     }
 
+    // Storage normal vector to the panel
+    copy_vector( 3, v2, this->normal_vec );
+
     // Take the local reference system centre
     this->sysref_centre[0] = this->x[0];
     this->sysref_centre[1] = this->y[0];
