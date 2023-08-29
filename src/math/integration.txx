@@ -193,8 +193,8 @@ cuscomplex  quadrature_panel(
             // Calculate function integral function value
             int_value += gp->weights[i]*gp->weights[j]*fcn_val*jacobi_det_2d( 
                                                                                 panel->num_nodes,
-                                                                                panel->x,
-                                                                                panel->y,
+                                                                                panel->xl,
+                                                                                panel->yl,
                                                                                 gp->roots[i],
                                                                                 gp->roots[j]
                                                                             );
