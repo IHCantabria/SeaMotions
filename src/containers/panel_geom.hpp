@@ -15,6 +15,7 @@ struct PanelGeom
     cusfloat                length                  = 0.0;
     cusfloat                local_to_global_mat[9];
     static constexpr int    MAX_PANEL_NODES         = 4;
+    cusfloat                normal_vec[3]           = { 0.0, 0.0, 0.0 };
     int                     num_nodes               = 0;
     cusfloat                sysref_centre[3]        = { 0.0, 0.0, 0.0 };
     cusfloat                x[MAX_PANEL_NODES];
