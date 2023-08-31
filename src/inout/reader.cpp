@@ -106,32 +106,32 @@ void read_body(
 
     // Read COGX
     target_signal   = "COGX";
-    read_signal     = _read_channel_value( infile, body->cog_x );
+    read_signal     = _read_channel_value( infile, body->cog[0] );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read COGY
     target_signal   = "COGY";
-    read_signal     = _read_channel_value( infile, body->cog_y );
+    read_signal     = _read_channel_value( infile, body->cog[1] );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read COGZ
     target_signal   = "COGZ";
-    read_signal     = _read_channel_value( infile, body->cog_z );
+    read_signal     = _read_channel_value( infile, body->cog[2] );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read RXX
     target_signal   = "RXX";
-    read_signal     = _read_channel_value( infile, body->rxx );
+    read_signal     = _read_channel_value( infile, body->rad_inertia[0] );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read RYY
     target_signal   = "RYY";
-    read_signal     = _read_channel_value( infile, body->ryy );
+    read_signal     = _read_channel_value( infile, body->rad_inertia[1] );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read RZZ
     target_signal   = "RZZ";
-    read_signal     = _read_channel_value( infile, body->rzz );
+    read_signal     = _read_channel_value( infile, body->rad_inertia[2] );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Close file unit
