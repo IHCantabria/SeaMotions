@@ -71,7 +71,7 @@ inline cuscomplex   _adaptive_quadrature_panel(
     {
         std::cerr << std::endl;
         std::cerr << "ERROR: Adaptive quadrature could not find the solution ";
-        std::cerr << "with the required accuracy. Maxim adaption levels reached";
+        std::cerr << "with the required accuracy. Maximum adaption levels reached";
         std::cerr << std::endl;
         std::runtime_error( "" );
     }
