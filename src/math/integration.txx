@@ -73,7 +73,7 @@ inline cuscomplex   _adaptive_quadrature_panel(
         std::cerr << "ERROR: Adaptive quadrature could not find the solution ";
         std::cerr << "with the required accuracy. Maximum adaption levels reached";
         std::cerr << std::endl;
-        std::runtime_error( "" );
+        throw std::runtime_error( "" );
     }
 
     // Delete local heap memory
