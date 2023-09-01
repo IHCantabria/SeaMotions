@@ -165,6 +165,28 @@ void PanelGeom::calculate_properties( void )
 
 }
 
+
+void PanelGeom::get_panel_xy_proj( 
+                                    PanelGeom* new_panel 
+                                )
+{
+    // Copy number of nodes
+    new_panel->num_nodes = this->num_nodes;
+
+    // Copy XY nodes projection
+    for ( int i=0; i<this->num_nodes; i++ )
+    {
+        new_panel->x[i] = this->x[i];
+        new_panel->y[i] = this->y[i];
+        new_panel->z[i] = 0.0;
+    }
+
+    // Calculate panel properties
+    new_panel->calculate_properties( );
+    
+}
+
+
 void PanelGeom::get_node_position( int num_node, cusfloat* node_pos )
 {
     node_pos[0] = this->x[num_node];

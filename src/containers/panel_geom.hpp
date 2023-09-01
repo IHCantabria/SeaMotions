@@ -30,6 +30,10 @@ struct PanelGeom
                                         void 
                                 );
 
+    void    get_panel_xy_proj( 
+                                        PanelGeom* new_panel 
+                            );
+
     void    get_node_position( 
                                         int         num_node, 
                                         cusfloat*   node_pos
