@@ -1,4 +1,7 @@
 
+// Include general usage libraries
+#include <fstream>
+
 // Include local modules
 #include "../math/math_interface.hpp"
 #include "../math/math_tools.hpp"
@@ -283,5 +286,28 @@ void PanelGeom::local_to_global(
     cblas_gemv<cusfloat>(CblasRowMajor, CblasNoTrans, 3, 3, 1.0, this->local_to_global_mat, 3, x2d, 1, 0, global_pos, 1);
 
     sv_add( 3, global_pos, this->sysref_centre, global_pos );
+
+}
+
+
+void PanelGeom::write(
+                        std::string finame
+                    )
+{
+    // Open file unit
+    std::ofstream outfile( finame );
+
+    // Write number of panel nodes
+    outfile << "NumNodes: " << this->num_nodes << std::endl;
+
+    // Write nodes X position
+    outfile << "NodesXPos   NodesYPos   NodesZPos" << std::endl;
+    for ( int i=0; i<this->num_nodes; i++ )
+    {
+        outfile << this->x[i] << " " << this->y[i] << " " << this->z[i] << std::endl;
+    }
+
+    // Close file unit
+    outfile.close( );
 
 }

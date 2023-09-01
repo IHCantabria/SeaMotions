@@ -49,6 +49,10 @@ struct PanelGeom
                                         cusfloat    eta,
                                         cusfloat*   global_pos
                                );
+
+    void    write( 
+                                        std::string finame
+                );
 };  
 
 #endif
