@@ -39,6 +39,13 @@ struct PanelGeom
                                         cusfloat*   node_pos
                                );
 
+    void    local_coords_from_z_proj(
+                                        cusfloat    x,
+                                        cusfloat    y,
+                                        cusfloat&   xi,
+                                        cusfloat&   eta
+                                    );
+
     void    get_node_local_position(   
                                         int          num_node, 
                                         cusfloat*    node_pos

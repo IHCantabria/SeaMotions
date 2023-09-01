@@ -5,6 +5,7 @@
 // Include local modules
 #include "../math/math_interface.hpp"
 #include "../math/math_tools.hpp"
+#include "../math/nonlinear_solvers_math.hpp"
 #include "../math/topology.hpp"
 #include "panel_geom.hpp"
 
@@ -299,6 +300,11 @@ void PanelGeom::local_to_global(
     // Get shape functions value
     shape_fcn_2d( this->num_nodes, xi, eta, N );
 
+    // std::cout << "LTG::num_nodes: " << this->num_nodes << std::endl;
+    // std::cout << "LTG::xl: "; print_vector( 3, this->xl, 0, 6 );
+    // std::cout << "LTG::yl: "; print_vector( 3, this->yl, 0, 6 );
+    // std::cout << "LTG::local_to_global_mat: "; print_vector( 9, this->global_to_local_mat, 0, 6 );
+
     // Get global coordinates
     cusfloat x2d[3]         = { 0.0, 0.0, 0.0 };
     x2d[0]                  = cblas_dot<cusfloat>( this->num_nodes, this->xl, 1, N, 1 );
@@ -311,6 +317,55 @@ void PanelGeom::local_to_global(
 
 }
 
+
+void PanelGeom::local_coords_from_z_proj(
+                                            cusfloat    x,
+                                            cusfloat    y,
+                                            cusfloat&   xi,
+                                            cusfloat&   eta
+                                        )
+{
+    // Define function for the optimization
+    auto aux_fcn    =   [ x, y, this ]
+                        (int* , int*, cusfloat* x_in, cusfloat* x_out )
+                        {
+                            // Get global coordinates
+                            cusfloat global_pos[3] = { 0.0, 0.0, 0.0};
+                            this->local_to_global( 
+                                                    x_in[0],
+                                                    x_in[1],
+                                                    global_pos
+                                                );
+
+                            // Calculate difference between the target 
+                            // and the estimated value
+                            x_out[0] = x - global_pos[0];
+                            x_out[1] = y - global_pos[1];
+                        };
+
+    // Define initial paramets
+    cusfloat sol0[2] = { 0.0, 0.0 };
+
+    // Define output vector
+    cusfloat sol[2] = { 0.0, 0.0 };
+    
+    // Use Trust-Region algorithm to estimate the local coordinates
+    int status = 0;
+    trust_region(
+                    aux_fcn,
+                    2,
+                    2,
+                    sol0,
+                    sol,
+                    status,
+                    false
+                );
+
+    // Copy output values
+    xi  = sol[0];
+    eta = sol[1];
+
+}
 
 void PanelGeom::write(
                         std::string finame
