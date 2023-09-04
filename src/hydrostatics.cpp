@@ -13,7 +13,8 @@
 
 
 void Hydrostatics::_calculate( 
-                                Mesh*       mesh
+                                Mesh*       mesh,
+                                MpiConfig*  mpi_config
                             )
 {
     /*********************************************/
@@ -86,8 +87,24 @@ void Hydrostatics::_calculate(
     cusfloat _volume_mom_x  = 0.0;
     cusfloat _volume_mom_y  = 0.0;
     cusfloat _volume_mom_z  = 0.0;
+    cusfloat _wl_area       = 0.0;
+    cusfloat _wl_area_mx    = 0.0;
+    cusfloat _wl_area_my    = 0.0;
+    cusfloat _wl_area_ixx   = 0.0;
+    cusfloat _wl_area_iyy   = 0.0;
 
-    for ( int i=0; i<mesh->elems_np; i++ )
+
+    #ifndef MPI_BUILD
+    int     start_elem      = mpi_config->proc_rank * 0;
+    int     last_elem       = mesh->elems_np;
+    #else
+    int     elems_per_proc  = static_cast<int>( std::ceil( mesh->elems_np / mpi_config->procs_total ) );
+    int     start_elem      = elems_per_proc * mpi_config->proc_rank;
+    int     last_elem       = elems_per_proc * ( mpi_config->proc_rank + 1 )
+    last_elem               = ( last_elem > mesh->elems_np ) ? mesh->elems_np: last_elem;
+    #endif
+
+    for ( int i=start_elem; i<last_elem; i++ )
     {
         // Get current panel
         PanelGeom* panel    = mesh->panels[i];
@@ -185,7 +202,7 @@ void Hydrostatics::_calculate(
                                                                 area_eps,
                                                                 1
                                                             ).real( );
-            this->wl_area       -= ai * normal_sign;
+            _wl_area            -= ai * normal_sign;
 
             // Integrate panel area moments around x axis
             amxi                = adaptive_quadrature_panel(
@@ -194,7 +211,7 @@ void Hydrostatics::_calculate(
                                                                 area_eps,
                                                                 1
                                                             ).real( );
-            this->wl_area_mx   -= amxi * normal_sign;
+            _wl_area_mx         -= amxi * normal_sign;
 
             // Integrate panel area moments around y axis
             amyi                = adaptive_quadrature_panel(
@@ -203,7 +220,7 @@ void Hydrostatics::_calculate(
                                                                 area_eps,
                                                                 1
                                                             ).real( );
-            this->wl_area_my   -= amyi * normal_sign;
+            _wl_area_my         -= amyi * normal_sign;
 
             // Integrate panel area inertia around x axis
             aixi                = adaptive_quadrature_panel(
@@ -212,7 +229,7 @@ void Hydrostatics::_calculate(
                                                                 area_eps,
                                                                 1
                                                             ).real( );
-            this->wl_area_ixx   -= aixi * normal_sign;
+            _wl_area_ixx        -= aixi * normal_sign;
 
             // Integrate panel area inertia around x axis
             aiyi                = adaptive_quadrature_panel(
@@ -221,7 +238,7 @@ void Hydrostatics::_calculate(
                                                                 area_eps,
                                                                 1
                                                             ).real( );
-            this->wl_area_iyy   -= aiyi * normal_sign;
+            _wl_area_iyy        -= aiyi * normal_sign;
 
         }
         else
@@ -246,29 +263,140 @@ void Hydrostatics::_calculate(
 
             // Integrate panel area
             ai                  = panel_proj->area;
-            this->wl_area       -= ai * normal_sign;
+            _wl_area            -= ai * normal_sign;
 
             // Integrate panel area moments around x axis
             amxi                = ai * panel->center[0];
-            this->wl_area_mx   -= amxi * normal_sign;
+            _wl_area_mx         -= amxi * normal_sign;
 
             // Integrate panel area moments around y axis
             amyi                = ai * panel->center[1];
-            this->wl_area_my   -= amyi * normal_sign;
+            _wl_area_my         -= amyi * normal_sign;
 
             // Integrate panel area inertia around x axis
             aixi                = ai * pow2s( panel->center[1] );
-            this->wl_area_ixx   -= aixi * normal_sign;
+            _wl_area_ixx        -= aixi * normal_sign;
 
             // Integrate panel area inertia around x axis
             aiyi                = ai * pow2s( panel->center[0] );
-            this->wl_area_iyy   -= aiyi * normal_sign;
+            _wl_area_iyy        -= aiyi * normal_sign;
 
         }
 
         
 
     }
+
+    #ifdef MPI_BUILD
+    // Sum the volume in all processors
+    cusfloat _volume_d = 0.0;
+    MPI_Allreduce(
+                    _volume,
+                    _volume_d,
+                    1,
+                    mpi_cusfloat,
+                    MPI_SUM,
+                    MPI_COMM_WORLD
+                );
+    _volume = _volume_d;
+
+    // Sum all the volume X moment
+    cusfloat _volume_mom_x_d = 0.0;
+    MPI_Allreduce(
+                    _volume_mom_x,
+                    _volume_mom_x_d,
+                    1,
+                    mpi_cusfloat,
+                    MPI_SUM,
+                    MPI_COMM_WORLD
+                );
+    _volume_mom_x   = _volume_mom_x_d;
+
+    // Sum all the volume Y moment
+    cusfloat _volume_mom_y_d = 0.0;
+    MPI_Allreduce(
+                    _volume_mom_y,
+                    _volume_mom_y_d,
+                    1,
+                    mpi_cusfloat,
+                    MPI_SUM,
+                    MPI_COMM_WORLD
+                );
+    _volume_mom_y   = _volume_mom_y_d;
+
+    // Sum all the volume Z moment
+    cusfloat _volume_mom_z_d = 0.0;
+    MPI_Allreduce(
+                    _volume_mom_z,
+                    _volume_mom_z_d,
+                    1,
+                    mpi_cusfloat,
+                    MPI_SUM,
+                    MPI_COMM_WORLD
+                );
+    _volume_mom_z   = _volume_mom_z_d;
+
+    // Sum all the area
+    cusfloat _wl_area_d = 0.0;
+    MPI_Allreduce(
+                    _wl_area,
+                    _wl_area_d,
+                    1,
+                    mpi_cusfloat,
+                    MPI_SUM,
+                    MPI_COMM_WORLD
+                );
+    _wl_area        = _wl_area_d;
+
+    // Sum all the area X moments
+    cusfloat _wl_area_mx_d = 0.0;
+    MPI_Allreduce(
+                    _wl_area_mx,
+                    _wl_area_mx_d,
+                    1,
+                    mpi_cusfloat,
+                    MPI_SUM,
+                    MPI_COMM_WORLD
+                );
+    _wl_area_mx     = _wl_area_mx_d;
+
+    // Sum all the area Y moments
+    cusfloat _wl_area_my_d = 0.0;
+    MPI_Allreduce(
+                    _wl_area_my,
+                    _wl_area_my_d,
+                    1,
+                    mpi_cusfloat,
+                    MPI_SUM,
+                    MPI_COMM_WORLD
+                );
+    _wl_area_my     = _wl_area_my_d;
+
+    // Sum all the area interia around X axis
+    cusfloat _wl_area_ixx_d = 0.0;
+    MPI_Allreduce(
+                    _wl_area_ixx,
+                    _wl_area_ixx_d,
+                    1,
+                    mpi_cusfloat,
+                    MPI_SUM,
+                    MPI_COMM_WORLD
+                );
+    _wl_area_ixx    = _wl_area_ixx_d;
+
+    // Sum all the area interia around Y axis
+    cusfloat _wl_area_iyy_d = 0.0;
+    MPI_Allreduce(
+                    _wl_area_iyy,
+                    _wl_area_iyy_d,
+                    1,
+                    mpi_cusfloat,
+                    MPI_SUM,
+                    MPI_COMM_WORLD
+                );
+    _wl_area_iyy    = _wl_area_iyy_d;
+
+    #endif
 
     // Calculate volume and displacement
     this->volume        = _volume;
@@ -280,6 +408,12 @@ void Hydrostatics::_calculate(
     this->cob[2]        = _volume_mom_z / volume;
     this->kb            = this->cob[2] - mesh->z_min;
 
+    // Storage area properties
+    this->wl_area       = _wl_area;
+    this->wl_area_mx    = _wl_area_mx;
+    this->wl_area_my    = _wl_area_my;
+    this->wl_area_ixx   = _wl_area_ixx;
+    this->wl_area_iyy   = _wl_area_iyy;
 
     // Calculate water line area centre of gravity
     this->wl_area_cog[0] = this->wl_area_mx / this->wl_area;
@@ -314,7 +448,8 @@ Hydrostatics::Hydrostatics(
                                 cusfloat    grav_acc_in,
                                 cusfloat    mass_in,
                                 cusfloat*   cog_in,
-                                cusfloat*   rad_inertia_in
+                                cusfloat*   rad_inertia_in,
+                                MpiConfig*  mpi_config
                             )
 {
     // Storage required input data
@@ -327,7 +462,8 @@ Hydrostatics::Hydrostatics(
 
     // Calculate hydrostatics
     this->_calculate( 
-                        mesh
+                        mesh,
+                        mpi_config
                     );
 }
 

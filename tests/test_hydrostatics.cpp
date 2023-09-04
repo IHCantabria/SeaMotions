@@ -141,6 +141,9 @@ void launch_test(
     // Read mesh
     Mesh mesh( mesh_fipath );
 
+    // Get dummy MPI Config
+    MpiConfig mpi_config;
+
     // Calculate hydrostatics
     Hydrostatics hydro( 
                             &mesh,
@@ -148,7 +151,8 @@ void launch_test(
                             ref_data.grav_acc,
                             ref_data.mass,
                             ref_data.cog,
-                            ref_data.rad_inertia
+                            ref_data.rad_inertia,
+                            &mpi_config
                         );
 
     // Check displacement

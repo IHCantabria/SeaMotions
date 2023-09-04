@@ -3,6 +3,7 @@
 #define __hydrostatics_hpp
 
 // Include local modules
+#include "./containers/mpi_config.hpp"
 #include "./inout/input.hpp"
 #include "./mesh/mesh.hpp"
 
@@ -12,7 +13,8 @@ struct Hydrostatics
 private:
     // Declare class methods
     void _calculate( 
-                        Mesh*       mesh
+                        Mesh*       mesh,
+                        MpiConfig*  mpi_config
                     );
 
 public:
@@ -47,7 +49,8 @@ public:
                     cusfloat    grav_acc_in,
                     cusfloat    mass_in,
                     cusfloat*   cog_in,
-                    cusfloat*   rad_inertia_in
+                    cusfloat*   rad_inertia_in,
+                    MpiConfig*  mpi_config
                 );
 
     // Declare class methods
