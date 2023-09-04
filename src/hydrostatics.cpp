@@ -75,25 +75,34 @@ void Hydrostatics::_calculate(
     cusfloat amyi           = 0.0;
     cusfloat aixi           = 0.0;
     cusfloat aiyi           = 0.0;
-    cusfloat area_eps       = ( mesh->x_max - mesh->x_min ) * ( mesh->y_max - mesh->y_min ) * 1e-3;
+    cusfloat area_eps       = 0.1;
     cusfloat normal_sign    = 0.0;
     cusfloat vi             = 0.0;
     cusfloat vim_x          = 0.0;
     cusfloat vim_y          = 0.0;
     cusfloat vim_z          = 0.0;
-    cusfloat _vol_eps       = this->mass/this->rho_water/mesh->elems_np*1e-1;
+    cusfloat _vol_eps       = 0.1;
     cusfloat _volume        = 0.0;
     cusfloat _volume_mom_x  = 0.0;
     cusfloat _volume_mom_y  = 0.0;
     cusfloat _volume_mom_z  = 0.0;
-    std::cout << "Calculating volumetric properties...";
+
     for ( int i=0; i<mesh->elems_np; i++ )
     {
-        if ( std::abs( mesh->panels[i]->normal_vec[2] ) > 1e-6 )
-        {
-            // Get current panel
-            PanelGeom* panel    = mesh->panels[i];
+        // Get current panel
+        PanelGeom* panel    = mesh->panels[i];
 
+        // Get projection panel
+        PanelGeom* panel_proj = new PanelGeom;
+        panel->get_panel_xy_proj( panel_proj );
+
+        // Get normal sign
+        normal_sign = (cusfloat)sign( mesh->panels[i]->normal_vec[2] );
+
+        // std::cout << "Panel: " << i << " - nz: " << mesh->panels[i]->normal_vec[2] << std::endl;
+
+        if ( std::abs( mesh->panels[i]->normal_vec[2] ) > 1e-2 )
+        {
             // Define volume functions
             auto volume_fcn         =   [ panel, get_z_coord ]
                                         ( cusfloat x, cusfloat y, cusfloat ) -> cuscomplex
@@ -130,13 +139,6 @@ void Hydrostatics::_calculate(
 
                                             return cuscomplex( zg*zg/2.0, 0.0 );
                                         };
-
-            // Get projection panel
-            PanelGeom* panel_proj = new PanelGeom;
-            panel->get_panel_xy_proj( panel_proj );
-
-            // Get normal sign
-            normal_sign = (cusfloat)sign( mesh->panels[i]->normal_vec[2] );
             
             // Calculate submerged volume
             vi                  = adaptive_quadrature_panel(
@@ -220,15 +222,57 @@ void Hydrostatics::_calculate(
                                                                 1
                                                             ).real( );
             this->wl_area_iyy   -= aiyi * normal_sign;
+
+        }
+        else
+        {
+            // Calculate submerged volume
+            vi                  = panel_proj->area * panel->center[2];
+            _volume             +=  vi * normal_sign;
+
+            // throw std::runtime_error( "" );
+
+            // Calculate x moment submerged volume
+            vim_x               = vi * panel->center[0];
+            _volume_mom_x       +=  vim_x * normal_sign;
+
+            // Calculate x moment submerged volume
+            vim_y               = vi * panel->center[1];
+            _volume_mom_y       +=  vim_y * normal_sign;
+
+            // Calculate z moment submerged volume
+            vim_z               = vi * panel->center[2] / 2.0;
+            _volume_mom_z       +=  vim_z * normal_sign;
+
+            // Integrate panel area
+            ai                  = panel_proj->area;
+            this->wl_area       -= ai * normal_sign;
+
+            // Integrate panel area moments around x axis
+            amxi                = ai * panel->center[0];
+            this->wl_area_mx   -= amxi * normal_sign;
+
+            // Integrate panel area moments around y axis
+            amyi                = ai * panel->center[1];
+            this->wl_area_my   -= amyi * normal_sign;
+
+            // Integrate panel area inertia around x axis
+            aixi                = ai * pow2s( panel->center[1] );
+            this->wl_area_ixx   -= aixi * normal_sign;
+
+            // Integrate panel area inertia around x axis
+            aiyi                = ai * pow2s( panel->center[0] );
+            this->wl_area_iyy   -= aiyi * normal_sign;
+
         }
 
+        
+
     }
-    std::cout << " done!" << std::endl;
+
     // Calculate volume and displacement
     this->volume        = _volume;
     this->displacement  = _volume * rho_water;
-
-    std::cout << "volume: " << this->volume << std::endl;
 
     // Calculate KB
     this->cob[0]        = _volume_mom_x / volume;
