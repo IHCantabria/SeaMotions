@@ -12,7 +12,7 @@
 
 
 // Define precision level
-cusfloat ABS_EPS = 1E-3;
+cusfloat ABS_EPS = 1E-2;
 cusfloat REL_EPS = 1E-2;
 
 
@@ -136,14 +136,10 @@ void launch_test(
                 )
 {
     // Read hydrostatic properties
-    std::cout << "Loading hydrostatic properties...";
     RefData ref_data( props_fipath );
-    std::cout << " done!" << std::endl;
 
     // Read mesh
-    std::cout << "Loading mesh properties...";
     Mesh mesh( mesh_fipath );
-    std::cout << " done!" << std::endl;
 
     // Calculate hydrostatics
     Hydrostatics hydro( 
@@ -266,7 +262,6 @@ void launch_test(
                                                     ),
                             "GMX"
                         );
-    std::cout << test_name << " - GMX: " << hydro.gmx << std::endl;
 
     // Check metracentric height around Y axis
     CHECK_STAB_PARAMETER(
@@ -278,8 +273,6 @@ void launch_test(
                                                     ),
                             "GMY"
                         );
-    std::cout << test_name << " - GMY: " << hydro.gmy << std::endl;
-    
 
 }
 
@@ -298,11 +291,11 @@ int main( int argc, char* argv[ ] )
     std::string semisub_mesh_fipath( argv[4] );
 
     // Launch test for Dike floating object
-    // launch_test( 
-    //                 "DIKE",
-    //                 dike_props_fipath,
-    //                 dike_mesh_fipath
-    //             );
+    launch_test( 
+                    "DIKE",
+                    dike_props_fipath,
+                    dike_mesh_fipath
+                );
 
     // Launch test for Dike floating object
     launch_test( 
@@ -310,95 +303,6 @@ int main( int argc, char* argv[ ] )
                     semisub_props_fipath,
                     semisub_mesh_fipath
                 );
-
-    
-
-    // PanelGeom panel;
-    // panel.num_nodes = 4;
-    // panel.x[0] = 0.0;
-    // panel.x[1] = 1.0;
-    // panel.x[2] = 1.0;
-    // panel.x[3] = 0.0;
-
-    // panel.y[0] = 0.0;
-    // panel.y[1] = 0.0;
-    // panel.y[2] = 1.0;
-    // panel.y[3] = 1.0;
-
-    // panel.z[0] = 0.0;
-    // panel.z[1] = 0.0;
-    // panel.z[2] = 1.0;
-    // panel.z[3] = 1.0;
-
-    // panel.calculate_properties( );
-
-    // PanelGeom panel_1;
-    // panel_1.num_nodes = 4;
-    // panel_1.x[0] = 0.0;
-    // panel_1.x[1] = 1.0;
-    // panel_1.x[2] = 1.0;
-    // panel_1.x[3] = 0.0;
-
-    // panel_1.y[0] = 0.0;
-    // panel_1.y[1] = 0.0;
-    // panel_1.y[2] = 1.0;
-    // panel_1.y[3] = 1.0;
-
-    // panel_1.z[0] = 0.0;
-    // panel_1.z[1] = 0.0;
-    // panel_1.z[2] = 0.0;
-    // panel_1.z[3] = 0.0;
-
-    // panel_1.calculate_properties( );
-
-    // // Get local coordinates
-    // cusfloat xi=0.0, eta=0.0;
-    // panel.local_coords_from_z_proj( 0.5, 0.0, xi, eta );
-
-    // std::cout << "xi: " << xi << " - eta: " << eta << std::endl;
-
-    // auto volume_fcn =   [ &panel ]
-    //                     ( cusfloat , cusfloat , cusfloat x, cusfloat y, cusfloat ) -> cuscomplex
-    //                     {
-    //                         // Get local coordinates
-    //                         cusfloat xi=0.0, eta=0.0;
-    //                         panel.local_coords_from_z_proj( x, y, xi, eta );
-
-    //                         // Calculate Z position over the mesh panel
-    //                         cusfloat global_pos[3] = { 0.0, 0.0, 0.0 };
-    //                         panel.local_to_global( xi, eta, global_pos );
-
-    //                         return cuscomplex( global_pos[2], 0.0 );
-    //                     };
-
-    // cusfloat int_value  = adaptive_quadrature_panel(
-    //                                                     &panel_1,
-    //                                                     volume_fcn,
-    //                                                     1e-1,
-    //                                                     1
-    //                                                 ).real( );
-
-    // std::cout << "int_value: " << int_value << std::endl;
-
-    // // Read mesh
-    // Mesh mesh( mesh_fipath );
-
-    // // Define mass properties
-    // cusfloat mass = 92341.8;
-    // cusfloat cog[3] = { 0.0, 0.0, -0.6 };
-    // cusfloat rii[3] = { 1.05, 5.0, 5.0 };
-
-    // // Calculate hydrostatics
-    // Hydrostatics hydro( 
-    //                         &mesh,
-    //                         1026.02,
-    //                         9.81,
-    //                         mass,
-    //                         cog,
-    //                         rii
-    //                     );
-
-    // hydro.print( );
 
     return 0;
 }

@@ -1,0 +1,16 @@
+GravAcc[m/s2] 		9.81
+WaterDensity[kg/m3] 1026.02
+Mass[kg]: 			92341.8
+COG[m]: 			0.0 0.0 -0.6
+RadInertia[m]:		1.05 5.0 5.0
+Volume[m3]: 		90.0
+COB[m]: 			0.0 0.0 -0.75
+WL_Area[m2]: 		60.0
+WL_Area_COG[m]: 	0.0 0.0 0.0
+WL_Area_Ixx[m4]:	45.0
+WL_Area_Iyy[m4]:	2000.0
+KB[m]:				0.75
+BMX[m]:				0.5
+BMY[m]:				22.222233
+GMX[m]: 			0.35 
+GMY[m]: 			22.072233
