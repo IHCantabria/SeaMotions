@@ -100,7 +100,7 @@ void Hydrostatics::_calculate(
     #else
     int     elems_per_proc  = static_cast<int>( std::ceil( mesh->elems_np / mpi_config->procs_total ) );
     int     start_elem      = elems_per_proc * mpi_config->proc_rank;
-    int     last_elem       = elems_per_proc * ( mpi_config->proc_rank + 1 )
+    int     last_elem       = elems_per_proc * ( mpi_config->proc_rank + 1 );
     last_elem               = ( last_elem > mesh->elems_np ) ? mesh->elems_np: last_elem;
     #endif
 
@@ -291,8 +291,8 @@ void Hydrostatics::_calculate(
     // Sum the volume in all processors
     cusfloat _volume_d = 0.0;
     MPI_Allreduce(
-                    _volume,
-                    _volume_d,
+                    &_volume,
+                    &_volume_d,
                     1,
                     mpi_cusfloat,
                     MPI_SUM,
@@ -303,8 +303,8 @@ void Hydrostatics::_calculate(
     // Sum all the volume X moment
     cusfloat _volume_mom_x_d = 0.0;
     MPI_Allreduce(
-                    _volume_mom_x,
-                    _volume_mom_x_d,
+                    &_volume_mom_x,
+                    &_volume_mom_x_d,
                     1,
                     mpi_cusfloat,
                     MPI_SUM,
@@ -315,8 +315,8 @@ void Hydrostatics::_calculate(
     // Sum all the volume Y moment
     cusfloat _volume_mom_y_d = 0.0;
     MPI_Allreduce(
-                    _volume_mom_y,
-                    _volume_mom_y_d,
+                    &_volume_mom_y,
+                    &_volume_mom_y_d,
                     1,
                     mpi_cusfloat,
                     MPI_SUM,
@@ -327,8 +327,8 @@ void Hydrostatics::_calculate(
     // Sum all the volume Z moment
     cusfloat _volume_mom_z_d = 0.0;
     MPI_Allreduce(
-                    _volume_mom_z,
-                    _volume_mom_z_d,
+                    &_volume_mom_z,
+                    &_volume_mom_z_d,
                     1,
                     mpi_cusfloat,
                     MPI_SUM,
@@ -339,8 +339,8 @@ void Hydrostatics::_calculate(
     // Sum all the area
     cusfloat _wl_area_d = 0.0;
     MPI_Allreduce(
-                    _wl_area,
-                    _wl_area_d,
+                    &_wl_area,
+                    &_wl_area_d,
                     1,
                     mpi_cusfloat,
                     MPI_SUM,
@@ -351,8 +351,8 @@ void Hydrostatics::_calculate(
     // Sum all the area X moments
     cusfloat _wl_area_mx_d = 0.0;
     MPI_Allreduce(
-                    _wl_area_mx,
-                    _wl_area_mx_d,
+                    &_wl_area_mx,
+                    &_wl_area_mx_d,
                     1,
                     mpi_cusfloat,
                     MPI_SUM,
@@ -363,8 +363,8 @@ void Hydrostatics::_calculate(
     // Sum all the area Y moments
     cusfloat _wl_area_my_d = 0.0;
     MPI_Allreduce(
-                    _wl_area_my,
-                    _wl_area_my_d,
+                    &_wl_area_my,
+                    &_wl_area_my_d,
                     1,
                     mpi_cusfloat,
                     MPI_SUM,
@@ -375,8 +375,8 @@ void Hydrostatics::_calculate(
     // Sum all the area interia around X axis
     cusfloat _wl_area_ixx_d = 0.0;
     MPI_Allreduce(
-                    _wl_area_ixx,
-                    _wl_area_ixx_d,
+                    &_wl_area_ixx,
+                    &_wl_area_ixx_d,
                     1,
                     mpi_cusfloat,
                     MPI_SUM,
@@ -387,8 +387,8 @@ void Hydrostatics::_calculate(
     // Sum all the area interia around Y axis
     cusfloat _wl_area_iyy_d = 0.0;
     MPI_Allreduce(
-                    _wl_area_iyy,
-                    _wl_area_iyy_d,
+                    &_wl_area_iyy,
+                    &_wl_area_iyy_d,
                     1,
                     mpi_cusfloat,
                     MPI_SUM,
