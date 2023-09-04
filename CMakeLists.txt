@@ -56,9 +56,9 @@ set( compile_option_flags ${PRECISION_FLAG} )
 
 # Add warning options to the compiler
 if ( WIN32 )
-    set( compile_option_flags /Wall /Wextra /EHsc)
+    set( compile_option_flags /Wall /Wextra /EHsc )
 elseif ( UNIX )
-    set( compile_option_flags -Wall -Wextra -EHsc)
+    set( compile_option_flags -Wall -Wextra -EHsc )
 endif()
 
 # Check for Debug or release build
@@ -103,6 +103,22 @@ add_subdirectory(tests)
 ################ SeaMotions Executables ###################
 ###########################################################
 
-# Add test executable to check the version passes to the software
-set(SOURCE_FILES src/main.cpp src/version.hpp src/version.cpp)
-add_executable(version_exec ${SOURCE_FILES})
+# Add SeaMotions frequency solver
+set(
+        seamotions_freq_src
+        ./src/seamotions_freq.cpp
+        ${containers_module_files}
+        ${hydrostatic_module_files}
+        ${inout_module_files}
+        ${math_module_files}
+        ${mesh_module_files}
+        ${tools_module_files}
+        ${version_module_files}
+    )
+
+add_executable(
+                    seamotions_freq
+                    ${seamotions_freq_src}
+                )
+set_mkl_lib_target( seamotions_freq )
+set_mpi_target( seamotions_freq )
