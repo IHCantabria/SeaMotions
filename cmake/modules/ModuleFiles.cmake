@@ -96,6 +96,13 @@ set(
         ${green_infdepth_coeffs_src}
     )
 
+# Pack hydrostatic module files
+set(
+        hydrostatic_module_files
+        ${CMAKE_SOURCE_DIR}/src/hydrostatics.hpp
+        ${CMAKE_SOURCE_DIR}/src/hydrostatics.cpp
+    )
+
 # Pack inout module files
 set(
         inout_module_files
@@ -120,6 +127,7 @@ set(
         ${CMAKE_SOURCE_DIR}/src/math/math_tools.hpp
         ${CMAKE_SOURCE_DIR}/src/math/math_tools.cpp
         ${CMAKE_SOURCE_DIR}/src/math/math_tools.txx
+        ${CMAKE_SOURCE_DIR}/src/math/nonlinear_solvers_math.hpp
         ${CMAKE_SOURCE_DIR}/src/math/scalapack_solver.hpp
         ${CMAKE_SOURCE_DIR}/src/math/special_math.hpp
         ${CMAKE_SOURCE_DIR}/src/math/special_math.cpp
