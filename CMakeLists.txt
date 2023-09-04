@@ -93,6 +93,9 @@ function( set_mpi_target target )
     target_link_libraries( ${target} PRIVATE MPI::MPI_CXX )
 endfunction( )
 
+# Find HDF5
+find_package(HDF5 REQUIRED COMPONENTS CXX HL)
+
 ###########################################################
 ################### Configure Tests #######################
 ###########################################################
