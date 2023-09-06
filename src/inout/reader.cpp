@@ -188,6 +188,48 @@ void    read_case(
                             input->bodies_finame
                         );
     input->bodies_np = input->bodies_finame.size( );
+
+    //////////////////////////////////////////////
+    /************** Output Channels *************/
+    //////////////////////////////////////////////
+
+    // Skip header
+    _skip_header( infile, line_count, 3 );
+
+    // Read output flag for hydromechanic coefficients
+    target_signal   = "OutHydMech";
+    read_signal     = _read_channel_value( infile, input->out_hydmech );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read output flag for pressure over the panels
+    target_signal   = "OutPress";
+    read_signal     = _read_channel_value( infile, input->out_pressure );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read output flag for mean drift
+    target_signal   = "OutMDrift";
+    read_signal     = _read_channel_value( infile, input->out_mdrift );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read output flag for quadratic transfer functions
+    target_signal   = "OutQTF";
+    read_signal     = _read_channel_value( infile, input->out_qtf );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read output flag for response amplitude operator
+    target_signal   = "OutRAOs";
+    read_signal     = _read_channel_value( infile, input->out_raos );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read output flag for sources intensity over the panels
+    target_signal   = "OutSources";
+    read_signal     = _read_channel_value( infile, input->out_sources );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read output flag for wave excitation forces
+    target_signal   = "OutWex";
+    read_signal     = _read_channel_value( infile, input->out_wex );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
     
     //////////////////////////////////////////////
     /************** Site Conditions *************/

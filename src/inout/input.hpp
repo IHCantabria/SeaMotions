@@ -16,19 +16,26 @@ struct Input
 {
 public:
     // Define class attributes
+    std::vector<cusfloat>       angfreqs        ;
+    int                         angfreqs_np     = 0;
     BodyDef**                   bodies          = nullptr;
     std::vector<std::string>    bodies_finame   ;
     int                         bodies_np       = 0;
     std::string                 case_fopath     = "";
     std::string                 folder_path     = "";
-    std::vector<cusfloat>       angfreqs        ;
-    int                         angfreqs_np     = 0;
     std::string                 freqs_unit      = "";
     std::vector<cusfloat>       heads           ;
     int                         heads_np        = 0;
+    cusfloat                    grav_acc        = 0.0;
     std::string                 heads_units     = "";
     bool                        is_bodies       = false;
-    cusfloat                    grav_acc        = 0.0;
+    bool                        out_hydmech     = false;
+    bool                        out_pressure    = false;
+    bool                        out_mdrift      = false;
+    bool                        out_qtf         = false;
+    bool                        out_raos        = false;
+    bool                        out_sources     = false;
+    bool                        out_wex         = false;
     cusfloat                    water_density   = 0.0;
     cusfloat                    water_depth     = 0.0;
 
