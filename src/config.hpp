@@ -21,6 +21,11 @@ typedef std::complex<float> cuscomplex;
     #define mpi_cusfloat MPI_FLOAT
     #endif
 
+    #ifdef _HDF5_BUILD
+    #include "H5Cpp.h"
+    #define cusfloat_h5 H5::PredType::NATIVE_FLOAT
+    #endif
+
 constexpr int FLOATING_PRECISION = 32;
 constexpr cusfloat EPS_PRECISION = 1e-6;
 constexpr cusfloat EPS_PRECISION_ORDER = -6;
@@ -32,6 +37,11 @@ typedef std::complex<double> cuscomplex;
     #ifdef MPI_BUILD
     #include "mpi.h"
     #define mpi_cusfloat MPI_DOUBLE
+    #endif
+
+    #ifdef _HDF5_BUILD
+    #include "H5Cpp.h"
+    #define cusfloat_h5 H5::PredType::NATIVE_DOUBLE
     #endif
 
 constexpr int FLOATING_PRECISION = 32;
