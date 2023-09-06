@@ -23,6 +23,7 @@ public:
     int                         bodies_np       = 0;
     std::string                 case_fopath     = "";
     std::string                 folder_path     = "";
+    cusfloat*                   freqs           = nullptr;
     std::string                 freqs_unit      = "";
     std::vector<cusfloat>       heads           ;
     int                         heads_np        = 0;

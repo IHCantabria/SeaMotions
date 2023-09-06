@@ -51,6 +51,13 @@ void Input::configure( void )
         std::cout << std::endl;
         throw std::runtime_error( "" );
     }
+
+    this->freqs = generate_empty_vector<cusfloat>( this->angfreqs_np );
+    for ( int i=0; i<this->angfreqs_np; i++ )
+    {
+        this->freqs[i] = angfreq_to_freq( this->angfreqs[i] );
+    }
+
 }
 
 
@@ -58,6 +65,9 @@ Input::~Input( void )
 {
     if ( this->is_bodies )
     {
+        // Delete frequencies containers
+        mkl_free( this->freqs );
+
         // Delete BodyDef object instances
         for ( int i=0; i<this->bodies_np; i++ )
         {
