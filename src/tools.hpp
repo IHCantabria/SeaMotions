@@ -13,13 +13,22 @@
 ///////////////////////////////////////////////
 /************** MACRO DEFINITION *************/
 ///////////////////////////////////////////////
-#define GET_PROGRAM_POINT()(                \
-    std::stringstream ss;                   \
-    ss << "FILE: " << __FILE__;             \
-    ss << " - LINE: " << __LINE__ << "\n";  \
-    ss.str();                               \
-)                                           \
 
+#define CREATE_ATTRIBUTE(                                                       \
+                            fid,                                                \
+                            attr_name,                                          \
+                            data,                                               \
+                            data_type                                           \
+                        )                                                       \
+{                                                                               \
+    DataSpace   attr_space(H5S_SCALAR);                                         \
+    Attribute   attr_handle    = fid.createAttribute(                           \
+                                                        attr_name,              \
+                                                        data_type,              \
+                                                        attr_space              \
+                                                    );                          \
+    attr_handle.write( data_type, &data );                                      \
+}                                                                               \
 
 #define CHECK_FILE_UNIT_STATUS( file_id, file_path ){                           \
     if ( !file_id.good( ) )                                                     \
@@ -50,6 +59,66 @@
         std::cerr << std::endl;                                                 \
         exit(12);                                                               \
     }                                                                           \
+
+
+#define CREATE_DATASET(                                                                             \
+                            fid,                                                                    \
+                            dset_name,                                                              \
+                            shape_np,                                                               \
+                            shape,                                                                  \
+                            data_type                                                               \
+                        )                                                                           \
+{                                                                                                   \
+    /* Define DataSpace for all the channel */                                                      \
+    H5::DataSpace   dspce           = H5::DataSpace( shape_np, shape );                             \
+                                                                                                    \
+    /* Create Dataset */                                                                            \
+    H5::DataSet     dataset         = fid.createDataSet( dset_name, data_type, dspce );             \
+                                                                                                    \
+    /* Close DataSet */                                                                             \
+    dataset.close();                                                                                \
+}                                                                                                   \
+
+
+#define GET_PROGRAM_POINT()(                                                                        \
+    std::stringstream ss;                                                                           \
+    ss << "FILE: " << __FILE__;                                                                     \
+    ss << " - LINE: " << __LINE__ << "\n";                                                          \
+    ss.str();                                                                                       \
+)                                                                                                   \
+
+
+#define SAVE_DATASET_CHUNK(                                                                         \
+                                fid,                                                                \
+                                dset_name,                                                          \
+                                shape_np,                                                           \
+                                shape,                                                              \
+                                chunk_shape,                                                        \
+                                offset_shape,                                                       \
+                                data,                                                               \
+                                data_type                                                           \
+                            )                                                                       \
+{                                                                                                   \
+    /* Define DataSpace for all the channel */                                                      \
+    H5::DataSpace   dspce           = H5::DataSpace( shape_np, shape );                             \
+                                                                                                    \
+    /* Open dataset */                                                                              \
+    H5::DataSet     dataset         = fid.openDataSet( dset_name );                                 \
+                                                                                                    \
+    /* Get DataSet properties to configure the chunk */                                             \
+    H5::DSetCreatPropList prop_list = dataset.getCreatePlist();                                     \
+    prop_list.setChunk( shape_np, chunk_shape );                                                    \
+                                                                                                    \
+    /* Create DataSet for the chunk */                                                              \
+    H5::DataSpace   dspce_chunk( shape_np, chunk_shape );                                           \
+    dspce.selectHyperslab( H5S_SELECT_SET, chunk_shape, offset_shape );                             \
+                                                                                                    \
+    /* Save data */                                                                                 \
+    dataset.write( data, data_type, dspce_chunk, dspce );                                           \
+                                                                                                    \
+    /* Close DataSet */                                                                             \
+    dataset.close();                                                                                \
+}                                                                                                   \
 
 
 ///////////////////////////////////////////////
