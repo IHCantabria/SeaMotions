@@ -96,6 +96,12 @@ endfunction( )
 # Find HDF5
 find_package(HDF5 REQUIRED COMPONENTS CXX HL)
 
+function( set_hdf5_target target )
+    target_compile_options( ${target} PUBLIC "-D_HDF5_BUILD" )
+    target_include_directories( ${target} PRIVATE ${HDF5_INCLUDE_DIRS} )
+    target_link_libraries( ${target} PRIVATE ${HDF5_CXX_LIBRARIES} ${HDF5_HL_LIBRARIES} )
+endfunction( )
+
 ###########################################################
 ################### Configure Tests #######################
 ###########################################################
@@ -125,3 +131,4 @@ add_executable(
                 )
 set_mkl_lib_target( seamotions_freq )
 set_mpi_target( seamotions_freq )
+set_hdf5_target( seamotions_freq )
