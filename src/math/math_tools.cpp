@@ -14,6 +14,14 @@
 //////////////////////////////////////////////
 /////// FUNCTION DEFINITION BLOCK ////////////
 //////////////////////////////////////////////
+cusfloat    angfreq_to_freq( 
+                                cusfloat angfreq 
+                            )
+{
+    return angfreq / 2.0 / PI;
+}
+
+
 int assert_complex_equality(
                                 cuscomplex u, 
                                 cuscomplex v, 

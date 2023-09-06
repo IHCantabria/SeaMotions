@@ -23,6 +23,10 @@ const cusfloat EULERGAMMA = 0.577215664901533;
 //////////////////////////////////////////////
 /////// FUNCTION DEFINITION BLOCK ////////////
 //////////////////////////////////////////////
+                                cusfloat    angfreq_to_freq( 
+                                                                        cusfloat angfreq 
+                                                            );
+
                                 int         assert_complex_equality(
                                                                         cuscomplex  u, 
                                                                         cuscomplex  v, 
