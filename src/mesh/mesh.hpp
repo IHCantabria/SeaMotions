@@ -61,6 +61,8 @@ public:
     cusfloat    z_min       = 0.0;
 
     // Define class constructor and destructor
+    Mesh( ) = default;
+
     Mesh( std::string file_path );
 
     ~Mesh( void );
