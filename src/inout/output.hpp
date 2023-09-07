@@ -6,7 +6,6 @@
 #include <string>
 
 // Include local modules
-#include "dataset_dims.hpp"
 #include "input.hpp"
 
 
