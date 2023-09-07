@@ -4,10 +4,13 @@
 #include <string>
 
 // Include local modules
-#include "./containers/mpi_config.hpp"
-#include "hydrostatics.hpp"
-#include "./inout/reader.hpp"
-#include "tools.hpp"
+#include "../../containers/mpi_config.hpp"
+#include "freq_solver_tools.hpp"
+#include "../../hydrostatics.hpp"
+#include "../../inout/output.hpp"
+#include "../../inout/reader.hpp"
+#include "../../tools.hpp"
+
 
 
 int main( int argc, char* argv[] )
@@ -74,18 +77,24 @@ int main( int argc, char* argv[] )
     /*****************************************/
     /********* Launch Output System **********/
     /*****************************************/
-
+    Output output( input );
 
     /*****************************************/
     /***** Calculate Source Distribution *****/
     /*****************************************/
-
-    
+    calculate_freq_domain_coeffs(
+                                    &mpi_config,
+                                    input, 
+                                    &hydrostatics,
+                                    &output 
+                                );
 
     /*****************************************/
     /********* Close MPI environment *********/
     /*****************************************/
     MPI_Finalize( );
+
+    std::cout << "Seamotions Freqcuency ended!" << std::endl;
 
     return 0;
 }
