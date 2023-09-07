@@ -10,7 +10,7 @@
 
 
 template<typename T>
-void cmpi_gather(
+inline void cmpi_gather(
                                             T*              sendbuf,
                                             int             sendcount,
                                             T*              recvbuf,
@@ -33,7 +33,7 @@ void cmpi_gather(
 
 
 template<>
-void cmpi_gather<float>(
+inline void cmpi_gather<float>(
                                             float*          sendbuf,
                                             int             sendcount,
                                             float*          recvbuf,
@@ -56,7 +56,7 @@ void cmpi_gather<float>(
 
 
 template<>
-void cmpi_gather<double>(
+inline void cmpi_gather<double>(
                                             double*         sendbuf,
                                             int             sendcount,
                                             double*         recvbuf,
@@ -79,7 +79,7 @@ void cmpi_gather<double>(
 
 
 template<>
-void cmpi_gather<std::complex<float>>(
+inline void cmpi_gather<std::complex<float>>(
                                             std::complex<float>*    sendbuf,
                                             int                     sendcount,
                                             std::complex<float>*    recvbuf,
@@ -102,7 +102,7 @@ void cmpi_gather<std::complex<float>>(
 
 
 template<>
-void cmpi_gather<std::complex<double>>(
+inline void cmpi_gather<std::complex<double>>(
                                             std::complex<double>*   sendbuf,
                                             int                     sendcount,
                                             std::complex<double>*   recvbuf,
