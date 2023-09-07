@@ -10,6 +10,7 @@
 class IntegralsDb
 {
 public:
+    // Declare class attributes
     bool is_build = false;
     P3*         l1;
     P3*         l1_da;
@@ -35,38 +36,16 @@ public:
     R22*        r22;
     R22_dX*     r22_dx;
 
+    // Declare class constructors and destructor
+    IntegralsDb( ) = default;
 
-    ~IntegralsDb(void)
-    {
-        if (this->is_build)
-        {
-            delete this->l1;
-            delete this->l1_da;
-            delete this->l1_db;
-            delete this->l2;
-            delete this->l3;
-            delete this->l3_da;
-            delete this->l3_db;
-            delete this->m1;
-            delete this->m1_da;
-            delete this->m1_db;
-            delete this->m2;
-            delete this->m3;
-            delete this->m3_da;
-            delete this->m3_db;
-            delete this->r11;
-            delete this->r11a_dx;
-            delete this->r11b_dx;
-            delete this->r12;
-            delete this->r12_dx;
-            delete this->r21;
-            delete this->r21_dx;
-            delete this->r22;
-            delete this->r22_dx;
-        }
-    }
+    IntegralsDb( void );
 
+    ~IntegralsDb(void);
+
+    // Declare class methods
     void fold_h(cusfloat H);
+    
 };
 
 

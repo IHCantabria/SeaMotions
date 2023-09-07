@@ -32,6 +32,144 @@ void IntegralsDb::fold_h(cusfloat H)
 }
 
 
+IntegralsDb::IntegralsDb( void )
+{
+    ////////////////////////////////////////////////
+    ////// Load infinite water depth integrals//////
+    ////////////////////////////////////////////////
+
+    // Load R11 integral
+    this->r11 = new R11();
+    set_data_r11(this->r11);
+
+    // Load R11A_dX integral
+    this->r11a_dx = new R11A_dX();
+    set_data_r11a_dx(this->r11a_dx);
+
+    // Load R11B_dX integral
+    this->r11b_dx = new R11B_dX();
+    set_data_r11b_dx(this->r11b_dx);
+
+    // Load R12 integral
+    this->r12 = new R12();
+    set_data_r12(this->r12);
+
+     // Load R12_dX integral
+    this->r12_dx = new R12_dX();
+    set_data_r12_dx(this->r12_dx);
+
+    // Load R21 integral
+    this->r21 = new R21();
+    set_data_r21(this->r21);
+
+    // Load R21_dX integral
+    this->r21_dx = new R21_dX();
+    set_data_r21_dx(this->r21_dx);
+
+    // Load R22 integral
+    this->r22 = new R22();
+    set_data_r22(this->r22);
+
+    // Load R22_dX integral
+    this->r22_dx = new R22_dX();
+    set_data_r22_dx(this->r22_dx);
+
+    ////////////////////////////////////////////////
+    //////// Load finite water depth integrals//////
+    ////////////////////////////////////////////////
+
+    // Load L1 integral
+    this->l1 = new P3();
+    set_data_l1(this->l1);
+
+    // Load L1_dA integral
+    this->l1_da = new P3();
+    set_data_l1_da(this->l1_da);
+
+    // Load L1_dB integral
+    this->l1_db = new P3();
+    set_data_l1_db(this->l1_db);
+
+    // Load L2 integral
+    this->l2 = new P3();
+    set_data_l2(this->l2);
+
+    // Load L3 integral
+    this->l3 = new P3();
+    set_data_l3(this->l3);
+
+    // Load L3_dA integral
+    this->l3_da = new P3();
+    set_data_l3_da(this->l3_da);
+
+    // Load L3_dB integral
+    this->l3_db = new P3();
+    set_data_l3_db(this->l3_db);
+
+    // Load M1 integral
+    this->m1 = new P3();
+    set_data_m1(this->m1);
+
+    // Load M1_dA integral
+    this->m1_da = new P3();
+    set_data_m1_da(this->m1_da);
+
+    // Load M1_dB integral
+    this->m1_db = new P3();
+    set_data_m1_db(this->m1_db);
+
+    // Load M2 integral
+    this->m2 = new P3();
+    set_data_m2(this->m2);
+
+    // Load M3 integral
+    this->m3 = new P3();
+    set_data_m3(this->m3);
+
+    // Load M3_dA integral
+    this->m3_da = new P3();
+    set_data_m3_da(this->m3_da);
+
+    // Load M3_dB integral
+    this->m3_db = new P3();
+    set_data_m3_db(this->m3_db);
+
+    // Set build flag to true
+    this->is_build = true;
+}
+
+
+IntegralsDb::~IntegralsDb(void)
+{
+    if (this->is_build)
+    {
+        delete this->l1;
+        delete this->l1_da;
+        delete this->l1_db;
+        delete this->l2;
+        delete this->l3;
+        delete this->l3_da;
+        delete this->l3_db;
+        delete this->m1;
+        delete this->m1_da;
+        delete this->m1_db;
+        delete this->m2;
+        delete this->m3;
+        delete this->m3_da;
+        delete this->m3_db;
+        delete this->r11;
+        delete this->r11a_dx;
+        delete this->r11b_dx;
+        delete this->r12;
+        delete this->r12_dx;
+        delete this->r21;
+        delete this->r21_dx;
+        delete this->r22;
+        delete this->r22_dx;
+    }
+}
+
+
 void build_integrals_db(IntegralsDb &idb)
 {
     ////////////////////////////////////////////////
