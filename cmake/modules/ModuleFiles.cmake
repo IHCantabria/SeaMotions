@@ -108,6 +108,8 @@ set(
         inout_module_files
         ${CMAKE_SOURCE_DIR}/src/inout/input.hpp
         ${CMAKE_SOURCE_DIR}/src/inout/input.cpp
+        ${CMAKE_SOURCE_DIR}/src/inout/output.hpp
+        ${CMAKE_SOURCE_DIR}/src/inout/output.cpp
         ${CMAKE_SOURCE_DIR}/src/inout/reader.hpp
         ${CMAKE_SOURCE_DIR}/src/inout/reader.cpp
         ${CMAKE_SOURCE_DIR}/src/inout/reader.txx
