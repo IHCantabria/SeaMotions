@@ -200,7 +200,9 @@ void ScalapackSolver<T>::Initialize(void)
     MPI_Barrier(MPI_COMM_WORLD);
 
     this->end_row = this->start_row + this->num_rows_local;
+    this->end_row = ( this->end_row > this->num_rows ) ? this->num_rows : this->end_row;
     this->end_col = this->start_col + this->num_cols_local;
+    this->end_col = ( this->end_col > this->num_rows ) ? this->num_rows : this->end_col;
 
     // Delete vectors
     if (proc_rank == 0)
