@@ -37,8 +37,6 @@ public:
     R22_dX*     r22_dx;
 
     // Declare class constructors and destructor
-    IntegralsDb( ) = default;
-
     IntegralsDb( void );
 
     ~IntegralsDb(void);
