@@ -140,7 +140,7 @@ inline  void    _read_list_contraction(
     int                         _count          = 0;
     int                         _first_line     = line_count;
     std::string                 line            ;
-    int                         max_count       = 2;
+    int                         max_count       = 1e4;
     int                         pos_ddot        = 0;
     while ( true )
     {
