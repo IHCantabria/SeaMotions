@@ -42,9 +42,13 @@ public:
     MPI_Comm rhs_comm;
     MPI_Group rhs_group;
     MKL_INT start_col;
+    MKL_INT start_col_0;
     MKL_INT start_row;
+    MKL_INT start_row_0;
     MKL_INT end_col;
+    MKL_INT end_col_0;
     MKL_INT end_row;
+    MKL_INT end_row_0;
     MKL_INT ictxt, myrow, mycol;
     MKL_INT zero = 0;
 
@@ -199,10 +203,19 @@ void ScalapackSolver<T>::Initialize(void)
     MPI_Scatter(start_cols, 1, MPI_INT, &start_col, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Barrier(MPI_COMM_WORLD);
 
+    // Get end positions of the matrix
     this->end_row = this->start_row + this->num_rows_local;
     this->end_row = ( this->end_row > this->num_rows ) ? this->num_rows : this->end_row;
     this->end_col = this->start_col + this->num_cols_local;
     this->end_col = ( this->end_col > this->num_rows ) ? this->num_rows : this->end_col;
+    this->end_row += 1;
+    this->end_col += 1;
+
+    // Get 0 reference position start and end intervals
+    this->end_col_0     = this->end_col - 1;
+    this->end_row_0     = this->end_row - 1;
+    this->start_col_0   = this->start_col - 1;
+    this->start_row_0   = this->start_row - 1;
 
     // Delete vectors
     if (proc_rank == 0)
