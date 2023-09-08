@@ -115,13 +115,16 @@ add_subdirectory(tests)
 # Add SeaMotions frequency solver
 set(
         seamotions_freq_src
-        ./src/seamotions_freq.cpp
+        ${sm_freq_module_files}
         ${containers_module_files}
+        ${green_module_files}
+        ${green_interfaces_module_files}
         ${hydrostatic_module_files}
         ${inout_module_files}
         ${math_module_files}
         ${mesh_module_files}
         ${tools_module_files}
+        ${waves_module_files}
         ${version_module_files}
     )
 
