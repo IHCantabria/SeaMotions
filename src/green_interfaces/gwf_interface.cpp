@@ -79,9 +79,9 @@ cuscomplex  GWFInterface::operator()(
 
     // Calculate normal derivate
     cuscomplex  dG_dn   =   (
-                                dG_dX * this->_panel_i->normal_vec[0]
+                                dG_dR * dG_dX * this->_panel_i->normal_vec[0]
                                 +
-                                dG_dY * this->_panel_i->normal_vec[1]
+                                dG_dR * dG_dY * this->_panel_i->normal_vec[1]
                                 +
                                 dG_dZ * this->_panel_i->normal_vec[2]
                             );
