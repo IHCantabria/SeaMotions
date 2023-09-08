@@ -19,6 +19,7 @@ typedef std::complex<float> cuscomplex;
     #ifdef MPI_BUILD
     #include "mpi.h"
     #define mpi_cusfloat MPI_FLOAT
+    #define mpi_cuscomplex MPI_COMPLEX
     #endif
 
     #ifdef _HDF5_BUILD
@@ -37,6 +38,7 @@ typedef std::complex<double> cuscomplex;
     #ifdef MPI_BUILD
     #include "mpi.h"
     #define mpi_cusfloat MPI_DOUBLE
+    #define mpi_cuscomplex MPI_DOUBLE_COMPLEX
     #endif
 
     #ifdef _HDF5_BUILD
