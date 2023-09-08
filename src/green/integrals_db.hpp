@@ -9,6 +9,10 @@
 
 class IntegralsDb
 {
+private:
+    // Declare class methods
+    void _error_copy_constructor( void );
+    
 public:
     // Declare class attributes
     bool is_build = false;
@@ -38,6 +42,10 @@ public:
 
     // Declare class constructors and destructor
     IntegralsDb( void );
+
+    IntegralsDb( IntegralsDb& );
+
+    IntegralsDb( IntegralsDb* );
 
     ~IntegralsDb(void);
 

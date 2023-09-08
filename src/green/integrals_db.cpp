@@ -1,11 +1,22 @@
 
 // Include general usage libraries
+#include <iostream>
 #include <cassert>
+#include <exception>
 
 // Include local modules
 #include "integrals_db.hpp"
 #include "pulsating_fin_depth_cheby.hpp"
 #include "pulsating_inf_depth_cheby.hpp"
+
+
+void IntegralsDb::_error_copy_constructor(
+                                            void
+                                        )
+{
+    std::cerr << "Invoking copy constructor for class IntegralsDB" << std::endl;
+    throw std::runtime_error( "" );
+}
 
 
 void IntegralsDb::fold_h(cusfloat H)
@@ -136,6 +147,18 @@ IntegralsDb::IntegralsDb( void )
 
     // Set build flag to true
     this->is_build = true;
+}
+
+
+IntegralsDb::IntegralsDb( IntegralsDb& )
+{
+    this->_error_copy_constructor( );
+}
+
+
+IntegralsDb::IntegralsDb( IntegralsDb* )
+{
+    this->_error_copy_constructor( );
 }
 
 
