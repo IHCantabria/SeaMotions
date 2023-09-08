@@ -25,6 +25,7 @@ GWFInterface::GWFInterface(
                                                     water_depth,
                                                     grav_acc
                                                 );
+    this->_wave_data->calculate_john_terms( );
 
     // Load integrals database
     this->_integrals_db = new IntegralsDb( );
@@ -104,6 +105,7 @@ void    GWFInterface::set_ang_freq(
                                                     this->_water_depth,
                                                     this->_grav_acc
                                                 );
+    this->_wave_data->calculate_john_terms( );
 }
 
 
