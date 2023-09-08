@@ -153,6 +153,14 @@ set(
         ${CMAKE_SOURCE_DIR}/src/mpi_interface.hpp
     )
 
+# Pack solvers files
+set(
+        sm_freq_module_files
+        ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/seamotions_freq.cpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/freq_solver_tools.hpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/freq_solver_tools.cpp
+    )
+
 # Pack tools module files
 set(
         tools_module_files
