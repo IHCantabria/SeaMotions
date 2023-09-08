@@ -53,7 +53,7 @@ public:
     MKL_INT zero = 0;
 
     // Declare Constructors
-    ScalapackSolver(MKL_INT num_rows, MKL_INT num_procs, MKL_INT proc_rank);
+    ScalapackSolver(MKL_INT num_rows, MKL_INT num_cols_rhs,  MKL_INT num_procs, MKL_INT proc_rank);
 
     // Declare Class Methdos
     void GenerateRhsComm(void);
@@ -233,12 +233,18 @@ void ScalapackSolver<T>::Initialize(void)
 
 
 template <class T>
-ScalapackSolver<T>::ScalapackSolver(MKL_INT num_rows_inc, MKL_INT num_procs_inc, MKL_INT proc_rank_inc)
+ScalapackSolver<T>::ScalapackSolver(
+                                        MKL_INT num_rows_inc, 
+                                        MKL_INT num_cols_rhs_inc,
+                                        MKL_INT num_procs_inc, 
+                                        MKL_INT proc_rank_inc
+                                    )
 {
     // Assing variables
     proc_rank = proc_rank_inc;
     num_rows = num_rows_inc;
     num_procs = num_procs_inc;
+    num_cols_rhs = num_cols_rhs_inc;
 
     // Calculate processors per row and column
     if (num_procs < 1)

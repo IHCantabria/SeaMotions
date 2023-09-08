@@ -663,7 +663,7 @@ void launch_test(
     RefData<T> ref_data( res_fipath );
 
     // Create instance of ScalapackSolver object
-    ScalapackSolver<T> scl( ref_data.rows_np, mpi_config.procs_total, mpi_config.proc_rank );
+    ScalapackSolver<T> scl( ref_data.rows_np, 1, mpi_config.procs_total, mpi_config.proc_rank );
 
     // Allocate space for the test matrix
     T* sysmat = generate_empty_vector<T>( scl.num_rows_local*scl.num_cols_local );
