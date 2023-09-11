@@ -77,7 +77,12 @@ int main( int argc, char* argv[] )
     /*****************************************/
     /********* Launch Output System **********/
     /*****************************************/
-    Output output( input );
+    Output* output = nullptr;
+    
+    if ( mpi_config.is_root( ) )
+    {
+        output = new Output( input );
+    }
 
     /*****************************************/
     /***** Calculate Source Distribution *****/
@@ -86,13 +91,19 @@ int main( int argc, char* argv[] )
                                     &mpi_config,
                                     input, 
                                     &hydrostatics,
-                                    &output 
+                                    output 
                                 );
 
     /*****************************************/
     /********* Close MPI environment *********/
     /*****************************************/
     MPI_Finalize( );
+
+    /*****************************************/
+    /**** Delete heap memory allocations *****/
+    /*****************************************/
+    delete input;
+    delete output;
 
     std::cout << "Seamotions Freqcuency ended!" << std::endl;
 
