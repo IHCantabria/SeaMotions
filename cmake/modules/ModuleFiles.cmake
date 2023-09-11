@@ -138,6 +138,8 @@ set(
         ${CMAKE_SOURCE_DIR}/src/math/math_tools.txx
         ${CMAKE_SOURCE_DIR}/src/math/nonlinear_solvers_math.hpp
         ${CMAKE_SOURCE_DIR}/src/math/scalapack_solver.hpp
+        ${CMAKE_SOURCE_DIR}/src/math/shape_functions.hpp
+        ${CMAKE_SOURCE_DIR}/src/math/shape_functions.cpp
         ${CMAKE_SOURCE_DIR}/src/math/special_math.hpp
         ${CMAKE_SOURCE_DIR}/src/math/special_math.cpp
         ${CMAKE_SOURCE_DIR}/src/math/topology.hpp
