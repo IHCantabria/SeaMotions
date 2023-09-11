@@ -286,7 +286,9 @@ void ScalapackSolver<T>::Solve(T* subsysmat, T* subrhs)
     MKL_INT startrow = 1;
     MKL_INT startcol = 1;
     MKL_INT* ipiv = new MKL_INT[num_rows_local + num_block_size];
+    MPI_Barrier( MPI_COMM_WORLD );
     pgesv<T>(&num_rows, &num_cols_rhs, subsysmat, &startrow, &startcol, descA, ipiv, subrhs, &startrow, &startrow, descB, &info);
+    MPI_Barrier( MPI_COMM_WORLD );
 
     if ( info != 0 )
     {
