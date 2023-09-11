@@ -4,7 +4,7 @@
 
 // Include local modules
 #include "../../containers/mpi_config.hpp"
-#include "../../green_interfaces/gwf_interface.hpp"
+#include "../../green_interfaces/gwfdn_interface.hpp"
 #include "../../hydrostatics.hpp"
 #include "../../inout/input.hpp"
 #include "../../inout/output.hpp"
@@ -16,20 +16,28 @@ typedef ScalapackSolver<cuscomplex> SclCmpx;
 
 
 void    calculate_freq_domain_coeffs(
-                                        MpiConfig*      mpi_config,
-                                        Input*          input,
-                                        Hydrostatics*   hydrostatics,
-                                        Output*         output
+                                            MpiConfig*      mpi_config,
+                                            Input*          input,
+                                            Hydrostatics*   hydrostatics,
+                                            Output*         output
                                     );
 
+void    calculate_hydromechanic_coeffs(
+                                            Mesh*           mesh,
+                                            GWFDnInterface* green_interf,
+                                            cuscomplex*     sources,
+                                            cusfloat*       added_mass,
+                                            cusfloat*       damping
+                                        );
+
 void    calculate_sources_intensity(
-                                        SclCmpx*        scl,
-                                        Mesh*           mesh,
-                                        GWFInterface*   green_interf,
-                                        cusfloat        w,
-                                        cusfloat*       cog,
-                                        cuscomplex*     sysmat,
-                                        cuscomplex*     sources_int
+                                            SclCmpx*        scl,
+                                            Mesh*           mesh,
+                                            GWFDnInterface* green_interf,
+                                            cusfloat        w,
+                                            cusfloat*       cog,
+                                            cuscomplex*     sysmat,
+                                            cuscomplex*     sources_int
                                    );
 
 #endif

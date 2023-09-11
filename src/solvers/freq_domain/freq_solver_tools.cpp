@@ -43,13 +43,13 @@ void calculate_freq_domain_coeffs(
     /****************************************************/
     /********* Create Green function interface *********/
     /****************************************************/
-    GWFInterface* green_interf = new GWFInterface(
-                                                        all_mesh->panels[0],
-                                                        all_mesh->panels[0],
-                                                        input->angfreqs[0],
-                                                        input->water_depth,
-                                                        input->grav_acc
-                                                    );
+    GWFDnInterface* green_interf    = new GWFDnInterface(
+                                                            all_mesh->panels[0],
+                                                            all_mesh->panels[0],
+                                                            input->angfreqs[0],
+                                                            input->water_depth,
+                                                            input->grav_acc
+                                                        );
 
     /****************************************************/
     /******* Calculate hydrodynamic coefficients ********/
@@ -101,6 +101,7 @@ void calculate_freq_domain_coeffs(
         // Calculate hydromechanic coefficients
         if ( mpi_config->is_root( ) )
         {
+            // Calculate added mass and damping coefficients
             calculate_hydromechanic_coeffs( 
                                                 all_mesh,
                                                 green_interf,
@@ -109,15 +110,16 @@ void calculate_freq_domain_coeffs(
                                                 damping
                                             );
 
+            // Loop over headings to calculate diffraction and 
+            // Froude-Krylov forces
+            for ( int j=0; j<input->heads_np; j++ )
+            {
+                // Calculate wave exciting forces
+
+                // Calculate raos
+            }
         }
 
-        // Loop over frequencies
-        for ( int j=0; j<input->heads_np; j++ )
-        {
-            // Calculate wave exciting forces
-
-            // Calculate raos
-        }
     }
 
     // Delete heap memory allocated data
@@ -137,16 +139,17 @@ void calculate_freq_domain_coeffs(
 
 void    calculate_hydromechanic_coeffs(
                                             Mesh*           mesh,
-                                            GWFInterface*   green_interf,
+                                            GWFDnInterface* green_interf,
                                             cuscomplex*     sources,
                                             cusfloat*       added_mass,
                                             cusfloat*       damping
                                         )
 {
-    // Loop over degrees of freedom
+    // Loop over panels to calculate pressure over them
+
     for ( int i=0; i<6; i++ )
     {
-        
+
     }
 }
 
@@ -154,7 +157,7 @@ void    calculate_hydromechanic_coeffs(
 void    calculate_sources_intensity(
                                         SclCmpx*        scl,
                                         Mesh*           mesh,
-                                        GWFInterface*   green_interf,
+                                        GWFDnInterface* green_interf,
                                         cusfloat        w,
                                         cusfloat*       cog,
                                         cuscomplex*     sysmat,

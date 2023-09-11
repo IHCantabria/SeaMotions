@@ -1,6 +1,6 @@
 
-#ifndef __gwf_interface_hpp
-#define __gwf_interface_hpp
+#ifndef __gwfdn_interface_hpp
+#define __gwfdn_interface_hpp
 
 // Include local modules
 #include "../containers/panel_geom.hpp"
@@ -9,7 +9,7 @@
 #include "../waves.hpp"
 
 
-struct GWFInterface
+struct GWFDnInterface
 {
 private:
     // Define local attributes
@@ -22,7 +22,7 @@ private:
 
 public:
     // Define constructors and destructors
-    GWFInterface( 
+    GWFDnInterface( 
                     PanelGeom*  panel_i,
                     PanelGeom*  panel_j,
                     cusfloat    ang_freq,
@@ -30,7 +30,7 @@ public:
                     cusfloat    grav_acc
                 );
 
-    ~GWFInterface(  
+    ~GWFDnInterface(  
                     void 
                 );
 

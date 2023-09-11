@@ -1,9 +1,9 @@
 
 // Include local modules
-#include "gwf_interface.hpp"
+#include "gwfdn_interface.hpp"
 
 
-GWFInterface::GWFInterface( 
+GWFDnInterface::GWFDnInterface( 
                                 PanelGeom*  panel_i,
                                 PanelGeom*  panel_j,
                                 cusfloat    ang_freq,
@@ -33,15 +33,15 @@ GWFInterface::GWFInterface(
 }
 
 
-GWFInterface::~GWFInterface( void )
+GWFDnInterface::~GWFDnInterface( void )
 {
-    std::cerr << "Calling GWFInterface destructor..." << std::endl;
+    std::cerr << "Calling GWFDnInterface destructor..." << std::endl;
     delete this->_integrals_db;
     delete this->_wave_data;
 }
 
 
-cuscomplex  GWFInterface::operator()( 
+cuscomplex  GWFDnInterface::operator()( 
                                         cusfloat x,
                                         cusfloat y,
                                         cusfloat z
@@ -91,7 +91,7 @@ cuscomplex  GWFInterface::operator()(
 }
 
 
-void    GWFInterface::set_ang_freq(
+void    GWFDnInterface::set_ang_freq(
                                         cusfloat ang_freq
                                     )
 {
@@ -109,7 +109,7 @@ void    GWFInterface::set_ang_freq(
 }
 
 
-void    GWFInterface::set_panel_i(
+void    GWFDnInterface::set_panel_i(
                                     PanelGeom* panel
                                 )
 {
@@ -117,7 +117,7 @@ void    GWFInterface::set_panel_i(
 }
 
 
-void    GWFInterface::set_panel_j(
+void    GWFDnInterface::set_panel_j(
                                     PanelGeom* panel
                                 )
 {
