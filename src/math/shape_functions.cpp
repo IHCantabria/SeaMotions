@@ -3,7 +3,6 @@
 #include <iostream>
 
 // Include local modules
-#include "../config.hpp"
 #include "shape_functions.hpp"
 
 
@@ -61,8 +60,8 @@ int     dofs_triangular_region(
 cusfloat shape_functions(
                             int p_order,
                             int q_order,
-                            cusfloat xi,
-                            cusfloat eta
+                            cusfloat ,
+                            cusfloat 
                         )
 {
     cusfloat val = 0.0;
