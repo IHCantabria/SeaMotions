@@ -1,5 +1,6 @@
 
 // Include general usage libraries
+#include <cassert>
 #include <fstream>
 
 // Include local modules
@@ -287,6 +288,7 @@ void PanelGeom::get_source_nodes_data(
                                         cusfloat* normals_vec
                                     )
 {
+    assert( this->_is_source_nodes && "Thre is no source nodes definition to take from PanelGeom class." );
     position    = this->_source_positions;
     normals_vec = this->_source_normal_vec;
 }
