@@ -172,6 +172,18 @@ void    read_case(
     CHECK_INPUT_FILE_VERSION( VERSION_LABEL, _version, file_path );
 
     //////////////////////////////////////////////
+    /************** Solver Controls *************/
+    //////////////////////////////////////////////
+
+    // Skip header
+    _skip_header( infile, line_count, 3 );
+
+    // Read polynomial order to interpolate the solution
+    target_signal   = "PolyOrder";
+    read_signal     = _read_channel_value( infile, input->poly_order );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    //////////////////////////////////////////////
     /************** Body Definition *************/
     //////////////////////////////////////////////
 

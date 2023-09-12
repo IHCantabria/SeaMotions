@@ -38,6 +38,7 @@ public:
     bool                        out_raos        = false;
     bool                        out_sources     = false;
     bool                        out_wex         = false;
+    int                         poly_order      = 0;
     cusfloat                    water_density   = 0.0;
     cusfloat                    water_depth     = 0.0;
 
