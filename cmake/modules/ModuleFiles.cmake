@@ -10,6 +10,8 @@ set(
         ${CMAKE_SOURCE_DIR}/src/containers/panel_geom_list.hpp
         ${CMAKE_SOURCE_DIR}/src/containers/performance_stats.hpp
         ${CMAKE_SOURCE_DIR}/src/containers/performance_stats.cpp
+        ${CMAKE_SOURCE_DIR}/src/containers/source_node.hpp
+        ${CMAKE_SOURCE_DIR}/src/containers/source_node.cpp
     )
 
 # Pack green finite water depth integral coefficients
