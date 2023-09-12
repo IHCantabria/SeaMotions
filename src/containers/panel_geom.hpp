@@ -44,7 +44,8 @@ public:
                                 );
 
     void    calculate_source_nodes(
-                                        int     poly_order
+                                        int         poly_order,
+                                        cusfloat*   cog
                                     );
 
     void    get_node_position( 
@@ -53,7 +54,7 @@ public:
                                );
 
     void    get_panel_xy_proj( 
-                                        PanelGeom* new_panel 
+                                        PanelGeom*  new_panel 
                             );
 
     void    get_source_nodes_data(

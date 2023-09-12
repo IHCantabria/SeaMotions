@@ -169,7 +169,8 @@ void PanelGeom::calculate_properties( void )
 
 
 void PanelGeom::calculate_source_nodes(
-                                            int poly_order
+                                            int         poly_order,
+                                            cusfloat*   cog 
                                         )
 {
     // Get number of sources per panel
@@ -193,12 +194,35 @@ void PanelGeom::calculate_source_nodes(
     if ( poly_order == 0 )
     {
         // Allocate heap memory to storage the source points data
-        this->_source_positions     = new cusfloat[3];
-        this->_source_normal_vec    = new cusfloat[3];
+        this->_source_positions     = generate_empty_vector<cusfloat>( 3 );
+        this->_source_normal_vec    = generate_empty_vector<cusfloat>( 6 );
 
         // Define source points data
         copy_vector( 3, this->center, this->_source_positions );
         copy_vector( 3, this->normal_vec, this->_source_normal_vec );
+
+        cusfloat cog_to_panel[3] = { 0.0, 0.0, 0.0 };
+        sv_sub( 
+                    3, 
+                    this->center, 
+                    cog, 
+                    cog_to_panel 
+                );
+        this->_source_normal_vec[3] = (
+                                            cog_to_panel[1]*this->normal_vec[2]
+                                            -
+                                            cog_to_panel[2]*this->normal_vec[1]
+                                        );
+        this->_source_normal_vec[4] = (
+                                            cog_to_panel[2]*this->normal_vec[0]
+                                            -
+                                            cog_to_panel[0]*this->normal_vec[2]
+                                        );
+        this->_source_normal_vec[5] = (
+                                            cog_to_panel[0]*this->normal_vec[1]
+                                            -
+                                            cog_to_panel[1]*this->normal_vec[0]
+                                        );
 
     }
     else if ( poly_order > 0 )
@@ -440,8 +464,8 @@ PanelGeom::~PanelGeom(
 {
     if ( this->_is_source_nodes )
     {
-        delete this->_source_positions;
-        delete this->_source_normal_vec;
+        mkl_free( this->_source_positions );
+        mkl_free( this->_source_normal_vec );
     }
 }
 
