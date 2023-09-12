@@ -1,21 +1,22 @@
 
 // Include local modules
 #include "gwfdn_interface.hpp"
+#include "../math/shape_functions.hpp"
 
 
 GWFDnInterface::GWFDnInterface( 
-                                PanelGeom*  panel_i,
-                                PanelGeom*  panel_j,
-                                cusfloat    ang_freq,
-                                cusfloat    water_depth,
-                                cusfloat    grav_acc
+                                    SourceNode* source_i,
+                                    SourceNode* source_j,
+                                    cusfloat    ang_freq,
+                                    cusfloat    water_depth,
+                                    cusfloat    grav_acc
                             )
 {
     // Storage panels memory address, water depth and 
     // gravitational acceleration to use along the class
     this->_grav_acc     = grav_acc;
-    this->_panel_i      = panel_i;
-    this->_panel_j      = panel_j;
+    this->_source_i     = source_i;
+    this->_source_j     = source_j;
     this->_water_depth  = water_depth;
 
     // Calculate wave numbers
@@ -42,22 +43,24 @@ GWFDnInterface::~GWFDnInterface( void )
 
 
 cuscomplex  GWFDnInterface::operator()( 
+                                        cusfloat xi,
+                                        cusfloat eta,
                                         cusfloat x,
                                         cusfloat y,
                                         cusfloat z
                                     )
 {
     // Calculate horizontal radius
-    cusfloat R = std::sqrt(
-                                pow2s( this->_panel_j->center[0] - x )
-                                +
-                                pow2s( this->_panel_j->center[1] - y )
-                            );
+    cusfloat    R       = std::sqrt(
+                                        pow2s( this->_source_j->position[0] - x )
+                                        +
+                                        pow2s( this->_source_j->position[1] - y )
+                                    );
 
     // Calculate Green function derivatives
     cuscomplex  dG_dR   = G_integral_dr(
                                             R,
-                                            this->_panel_j->center[2],
+                                            this->_source_j->position[2],
                                             z,
                                             this->_water_depth,
                                             *(this->_wave_data),
@@ -65,7 +68,7 @@ cuscomplex  GWFDnInterface::operator()(
                                         );
     cuscomplex  dG_dZ   = G_integral_dz(
                                             R,
-                                            this->_panel_j->center[2],
+                                            this->_source_j->position[2],
                                             z,
                                             this->_water_depth,
                                             *(this->_wave_data),
@@ -73,21 +76,29 @@ cuscomplex  GWFDnInterface::operator()(
                                         );
 
     // Calculate X and Y cartesian coordinates derivatives
-    cusfloat    dX      = this->_panel_j->center[0] - x;
+    cusfloat    dX      = this->_source_j->position[0] - x;
     cuscomplex  dG_dX   = dG_dR * dX;
-    cusfloat    dY      = this->_panel_j->center[1] - y;
+    cusfloat    dY      = this->_source_j->position[1] - y;
     cuscomplex  dG_dY   = dG_dR * dY;
 
     // Calculate normal derivate
     cuscomplex  dG_dn   =   (
-                                dG_dR * dG_dX * this->_panel_i->normal_vec[0]
+                                dG_dR * dG_dX * this->_source_i->normal_vec[0]
                                 +
-                                dG_dR * dG_dY * this->_panel_i->normal_vec[1]
+                                dG_dR * dG_dY * this->_source_i->normal_vec[1]
                                 +
-                                dG_dZ * this->_panel_i->normal_vec[2]
+                                dG_dZ * this->_source_i->normal_vec[2]
                             );
+    
+    // Get local shape function value
+    cusfloat    shp_val = shape_functions( 
+                                            this->_source_i->p_order,
+                                            this->_source_i->q_order,
+                                            xi, 
+                                            eta 
+                                        );
 
-    return dG_dn;
+    return shp_val * dG_dn;
 }
 
 
@@ -109,17 +120,17 @@ void    GWFDnInterface::set_ang_freq(
 }
 
 
-void    GWFDnInterface::set_panel_i(
-                                    PanelGeom* panel
-                                )
+void    GWFDnInterface::set_source_i(
+                                        SourceNode* source_node
+                                    )
 {
-    this->_panel_i = panel;
+    this->_source_i = source_node;
 }
 
 
-void    GWFDnInterface::set_panel_j(
-                                    PanelGeom* panel
-                                )
+void    GWFDnInterface::set_source_j(
+                                        SourceNode* source_node
+                                    )
 {
-    this->_panel_j = panel;
+    this->_source_j = source_node;
 }

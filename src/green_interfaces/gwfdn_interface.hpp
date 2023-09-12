@@ -3,7 +3,7 @@
 #define __gwfdn_interface_hpp
 
 // Include local modules
-#include "../containers/panel_geom.hpp"
+#include "../containers/source_node.hpp"
 #include "../green/integrals_db.hpp"
 #include "../green/pulsating_fin_depth.hpp"
 #include "../waves.hpp"
@@ -14,8 +14,8 @@ struct GWFDnInterface
 private:
     // Define local attributes
     cusfloat            _grav_acc       = 0.0;
-    PanelGeom*          _panel_i        = nullptr;
-    PanelGeom*          _panel_j        = nullptr;
+    SourceNode*         _source_i       = nullptr;
+    SourceNode*         _source_j       = nullptr;
     IntegralsDb*        _integrals_db   = nullptr;
     cusfloat            _water_depth    = 0.0;
     WaveDispersionData* _wave_data      = nullptr;
@@ -23,34 +23,36 @@ private:
 public:
     // Define constructors and destructors
     GWFDnInterface( 
-                    PanelGeom*  panel_i,
-                    PanelGeom*  panel_j,
-                    cusfloat    ang_freq,
-                    cusfloat    water_depth,
-                    cusfloat    grav_acc
+                                SourceNode* source_i,
+                                SourceNode* source_j,
+                                cusfloat    ang_freq,
+                                cusfloat    water_depth,
+                                cusfloat    grav_acc
                 );
 
     ~GWFDnInterface(  
-                    void 
+                                void 
                 );
 
     // Define class methods
     cuscomplex  operator()( 
-                                cusfloat x,
-                                cusfloat y,
-                                cusfloat z
+                                cusfloat    xi,
+                                cusfloat    eta,
+                                cusfloat    x,
+                                cusfloat    y,
+                                cusfloat    z
                            );
 
     void        set_ang_freq(
-                                cusfloat ang_freq
+                                cusfloat    ang_freq
                             );
 
-    void        set_panel_i(
-                                PanelGeom* panel
+    void        set_source_i(
+                                SourceNode* source_node
                             );
 
-    void        set_panel_j(
-                                PanelGeom* panel
+    void        set_source_j(
+                                SourceNode* source_node
                             );
 
 };
