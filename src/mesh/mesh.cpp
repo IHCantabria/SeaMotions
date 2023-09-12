@@ -148,7 +148,19 @@ void Mesh::define_source_nodes(
 
         // Loop over polynomials degree
         local_count = 0;
-        if ( this->panels[i]->num_nodes == 3 )
+        if ( poly_order == 0 )
+        {
+            this->source_nodes[count] = new SourceNode(
+                                                            this->panels[i],
+                                                            poly_order,
+                                                            0,
+                                                            0,
+                                                            position,
+                                                            normals_vec
+                                                        );
+            count++;
+        }
+        else if ( this->panels[i]->num_nodes == 3 )
         {
             for ( int pi=0; pi<poly_order; pi++ )
             {
@@ -160,7 +172,7 @@ void Mesh::define_source_nodes(
                                                                     pi,
                                                                     qi,
                                                                     &(position[3*local_count]),
-                                                                    &(this->panels[i]->normal_vec[6*local_count])
+                                                                    &(normals_vec[6*local_count])
                                                                 );
                     count++;
                     local_count++;
@@ -180,7 +192,7 @@ void Mesh::define_source_nodes(
                                                                     pi,
                                                                     qi,
                                                                     &(position[3*local_count]),
-                                                                    &(this->panels[i]->normal_vec[6*local_count])
+                                                                    &(normals_vec[6*local_count])
                                                                 );
                     count++;
                 }
