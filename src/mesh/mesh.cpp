@@ -93,7 +93,8 @@ void Mesh::_create_panels(
 
 
 void Mesh::define_source_nodes(
-                                    int poly_order
+                                    int         poly_order,
+                                    cusfloat*   cog
                                 )
 {
     // Get nodes per element depending on the element type
@@ -120,7 +121,7 @@ void Mesh::define_source_nodes(
             throw std::runtime_error( "" );
         }
     }
-    this->source_nodes_np = sn_np;
+    this->source_nodes_np   = sn_np;
 
     // Allocate space for the source nodes vector
     this->source_nodes      = new SourceNode*[ sn_np ];
@@ -129,12 +130,16 @@ void Mesh::define_source_nodes(
     // Loop over elements to create source nodes objects
     int         count       = 0;
     cusfloat*   position    = nullptr;
+    int         local_count = 0;
     cusfloat*   normals_vec = nullptr;
     cusfloat*   this_pos    = nullptr;
     for ( int i=0; i<this->elems_np; i++ )
     {
         // Calculate source nodes over panel
-        this->panels[i]->calculate_source_nodes( poly_order );
+        this->panels[i]->calculate_source_nodes(    
+                                                    poly_order,
+                                                    cog
+                                                );
 
         // Get source nodes position over the panel
         this->panels[i]->get_source_nodes_data( 
@@ -143,9 +148,9 @@ void Mesh::define_source_nodes(
                                                 );
 
         // Loop over polynomials degree
+        local_count = 0;
         if ( this->panels[i]->num_nodes == 3 )
         {
-            int local_count = 0;
             for ( int pi=0; pi<poly_order; pi++ )
             {
                 for ( int qi=0; qi<poly_order-pi; qi++ )
@@ -156,7 +161,7 @@ void Mesh::define_source_nodes(
                                                                     pi,
                                                                     qi,
                                                                     &(position[3*local_count]),
-                                                                    this->panels[i]->normal_vec
+                                                                    &(this->panels[i]->normal_vec[6*local_count])
                                                                 );
                     count++;
                     local_count++;
@@ -169,13 +174,14 @@ void Mesh::define_source_nodes(
             {
                 for ( int qi=0; qi<poly_order; qi++ )
                 {
+                    local_count = pi*poly_order+qi;
                     this->source_nodes[count] = new SourceNode(
                                                                     this->panels[i],
                                                                     poly_order,
                                                                     pi,
                                                                     qi,
-                                                                    &(position[3*(pi*poly_order+qi)]),
-                                                                    this->panels[i]->normal_vec
+                                                                    &(position[3*local_count]),
+                                                                    &(this->panels[i]->normal_vec[6*local_count])
                                                                 );
                     count++;
                 }

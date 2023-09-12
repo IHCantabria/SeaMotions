@@ -73,7 +73,8 @@ public:
 
     // Define class methods
     void define_source_nodes(
-                                int         poly_order
+                                int         poly_order,
+                                cusfloat*   cog
                             );
     
     void get_elem_nodes( 
