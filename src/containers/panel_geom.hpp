@@ -58,8 +58,8 @@ public:
                             );
 
     void    get_source_nodes_data(
-                                        cusfloat*   position,
-                                        cusfloat*   normals_vec
+                                        cusfloat*&  position,
+                                        cusfloat*&  normals_vec
                                 );
 
     void    local_coords_from_z_proj(

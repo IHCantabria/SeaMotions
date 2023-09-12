@@ -284,8 +284,8 @@ void PanelGeom::get_panel_xy_proj(
 
 
 void PanelGeom::get_source_nodes_data(
-                                        cusfloat* position,
-                                        cusfloat* normals_vec
+                                        cusfloat*& position,
+                                        cusfloat*& normals_vec
                                     )
 {
     assert( this->_is_source_nodes && "Thre is no source nodes definition to take from PanelGeom class." );
