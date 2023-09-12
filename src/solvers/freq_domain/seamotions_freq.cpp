@@ -35,20 +35,28 @@ int main( int argc, char* argv[] )
     // Init MPI
     MPI_Init( NULL, NULL );
 
-    // Declare container to hold MPI configuration
-    MpiConfig mpi_config;
-
     // Get total number of processors
+    int procs_total = 0;
     MPI_Comm_size(
                     MPI_COMM_WORLD,
-                    &(mpi_config.procs_total)
+                    &procs_total
                 );
 
     // Get current process rank
+    int proc_rank = 0;
     MPI_Comm_rank(
                     MPI_COMM_WORLD,
-                    &(mpi_config.proc_rank)
+                    &proc_rank
                 );
+
+    // Declare container to hold MPI configuration
+    MpiConfig mpi_config( 
+                            proc_rank,
+                            procs_total,
+                            0,
+                            MPI_COMM_WORLD
+                        );
+
 
     /*****************************************/
     /**** Launch Hydrostatics Calculation ****/
