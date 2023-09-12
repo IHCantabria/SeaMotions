@@ -40,31 +40,31 @@ void Hydrostatics::_calculate(
     // Define lambda function to calculate wl area,
     // area centroid and area inertias
     auto wl_area_fcn        =   [ ]
-                                ( cusfloat , cusfloat , cusfloat ) -> cuscomplex
+                                ( cusfloat, cusfloat, cusfloat , cusfloat , cusfloat ) -> cuscomplex
                                 {
                                     return 1.0;
                                 };
 
     auto wl_area_mom_x_fcn  =   [ ]
-                                ( cusfloat x, cusfloat , cusfloat ) -> cuscomplex
+                                ( cusfloat, cusfloat, cusfloat x, cusfloat , cusfloat ) -> cuscomplex
                                 {
                                     return x;
                                 };
 
     auto wl_area_mom_y_fcn  =   [ ]
-                                ( cusfloat , cusfloat y, cusfloat ) -> cuscomplex
+                                ( cusfloat, cusfloat, cusfloat , cusfloat y, cusfloat ) -> cuscomplex
                                 {
                                     return y;
                                 };
 
     auto wl_area_ixx_fcn    =   [ ]
-                                ( cusfloat , cusfloat y, cusfloat ) -> cuscomplex
+                                ( cusfloat, cusfloat, cusfloat , cusfloat y, cusfloat ) -> cuscomplex
                                 {
                                     return y*y;
                                 };
     
     auto wl_area_iyy_fcn    =   [ ]
-                                ( cusfloat x, cusfloat , cusfloat ) -> cuscomplex
+                                ( cusfloat, cusfloat, cusfloat x, cusfloat , cusfloat ) -> cuscomplex
                                 {
                                     return x*x;
                                 };
@@ -122,7 +122,7 @@ void Hydrostatics::_calculate(
         {
             // Define volume functions
             auto volume_fcn         =   [ panel, get_z_coord ]
-                                        ( cusfloat x, cusfloat y, cusfloat ) -> cuscomplex
+                                        ( cusfloat, cusfloat, cusfloat x, cusfloat y, cusfloat ) -> cuscomplex
                                         {
                                             // Calculate Z position over the mesh panel
                                             cusfloat zg = get_z_coord( panel, x, y );
@@ -131,7 +131,7 @@ void Hydrostatics::_calculate(
                                         };
 
             auto volume_mom_x_fcn   =   [ panel, get_z_coord ]
-                                        ( cusfloat x, cusfloat y, cusfloat ) -> cuscomplex
+                                        ( cusfloat, cusfloat, cusfloat x, cusfloat y, cusfloat ) -> cuscomplex
                                         {
                                             // Calculate Z position over the mesh panel
                                             cusfloat zg = get_z_coord( panel, x, y );
@@ -140,7 +140,7 @@ void Hydrostatics::_calculate(
                                         };
 
             auto volume_mom_y_fcn   =   [ panel, get_z_coord ]
-                                        ( cusfloat x, cusfloat y, cusfloat ) -> cuscomplex
+                                        ( cusfloat, cusfloat, cusfloat x, cusfloat y, cusfloat ) -> cuscomplex
                                         {
                                             // Calculate Z position over the mesh panel
                                             cusfloat zg = get_z_coord( panel, x, y );
@@ -149,7 +149,7 @@ void Hydrostatics::_calculate(
                                         };
 
             auto volume_mom_z_fcn   =   [ panel, get_z_coord ]
-                                        ( cusfloat x, cusfloat y, cusfloat ) -> cuscomplex
+                                        ( cusfloat, cusfloat, cusfloat x, cusfloat y, cusfloat ) -> cuscomplex
                                         {
                                             // Calculate Z position over the mesh panel
                                             cusfloat zg = get_z_coord( panel, x, y );
