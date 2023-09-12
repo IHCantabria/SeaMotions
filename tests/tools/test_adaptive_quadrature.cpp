@@ -39,7 +39,7 @@ void sub_test_square_1( void )
     panel.calculate_properties( );
 
     // Define integration function
-    auto fcn_def    = []( cusfloat X, cusfloat Y, cusfloat ) -> cuscomplex
+    auto fcn_def    = []( cusfloat, cusfloat, cusfloat X, cusfloat Y, cusfloat ) -> cuscomplex
                        {
                            cuscomplex sol = ( pow2s( X ) + pow2s( Y ) ) + 0.0i;
                            
@@ -91,7 +91,7 @@ void sub_test_square_2( void )
     panel.calculate_properties( );
 
     // Define integration function
-    auto fcn_def    = []( cusfloat X, cusfloat Y, cusfloat ) -> cuscomplex
+    auto fcn_def    = []( cusfloat, cusfloat, cusfloat X, cusfloat Y, cusfloat ) -> cuscomplex
                        {
                            cuscomplex sol = pow2s( std::cos( 8*PI*X ) * std::sin( 8*PI*Y ) ) + 0.0i;
                            
@@ -142,7 +142,7 @@ void sub_test_triangle_1( void )
     panel.calculate_properties( );
 
     // Define integration function
-    auto fcn_def    = []( cusfloat X, cusfloat Y, cusfloat ) -> cuscomplex
+    auto fcn_def    = []( cusfloat, cusfloat, cusfloat X, cusfloat Y, cusfloat ) -> cuscomplex
                        {
                            cuscomplex sol = ( pow2s( X ) + pow2s( Y ) ) + 0.0i;
                            
@@ -192,7 +192,7 @@ void sub_test_triangle_2( void )
     panel.calculate_properties( );
 
     // Define integration function
-    auto fcn_def    = []( cusfloat X, cusfloat Y, cusfloat ) -> cuscomplex
+    auto fcn_def    = []( cusfloat, cusfloat, cusfloat X, cusfloat Y, cusfloat ) -> cuscomplex
                        {
                            cuscomplex sol = pow2s( std::cos( 8*PI*X ) * std::sin( 8*PI*Y ) ) + 0.0i;
                            

@@ -188,7 +188,13 @@ cuscomplex  quadrature_panel(
 
             
             // Calculate target function value
-            fcn_val = target_fcn( gp_global[0], gp_global[1], gp_global[2] );
+            fcn_val = target_fcn( 
+                                    gp->roots[i],
+                                    gp->roots[j],
+                                    gp_global[0], 
+                                    gp_global[1], 
+                                    gp_global[2] 
+                                );
 
             // Calculate function integral function value
             int_value += gp->weights[i]*gp->weights[j]*fcn_val*jacobi_det_2d( 
