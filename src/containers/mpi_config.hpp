@@ -11,10 +11,7 @@ public:
     int proc_root   = 0;
 
     // Define class methods
-    bool is_root( void )
-    {
-        return this->proc_root == this->proc_rank;
-    }
+    bool is_root( void );
 
 };
 
