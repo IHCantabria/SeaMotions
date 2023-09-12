@@ -29,12 +29,17 @@ void calculate_freq_domain_coeffs(
     // // Create new mesh from the meshes of all objects
 
     Mesh* all_mesh = input->bodies[0]->mesh;
+
+    all_mesh->define_source_nodes( 
+                                    input->poly_order,
+                                    input->bodies[0]->cog
+                                );
     
     /****************************************************/
     /********* Create Scalapack solver instance *********/
     /****************************************************/
     SclCmpx scl( 
-                    input->bodies[0]->mesh->elems_np,
+                    all_mesh->source_nodes_np,
                     input->dofs_np,
                     mpi_config->procs_total,
                     mpi_config->proc_rank
@@ -44,8 +49,8 @@ void calculate_freq_domain_coeffs(
     /********* Create Green function interface *********/
     /****************************************************/
     GWFDnInterface* green_interf    = new GWFDnInterface(
-                                                            all_mesh->panels[0],
-                                                            all_mesh->panels[0],
+                                                            all_mesh->source_nodes[0],
+                                                            all_mesh->source_nodes[0],
                                                             input->angfreqs[0],
                                                             input->water_depth,
                                                             input->grav_acc
@@ -76,12 +81,12 @@ void calculate_freq_domain_coeffs(
         green_interf->set_ang_freq( input->angfreqs[i] );
 
         // Calculate sources intensity
+        MPI_Barrier( MPI_COMM_WORLD );
         calculate_sources_intensity( 
                                         &scl,
-                                        input->bodies[0]->mesh,
+                                        all_mesh,
                                         green_interf,
                                         input->angfreqs[i],
-                                        input->bodies[0]->cog,
                                         sysmat,
                                         sources
                                     );
@@ -119,6 +124,7 @@ void calculate_freq_domain_coeffs(
                 // Calculate raos
             }
         }
+        MPI_Barrier( MPI_COMM_WORLD );
 
     }
 
@@ -159,7 +165,6 @@ void    calculate_sources_intensity(
                                         Mesh*           mesh,
                                         GWFDnInterface* green_interf,
                                         cusfloat        w,
-                                        cusfloat*       cog,
                                         cuscomplex*     sysmat,
                                         cuscomplex*     sources_int
                                    )
@@ -171,37 +176,44 @@ void    calculate_sources_intensity(
     /***************************************/
     // Create auxiliar lambda function
     auto lmb_fcn = [green_interf]
-                    ( cusfloat x, cusfloat y, cusfloat z )
+                    ( 
+                        cusfloat xi, 
+                        cusfloat eta,
+                        cusfloat x, 
+                        cusfloat y, 
+                        cusfloat z 
+                    )
                     {
-                        return (*green_interf)( x, y, z );
+                        return (*green_interf)( xi, eta, x, y, z );
                     };
 
     // Loop over panels to integrate value
+    std::cout << "GWFDnInterface: " << green_interf << std::endl;
     std::cout << "Creating system matrix..." << std::endl;
     int         col_count   = 0;
     cuscomplex  int_value( 0.0, 0.0 );
-    PanelGeom*  panel_i     = nullptr;
-    PanelGeom*  panel_j     = nullptr;
+    SourceNode* source_i    = nullptr;
     int         row_count   = 0;
 
-    std::ofstream outfile( "matrix.dat" );
-    outfile << "Num.Rows: " << scl->num_rows << std::endl;
+    // std::ofstream outfile( "matrix.dat" );
+    // outfile << "Num.Rows: " << scl->num_rows << std::endl;
+    // MPI_Barrier( MPI_COMM_WORLD );
     int count_total = 0;
     for ( int i=scl->start_col_0; i<scl->end_col_0; i++ )
     {
-        std::cout << "Panel[i]: " << i << std::endl;
+        std::cout << "Source[i]: " << i << " - " << mesh->source_nodes[i] << std::endl;
         // Get memory address of the ith panel
-        panel_i = mesh->panels[i];
-        green_interf->set_panel_i( panel_i );
+        source_i = mesh->source_nodes[i];
+        green_interf->set_source_i( source_i );
 
         // Loop over rows to calcualte the influence of the panel
         // over each collocation point
         row_count = 0;
         for ( int j=scl->start_row_0; j<scl->end_row_0; j++ )
         {
-            // std::cout << "Panel[j]: " << j << std::endl;
+            // std::cout << "Panel[j]: " << j << " - " << mesh->source_nodes[j] << std::endl;
             // Get memory address of the panel jth
-            green_interf->set_panel_j( mesh->panels[j] );
+            green_interf->set_source_j( mesh->source_nodes[j] );
 
             // Integrate green function normal derivative along the current panel
             if ( i == j )
@@ -211,7 +223,7 @@ void    calculate_sources_intensity(
             else
             {
                 int_value   =   adaptive_quadrature_panel(
-                                                                panel_i,
+                                                                source_i->panel,
                                                                 lmb_fcn,
                                                                 1000,
                                                                 &gp
@@ -219,9 +231,9 @@ void    calculate_sources_intensity(
                 int_value   =   int_value / 4.0 / PI;
             }
             
-            sysmat[row_count*scl->num_rows_local+col_count] = int_value;
-            outfile << int_value.real( ) << " " << int_value.imag( ) << std::endl;
-            // std::cout << "Index Count: " << row_count*scl->num_rows_local+col_count << std::endl;
+            sysmat[col_count*scl->num_rows_local+row_count] = int_value;
+            // outfile << int_value.real( ) << " " << int_value.imag( ) << std::endl;
+            // std::cout << "Index Count: " << col_count*scl->num_rows_local+row_count << std::endl;
             count_total += 1;
             // Advance row count
             row_count++;
@@ -229,6 +241,8 @@ void    calculate_sources_intensity(
         // Advance column count
         col_count++;
     }
+
+    // MPI_Barrier( MPI_COMM_WORLD );
     int _rows_np = scl->end_row - scl->start_row;
     int _cols_np = scl->end_col - scl->start_col;
     std::cout << "--> Done!" << std::endl;
@@ -241,7 +255,6 @@ void    calculate_sources_intensity(
     /***************************************/
     std::cout << "Calculating RHS..." << std::endl;
     // Declare local variables to be used
-    double      cog_to_panel[3] = { 0.0, 0.0, 0.0 };
     int         count           = 0;
     int         m               = 0; 
     int         start_pos       = 0; 
@@ -253,12 +266,12 @@ void    calculate_sources_intensity(
     std::cout << "RHS" << std::endl;
     for ( int i=scl->start_row_0; i<scl->end_row_0; i++ )
     {
-        sources_int[start_pos+count] = w * mesh->panels[i]->normal_vec[0];
-        outfile << sources_int[start_pos+count].real( ) << " " << sources_int[start_pos+count].imag( ) << std::endl;
+        sources_int[start_pos+count] = w * mesh->source_nodes[i]->normal_vec[0];
+        // outfile << sources_int[start_pos+count].real( ) << " " << sources_int[start_pos+count].imag( ) << std::endl;
         count++;
     }
 
-    outfile.close( );
+    // outfile.close( );
 
     // Fill RHS vector for Sway motion
     count       = 0;
@@ -266,7 +279,7 @@ void    calculate_sources_intensity(
     start_pos   = m * mesh->elems_np;
     for ( int i=scl->start_row_0; i<scl->end_row_0; i++ )
     {
-        sources_int[start_pos+count] = w * mesh->panels[i]->normal_vec[1];
+        sources_int[start_pos+count] = w * mesh->source_nodes[i]->normal_vec[1];
         count++;
     }
 
@@ -276,7 +289,7 @@ void    calculate_sources_intensity(
     start_pos   = m * mesh->elems_np;
     for ( int i=scl->start_row_0; i<scl->end_row_0; i++ )
     {
-        sources_int[start_pos+count] = w * mesh->panels[i]->normal_vec[2];
+        sources_int[start_pos+count] = w * mesh->source_nodes[i]->normal_vec[2];
         count++;
     }
 
@@ -287,23 +300,11 @@ void    calculate_sources_intensity(
     for ( int i=scl->start_row_0; i<scl->end_row_0; i++ )
     {
         // Get current panel memory location
-        panel_i = mesh->panels[i];
-
-        // Calculate distance from the COG of the body
-        // to the panel position
-        sv_sub( 
-                    3, 
-                    panel_i->center, 
-                    cog, 
-                    cog_to_panel 
-                );
+        source_i = mesh->source_nodes[i];
 
         // Calculate proyection of the normal velocity
-        sources_int[start_pos+count] = w * (
-                                                cog_to_panel[1]*panel_i->normal_vec[2]
-                                                -
-                                                cog_to_panel[2]*panel_i->normal_vec[1]
-                                            );
+        sources_int[start_pos+count] = w * source_i->normal_vec[3];
+
         count++;
     }
 
@@ -314,23 +315,11 @@ void    calculate_sources_intensity(
     for ( int i=scl->start_row_0; i<scl->end_row_0; i++ )
     {
         // Get current panel memory location
-        panel_i = mesh->panels[i];
-
-        // Calculate distance from the COG of the body
-        // to the panel position
-        sv_sub( 
-                    3, 
-                    panel_i->center, 
-                    cog, 
-                    cog_to_panel 
-                );
+        source_i = mesh->source_nodes[i];
 
         // Calculate proyection of the normal velocity
-        sources_int[start_pos+count] = w * (
-                                                cog_to_panel[2]*panel_i->normal_vec[0]
-                                                -
-                                                cog_to_panel[0]*panel_i->normal_vec[2]
-                                            );
+        sources_int[start_pos+count] = w * source_i->normal_vec[4];
+
         count++;
     }
 
@@ -341,23 +330,11 @@ void    calculate_sources_intensity(
     for ( int i=scl->start_row_0; i<scl->end_row_0; i++ )
     {
         // Get current panel memory location
-        panel_i = mesh->panels[i];
-
-        // Calculate distance from the COG of the body
-        // to the panel position
-        sv_sub( 
-                    3, 
-                    panel_i->center, 
-                    cog, 
-                    cog_to_panel 
-                );
+        source_i = mesh->source_nodes[i];
 
         // Calculate proyection of the normal velocity
-        sources_int[start_pos+count] = w * (
-                                                cog_to_panel[0]*panel_i->normal_vec[1]
-                                                -
-                                                cog_to_panel[1]*panel_i->normal_vec[0]
-                                            );
+        sources_int[start_pos+count] = w * source_i->normal_vec[5];
+
         count++;
     }
 

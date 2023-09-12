@@ -35,7 +35,6 @@ void    calculate_sources_intensity(
                                             Mesh*           mesh,
                                             GWFDnInterface* green_interf,
                                             cusfloat        w,
-                                            cusfloat*       cog,
                                             cuscomplex*     sysmat,
                                             cuscomplex*     sources_int
                                    );
