@@ -52,9 +52,9 @@ void PanelGeom::calculate_properties( void )
 
         // Define second vector of the base. This one is auxiliar because
         // the vertexes of the quadrilateral could not conform an orthonormal base
-        v1_aux[0] = this->x[3] - this->x[1];
-        v1_aux[1] = this->y[3] - this->y[1];
-        v1_aux[2] = this->z[3] - this->z[1];
+        v1_aux[0] = this->x[1] - this->x[3];
+        v1_aux[1] = this->y[1] - this->y[3];
+        v1_aux[2] = this->z[1] - this->z[3];
     }
     else
     {
