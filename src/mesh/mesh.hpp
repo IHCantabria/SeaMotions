@@ -14,6 +14,7 @@
 // Include local modules
 #include "../../src/config.hpp"
 #include "../../src/containers/panel_geom.hpp"
+#include "../../src/containers/source_node.hpp"
 #include "../../src/math/math_tools.hpp"
 #include "../../src/tools.hpp"
 
@@ -22,8 +23,9 @@ struct Mesh
 {
 private:
     // Define class attributes
-    int valid_elem_type[2]  = { 3, 4 };
-    int valid_elem_type_np  = 2;
+    bool    _is_source_nodes    = false;
+    int     valid_elem_type[2]  = { 3, 4 };
+    int     valid_elem_type_np  = 2;
 
     // Define class methods
     void    _calculate_bounding_box(
@@ -44,21 +46,23 @@ private:
 
 public:
     // Define class attributes
-    int*        elems       = nullptr;
-    int         elems_np    = 0;
-    int         enrl        = 0;
-    int         mnpe        = 0;
-    int         nodes_np    = 0;
-    PanelGeom** panels      = nullptr;
-    cusfloat*   x           = nullptr;
-    cusfloat    x_max       = 0.0;
-    cusfloat    x_min       = 0.0;
-    cusfloat*   y           = nullptr;
-    cusfloat    y_max       = 0.0;
-    cusfloat    y_min       = 0.0;
-    cusfloat*   z           = nullptr;
-    cusfloat    z_max       = 0.0;
-    cusfloat    z_min       = 0.0;
+    int*            elems           = nullptr;
+    int             elems_np        = 0;
+    int             enrl            = 0;
+    int             mnpe            = 0;
+    int             nodes_np        = 0;
+    PanelGeom**     panels          = nullptr;
+    SourceNode**    source_nodes    = nullptr;
+    int             source_nodes_np = 0;
+    cusfloat*       x               = nullptr;
+    cusfloat        x_max           = 0.0;
+    cusfloat        x_min           = 0.0;
+    cusfloat*       y               = nullptr;
+    cusfloat        y_max           = 0.0;
+    cusfloat        y_min           = 0.0;
+    cusfloat*       z               = nullptr;
+    cusfloat        z_max           = 0.0;
+    cusfloat        z_min           = 0.0;
 
     // Define class constructor and destructor
     Mesh( ) = default;
@@ -68,12 +72,16 @@ public:
     ~Mesh( void );
 
     // Define class methods
+    void define_source_nodes(
+                                int         poly_order
+                            );
+    
     void get_elem_nodes( 
-                            int         elem_num, 
-                            int&        npe, 
-                            cusfloat*   xn, 
-                            cusfloat*   yn,
-                            cusfloat*   zn
+                                int         elem_num, 
+                                int&        npe, 
+                                cusfloat*   xn, 
+                                cusfloat*   yn,
+                                cusfloat*   zn
                         );
     
 };

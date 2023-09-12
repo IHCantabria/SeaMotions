@@ -1,5 +1,6 @@
 
 // Include local modules
+#include "../math/shape_functions.hpp"
 #include "mesh.hpp"
 
 
@@ -88,6 +89,100 @@ void Mesh::_create_panels(
         this->panels[i]->calculate_properties( );
 
     }
+}
+
+
+void Mesh::define_source_nodes(
+                                    int poly_order
+                                )
+{
+    // Get nodes per element depending on the element type
+    // and the order
+    int dofs_quad   = dofs_rectangular_region( poly_order );
+    int dofs_tri    = dofs_triangular_region( poly_order );
+
+    // Count total number of source nodes
+    int sn_np = 0;
+    for ( int i=0; i<this->elems_np; i++ )
+    {
+        if ( this->panels[i]->num_nodes == 3 )
+        {
+            sn_np += dofs_tri;
+        }
+        else if ( this->panels[i]->num_nodes == 4 )
+        {
+            sn_np += dofs_quad;
+        }
+        else
+        {
+            std::cerr << "Number of nodes: " << this->panels[i]->num_nodes;
+            std::cerr << " for panel: " << i << " not available." << std::endl;
+            throw std::runtime_error( "" );
+        }
+    }
+    this->source_nodes_np = sn_np;
+
+    // Allocate space for the source nodes vector
+    this->source_nodes      = new SourceNode*[ sn_np ];
+    this->_is_source_nodes  = true;
+    
+    // Loop over elements to create source nodes objects
+    int         count       = 0;
+    cusfloat*   position    = nullptr;
+    cusfloat*   normals_vec = nullptr;
+    cusfloat*   this_pos    = nullptr;
+    for ( int i=0; i<this->elems_np; i++ )
+    {
+        // Calculate source nodes over panel
+        this->panels[i]->calculate_source_nodes( poly_order );
+
+        // Get source nodes position over the panel
+        this->panels[i]->get_source_nodes_data( 
+                                                    position,
+                                                    normals_vec
+                                                );
+
+        // Loop over polynomials degree
+        if ( this->panels[i]->num_nodes == 3 )
+        {
+            int local_count = 0;
+            for ( int pi=0; pi<poly_order; pi++ )
+            {
+                for ( int qi=0; qi<poly_order-pi; qi++ )
+                {
+                    this->source_nodes[count] = new SourceNode(
+                                                                    this->panels[i],
+                                                                    poly_order,
+                                                                    pi,
+                                                                    qi,
+                                                                    &(position[3*local_count]),
+                                                                    this->panels[i]->normal_vec
+                                                                );
+                    count++;
+                    local_count++;
+                }
+            }
+        }
+        else if ( this->panels[i]->num_nodes == 4 )
+        {
+            for ( int pi=0; pi<poly_order; pi++ )
+            {
+                for ( int qi=0; qi<poly_order; qi++ )
+                {
+                    this->source_nodes[count] = new SourceNode(
+                                                                    this->panels[i],
+                                                                    poly_order,
+                                                                    pi,
+                                                                    qi,
+                                                                    &(position[3*(pi*poly_order+qi)]),
+                                                                    this->panels[i]->normal_vec
+                                                                );
+                    count++;
+                }
+            }
+        }
+    }
+
 }
 
 
@@ -351,6 +446,16 @@ Mesh::~Mesh(
                             void 
             )
 {
+    // Delete source nodes
+    if ( this->_is_source_nodes )
+    {
+        for ( int i=0; i<this->source_nodes_np; i++ )
+        {
+            delete this->source_nodes[i];
+        }
+        delete this->source_nodes;
+    }
+    
     // Delete panels
     for ( int i=0; i<this->elems_np; i++ )
     {
