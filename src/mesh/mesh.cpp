@@ -132,7 +132,6 @@ void Mesh::define_source_nodes(
     cusfloat*   position    = nullptr;
     int         local_count = 0;
     cusfloat*   normals_vec = nullptr;
-    cusfloat*   this_pos    = nullptr;
     for ( int i=0; i<this->elems_np; i++ )
     {
         // Calculate source nodes over panel
