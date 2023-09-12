@@ -6,6 +6,7 @@
 #include "../math/math_interface.hpp"
 #include "../math/math_tools.hpp"
 #include "../math/nonlinear_solvers_math.hpp"
+#include "../math/shape_functions.hpp"
 #include "../math/topology.hpp"
 #include "panel_geom.hpp"
 
@@ -167,6 +168,75 @@ void PanelGeom::calculate_properties( void )
 }
 
 
+void PanelGeom::calculate_source_nodes(
+                                            int poly_order
+                                        )
+{
+    // Get number of sources per panel
+    int sources_np = 0;
+    if ( this->num_nodes == 3 )
+    {
+        sources_np = dofs_triangular_region( poly_order );
+    }
+    else if ( this->num_nodes == 4 )
+    {
+        sources_np = dofs_rectangular_region( poly_order );
+    }
+    else
+    {
+        std::cerr << "ERROR - PanelGeom" << std::endl;
+        std::cerr << "Not valid panel nodes number." << std::endl;
+        throw std::runtime_error( " " );
+    }
+
+    // Define sources data
+    if ( poly_order == 0 )
+    {
+        // Allocate heap memory to storage the source points data
+        this->_source_positions     = new cusfloat[3];
+        this->_source_normal_vec    = new cusfloat[3];
+
+        // Define source points data
+        copy_vector( 3, this->center, this->_source_positions );
+        copy_vector( 3, this->normal_vec, this->_source_normal_vec );
+
+    }
+    else if ( poly_order > 0 )
+    {
+        std::cout << "Polynomial orders higher than 0 not implemented yet!" << std::endl;
+        throw std::runtime_error( "" );
+        // Allocate heap memory to storage the source points data
+        // this->source_positions = new
+
+        // Define source points data
+    }
+    else
+    {
+        std::cerr << "ERROR - PanelGeom" << std::endl;
+        std::cerr << "Polynomial order not valid." << std::endl;
+        throw std::runtime_error( "" );
+    }
+
+    this->_is_source_nodes = true;
+}
+
+
+void PanelGeom::get_node_local_position( int num_node, cusfloat* node_pos )
+{
+    node_pos[0] = this->xl[num_node];
+    node_pos[1] = this->yl[num_node];
+    node_pos[2] = this->zl[num_node];
+}
+
+
+void PanelGeom::get_node_position( int num_node, cusfloat* node_pos )
+{
+    node_pos[0] = this->x[num_node];
+    node_pos[1] = this->y[num_node];
+    node_pos[2] = this->z[num_node];
+}
+
+
 void PanelGeom::get_panel_xy_proj( 
                                     PanelGeom* new_panel 
                                 )
@@ -188,19 +258,15 @@ void PanelGeom::get_panel_xy_proj(
 }
 
 
-void PanelGeom::get_node_position( int num_node, cusfloat* node_pos )
+void PanelGeom::get_source_nodes_data(
+                                        cusfloat* position,
+                                        cusfloat* normals_vec
+                                    )
 {
-    node_pos[0] = this->x[num_node];
-    node_pos[1] = this->y[num_node];
-    node_pos[2] = this->z[num_node];
+    position    = this->_source_positions;
+    normals_vec = this->_source_normal_vec;
 }
 
-void PanelGeom::get_node_local_position( int num_node, cusfloat* node_pos )
-{
-    node_pos[0] = this->xl[num_node];
-    node_pos[1] = this->yl[num_node];
-    node_pos[2] = this->zl[num_node];
-}
 
 int PanelGeom::is_inside( cusfloat* field_point )
 {
@@ -366,6 +432,19 @@ void PanelGeom::local_coords_from_z_proj(
     eta = sol[1];
 
 }
+
+
+PanelGeom::~PanelGeom(
+                        void
+                    )
+{
+    if ( this->_is_source_nodes )
+    {
+        delete this->_source_positions;
+        delete this->_source_normal_vec;
+    }
+}
+
 
 void PanelGeom::write(
                         std::string finame

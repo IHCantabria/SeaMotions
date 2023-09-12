@@ -9,6 +9,14 @@
 
 struct PanelGeom
 {
+private:
+    // Define class attributes
+    bool                    _is_source_nodes        = false;
+    cusfloat*               _source_normal_vec      = nullptr;
+    cusfloat*               _source_positions       = nullptr;
+
+public:
+    // Define class attributes
     cusfloat                area                    = 0.0;
     cusfloat                center[3]               = {0.0, 0.0, 0.0};
     cusfloat                global_to_local_mat[9];
@@ -25,19 +33,33 @@ struct PanelGeom
     cusfloat                z[MAX_PANEL_NODES];
     cusfloat                zl[MAX_PANEL_NODES];
 
+    // Define class constructors and destructor
+    ~PanelGeom( 
+                                        void 
+                );
+
     // Add method to calculate the geometric propertiess
     void    calculate_properties(       
                                         void 
                                 );
 
-    void    get_panel_xy_proj( 
-                                        PanelGeom* new_panel 
-                            );
+    void    calculate_source_nodes(
+                                        int     poly_order
+                                    );
 
     void    get_node_position( 
                                         int         num_node, 
                                         cusfloat*   node_pos
                                );
+
+    void    get_panel_xy_proj( 
+                                        PanelGeom* new_panel 
+                            );
+
+    void    get_source_nodes_data(
+                                        cusfloat*   position,
+                                        cusfloat*   normals_vec
+                                );
 
     void    local_coords_from_z_proj(
                                         cusfloat    x,
