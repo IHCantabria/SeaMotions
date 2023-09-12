@@ -3,6 +3,7 @@
 #include <iostream>
 
 // Include local modules
+#include "../config.hpp"
 #include "shape_functions.hpp"
 
 
@@ -54,4 +55,27 @@ int     dofs_triangular_region(
     }
 
     return dofs_total;
+}
+
+
+cusfloat shape_functions(
+                            int p_order,
+                            int q_order,
+                            cusfloat xi,
+                            cusfloat eta
+                        )
+{
+    cusfloat val = 0.0;
+    if ( p_order == 0 && q_order == 0 )
+    {
+        val = 1.0;
+    }
+    else
+    {
+        std::cerr << "ERROR - shape_functions" << std::endl;
+        std::cerr << "Not implemented yet!" << std::endl;
+        throw std::runtime_error( "" );
+    }
+
+    return val;
 }
