@@ -75,24 +75,6 @@ void read_body(
     CHECK_INPUT_FILE_VERSION( VERSION_LABEL, _version, file_path );
 
     //////////////////////////////////////////////
-    /************* Mesh Description *************/
-    //////////////////////////////////////////////
-
-    // Skip header
-    _skip_header( infile, line_count, 3 );
-
-    // Read mesh
-    target_signal   = "MeshFile";
-    read_signal     = _read_channel_value( infile, body->mesh_finame );
-    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
-
-    fs::path mesh_foname_( std::string( "mesh" ) );
-    fs::path mesh_finame_( body->mesh_finame );
-    fs::path mesh_fipath_ = folder_path_ / mesh_foname_ / mesh_finame_;
-    body->mesh      = new Mesh( mesh_fipath_.string( ) );
-    body->is_mesh   = true;
-
-    //////////////////////////////////////////////
     /************* Mass Properties **************/
     //////////////////////////////////////////////
 
@@ -133,6 +115,28 @@ void read_body(
     target_signal   = "RZZ";
     read_signal     = _read_channel_value( infile, body->rad_inertia[2] );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    //////////////////////////////////////////////
+    /************* Mesh Description *************/
+    //////////////////////////////////////////////
+
+    // Skip header
+    _skip_header( infile, line_count, 3 );
+
+    // Read mesh
+    target_signal   = "MeshFile";
+    read_signal     = _read_channel_value( infile, body->mesh_finame );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    fs::path mesh_foname_( std::string( "mesh" ) );
+    fs::path mesh_finame_( body->mesh_finame );
+    fs::path mesh_fipath_ = folder_path_ / mesh_foname_ / mesh_finame_;
+
+    body->mesh      = new   Mesh( 
+                                      mesh_fipath_.string( ),
+                                      body->cog                                    
+                                  );
+    body->is_mesh   = true;
 
     // Close file unit
     infile.close();
