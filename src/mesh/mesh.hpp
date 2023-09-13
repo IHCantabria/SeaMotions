@@ -33,7 +33,7 @@ private:
                                     );
     
     void    _create_panels(
-                                        void
+                                        cusfloat* cog
                             );
     
     bool    _is_valid_type( 
@@ -68,9 +68,14 @@ public:
     // Define class constructor and destructor
     Mesh( ) = default;
 
-    Mesh( std::string file_path );
+    Mesh( 
+                                std::string file_path,
+                                cusfloat*   cog
+        );
 
-    ~Mesh( void );
+    ~Mesh( 
+                                void 
+        );
 
     // Define class methods
     void define_source_nodes(

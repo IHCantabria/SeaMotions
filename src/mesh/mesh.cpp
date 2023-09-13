@@ -58,7 +58,7 @@ void Mesh::_calculate_bounding_box(
 
 
 void Mesh::_create_panels(
-                            void
+                            cusfloat* cog
                         )
 {
     // Create array to stogate the panels
@@ -86,7 +86,7 @@ void Mesh::_create_panels(
         }
 
         // Calculate panel properties
-        this->panels[i]->calculate_properties( );
+        this->panels[i]->calculate_properties( cog );
 
     }
 }
@@ -445,7 +445,8 @@ void Mesh::_load_poly_mesh(
 
 
 Mesh::Mesh( 
-                            std::string file_path 
+                            std::string file_path,
+                            cusfloat*   cog 
             )
 {
     // Load mesh
@@ -455,7 +456,7 @@ Mesh::Mesh(
     this->_calculate_bounding_box( );
 
     // Create panels for each element
-    this->_create_panels( );
+    this->_create_panels( cog );
 }
 
 
