@@ -24,7 +24,15 @@ public:
                 );
 
     // Define class methods
-    bool is_root( void );
+    void    get_1d_bounds(
+                            int     np,
+                            int&    start_pos,
+                            int&    end_pos
+                        );
+
+    bool    is_root(    
+                            void 
+                    );
 
 };
 
