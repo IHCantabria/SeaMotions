@@ -118,7 +118,7 @@ set(
         ${sm_freq_module_files}
         ${containers_module_files}
         ${green_module_files}
-        ${green_interfaces_module_files}
+        ${interfaces_module_files}
         ${hydrostatic_module_files}
         ${inout_module_files}
         ${math_module_files}

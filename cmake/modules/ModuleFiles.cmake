@@ -101,11 +101,11 @@ set(
 
 # Pack Green function interfaces module files
 set(
-        green_interfaces_module_files
-        ${CMAKE_SOURCE_DIR}/src/green_interfaces/gwf_interface.hpp
-        ${CMAKE_SOURCE_DIR}/src/green_interfaces/gwf_interface.cpp
-        ${CMAKE_SOURCE_DIR}/src/green_interfaces/gwfdn_interface.hpp
-        ${CMAKE_SOURCE_DIR}/src/green_interfaces/gwfdn_interface.cpp
+        interfaces_module_files
+        ${CMAKE_SOURCE_DIR}/src/interfaces/gwf_interface.hpp
+        ${CMAKE_SOURCE_DIR}/src/interfaces/gwf_interface.cpp
+        ${CMAKE_SOURCE_DIR}/src/interfaces/gwfdn_interface.hpp
+        ${CMAKE_SOURCE_DIR}/src/interfaces/gwfdn_interface.cpp
     )
 
 # Pack hydrostatic module files
