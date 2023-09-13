@@ -4,11 +4,13 @@
 
 // Include local modules
 #include "../../containers/mpi_config.hpp"
-#include "../../green_interfaces/gwfdn_interface.hpp"
+#include "../../interfaces/hmf_interface.hpp"
+#include "../../interfaces/gwfdn_interface.hpp"
 #include "../../hydrostatics.hpp"
 #include "../../inout/input.hpp"
 #include "../../inout/output.hpp"
 #include "../../math/scalapack_solver.hpp"
+#include "../../mesh/mesh_group.hpp"
 
 
 // Define alias
@@ -23,16 +25,17 @@ void    calculate_freq_domain_coeffs(
                                     );
 
 void    calculate_hydromechanic_coeffs(
-                                            Mesh*           mesh,
-                                            GWFDnInterface* green_interf,
-                                            cuscomplex*     sources,
+                                            MpiConfig*      mpi_config,
+                                            MeshGroup*      mesh,
+                                            int             dofs_np,
+                                            HMFInterface*   hmf_interf,
                                             cusfloat*       added_mass,
                                             cusfloat*       damping
                                         );
 
 void    calculate_sources_intensity(
                                             SclCmpx*        scl,
-                                            Mesh*           mesh,
+                                            MeshGroup*      mesh,
                                             GWFDnInterface* green_interf,
                                             cusfloat        w,
                                             cuscomplex*     sysmat,
