@@ -156,6 +156,8 @@ set(
         mesh_module_files
         ${CMAKE_SOURCE_DIR}/src/mesh/mesh.hpp
         ${CMAKE_SOURCE_DIR}/src/mesh/mesh.cpp
+        ${CMAKE_SOURCE_DIR}/src/mesh/mesh_group.hpp
+        ${CMAKE_SOURCE_DIR}/src/mesh/mesh_group.cpp
         ${CMAKE_SOURCE_DIR}/src/mesh/tools.hpp
         ${CMAKE_SOURCE_DIR}/src/mesh/tools.cpp
     )
