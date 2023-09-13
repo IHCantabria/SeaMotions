@@ -15,6 +15,7 @@ SourceNode::SourceNode(
     // Storage class attributes
     this->normal_vec    = normal_vec_in;
     this->p_order       = p_order_in;
+    this->q_order       = q_order_in;
     this->panel         = panel_in;
     this->poly_oder     = poly_order_in;
     this->position      = position_in;
