@@ -46,12 +46,16 @@ public:
                             );
 
     void        set_ang_freq(
-                                cusfloat    ang_freq
+                                    cusfloat    ang_freq
                             );
 
+    void        set_field_point(
+                                    cusfloat*   field_point
+                                );
+
     void        set_source(
-                                SourceNode* source,
-                                cuscomplex  source_val
+                                    SourceNode* source,
+                                    cuscomplex  source_val
                            );
 };
 

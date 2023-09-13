@@ -94,6 +94,16 @@ void GWFInterface::set_ang_freq(
 }
 
 
+void GWFInterface::set_field_point(
+                                        cusfloat* field_point
+                                    )
+{
+    this->_field_point[0] = field_point[0];
+    this->_field_point[1] = field_point[1];
+    this->_field_point[2] = field_point[2];
+}
+
+
 void GWFInterface::set_source(
                                     SourceNode* source,
                                     cuscomplex  source_val
