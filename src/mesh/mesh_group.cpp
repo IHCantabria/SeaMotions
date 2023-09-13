@@ -14,10 +14,10 @@ MeshGroup::MeshGroup(
     this->meshes_np     = meshes_np_in;
 
     // Allocate space for dimensions vectors
-    this->panels_np         = new size_t[this->meshes_np];
-    this->panels_cnp        = new size_t[this->meshes_np+1];
-    this->source_nodes_np   = new size_t[this->meshes_np];
-    this->source_nodes_cnp  = new size_t[this->meshes_np+1];
+    this->panels_np         = new int[this->meshes_np];
+    this->panels_cnp        = new int[this->meshes_np+1];
+    this->source_nodes_np   = new int[this->meshes_np];
+    this->source_nodes_cnp  = new int[this->meshes_np+1];
     
     // Loop over meshes to have their dimension
     this->panels_cnp[0]     = 0;
