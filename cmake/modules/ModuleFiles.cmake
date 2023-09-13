@@ -99,15 +99,6 @@ set(
         ${green_infdepth_coeffs_src}
     )
 
-# Pack Green function interfaces module files
-set(
-        interfaces_module_files
-        ${CMAKE_SOURCE_DIR}/src/interfaces/gwf_interface.hpp
-        ${CMAKE_SOURCE_DIR}/src/interfaces/gwf_interface.cpp
-        ${CMAKE_SOURCE_DIR}/src/interfaces/gwfdn_interface.hpp
-        ${CMAKE_SOURCE_DIR}/src/interfaces/gwfdn_interface.cpp
-    )
-
 # Pack hydrostatic module files
 set(
         hydrostatic_module_files
@@ -126,6 +117,16 @@ set(
         ${CMAKE_SOURCE_DIR}/src/inout/reader.cpp
         ${CMAKE_SOURCE_DIR}/src/inout/reader.txx
 )
+
+
+# Pack Green function interfaces module files
+set(
+        interfaces_module_files
+        ${CMAKE_SOURCE_DIR}/src/interfaces/gwf_interface.hpp
+        ${CMAKE_SOURCE_DIR}/src/interfaces/gwf_interface.cpp
+        ${CMAKE_SOURCE_DIR}/src/interfaces/gwfdn_interface.hpp
+        ${CMAKE_SOURCE_DIR}/src/interfaces/gwfdn_interface.cpp
+    )
 
 # Pack math module files
 set(
