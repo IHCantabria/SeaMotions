@@ -46,6 +46,7 @@ private:
 
 public:
     // Define class attributes
+    int             bodies_np       = 1;
     int*            elems           = nullptr;
     int             elems_np        = 0;
     int             enrl            = 0;
