@@ -58,6 +58,15 @@ void Input::configure( void )
         this->freqs[i] = angfreq_to_freq( this->angfreqs[i] );
     }
 
+    // Calculate source nodes
+    for ( int i=0; i<this->bodies_np; i++ )
+    {
+        this->bodies[i]->mesh->define_source_nodes(
+                                                        this->poly_order,
+                                                        this->bodies[i]->cog
+                                                    );
+    }
+
 }
 
 
