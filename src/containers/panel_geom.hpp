@@ -18,6 +18,7 @@ private:
 public:
     // Define class attributes
     cusfloat                area                    = 0.0;
+    cusfloat                body_cog[3]             = { 0.0, 0.0, 0.0 };
     cusfloat                center[3]               = {0.0, 0.0, 0.0};
     cusfloat                global_to_local_mat[9];
     cusfloat                length                  = 0.0;

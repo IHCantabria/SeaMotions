@@ -225,7 +225,7 @@ void    refine_element(
     // Loop over elements to calculate local properties
     for ( int i=0; i<new_elems_np; i++ )
     {
-        panel_list[i]->calculate_properties( );
+        panel_list[i]->calculate_properties( panel->body_cog );
     }
 
     // Create panel geom list

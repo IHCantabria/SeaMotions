@@ -170,8 +170,9 @@ void PanelGeom::calculate_properties(
 
     // Calculate normal vector components for rotational modes
     // around the COG of the body
-    cusfloat cog_to_panel[3] = { 0.0, 0.0, 0.0 };
+    copy_vector( 3, cog, this->body_cog );
 
+    cusfloat cog_to_panel[3] = { 0.0, 0.0, 0.0 };
     sv_sub( 
                 3, 
                 this->center, 
@@ -284,7 +285,7 @@ void PanelGeom::get_panel_xy_proj(
     }
 
     // Calculate panel properties
-    new_panel->calculate_properties( );
+    new_panel->calculate_properties( this->body_cog );
     
 }
 
