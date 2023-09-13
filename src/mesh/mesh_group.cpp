@@ -33,8 +33,8 @@ MeshGroup::MeshGroup(
         this->source_nodes_cnp[i] = this->source_nodes_cnp[i-1] + this->source_nodes_np[i];
     }
 
-    this->panels_tnp    = this->panels_cnp[this->meshes_np];
-    this->source_nodes_tnp   = this->source_nodes_tnp[this->meshes_np];
+    this->panels_tnp        = this->panels_cnp[this->meshes_np];
+    this->source_nodes_tnp  = this->source_nodes_cnp[this->meshes_np];
 
     // Allocate space to have a continium list of panels and
     // source nodes
