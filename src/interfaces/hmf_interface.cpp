@@ -85,7 +85,7 @@ cuscomplex  HMFInterface::operator()(
     // the pressure profile over the panel
     int         index       = 0;
     cuscomplex  potential   = std::complex( 0.0, 0.0 );
-    cuscomplex  pressure    = std::complex( 0.0, 0.0 );
+    cuscomplex  potential_i = std::complex( 0.0, 0.0 );
     for ( int i=0; i<this->_source_nodes_np; i++ )
     {
         // Set new source values
@@ -96,19 +96,17 @@ cuscomplex  HMFInterface::operator()(
                                         );
 
         // Integrate source value over the panel
-        potential   +=  adaptive_quadrature_panel(
+        potential_i =  adaptive_quadrature_panel(
                                                     this->_panel,
                                                     lmb_fcn,
                                                     1000.0,
                                                     &gp
                                                 );
+        potential   += potential_i / 4.0 / PI * this->_panel->normal_vec[this->_dof_j];
 
-        // Project pressure over the required direction
-        pressure    +=  potential * this->_panel->normal_vec[this->_dof_j];
-        
     }
 
-    return pressure;
+    return potential;
 }
 
 
