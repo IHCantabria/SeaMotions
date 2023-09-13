@@ -58,8 +58,8 @@ void        HMFInterface::set_ang_freq(
 
 
 cuscomplex  HMFInterface::operator()(
-                                        cusfloat xi,
-                                        cusfloat eta,
+                                        cusfloat ,
+                                        cusfloat ,
                                         cusfloat x,
                                         cusfloat y,
                                         cusfloat z
