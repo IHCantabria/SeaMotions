@@ -5,7 +5,7 @@
 
 MeshGroup::MeshGroup(
                         Mesh**  meshes_in,
-                        size_t  meshes_np_in
+                        int     meshes_np_in
                     )
 {
     // Storage necessary input arguments into class
@@ -20,17 +20,17 @@ MeshGroup::MeshGroup(
     this->source_nodes_cnp  = new int[this->meshes_np+1];
     
     // Loop over meshes to have their dimension
-    this->panels_cnp[0]     = 0;
-    this->source_nodes_cnp[0]    = 0;
+    this->panels_cnp[0]         = 0;
+    this->source_nodes_cnp[0]   = 0;
     for ( int i=0; i<this->meshes_np; i++ )
     {
         // Get mesh group panels list dimensionts
-        this->panels_np[i]  = this->meshes[i]->elems_np;
-        this->panels_cnp[i] = this->panels_cnp[i-1] + this->panels_np[i];
+        this->panels_np[i]      = this->meshes[i]->elems_np;
+        this->panels_cnp[i+1]   = this->panels_cnp[i] + this->panels_np[i];
 
         // Get mesh group source nodes list dimensions
-        this->source_nodes_np[i]  = this->meshes[i]->source_nodes_np;
-        this->source_nodes_cnp[i] = this->source_nodes_cnp[i-1] + this->source_nodes_np[i];
+        this->source_nodes_np[i]    = this->meshes[i]->source_nodes_np;
+        this->source_nodes_cnp[i+1] = this->source_nodes_cnp[i] + this->source_nodes_np[i];
     }
 
     this->panels_tnp        = this->panels_cnp[this->meshes_np];

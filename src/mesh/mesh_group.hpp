@@ -26,7 +26,7 @@ public:
     // Define class constructor and destructor
     MeshGroup(
                     Mesh**  meshes,
-                    size_t  mesh_np
+                    int     mesh_np
                 );
 
     ~MeshGroup(
