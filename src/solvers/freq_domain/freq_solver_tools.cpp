@@ -112,6 +112,21 @@ void calculate_freq_domain_coeffs(
         // Update sources values for the integration objects
         hmf_interf->set_source_values( all_sources );
 
+        for ( int i=0; i<scl.num_rows; i++ )
+        {
+            std::cout << "Panel[" << i << "]: " << all_sources[i] << " - " << std::abs( all_sources[i] ) << " - " << std::arg( all_sources[i] )*180.0/PI << std::endl;
+        }
+
+        // // std::cerr <<
+
+        calculate_panel_potentials(
+                                        input,
+                                        mpi_config,
+                                        mesh_gp,
+                                        all_sources,
+                                        input->angfreqs[i]
+                                    );
+
         // Calculate added mass and damping coefficients
         calculate_hydromechanic_coeffs( 
                                             mpi_config,
@@ -122,15 +137,15 @@ void calculate_freq_domain_coeffs(
                                             damping
                                         );
 
-        // Loop over headings to calculate diffraction and 
-        // Froude-Krylov forces
-        for ( int j=0; j<input->heads_np; j++ )
-        {
-            // Calculate wave exciting forces
+        // // Loop over headings to calculate diffraction and 
+        // // Froude-Krylov forces
+        // for ( int j=0; j<input->heads_np; j++ )
+        // {
+        //     // Calculate wave exciting forces
 
-            // Calculate raos
-        }
-        MPI_Barrier( MPI_COMM_WORLD );
+        //     // Calculate raos
+        // }
+        // MPI_Barrier( MPI_COMM_WORLD );
 
     }
 
@@ -181,6 +196,7 @@ void    calculate_hydromechanic_coeffs(
 
     // Loop over first dimension of degrees of freedrom
     GaussPoints gp( 1 );
+    cuscomplex  pot_i = 0.0;
     cuscomplex  pressure = 0.0;
     for ( int ib=0; ib<mesh_gp->meshes_np; ib++ )
     {
@@ -199,23 +215,115 @@ void    calculate_hydromechanic_coeffs(
 
                     // Loop over panels to integrate the wave radiation
                     // pressure along the floating object external shape
+                    pressure = 0.0;
                     for ( int ie=elem_start_pos; ie<elem_end_pos; ie++ )
                     {
+                        std::cout << "Dof_i: " << id << " - Dof_j: " << jd << " - Elem. ID: " << ie << std::endl;
                         // Set new panel
                         hmf_interf->set_panel( mesh_gp->panels[ie] );
 
                         // Integrate pressure over panel
-                        pressure += adaptive_quadrature_panel(
-                                                                mesh_gp->panels[ie],
-                                                                target_fcn,
-                                                                1000.0,
-                                                                &gp
-                                                            );
+                        pot_i       = adaptive_quadrature_panel(
+                                                                    mesh_gp->panels[ie],
+                                                                    target_fcn,
+                                                                    1000.0,
+                                                                    &gp,
+                                                                    true
+                                                                );
+                        pressure    += pot_i;
+                        std::cout << "potential_i: " << pot_i << " - " << std::abs( pot_i ) << std::endl;
+                        // std::cout << "Stop by user" << std::endl;
+                        // throw std::runtime_error( "" );
                     }
+                    std::cout << "pressure: " << pressure << std::endl;
+                    std::cout << "Stop by user" << std::endl;
+                    throw std::runtime_error( "" );
                 }
             }
         }
     }
+}
+
+
+void    calculate_panel_potentials(
+                                        Input*          input,
+                                        MpiConfig*      mpi_config,
+                                        MeshGroup*      mesh_gp,
+                                        cuscomplex*     all_sources,
+                                        cusfloat        ang_freq
+                                    )
+{
+    GaussPoints gp( 10 );
+
+    // Calculate MPI data chunks
+    int elem_end_pos     = 0;
+    int elem_start_pos   = 0;
+    mpi_config->get_1d_bounds( 
+                                    mesh_gp->panels_tnp, 
+                                    elem_start_pos, 
+                                    elem_end_pos 
+                                );
+    
+    // Create Function to integrate potential value
+    GWFInterface*   green_interf    = new   GWFInterface(
+                                                            mesh_gp->source_nodes[0],
+                                                            all_sources[0],
+                                                            mesh_gp->panels[0]->center,
+                                                            ang_freq,
+                                                            input->water_depth,
+                                                            input->grav_acc
+                                                        );
+
+    auto target_fcn =   [green_interf]
+                        ( 
+                            cusfloat    xi,
+                            cusfloat    eta,
+                            cusfloat    X,
+                            cusfloat    Y,
+                            cusfloat    Z
+                        ) -> cuscomplex
+                        {
+                            return (*green_interf)( xi, eta, X, Y, Z );
+                        };
+
+    // Loop over panel to get the radiation potential over them
+    cuscomplex panel_potential  = complex( 0.0, 0.0 );
+    cuscomplex pot_i            = complex( 0.0, 0.0 );
+    for ( int i=0; i<mesh_gp->panels_tnp; i++ )
+    {
+        // Set new field point for the calculation of the potential
+        green_interf->set_field_point( mesh_gp->panels[i]->center );
+
+        std::cout << "Field Point: " << mesh_gp->panels[i]->center[0] << " - " << mesh_gp->panels[i]->center[1] << " - " << mesh_gp->panels[i]->center[2] << std::endl;
+
+        // Clean panel potential
+        panel_potential = complex( 0.0, 0.0 );
+
+        // Loop over source points to calculate potential
+        // over ith panel center
+        for ( int j=0; j<mesh_gp->source_nodes_tnp; j++ )
+        {
+            // Set current source value
+            green_interf->set_source(
+                                        mesh_gp->source_nodes[j],
+                                        all_sources[j]
+                                    );
+            
+            pot_i   = adaptive_quadrature_panel(
+                                                    mesh_gp->source_nodes[j]->panel,
+                                                    target_fcn,
+                                                    0.001,
+                                                    &gp
+                                                );
+            panel_potential +=  pot_i /4.0 / PI;
+            std::cout << "pot_i[" << j << "]: " << pot_i/4.0/PI << " - Source Value: " << all_sources[j] << std::endl;
+        }
+        std::cout << "Potential[" << i << "]: " << panel_potential << " - " << std::abs( panel_potential ) << " - " << std::arg( panel_potential )*180.0/PI << std::endl;
+        // throw std::runtime_error( "" );
+    }
+
+    // Delete heap allocated memory
+    delete green_interf;
 }
 
 
@@ -228,7 +336,7 @@ void    calculate_sources_intensity(
                                         cuscomplex*     sources_int
                                    )
 {
-    GaussPoints gp = GaussPoints( 1 );
+    GaussPoints gp = GaussPoints( 4 );
 
     /***************************************/
     /******** Fill system matrix  **********/
@@ -254,8 +362,8 @@ void    calculate_sources_intensity(
     SourceNode* source_i    = nullptr;
     int         row_count   = 0;
 
-    // std::ofstream outfile( "matrix.dat" );
-    // outfile << "Num.Rows: " << scl->num_rows << std::endl;
+    std::ofstream outfile( "matrix.dat" );
+    outfile << "Num.Rows: " << scl->num_rows << std::endl;
     // MPI_Barrier( MPI_COMM_WORLD );
     int count_total = 0;
     for ( int i=scl->start_col_0; i<scl->end_col_0; i++ )
@@ -284,14 +392,20 @@ void    calculate_sources_intensity(
                 int_value   =   adaptive_quadrature_panel(
                                                                 source_i->panel,
                                                                 lmb_fcn,
-                                                                1000,
-                                                                &gp
+                                                                0.1,
+                                                                &gp,
+                                                                false
                                                             );
                 int_value   =   int_value / 4.0 / PI;
             }
+
+            // if ( std::abs( int_value.real( ) ) < 1e-10 )
+            // {
+            //     std::cout << "I: " << i << " - J: " << j << " - Zero value" << std::endl;
+            // }
             
             sysmat[col_count*scl->num_rows_local+row_count] = int_value;
-            // outfile << int_value.real( ) << " " << int_value.imag( ) << std::endl;
+            outfile << int_value.real( ) << " " << int_value.imag( ) << std::endl;
             // std::cout << "Index Count: " << col_count*scl->num_rows_local+row_count << std::endl;
             count_total += 1;
             // Advance row count
@@ -320,17 +434,27 @@ void    calculate_sources_intensity(
 
     // Fill RHS vector
     count       = 0;
+    outfile << "RHS" << std::endl;
     for ( int i=0; i< 6; i++ )
     {
-        count = 0;
         for ( int j=scl->start_row_0; j<scl->end_row_0; j++ )
         {
-            sources_int[start_pos+count] = w * mesh_gp->source_nodes[j]->normal_vec[i];
-            // outfile << sources_int[start_pos+count].real( ) << " " << sources_int[start_pos+count].imag( ) << std::endl;
+            sources_int[count] = complex( 0.0, - w * mesh_gp->source_nodes[j]->normal_vec[i] );
+            // std::cout << "Source Node [" << j << "]: " << mesh_gp->source_nodes[j]->normal_vec[i] << std::endl;
+            // std::cout << " - Center Panel:  " << mesh_gp->source_nodes[j]->position[0];
+            // std::cout << " - " << mesh_gp->source_nodes[j]->position[1];
+            // std::cout << " - " << mesh_gp->source_nodes[j]->position[2];
+            // std::cout << std::endl;
+            // std::cout << " - Normal Vec: " << mesh_gp->source_nodes[j]->normal_vec[0];
+            // std::cout << " - " << mesh_gp->source_nodes[j]->normal_vec[1];
+            // std::cout << " - " << mesh_gp->source_nodes[j]->normal_vec[2];
+            // std::cout << std::endl;
+            outfile << sources_int[start_pos+count].real( ) << " " << sources_int[start_pos+count].imag( ) << std::endl;
             count++;
         }
+        // break;
     }
-    // outfile.close( );
+    outfile.close( );
 
     std::cout << "--> Done!" << std::endl; 
 

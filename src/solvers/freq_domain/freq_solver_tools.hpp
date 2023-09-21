@@ -33,6 +33,14 @@ void    calculate_hydromechanic_coeffs(
                                             cusfloat*       damping
                                         );
 
+void    calculate_panel_potentials(
+                                            Input*          input,
+                                            MpiConfig*      mpi_config,
+                                            MeshGroup*      mesh_gp,
+                                            cuscomplex*     all_sources,
+                                            cusfloat        ang_freq
+                                    );
+
 void    calculate_sources_intensity(
                                             SclCmpx*        scl,
                                             MeshGroup*      mesh,

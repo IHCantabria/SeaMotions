@@ -66,11 +66,13 @@ cuscomplex  HMFInterface::operator()(
                                     )
 {
     // Create GaussPoint instatnce for the integration
-    GaussPoints gp( 1 );
+    GaussPoints gp( 10 );
 
     // Set new field point for the integration
     cusfloat _field_point[3] = { x, y, z};
     this->_green_interf->set_field_point( _field_point );
+
+    std::cout << "Field Point: " << x << " - " << y << " - " << z << std::endl;
 
     // Create lambda function for the integration of
     // the pressure over the panels
@@ -90,6 +92,7 @@ cuscomplex  HMFInterface::operator()(
     {
         // Set new source values
         index   =   this->_start_index_i + i;
+        // std::cout << "index: " << index << std::endl;
         this->_green_interf->set_source(
                                             this->_source_nodes[i],
                                             this->_source_values[index]
@@ -97,14 +100,17 @@ cuscomplex  HMFInterface::operator()(
 
         // Integrate source value over the panel
         potential_i =  adaptive_quadrature_panel(
-                                                    this->_panel,
+                                                    this->_source_nodes[i]->panel,
                                                     lmb_fcn,
-                                                    1000.0,
+                                                    0.001,
                                                     &gp
                                                 );
+        std::cout << "Potential [" << i <<  "]: " << potential_i / 4.0 / PI << " - Source: " << this->_source_values[index] << std::endl;
         potential   += potential_i / 4.0 / PI * this->_panel->normal_vec[this->_dof_j];
 
     }
+
+    std::cout << "Potential: " << potential << std::endl;
 
     return potential;
 }
