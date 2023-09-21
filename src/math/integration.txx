@@ -88,7 +88,8 @@ inline cuscomplex   adaptive_quadrature_panel(
                                                     PanelGeom*  panel,
                                                     T           target_fcn,
                                                     cusfloat    tol,
-                                                    int         gp_order
+                                                    int         gp_order,
+                                                    bool        block_adaption
                                             )
 {
     // Start gauss points
@@ -99,7 +100,8 @@ inline cuscomplex   adaptive_quadrature_panel(
                                                         panel,
                                                         target_fcn,
                                                         tol,
-                                                        gp
+                                                        gp,
+                                                        block_adaption
                                                     );
     
     // Delete local heap memory
@@ -114,7 +116,8 @@ inline cuscomplex adaptive_quadrature_panel(
                                                     PanelGeom*      panel,
                                                     T               target_fcn,
                                                     cusfloat        tol,
-                                                    GaussPoints*    gp
+                                                    GaussPoints*    gp,
+                                                    bool            block_adaption
                                             )
 {
     // Integrate parent panel
@@ -128,14 +131,17 @@ inline cuscomplex adaptive_quadrature_panel(
     int adapt_level = 0;
                                         
     // Launch adaptive interation
-    int_sol     =   _adaptive_quadrature_panel(
-                                                    panel,
-                                                    target_fcn,
-                                                    int_sol,
-                                                    tol,
-                                                    gp,
-                                                    adapt_level
-                                                );
+    if ( !block_adaption )
+    {
+        int_sol     =   _adaptive_quadrature_panel(
+                                                        panel,
+                                                        target_fcn,
+                                                        int_sol,
+                                                        tol,
+                                                        gp,
+                                                        adapt_level
+                                                    );
+    }
 
     return int_sol;
 }

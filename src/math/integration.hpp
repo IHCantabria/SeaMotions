@@ -22,14 +22,16 @@ template<typename T>    inline  cuscomplex  adaptive_quadrature_panel(
                                                                             PanelGeom*      panel,
                                                                             T               fcn,
                                                                             cusfloat        tol,
-                                                                            int             gp_order
+                                                                            int             gp_order,
+                                                                            bool            block_adaption=false
                                                                         );
 
 template<typename T>    inline  cuscomplex  adaptive_quadrature_panel(
                                                                             PanelGeom*      panel,
                                                                             T               fcn,
                                                                             cusfloat        tol,
-                                                                            GaussPoints*    gp
+                                                                            GaussPoints*    gp,
+                                                                            bool            block_adaption=false
                                                                         );
 
                                 cuscomplex  complex_integration(
