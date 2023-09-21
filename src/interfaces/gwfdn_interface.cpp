@@ -77,17 +77,17 @@ cuscomplex  GWFDnInterface::operator()(
 
     // Calculate X and Y cartesian coordinates derivatives
     cusfloat    dX      = this->_source_j->position[0] - x;
-    cuscomplex  dG_dX   = dG_dR * dX;
+    cuscomplex  dG_dX   = dG_dR * dX / R;
     cusfloat    dY      = this->_source_j->position[1] - y;
-    cuscomplex  dG_dY   = dG_dR * dY;
+    cuscomplex  dG_dY   = dG_dR * dY / R;
 
     // Calculate normal derivate
     cuscomplex  dG_dn   =   (
-                                dG_dR * dG_dX * this->_source_i->normal_vec[0]
+                                dG_dX * this->_source_j->normal_vec[0]
                                 +
-                                dG_dR * dG_dY * this->_source_i->normal_vec[1]
+                                dG_dY * this->_source_j->normal_vec[1]
                                 +
-                                dG_dZ * this->_source_i->normal_vec[2]
+                                dG_dZ * this->_source_j->normal_vec[2]
                             );
     
     // Get local shape function value
