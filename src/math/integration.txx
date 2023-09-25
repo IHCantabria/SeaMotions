@@ -16,10 +16,14 @@ inline cuscomplex   _adaptive_quadrature_panel(
                                                     T               target_fcn,
                                                     cuscomplex      prev_int,
                                                     cusfloat        tol,
-                                                    GaussPoints*    gp,
+                                                    int             prev_gpo,
                                                     int             adapt_level
                                             )
 {
+    // Get current gauss points
+    int gpo = prev_gpo + 2;
+    GaussPoints gp( gpo );
+
     // Re-mesh current panel
     PanelGeomList* panel_list;
     refine_element( 
@@ -36,13 +40,14 @@ inline cuscomplex   _adaptive_quadrature_panel(
         int_values[i]   = quadrature_panel(
                                               panel_list->panels[i],
                                               target_fcn,
-                                              gp
+                                              &gp
                                           );
         int_sol         += int_values[i];
     }
 
     // Compare the cumulative integral value with the previous
     // solution
+    // std::cout << "Adapted Solution: " << int_sol << " - Prev. Sol: " << prev_int << std::endl;
     bool is_equal = !assert_complex_equality( prev_int, int_sol, tol );
     if ( 
             is_equal
@@ -62,7 +67,7 @@ inline cuscomplex   _adaptive_quadrature_panel(
                                                         target_fcn,
                                                         int_values[i],
                                                         tol,
-                                                        gp,
+                                                        gpo,
                                                         adapt_level
                                                     );
         }
@@ -120,30 +125,75 @@ inline cuscomplex adaptive_quadrature_panel(
                                                     bool            block_adaption
                                             )
 {
+    // Define local variables
+    bool is_equal = false;
+
     // Integrate parent panel
-    cuscomplex int_sol  =  quadrature_panel(
+    cuscomplex  int_sol_0, int_sol_00, int_sol_1;
+    int_sol_0   =  quadrature_panel(
+                                        panel,
+                                        target_fcn,
+                                        2
+                                    );
+    int_sol_00  = int_sol_0;
+    if ( !block_adaption )
+    {
+        for ( int igo=4; igo<10; igo+=2 )
+        {
+            // Integrate function with the new
+            int_sol_1   =  quadrature_panel(
                                                 panel,
                                                 target_fcn,
-                                                gp
+                                                igo
                                             );
+
+            // Check for convergence
+            is_equal = assert_complex_equality( 
+                                                    int_sol_0, 
+                                                    int_sol_1, 
+                                                    tol 
+                                                );
+            // std::cout << "int_sol_0: " << int_sol_0 << " - int_sol_1: " << int_sol_1 << " - Diff: " << int_sol_0-int_sol_1 << " - tol: " << tol << " - is_equal: " << is_equal << std::endl;
+            if ( is_equal )
+            {
+                break;
+            }
+
+            // Save last integration value to compare with the
+            // next integration value
+            int_sol_0 = int_sol_1;
+        }
+
+    }
+    else
+    {
+        int_sol_1   =  quadrature_panel(
+                                            panel,
+                                            target_fcn,
+                                            gp
+                                        );
+    }
+    // std::cout << "First Integration Value: " << int_sol_1 << std::endl;
 
     // Define adaption level
     int adapt_level = 0;
                                         
     // Launch adaptive interation
-    if ( !block_adaption )
+    if ( !block_adaption && !is_equal )
     {
-        int_sol     =   _adaptive_quadrature_panel(
+        int_sol_1   =   _adaptive_quadrature_panel(
                                                         panel,
                                                         target_fcn,
-                                                        int_sol,
+                                                        int_sol_1,
                                                         tol,
-                                                        gp,
+                                                        4,
                                                         adapt_level
                                                     );
     }
 
-    return int_sol;
+    // std::cout << "Final Solution: " << int_sol_1 << std::endl;
+
+    return int_sol_1;
 }
 
 
@@ -176,7 +226,7 @@ cuscomplex  quadrature_panel(
                             )
 {
     // Define variable to hold the integration value
-    cuscomplex int_value        = 0.0;
+    cuscomplex int_value( 0.0, 0.0 );
 
     // Loop over gauss points to perform the integration
     cuscomplex  fcn_val          = 0.0;
