@@ -5,6 +5,7 @@
 
 // Include local modules
 #include "freq_solver_tools.hpp"
+#include "../../interfaces/grf_interface.hpp"
 #include "../../math/integration.hpp"
 
 
@@ -195,7 +196,7 @@ void    calculate_hydromechanic_coeffs(
                     };
 
     // Loop over first dimension of degrees of freedrom
-    GaussPoints gp( 1 );
+    GaussPoints gp( 2 );
     cuscomplex  pot_i = 0.0;
     cuscomplex  pressure = 0.0;
     for ( int ib=0; ib<mesh_gp->meshes_np; ib++ )
@@ -231,7 +232,7 @@ void    calculate_hydromechanic_coeffs(
                                                                     true
                                                                 );
                         pressure    += pot_i;
-                        std::cout << "potential_i: " << pot_i << " - " << std::abs( pot_i ) << std::endl;
+                        // std::cout << "potential_i: " << pot_i << " - " << std::abs( pot_i ) << std::endl;
                         // std::cout << "Stop by user" << std::endl;
                         // throw std::runtime_error( "" );
                     }
@@ -265,16 +266,22 @@ void    calculate_panel_potentials(
                                 );
     
     // Create Function to integrate potential value
-    GWFInterface*   green_interf    = new   GWFInterface(
-                                                            mesh_gp->source_nodes[0],
-                                                            all_sources[0],
-                                                            mesh_gp->panels[0]->center,
-                                                            ang_freq,
-                                                            input->water_depth,
-                                                            input->grav_acc
-                                                        );
+    GRFInterface*   green_interf_steady = new   GRFInterface(
+                                                                mesh_gp->source_nodes[0],
+                                                                all_sources[0],
+                                                                mesh_gp->panels[0]->center,
+                                                                input->water_depth
+                                                            );
+    GWFInterface*   green_interf_wave   = new   GWFInterface(
+                                                                mesh_gp->source_nodes[0],
+                                                                all_sources[0],
+                                                                mesh_gp->panels[0]->center,
+                                                                ang_freq,
+                                                                input->water_depth,
+                                                                input->grav_acc
+                                                            );
 
-    auto target_fcn =   [green_interf]
+    auto steady_fcn =   [green_interf_steady]
                         ( 
                             cusfloat    xi,
                             cusfloat    eta,
@@ -283,18 +290,32 @@ void    calculate_panel_potentials(
                             cusfloat    Z
                         ) -> cuscomplex
                         {
-                            return (*green_interf)( xi, eta, X, Y, Z );
+                            return (*green_interf_steady)( xi, eta, X, Y, Z );
+                        };
+
+    auto wave_fcn   =   [green_interf_wave]
+                        ( 
+                            cusfloat    xi,
+                            cusfloat    eta,
+                            cusfloat    X,
+                            cusfloat    Y,
+                            cusfloat    Z
+                        ) -> cuscomplex
+                        {
+                            return (*green_interf_wave)( xi, eta, X, Y, Z );
                         };
 
     // Loop over panel to get the radiation potential over them
     cuscomplex panel_potential  = complex( 0.0, 0.0 );
-    cuscomplex pot_i            = complex( 0.0, 0.0 );
+    cuscomplex pot_i_steady     = complex( 0.0, 0.0 );
+    cuscomplex pot_i_wave       = complex( 0.0, 0.0 );
     for ( int i=0; i<mesh_gp->panels_tnp; i++ )
     {
         // Set new field point for the calculation of the potential
-        green_interf->set_field_point( mesh_gp->panels[i]->center );
+        green_interf_steady->set_field_point( mesh_gp->panels[i]->center );
+        green_interf_wave->set_field_point( mesh_gp->panels[i]->center );
 
-        std::cout << "Field Point: " << mesh_gp->panels[i]->center[0] << " - " << mesh_gp->panels[i]->center[1] << " - " << mesh_gp->panels[i]->center[2] << std::endl;
+        // std::cout << "Field Point: " << mesh_gp->panels[i]->center[0] << " - " << mesh_gp->panels[i]->center[1] << " - " << mesh_gp->panels[i]->center[2] << std::endl;
 
         // Clean panel potential
         panel_potential = complex( 0.0, 0.0 );
@@ -304,26 +325,37 @@ void    calculate_panel_potentials(
         for ( int j=0; j<mesh_gp->source_nodes_tnp; j++ )
         {
             // Set current source value
-            green_interf->set_source(
-                                        mesh_gp->source_nodes[j],
-                                        all_sources[j]
-                                    );
+            green_interf_steady->set_source(
+                                            mesh_gp->source_nodes[j],
+                                            all_sources[j]
+                                        );
+            green_interf_wave->set_source(
+                                            mesh_gp->source_nodes[j],
+                                            all_sources[j]
+                                        );
             
-            pot_i   = adaptive_quadrature_panel(
-                                                    mesh_gp->source_nodes[j]->panel,
-                                                    target_fcn,
-                                                    0.001,
-                                                    &gp
-                                                );
-            panel_potential +=  pot_i /4.0 / PI;
-            std::cout << "pot_i[" << j << "]: " << pot_i/4.0/PI << " - Source Value: " << all_sources[j] << std::endl;
+            pot_i_steady    = adaptive_quadrature_panel(
+                                                            mesh_gp->source_nodes[j]->panel,
+                                                            steady_fcn,
+                                                            0.001,
+                                                            &gp
+                                                        );
+            pot_i_wave      = adaptive_quadrature_panel(
+                                                            mesh_gp->source_nodes[j]->panel,
+                                                            wave_fcn,
+                                                            0.001,
+                                                            &gp
+                                                        );
+            panel_potential +=  ( pot_i_steady + pot_i_wave ) /4.0 / PI;
+            // std::cout << "pot_i[" << j << "]: " << pot_i/4.0/PI << " - Source Value: " << all_sources[j] << std::endl;
         }
         std::cout << "Potential[" << i << "]: " << panel_potential << " - " << std::abs( panel_potential ) << " - " << std::arg( panel_potential )*180.0/PI << std::endl;
         // throw std::runtime_error( "" );
     }
 
     // Delete heap allocated memory
-    delete green_interf;
+    delete green_interf_steady;
+    delete green_interf_wave;
 }
 
 
@@ -392,7 +424,7 @@ void    calculate_sources_intensity(
                 int_value   =   adaptive_quadrature_panel(
                                                                 source_i->panel,
                                                                 lmb_fcn,
-                                                                0.1,
+                                                                0.001,
                                                                 &gp,
                                                                 false
                                                             );
