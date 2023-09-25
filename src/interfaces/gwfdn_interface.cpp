@@ -30,6 +30,10 @@ GWFDnInterface::GWFDnInterface(
 
     // Load integrals database
     this->_integrals_db = new IntegralsDb( );
+    
+    // Fold for current frequency and water depth
+    cusfloat H = pow2s( ang_freq ) * water_depth / grav_acc;
+    this->_integrals_db->fold_h( H );
 
 }
 
@@ -117,6 +121,11 @@ void    GWFDnInterface::set_ang_freq(
                                                     this->_grav_acc
                                                 );
     this->_wave_data->calculate_john_terms( );
+
+    // Fold for current frequency and water depth
+    cusfloat H = pow2s( ang_freq ) * this->_water_depth / this->_grav_acc;
+    this->_integrals_db->fold_h( H );
+    
 }
 
 

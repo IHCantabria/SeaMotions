@@ -33,7 +33,7 @@ cusfloat G1(
     {
         cusfloat A2 = pow2s(A);
         sol = (
-                idb.l3->get_value_abh(A, B, H)
+                idb.l3->get_value_ab(A, B)
                 -
                 2/sqrt(A2 + pow2s(2+B))
                 -
@@ -42,7 +42,7 @@ cusfloat G1(
     }
     else
     {
-        sol = idb.l1->get_value_abh(A, B, H) + idb.l2->int_1d;
+        sol = idb.l1->get_value_ab(A, B) + idb.l2->int_1d;
     }
 
     return sol;
@@ -61,7 +61,7 @@ cusfloat G1_dA(
     {
         cusfloat A2 = pow2s(A);
         sol = (
-                idb.l3_da->get_value_abh(A, B, H)
+                idb.l3_da->get_value_ab(A, B)
                 +
                 2*A/pow(A2 + pow2s(2+B), 3.0/2.0)
                 +
@@ -70,7 +70,7 @@ cusfloat G1_dA(
     }
     else
     {
-        sol = idb.l1_da->get_value_abh(A, B, H);
+        sol = idb.l1_da->get_value_ab(A, B);
     }
 
     return sol;
@@ -89,7 +89,7 @@ cusfloat G1_dB(
     {
         cusfloat A2 = pow2s(A);
         sol = (
-                idb.l3_db->get_value_abh(A, B, H)
+                idb.l3_db->get_value_ab(A, B)
                 +
                 2*(2+B)/pow(A2 + pow2s(2+B), 3.0/2.0)
                 -
@@ -98,7 +98,7 @@ cusfloat G1_dB(
     }
     else
     {
-        sol = idb.l1_db->get_value_abh(A, B, H);
+        sol = idb.l1_db->get_value_ab(A, B);
     }
 
     return sol;
@@ -115,14 +115,14 @@ cusfloat G2(cusfloat A,
     if (H > 1.0)
     {
         sol = (
-                idb.m3->get_value_abh(A, B, H)
+                idb.m3->get_value_ab(A, B)
                 -
                 2/sqrt(pow2s(A) + pow2s(2+B))
                 );
     }
     else
     {
-        sol = idb.m1->get_value_abh(A, B, H) + idb.m2->int_1d;
+        sol = idb.m1->get_value_ab(A, B) + idb.m2->int_1d;
     }
 
     return sol;
@@ -140,14 +140,14 @@ cusfloat G2_dA(
     if (H > 1.0)
     {
         sol = (
-                idb.m3_da->get_value_abh(A, B, H)
+                idb.m3_da->get_value_ab(A, B)
                 +
                 2*A/pow(pow2s(A) + pow2s(2+B), 3.0/2.0)
                 );
     }
     else
     {
-        sol = idb.m1_da->get_value_abh(A, B, H);
+        sol = idb.m1_da->get_value_ab(A, B);
     }
 
     return sol;
@@ -164,14 +164,14 @@ cusfloat G2_dB(cusfloat A,
     if (H > 1.0)
     {
         sol = (
-                idb.m3_db->get_value_abh(A, B, H)
+                idb.m3_db->get_value_ab(A, B)
                 +
                 2*(2+B)/pow(pow2s(A) + pow2s(2+B), 3.0/2.0)
                 );
     }
     else
     {
-        sol = idb.m1_db->get_value_abh(A, B, H);
+        sol = idb.m1_db->get_value_ab(A, B);
     }
 
     return sol;
@@ -227,17 +227,15 @@ cuscomplex G_integral(
 }
 
 
-cuscomplex G_integral(
-                        cusfloat x,
-                        cusfloat y,
-                        cusfloat z,
-                        cusfloat xi,
-                        cusfloat eta,
-                        cusfloat zeta,
-                        cusfloat h,
-                        WaveDispersionData &wave_data,
-                        IntegralsDb &idb
-                    )
+cuscomplex G_integral_steady(
+                                cusfloat x,
+                                cusfloat y,
+                                cusfloat z,
+                                cusfloat xi,
+                                cusfloat eta,
+                                cusfloat zeta,
+                                cusfloat h
+                            )
 {
     /**
      * @brief Calculate finite water depth Green function: steady sources + wave term
@@ -258,9 +256,62 @@ cuscomplex G_integral(
     // Calculate derivative properties
     cusfloat R = calculate_r(x, y, xi, eta);
     
+    // Calculate derivative properties
+    cusfloat v0 = abs(z-zeta);
+    cusfloat v1 = z+zeta+2*h;
+    cusfloat v2 = abs(z+zeta);
+    cusfloat v3 = z-zeta+2*h;
+    cusfloat v4 = zeta-z+2*h;
+    cusfloat v5 = z+zeta+4*h;
+    cusfloat r0 = sqrt(pow2s(R) + pow2s(v0));
+    cusfloat r1 = sqrt(pow2s(R) + pow2s(v1));
+    cusfloat r2 = sqrt(pow2s(R) + pow2s(v2));
+    cusfloat r3 = sqrt(pow2s(R) + pow2s(v3));
+    cusfloat r4 = sqrt(pow2s(R) + pow2s(v4));
+    cusfloat r5 = sqrt(pow2s(R) + pow2s(v5));
 
-    return G_integral(R, z, zeta, h, wave_data, idb);
+    // Calculate steady part of the Green function
+    cuscomplex green_steady = (1/r0 + 1/r1 + 1/r2 + 1/r3 + 1/r4 + 1/r5) + 0.0i;
+
+    return green_steady;
 }
+
+
+cuscomplex G_integral_wave(
+                                cusfloat x,
+                                cusfloat y,
+                                cusfloat z,
+                                cusfloat xi,
+                                cusfloat eta,
+                                cusfloat zeta,
+                                cusfloat h,
+                                WaveDispersionData &wave_data,
+                                IntegralsDb &idb
+                            )
+{
+    /**
+     * @brief Calculate finite water depth Green function: wave term
+     *      at the integral region (R/h>1.0)
+     * 
+     * \param x X Coordinate of the field point
+     * \param y Y Coordinate of the field point
+     * \param z Z Coordinate of the field point
+     * \param xi X Coordinate of the source point
+     * \param eta Y Coordinate of the source point
+     * \param zeta Z Coordinate of the source point
+     * \param h Water depth
+     * \param wave_data Wave dispersion data object initialized with John's constants
+     * \param idb Integrals Database 
+     * 
+     */
+
+    // Calculate derivative properties
+    cusfloat R = calculate_r(x, y, xi, eta);
+    
+
+    return wave_term_fin_depth_integral(R, z, zeta, h, wave_data, idb);
+}
+
 
 
 cuscomplex G_integral_dr(

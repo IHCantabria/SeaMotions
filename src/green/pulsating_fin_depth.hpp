@@ -57,6 +57,30 @@ cuscomplex G_integral_dz(
                         );
 
 
+cuscomplex G_integral_steady(
+                                cusfloat x,
+                                cusfloat y,
+                                cusfloat z,
+                                cusfloat xi,
+                                cusfloat eta,
+                                cusfloat zeta,
+                                cusfloat h
+                            );
+
+
+cuscomplex G_integral_wave(
+                                cusfloat x,
+                                cusfloat y,
+                                cusfloat z,
+                                cusfloat xi,
+                                cusfloat eta,
+                                cusfloat zeta,
+                                cusfloat h,
+                                WaveDispersionData &wave_data,
+                                IntegralsDb &idb
+                            );
+
+
 cuscomplex john_series(
                         cusfloat R,
                         cusfloat z, 
