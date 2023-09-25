@@ -124,6 +124,8 @@ set(
         interfaces_module_files
         ${CMAKE_SOURCE_DIR}/src/interfaces/hmf_interface.hpp
         ${CMAKE_SOURCE_DIR}/src/interfaces/hmf_interface.cpp
+        ${CMAKE_SOURCE_DIR}/src/interfaces/grf_interface.hpp
+        ${CMAKE_SOURCE_DIR}/src/interfaces/grf_interface.cpp
         ${CMAKE_SOURCE_DIR}/src/interfaces/gwf_interface.hpp
         ${CMAKE_SOURCE_DIR}/src/interfaces/gwf_interface.cpp
         ${CMAKE_SOURCE_DIR}/src/interfaces/gwfdn_interface.hpp
