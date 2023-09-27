@@ -130,14 +130,15 @@ inline cuscomplex adaptive_quadrature_panel(
 
     // Integrate parent panel
     cuscomplex  int_sol_0, int_sol_00, int_sol_1;
-    int_sol_0   =  quadrature_panel(
+    
+    if ( !block_adaption )
+    {
+        int_sol_0   =  quadrature_panel(
                                         panel,
                                         target_fcn,
                                         2
                                     );
-    int_sol_00  = int_sol_0;
-    if ( !block_adaption )
-    {
+        int_sol_00  = int_sol_0;
         for ( int igo=4; igo<10; igo+=2 )
         {
             // Integrate function with the new
@@ -170,7 +171,7 @@ inline cuscomplex adaptive_quadrature_panel(
         int_sol_1   =  quadrature_panel(
                                             panel,
                                             target_fcn,
-                                            gp
+                                            1
                                         );
     }
     // std::cout << "First Integration Value: " << int_sol_1 << std::endl;
