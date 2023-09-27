@@ -109,7 +109,7 @@ cuscomplex  HMFInterface::operator()(
     {
         // Set new source values
         index   =   this->_start_index_i + i;
-        // std::cout << "index: " << index << std::endl;
+        // std::cout << "Source index: " << index << " - Source Value: " << this->_source_values[index] << std::endl;
         this->_green_interf_steady->set_source(
                                                 this->_source_nodes[i],
                                                 this->_source_values[index]
@@ -123,18 +123,18 @@ cuscomplex  HMFInterface::operator()(
         pot_i_steady    =  adaptive_quadrature_panel(
                                                         this->_source_nodes[i]->panel,
                                                         steady_fcn,
-                                                        1.0,
+                                                        0.01,
                                                         &gp
                                                     );
         
         pot_i_wave      =  adaptive_quadrature_panel(
                                                         this->_source_nodes[i]->panel,
                                                         wave_fcn,
-                                                        1.0,
+                                                        0.001,
                                                         &gp
                                                     );
         // std::cout << "Potential [" << i <<  "]: " << potential_i / 4.0 / PI << " - Source: " << this->_source_values[index] << std::endl;
-        potential       += ( pot_i_steady + pot_i_wave ) / 4.0 / PI * this->_panel->normal_vec[this->_dof_j];
+        potential       += ( pot_i_steady + pot_i_wave ) / 4.0 / PI; // * this->_panel->normal_vec[this->_dof_j];
 
     }
 
