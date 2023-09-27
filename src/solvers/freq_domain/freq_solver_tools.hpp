@@ -25,12 +25,13 @@ void    calculate_freq_domain_coeffs(
                                     );
 
 void    calculate_hydromechanic_coeffs(
+                                            Input*          input,
                                             MpiConfig*      mpi_config,
-                                            MeshGroup*      mesh,
-                                            int             dofs_np,
+                                            MeshGroup*      mesh_gp,
                                             HMFInterface*   hmf_interf,
+                                            cusfloat        ang_freq,
                                             cusfloat*       added_mass,
-                                            cusfloat*       damping
+                                            cusfloat*       damping_rad
                                         );
 
 void    calculate_panel_potentials(

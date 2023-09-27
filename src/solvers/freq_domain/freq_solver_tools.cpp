@@ -102,10 +102,10 @@ void calculate_freq_domain_coeffs(
         // Gather source values from each processor
         MPI_Allgather(
                         sources,
-                        scl.num_rows_local,
+                        scl.num_rows_local*input->dofs_np,
                         mpi_cuscomplex,
                         all_sources,
-                        scl.num_rows,
+                        scl.num_rows*input->dofs_np,
                         mpi_cuscomplex,
                         MPI_COMM_WORLD
                     );
@@ -113,27 +113,26 @@ void calculate_freq_domain_coeffs(
         // Update sources values for the integration objects
         hmf_interf->set_source_values( all_sources );
 
-        for ( int i=0; i<scl.num_rows; i++ )
+        for ( int i=3*scl.num_rows; i<4*scl.num_rows; i++ )
         {
             std::cout << "Panel[" << i << "]: " << all_sources[i] << " - " << std::abs( all_sources[i] ) << " - " << std::arg( all_sources[i] )*180.0/PI << std::endl;
         }
 
-        // // std::cerr <<
-
         calculate_panel_potentials(
-                                        input,
-                                        mpi_config,
-                                        mesh_gp,
-                                        all_sources,
-                                        input->angfreqs[i]
+                                            input,
+                                            mpi_config,
+                                            mesh_gp,
+                                            all_sources,
+                                            input->angfreqs[i]
                                     );
 
         // Calculate added mass and damping coefficients
         calculate_hydromechanic_coeffs( 
+                                            input,
                                             mpi_config,
                                             mesh_gp,
-                                            input->dofs_np,
                                             hmf_interf,
+                                            input->angfreqs[i],
                                             added_mass,
                                             damping
                                         );
@@ -165,22 +164,18 @@ void calculate_freq_domain_coeffs(
 
 
 void    calculate_hydromechanic_coeffs(
+                                            Input*          input,
                                             MpiConfig*      mpi_config,
                                             MeshGroup*      mesh_gp,
-                                            int             dofs_np,
                                             HMFInterface*   hmf_interf,
+                                            cusfloat        ang_freq,
                                             cusfloat*       added_mass,
-                                            cusfloat*       damping
+                                            cusfloat*       damping_rad
                                         )
 {
-    // Calculate MPI data chunks
-    int elem_end_pos     = 0;
-    int elem_start_pos   = 0;
-    mpi_config->get_1d_bounds( 
-                                    mesh_gp->panels_tnp, 
-                                    elem_start_pos, 
-                                    elem_end_pos 
-                                );
+    // Define local variables
+    int         dofs_np = input->dofs_np;
+    cusfloat    rho_w   = input->water_density;
 
     // Generate lambda function for the integration
     auto target_fcn = [hmf_interf]
@@ -195,54 +190,109 @@ void    calculate_hydromechanic_coeffs(
                         return (*hmf_interf)( xi, eta, x, y, z );
                     };
 
+    // Allocate space for pressure vector
+    int max_panels  = 0;
+    for ( int i=0; i<mesh_gp->meshes_np; i++ )
+    {
+        // Get ith mesh panels
+        if ( mesh_gp->panels_np[i] > max_panels )
+        {
+            max_panels = mesh_gp->panels_np[i];
+        }
+    }
+    cuscomplex* pressure    = generate_empty_vector<cuscomplex>( mesh_gp->meshes_np * dofs_np * max_panels );
+
     // Loop over first dimension of degrees of freedrom
     GaussPoints gp( 2 );
-    cuscomplex  pot_i = 0.0;
-    cuscomplex  pressure = 0.0;
+    int         elem_end_pos    = 0;
+    int         elem_start_pos  = 0;
+    int         index           = 0;
+    int         index_1         = 0;
+    cuscomplex  press_i         = 0.0;
+    // cuscomplex  pressure = 0.0;
     for ( int ib=0; ib<mesh_gp->meshes_np; ib++ )
     {
-        for ( int jb=0; jb<mesh_gp->meshes_np; jb++ )
+        // Calculate MPI data chunks
+        elem_end_pos    = 0;
+        elem_start_pos  = 0;
+        mpi_config->get_1d_bounds( 
+                                        mesh_gp->panels_np[ib], 
+                                        elem_start_pos, 
+                                        elem_end_pos 
+                                    );
+        elem_end_pos    += mesh_gp->panels_cnp[ib];
+        elem_start_pos  += mesh_gp->panels_cnp[ib];
+
+        for ( int id=0; id<dofs_np; id++ )
         {
-            for ( int id=0; id<dofs_np; id++ )
+            for ( int jb=0; jb<mesh_gp->meshes_np; jb++ )
             {
                 // Set ith dof
-                hmf_interf->set_start_index_i( mesh_gp->source_nodes_cnp[ib]*dofs_np + id*mesh_gp->source_nodes_np[ib] );
+                // std::cout << "start index: " << mesh_gp->source_nodes_tnp*id + mesh_gp->source_nodes_cnp[jb] << std::endl; 
+                hmf_interf->set_start_index_i( mesh_gp->source_nodes_tnp*id + mesh_gp->source_nodes_cnp[jb] );
 
-                // Loop over second dimension of degrees of freedrom
-                for ( int jd=0; jd<dofs_np; jd++ )
+                // Loop over panels to integrate the wave radiation
+                // pressure along the floating object external shape
+                for ( int ie=elem_start_pos; ie<elem_end_pos; ie++ )
                 {
-                    // Set jth dof
-                    hmf_interf->set_dof_j( jd );
+                    // Set new panel
+                    hmf_interf->set_panel( mesh_gp->panels[ie] );
 
-                    // Loop over panels to integrate the wave radiation
-                    // pressure along the floating object external shape
-                    pressure = 0.0;
+                    // Integrate pressure over panel
+                    index           = ( max_panels * mesh_gp->meshes_np ) * id + max_panels * jb + ie;
+                    pressure[index] = adaptive_quadrature_panel(
+                                                                    mesh_gp->panels[ie],
+                                                                    target_fcn,
+                                                                    1.0,
+                                                                    &gp,
+                                                                    true
+                                                                );
+                    // std::cout << "Pressure [" << index << "]: " << pressure[index] << std::endl;
+                }
+            }
+        }
+
+        // Get hydromechanic coefficients for all the degrees of freedom
+        for ( int id=0; id<dofs_np; id++ )
+        {
+            for ( int jd=0; jd<dofs_np; jd++ )
+            {
+                // Get current matrix index
+                for ( int jb=0; jb<mesh_gp->meshes_np; jb++ )
+                {
+                    index = (
+                                ib * ( dofs_np * dofs_np * mesh_gp->meshes_np )
+                                +
+                                id * ( dofs_np * mesh_gp->meshes_np )
+                                + 
+                                jb * dofs_np 
+                                + 
+                                jd
+                            );
+                    added_mass[index]   = 0.0;
+                    damping_rad[index]  = 0.0;
                     for ( int ie=elem_start_pos; ie<elem_end_pos; ie++ )
                     {
-                        std::cout << "Dof_i: " << id << " - Dof_j: " << jd << " - Elem. ID: " << ie << std::endl;
                         // Set new panel
                         hmf_interf->set_panel( mesh_gp->panels[ie] );
 
                         // Integrate pressure over panel
-                        pot_i       = adaptive_quadrature_panel(
-                                                                    mesh_gp->panels[ie],
-                                                                    target_fcn,
-                                                                    1000.0,
-                                                                    &gp,
-                                                                    true
-                                                                );
-                        pressure    += pot_i;
-                        // std::cout << "potential_i: " << pot_i << " - " << std::abs( pot_i ) << std::endl;
-                        // std::cout << "Stop by user" << std::endl;
-                        // throw std::runtime_error( "" );
+                        index_1             = ( max_panels * mesh_gp->meshes_np ) * id + max_panels * jb + ie;
+                        press_i             = pressure[index_1] * mesh_gp->panels[ie]->normal_vec[jd];
+                        // std::cout << "press_i: " << press_i << " - Normal: " << mesh_gp->panels[ie]->normal_vec[jd] << std::endl;
+                        added_mass[index]   -=  rho_w * press_i.imag( ) / ang_freq;
+                        damping_rad[index]  -=  rho_w * press_i.real( );
                     }
-                    std::cout << "pressure: " << pressure << std::endl;
-                    std::cout << "Stop by user" << std::endl;
-                    throw std::runtime_error( "" );
+
+                    std::cout << "Dof i: " << id << " - Dof j: " << jd << " - AddedMass: " << added_mass[index] << " - Damping: " << damping_rad[index] << std::endl;
+
                 }
             }
         }
     }
+
+    // Deallocate local allocated heap memory
+    mkl_free( pressure );
 }
 
 
@@ -337,19 +387,19 @@ void    calculate_panel_potentials(
             pot_i_steady    = adaptive_quadrature_panel(
                                                             mesh_gp->source_nodes[j]->panel,
                                                             steady_fcn,
-                                                            0.001,
+                                                            0.01,
                                                             &gp
                                                         );
             pot_i_wave      = adaptive_quadrature_panel(
                                                             mesh_gp->source_nodes[j]->panel,
                                                             wave_fcn,
-                                                            0.001,
+                                                            0.01,
                                                             &gp
                                                         );
             panel_potential +=  ( pot_i_steady + pot_i_wave ) /4.0 / PI;
             // std::cout << "pot_i[" << j << "]: " << pot_i/4.0/PI << " - Source Value: " << all_sources[j] << std::endl;
         }
-        std::cout << "Potential[" << i << "]: " << panel_potential << " - " << std::abs( panel_potential ) << " - " << std::arg( panel_potential )*180.0/PI << std::endl;
+        // std::cout << "Potential[" << i << "]: " << panel_potential << " - " << std::abs( panel_potential ) << " - " << std::arg( panel_potential )*180.0/PI << std::endl;
         // throw std::runtime_error( "" );
     }
 
@@ -394,13 +444,13 @@ void    calculate_sources_intensity(
     SourceNode* source_i    = nullptr;
     int         row_count   = 0;
 
-    std::ofstream outfile( "matrix.dat" );
-    outfile << "Num.Rows: " << scl->num_rows << std::endl;
+    // std::ofstream outfile( "matrix.dat" );
+    // outfile << "Num.Rows: " << scl->num_rows << std::endl;
     // MPI_Barrier( MPI_COMM_WORLD );
     int count_total = 0;
     for ( int i=scl->start_col_0; i<scl->end_col_0; i++ )
     {
-        std::cout << "Source[i]: " << i << " - " << mesh_gp->source_nodes[i] << std::endl;
+        // std::cout << "Source[i]: " << i << " - " << mesh_gp->source_nodes[i] << std::endl;
         // Get memory address of the ith panel
         source_i = mesh_gp->source_nodes[i];
         green_interf->set_source_i( source_i );
@@ -437,7 +487,7 @@ void    calculate_sources_intensity(
             // }
             
             sysmat[col_count*scl->num_rows_local+row_count] = int_value;
-            outfile << int_value.real( ) << " " << int_value.imag( ) << std::endl;
+            // outfile << int_value.real( ) << " " << int_value.imag( ) << std::endl;
             // std::cout << "Index Count: " << col_count*scl->num_rows_local+row_count << std::endl;
             count_total += 1;
             // Advance row count
@@ -466,12 +516,12 @@ void    calculate_sources_intensity(
 
     // Fill RHS vector
     count       = 0;
-    outfile << "RHS" << std::endl;
+    // outfile << "RHS" << std::endl;
     for ( int i=0; i< 6; i++ )
     {
         for ( int j=scl->start_row_0; j<scl->end_row_0; j++ )
         {
-            sources_int[count] = complex( 0.0, - w * mesh_gp->source_nodes[j]->normal_vec[i] );
+            sources_int[count] = complex( 0.0, w * mesh_gp->source_nodes[j]->normal_vec[i] );
             // std::cout << "Source Node [" << j << "]: " << mesh_gp->source_nodes[j]->normal_vec[i] << std::endl;
             // std::cout << " - Center Panel:  " << mesh_gp->source_nodes[j]->position[0];
             // std::cout << " - " << mesh_gp->source_nodes[j]->position[1];
@@ -481,12 +531,12 @@ void    calculate_sources_intensity(
             // std::cout << " - " << mesh_gp->source_nodes[j]->normal_vec[1];
             // std::cout << " - " << mesh_gp->source_nodes[j]->normal_vec[2];
             // std::cout << std::endl;
-            outfile << sources_int[start_pos+count].real( ) << " " << sources_int[start_pos+count].imag( ) << std::endl;
+            // outfile << sources_int[start_pos+count].real( ) << " " << sources_int[start_pos+count].imag( ) << std::endl;
             count++;
         }
         // break;
     }
-    outfile.close( );
+    // outfile.close( );
 
     std::cout << "--> Done!" << std::endl; 
 
