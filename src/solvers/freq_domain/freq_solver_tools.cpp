@@ -46,11 +46,20 @@ void calculate_freq_domain_coeffs(
     /****************************************************/
     /****** Allocate space for the simulation data ******/
     /****************************************************/
-    cusfloat*   added_mass  = generate_empty_vector<cusfloat>( pow2s( input->dofs_np * mesh_gp->meshes_np ) );
-    cuscomplex* all_sources = generate_empty_vector<cuscomplex>( input->dofs_np * mesh_gp->source_nodes_tnp );
-    cusfloat*   damping     = generate_empty_vector<cusfloat>( pow2s( input->dofs_np * mesh_gp->meshes_np ) );
-    cuscomplex* sources     = generate_empty_vector<cuscomplex>( input->dofs_np * mesh_gp->meshes_np * scl.num_rows_local );
-    cuscomplex* sysmat      = generate_empty_vector<cuscomplex>( scl.num_rows_local * scl.num_cols_local );
+    int         hydmech_np      = pow2s( input->dofs_np * mesh_gp->meshes_np );
+    cusfloat*   added_mass      = generate_empty_vector<cusfloat>( hydmech_np );
+    cuscomplex* all_sources     = generate_empty_vector<cuscomplex>( input->dofs_np * mesh_gp->source_nodes_tnp );
+    cusfloat*   damping_rad     = generate_empty_vector<cusfloat>( hydmech_np );
+    cuscomplex* sources         = generate_empty_vector<cuscomplex>( input->dofs_np * mesh_gp->meshes_np * scl.num_rows_local );
+    cuscomplex* sysmat          = generate_empty_vector<cuscomplex>( scl.num_rows_local * scl.num_cols_local );
+
+    cusfloat*   added_mass_p0   = nullptr;
+    cusfloat*   damping_rad_p0  = nullptr;
+    if ( mpi_config->is_root( ) )
+    {
+        added_mass_p0   = generate_empty_vector<cusfloat>( hydmech_np );
+        damping_rad_p0  = generate_empty_vector<cusfloat>( hydmech_np );
+    }
 
     /****************************************************/
     /********* Create Green function interface *********/
@@ -134,8 +143,28 @@ void calculate_freq_domain_coeffs(
                                             hmf_interf,
                                             input->angfreqs[i],
                                             added_mass,
-                                            damping
+                                            damping_rad
                                         );
+
+        MPI_Reduce(
+                        added_mass,
+                        added_mass_p0,
+                        hydmech_np,
+                        mpi_cusfloat,
+                        MPI_SUM,
+                        0,
+                        MPI_COMM_WORLD
+                    );
+
+        MPI_Reduce(
+                        damping_rad,
+                        damping_rad_p0,
+                        hydmech_np,
+                        mpi_cusfloat,
+                        MPI_SUM,
+                        0,
+                        MPI_COMM_WORLD
+                    );
 
         // // Loop over headings to calculate diffraction and 
         // // Froude-Krylov forces
@@ -150,10 +179,15 @@ void calculate_freq_domain_coeffs(
     }
 
     // Delete heap memory allocated data
+    if ( mpi_config->is_root( ) )
+    {
+        mkl_free( added_mass_p0 );
+        mkl_free( damping_rad_p0 );
+    }
     
     mkl_free( added_mass );
     mkl_free( all_sources );
-    mkl_free( damping );
+    mkl_free( damping_rad );
     mkl_free( sources );
     mkl_free( sysmat );
 
