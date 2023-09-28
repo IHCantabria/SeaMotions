@@ -17,6 +17,16 @@
 typedef ScalapackSolver<cuscomplex> SclCmpx;
 
 
+void    calculate_diffraction_forces(
+                                            Input*          input,
+                                            MpiConfig*      mpi_config,
+                                            MeshGroup*      mesh_gp,
+                                            HMFInterface*   hmf_interf,
+                                            cusfloat        w,
+                                            cuscomplex*     wave_diffrac
+                                    );
+
+
 void    calculate_freq_domain_coeffs(
                                             MpiConfig*      mpi_config,
                                             Input*          input,
@@ -43,6 +53,7 @@ void    calculate_panel_potentials(
                                     );
 
 void    calculate_sources_intensity(
+                                            Input*          input,
                                             SclCmpx*        scl,
                                             MeshGroup*      mesh,
                                             GWFDnInterface* green_interf,

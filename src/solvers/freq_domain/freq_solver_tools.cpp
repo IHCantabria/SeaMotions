@@ -7,6 +7,134 @@
 #include "freq_solver_tools.hpp"
 #include "../../interfaces/grf_interface.hpp"
 #include "../../math/integration.hpp"
+#include "../../waves.hpp"
+
+
+void calculate_diffraction_forces(
+                                    Input*          input,
+                                    MpiConfig*      mpi_config,
+                                    MeshGroup*      mesh_gp,
+                                    HMFInterface*   hmf_interf,
+                                    cusfloat        w,
+                                    cuscomplex*     wave_diffrac
+                                )
+{
+    // Define local variables
+    int         dofs_np = input->dofs_np;
+    cusfloat    rho_w   = input->water_density;
+
+    // Generate lambda function for the integration
+    auto target_fcn = [hmf_interf]
+                    (
+                        cusfloat xi, 
+                        cusfloat eta, 
+                        cusfloat x,
+                        cusfloat y,
+                        cusfloat z
+                    )
+                    {
+                        return (*hmf_interf)( xi, eta, x, y, z );
+                    };
+
+    // Allocate space for pressure vector
+    int max_panels  = 0;
+    for ( int i=0; i<mesh_gp->meshes_np; i++ )
+    {
+        // Get ith mesh panels
+        if ( mesh_gp->panels_np[i] > max_panels )
+        {
+            max_panels = mesh_gp->panels_np[i];
+        }
+    }
+    cuscomplex* pressure    = generate_empty_vector<cuscomplex>( mesh_gp->meshes_np * max_panels );
+
+    // Loop over first dimension of degrees of freedrom
+    GaussPoints gp( 2 );
+    int         elem_end_pos    = 0;
+    int         elem_start_pos  = 0;
+    int         index           = 0;
+    int         index_1         = 0;
+    cuscomplex  press_i         = 0.0;
+    // cuscomplex  pressure = 0.0;
+    for ( int ih=0; ih<input->heads_np; ih++ )
+    {
+        // Set start index for the sources evaluation
+        hmf_interf->set_start_index_i( mesh_gp->source_nodes_tnp * ( dofs_np + ih ) );
+
+        for ( int ib=0; ib<mesh_gp->meshes_np; ib++ )
+        {
+            // Calculate MPI data chunks
+            elem_end_pos    = 0;
+            elem_start_pos  = 0;
+            mpi_config->get_1d_bounds( 
+                                            mesh_gp->panels_np[ib], 
+                                            elem_start_pos, 
+                                            elem_end_pos 
+                                        );
+            elem_end_pos    += mesh_gp->panels_cnp[ib];
+            elem_start_pos  += mesh_gp->panels_cnp[ib];
+
+            // Loop over panels to integrate the wave radiation
+            // pressure along the floating object external shape
+            for ( int ie=elem_start_pos; ie<elem_end_pos; ie++ )
+            {
+                // Set new panel
+                hmf_interf->set_panel( mesh_gp->panels[ie] );
+
+                // Integrate pressure over panel
+                index           = max_panels * ib + ie;
+                pressure[index] = adaptive_quadrature_panel(
+                                                                mesh_gp->panels[ie],
+                                                                target_fcn,
+                                                                1.0,
+                                                                &gp,
+                                                                true
+                                                            );
+                // std::cout << "Potential[" << ie << "]: " << pressure[index] << std::endl;
+            }
+        }
+
+        // Get hydromechanic coefficients for all the degrees of freedom
+        for ( int ib=0; ib<mesh_gp->meshes_np; ib++ )
+        {
+            // Calculate MPI data chunks
+            elem_end_pos    = 0;
+            elem_start_pos  = 0;
+            mpi_config->get_1d_bounds( 
+                                            mesh_gp->panels_np[ib], 
+                                            elem_start_pos, 
+                                            elem_end_pos 
+                                        );
+            elem_end_pos    += mesh_gp->panels_cnp[ib];
+            elem_start_pos  += mesh_gp->panels_cnp[ib];
+
+            for ( int id=0; id<dofs_np; id++ )
+            {
+                index = (
+                            ih * ( dofs_np * mesh_gp->meshes_np )
+                            +
+                            ib * dofs_np
+                            + 
+                            id
+                        );
+
+                wave_diffrac[index]   = 0.0;
+                for ( int ie=elem_start_pos; ie<elem_end_pos; ie++ )
+                {
+                    // Set new panel
+                    hmf_interf->set_panel( mesh_gp->panels[ie] );
+
+                    // Integrate pressure over panel
+                    index_1             = max_panels * ib + ie;
+                    press_i             = pressure[index_1] * mesh_gp->panels[ie]->normal_vec[id];
+                    // std::cout << "Pressure[" << ie << "]: " << w*rho_w*press_i << std::endl;
+                    wave_diffrac[index] += cuscomplex( 0.0, -w * rho_w ) * press_i;
+                }
+                std::cout << "Heading: " << input->heads[ih] << " - IB: " << ib << " - Dof: " << id << " - Wave Diffrac: " << wave_diffrac[index] << std::endl;
+            }
+        }
+    }
+}
 
 
 void calculate_freq_domain_coeffs(
@@ -38,7 +166,7 @@ void calculate_freq_domain_coeffs(
     /****************************************************/
     SclCmpx scl( 
                     mesh_gp->source_nodes_tnp,
-                    input->dofs_np,
+                    input->dofs_np + input->heads_np,
                     mpi_config->procs_total,
                     mpi_config->proc_rank
                 );
@@ -47,18 +175,22 @@ void calculate_freq_domain_coeffs(
     /****** Allocate space for the simulation data ******/
     /****************************************************/
     int         hydmech_np      = pow2s( input->dofs_np * mesh_gp->meshes_np );
+    int         wave_diffrac_np = input->heads_np * mesh_gp->meshes_np * input->dofs_np;
     cusfloat*   added_mass      = generate_empty_vector<cusfloat>( hydmech_np );
-    cuscomplex* all_sources     = generate_empty_vector<cuscomplex>( input->dofs_np * mesh_gp->source_nodes_tnp );
+    cuscomplex* all_sources     = generate_empty_vector<cuscomplex>( ( input->dofs_np + input->heads_np ) * mesh_gp->source_nodes_tnp );
     cusfloat*   damping_rad     = generate_empty_vector<cusfloat>( hydmech_np );
-    cuscomplex* sources         = generate_empty_vector<cuscomplex>( input->dofs_np * mesh_gp->meshes_np * scl.num_rows_local );
+    cuscomplex* sources         = generate_empty_vector<cuscomplex>( ( input->dofs_np + input->heads_np ) * scl.num_rows_local );
     cuscomplex* sysmat          = generate_empty_vector<cuscomplex>( scl.num_rows_local * scl.num_cols_local );
+    cuscomplex* wave_diffrac    = generate_empty_vector<cuscomplex>( wave_diffrac_np );
 
     cusfloat*   added_mass_p0   = nullptr;
     cusfloat*   damping_rad_p0  = nullptr;
+    cuscomplex* wave_diffrac_p0 = nullptr;
     if ( mpi_config->is_root( ) )
     {
         added_mass_p0   = generate_empty_vector<cusfloat>( hydmech_np );
         damping_rad_p0  = generate_empty_vector<cusfloat>( hydmech_np );
+        wave_diffrac_p0 = generate_empty_vector<cuscomplex>( wave_diffrac_np );
     }
 
     /****************************************************/
@@ -99,7 +231,8 @@ void calculate_freq_domain_coeffs(
 
         // Calculate sources intensity
         MPI_Barrier( MPI_COMM_WORLD );
-        calculate_sources_intensity( 
+        calculate_sources_intensity(
+                                        input, 
                                         &scl,
                                         mesh_gp,
                                         green_dn_interf,
@@ -111,10 +244,10 @@ void calculate_freq_domain_coeffs(
         // Gather source values from each processor
         MPI_Allgather(
                         sources,
-                        scl.num_rows_local*input->dofs_np,
+                        scl.num_rows_local * ( input->dofs_np + input->heads_np ),
                         mpi_cuscomplex,
                         all_sources,
-                        scl.num_rows*input->dofs_np,
+                        scl.num_rows * ( input->dofs_np + input->heads_np ),
                         mpi_cuscomplex,
                         MPI_COMM_WORLD
                     );
@@ -122,7 +255,7 @@ void calculate_freq_domain_coeffs(
         // Update sources values for the integration objects
         hmf_interf->set_source_values( all_sources );
 
-        for ( int i=3*scl.num_rows; i<4*scl.num_rows; i++ )
+        for ( int i=6*scl.num_rows; i<7*scl.num_rows; i++ )
         {
             std::cout << "Panel[" << i << "]: " << all_sources[i] << " - " << std::abs( all_sources[i] ) << " - " << std::arg( all_sources[i] )*180.0/PI << std::endl;
         }
@@ -152,7 +285,7 @@ void calculate_freq_domain_coeffs(
                         hydmech_np,
                         mpi_cusfloat,
                         MPI_SUM,
-                        0,
+                        mpi_config->proc_rank,
                         MPI_COMM_WORLD
                     );
 
@@ -162,19 +295,35 @@ void calculate_freq_domain_coeffs(
                         hydmech_np,
                         mpi_cusfloat,
                         MPI_SUM,
-                        0,
+                        mpi_config->proc_rank,
                         MPI_COMM_WORLD
                     );
 
-        // // Loop over headings to calculate diffraction and 
-        // // Froude-Krylov forces
-        // for ( int j=0; j<input->heads_np; j++ )
-        // {
-        //     // Calculate wave exciting forces
+        // Calculate Froude-Krylov forces
 
-        //     // Calculate raos
-        // }
-        // MPI_Barrier( MPI_COMM_WORLD );
+        // Calculate diffraction forces
+        calculate_diffraction_forces(
+                                            input,
+                                            mpi_config,
+                                            mesh_gp,
+                                            hmf_interf,
+                                            input->angfreqs[i],
+                                            wave_diffrac
+                                    );
+
+        MPI_Reduce(
+                        wave_diffrac,
+                        wave_diffrac_p0,
+                        wave_diffrac_np,
+                        mpi_cuscomplex,
+                        MPI_SUM,
+                        mpi_config->proc_root,
+                        MPI_COMM_WORLD
+                    );
+
+        // Calculate raos
+
+        MPI_Barrier( MPI_COMM_WORLD );
 
     }
 
@@ -183,6 +332,7 @@ void calculate_freq_domain_coeffs(
     {
         mkl_free( added_mass_p0 );
         mkl_free( damping_rad_p0 );
+        mkl_free( wave_diffrac_p0 );
     }
     
     mkl_free( added_mass );
@@ -190,6 +340,7 @@ void calculate_freq_domain_coeffs(
     mkl_free( damping_rad );
     mkl_free( sources );
     mkl_free( sysmat );
+    mkl_free( wave_diffrac );
 
     delete green_dn_interf;
     delete hmf_interf;
@@ -444,6 +595,7 @@ void    calculate_panel_potentials(
 
 
 void    calculate_sources_intensity(
+                                        Input*          input,
                                         SclCmpx*        scl,
                                         MeshGroup*      mesh_gp,
                                         GWFDnInterface* green_interf,
@@ -540,13 +692,11 @@ void    calculate_sources_intensity(
     std::cout << "Num.Cols: " << _cols_np << std::endl;
 
     /***************************************/
-    /************* Fill RHS  ***************/
+    /***** Fill Hydromechanics RHS  ********/
     /***************************************/
     std::cout << "Calculating RHS..." << std::endl;
     // Declare local variables to be used
     int         count           = 0;
-    int         m               = 0; 
-    int         start_pos       = 0; 
 
     // Fill RHS vector
     count       = 0;
@@ -566,17 +716,88 @@ void    calculate_sources_intensity(
             // std::cout << " - " << mesh_gp->source_nodes[j]->normal_vec[2];
             // std::cout << std::endl;
             // outfile << sources_int[start_pos+count].real( ) << " " << sources_int[start_pos+count].imag( ) << std::endl;
+            // std::cout << "sources_int[" << count <<"]: " << sources_int[count] << std::endl;
             count++;
         }
         // break;
     }
     // outfile.close( );
 
-    std::cout << "--> Done!" << std::endl; 
+    std::cout << "--> Done!" << std::endl;
+
+    /***************************************/
+    /****** Fill Wave Exciting RHS  ********/
+    /***************************************/
+    // Define local variables to manage array indexes
+                count       = input->dofs_np * mesh_gp->source_nodes_tnp;
+    cusfloat    k           = w2k( w, input->water_depth, input->grav_acc );
+    cuscomplex  wave_dx     = cuscomplex( 0.0, 0.0 );
+    cuscomplex  wave_dy     = cuscomplex( 0.0, 0.0 );
+    cuscomplex  wave_dz     = cuscomplex( 0.0, 0.0 );
+
+    for ( int i=0; i<input->heads_np; i++ )
+    {
+        for ( int j=scl->start_row_0; j<scl->end_row_0; j++ )
+        {
+            // Get wave potential derivatives for the panel
+            wave_dx             =   wave_potential_airy_space_dx(
+                                                                    1.0,
+                                                                    w,
+                                                                    k,
+                                                                    input->water_depth,
+                                                                    input->grav_acc,
+                                                                    mesh_gp->source_nodes[j]->panel->center[0],
+                                                                    mesh_gp->source_nodes[j]->panel->center[1],
+                                                                    mesh_gp->source_nodes[j]->panel->center[2],
+                                                                    input->heads[i]
+                                                                );
+
+            wave_dy             =   wave_potential_airy_space_dy(
+                                                                    1.0,
+                                                                    w,
+                                                                    k,
+                                                                    input->water_depth,
+                                                                    input->grav_acc,
+                                                                    mesh_gp->source_nodes[j]->panel->center[0],
+                                                                    mesh_gp->source_nodes[j]->panel->center[1],
+                                                                    mesh_gp->source_nodes[j]->panel->center[2],
+                                                                    input->heads[i]
+                                                                );
+
+            wave_dz             =   wave_potential_airy_space_dz(
+                                                                    1.0,
+                                                                    w,
+                                                                    k,
+                                                                    input->water_depth,
+                                                                    input->grav_acc,
+                                                                    mesh_gp->source_nodes[j]->panel->center[0],
+                                                                    mesh_gp->source_nodes[j]->panel->center[1],
+                                                                    mesh_gp->source_nodes[j]->panel->center[2],
+                                                                    input->heads[i]
+                                                                );
+            
+            // Calculate normal derivative of the wave flow velocities for the jth panel
+            sources_int[count]  = (
+                                        wave_dx * mesh_gp->source_nodes[j]->normal_vec[0]
+                                        +
+                                        wave_dy * mesh_gp->source_nodes[j]->normal_vec[1]
+                                        +
+                                        wave_dz * mesh_gp->source_nodes[j]->normal_vec[2]
+                                    );
+            // std::cout << "sources_int[" << count << "]: " << sources_int[count] << std::endl;
+            count++;
+        }
+    }
 
     // Solve system of equations
     std::cout << "Calculating system of equations..." << std::endl;
     scl->Solve( sysmat, sources_int );
     std::cout << "--> Done!" << std::endl;
+
+    // count       = input->dofs_np * mesh_gp->source_nodes_tnp;
+    // for ( int j=scl->start_row_0; j<scl->end_row_0; j++ )
+    // {
+    //     std::cout << "Sources[" << count+j << "]: " << sources_int[count+j] << std::endl;
+    // }
     
 }
