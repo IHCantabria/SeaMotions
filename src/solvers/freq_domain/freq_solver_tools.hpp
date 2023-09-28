@@ -34,6 +34,15 @@ void    calculate_freq_domain_coeffs(
                                             Output*         output
                                     );
 
+
+void    calculate_froude_krylov(
+                                            Input*          input,
+                                            MpiConfig*      mpi_config,
+                                            MeshGroup*      mesh_gp,
+                                            cusfloat        ang_freq,
+                                            cuscomplex*     froude_krylov
+                                );
+
 void    calculate_hydromechanic_coeffs(
                                             Input*          input,
                                             MpiConfig*      mpi_config,

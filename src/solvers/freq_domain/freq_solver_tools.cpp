@@ -10,14 +10,14 @@
 #include "../../waves.hpp"
 
 
-void calculate_diffraction_forces(
-                                    Input*          input,
-                                    MpiConfig*      mpi_config,
-                                    MeshGroup*      mesh_gp,
-                                    HMFInterface*   hmf_interf,
-                                    cusfloat        w,
-                                    cuscomplex*     wave_diffrac
-                                )
+void    calculate_diffraction_forces(
+                                            Input*          input,
+                                            MpiConfig*      mpi_config,
+                                            MeshGroup*      mesh_gp,
+                                            HMFInterface*   hmf_interf,
+                                            cusfloat        w,
+                                            cuscomplex*     wave_diffrac
+                                    )
 {
     // Define local variables
     int         dofs_np = input->dofs_np;
@@ -71,20 +71,18 @@ void calculate_diffraction_forces(
                                             elem_start_pos, 
                                             elem_end_pos 
                                         );
-            elem_end_pos    += mesh_gp->panels_cnp[ib];
-            elem_start_pos  += mesh_gp->panels_cnp[ib];
 
             // Loop over panels to integrate the wave radiation
             // pressure along the floating object external shape
             for ( int ie=elem_start_pos; ie<elem_end_pos; ie++ )
             {
                 // Set new panel
-                hmf_interf->set_panel( mesh_gp->panels[ie] );
+                hmf_interf->set_panel( mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie] );
 
                 // Integrate pressure over panel
                 index           = max_panels * ib + ie;
                 pressure[index] = adaptive_quadrature_panel(
-                                                                mesh_gp->panels[ie],
+                                                                mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie],
                                                                 target_fcn,
                                                                 1.0,
                                                                 &gp,
@@ -105,8 +103,6 @@ void calculate_diffraction_forces(
                                             elem_start_pos, 
                                             elem_end_pos 
                                         );
-            elem_end_pos    += mesh_gp->panels_cnp[ib];
-            elem_start_pos  += mesh_gp->panels_cnp[ib];
 
             for ( int id=0; id<dofs_np; id++ )
             {
@@ -122,11 +118,11 @@ void calculate_diffraction_forces(
                 for ( int ie=elem_start_pos; ie<elem_end_pos; ie++ )
                 {
                     // Set new panel
-                    hmf_interf->set_panel( mesh_gp->panels[ie] );
+                    hmf_interf->set_panel( mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie] );
 
                     // Integrate pressure over panel
                     index_1             = max_panels * ib + ie;
-                    press_i             = pressure[index_1] * mesh_gp->panels[ie]->normal_vec[id];
+                    press_i             = pressure[index_1] * mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->normal_vec[id];
                     // std::cout << "Pressure[" << ie << "]: " << w*rho_w*press_i << std::endl;
                     wave_diffrac[index] += cuscomplex( 0.0, -w * rho_w ) * press_i;
                 }
@@ -137,12 +133,12 @@ void calculate_diffraction_forces(
 }
 
 
-void calculate_freq_domain_coeffs(
-                                    MpiConfig*      mpi_config,
-                                    Input*          input,
-                                    Hydrostatics*   hydrostatics,
-                                    Output*         output
-                                )
+void    calculate_freq_domain_coeffs(
+                                            MpiConfig*      mpi_config,
+                                            Input*          input,
+                                            Hydrostatics*   hydrostatics,
+                                            Output*         output
+                                    )
 {
     // /****************************************************/
     // /*** Create total mesh for the interacting bodies ***/
@@ -175,22 +171,25 @@ void calculate_freq_domain_coeffs(
     /****** Allocate space for the simulation data ******/
     /****************************************************/
     int         hydmech_np      = pow2s( input->dofs_np * mesh_gp->meshes_np );
-    int         wave_diffrac_np = input->heads_np * mesh_gp->meshes_np * input->dofs_np;
+    int         wave_exc_np     = input->heads_np * mesh_gp->meshes_np * input->dofs_np;
     cusfloat*   added_mass      = generate_empty_vector<cusfloat>( hydmech_np );
     cuscomplex* all_sources     = generate_empty_vector<cuscomplex>( ( input->dofs_np + input->heads_np ) * mesh_gp->source_nodes_tnp );
     cusfloat*   damping_rad     = generate_empty_vector<cusfloat>( hydmech_np );
+    cuscomplex* froude_krylov   = generate_empty_vector<cuscomplex>( wave_exc_np );
     cuscomplex* sources         = generate_empty_vector<cuscomplex>( ( input->dofs_np + input->heads_np ) * scl.num_rows_local );
     cuscomplex* sysmat          = generate_empty_vector<cuscomplex>( scl.num_rows_local * scl.num_cols_local );
-    cuscomplex* wave_diffrac    = generate_empty_vector<cuscomplex>( wave_diffrac_np );
+    cuscomplex* wave_diffrac    = generate_empty_vector<cuscomplex>( wave_exc_np );
 
-    cusfloat*   added_mass_p0   = nullptr;
-    cusfloat*   damping_rad_p0  = nullptr;
-    cuscomplex* wave_diffrac_p0 = nullptr;
+    cusfloat*   added_mass_p0       = nullptr;
+    cusfloat*   damping_rad_p0      = nullptr;
+    cuscomplex* froude_krylov_p0    = nullptr;
+    cuscomplex* wave_diffrac_p0     = nullptr;
     if ( mpi_config->is_root( ) )
     {
-        added_mass_p0   = generate_empty_vector<cusfloat>( hydmech_np );
-        damping_rad_p0  = generate_empty_vector<cusfloat>( hydmech_np );
-        wave_diffrac_p0 = generate_empty_vector<cuscomplex>( wave_diffrac_np );
+        added_mass_p0       = generate_empty_vector<cusfloat>( hydmech_np );
+        damping_rad_p0      = generate_empty_vector<cusfloat>( hydmech_np );
+        froude_krylov_p0    = generate_empty_vector<cuscomplex>( wave_exc_np );
+        wave_diffrac_p0     = generate_empty_vector<cuscomplex>( wave_exc_np );
     }
 
     /****************************************************/
@@ -300,6 +299,23 @@ void calculate_freq_domain_coeffs(
                     );
 
         // Calculate Froude-Krylov forces
+        calculate_froude_krylov(
+                                            input,
+                                            mpi_config,
+                                            mesh_gp,
+                                            input->angfreqs[i],
+                                            froude_krylov
+                                );
+
+        MPI_Reduce(
+                        froude_krylov,
+                        froude_krylov_p0,
+                        wave_exc_np,
+                        mpi_cuscomplex,
+                        MPI_SUM,
+                        mpi_config->proc_root,
+                        MPI_COMM_WORLD
+                    );
 
         // Calculate diffraction forces
         calculate_diffraction_forces(
@@ -314,7 +330,7 @@ void calculate_freq_domain_coeffs(
         MPI_Reduce(
                         wave_diffrac,
                         wave_diffrac_p0,
-                        wave_diffrac_np,
+                        wave_exc_np,
                         mpi_cuscomplex,
                         MPI_SUM,
                         mpi_config->proc_root,
@@ -332,12 +348,14 @@ void calculate_freq_domain_coeffs(
     {
         mkl_free( added_mass_p0 );
         mkl_free( damping_rad_p0 );
+        mkl_free( froude_krylov_p0 );
         mkl_free( wave_diffrac_p0 );
     }
     
     mkl_free( added_mass );
     mkl_free( all_sources );
     mkl_free( damping_rad );
+    mkl_free( froude_krylov );
     mkl_free( sources );
     mkl_free( sysmat );
     mkl_free( wave_diffrac );
@@ -345,6 +363,142 @@ void calculate_freq_domain_coeffs(
     delete green_dn_interf;
     delete hmf_interf;
     delete [] all_meshes;
+}
+
+
+void    calculate_froude_krylov(
+                                            Input*          input,
+                                            MpiConfig*      mpi_config,
+                                            MeshGroup*      mesh_gp,
+                                            cusfloat        ang_freq,
+                                            cuscomplex*     froude_krylov
+                                )
+{
+    // Calculate wave number
+    cusfloat k      = w2k( ang_freq, input->water_depth, input->grav_acc );
+    cusfloat rho_w  = input->water_density;
+
+    // Generate pressure vector to storage the pressures over the panels
+    int max_panels  = 0;
+    for ( int i=0; i<mesh_gp->meshes_np; i++ )
+    {
+        // Get ith mesh panels
+        if ( mesh_gp->panels_np[i] > max_panels )
+        {
+            max_panels = mesh_gp->panels_np[i];
+        }
+    }
+    cuscomplex* pressure = generate_empty_vector<cuscomplex>( max_panels * mesh_gp->meshes_np );
+
+    // Loop around headings to get the Froude-Krylov force
+    // for each of them
+    GaussPoints gp( 2 );
+    int         elem_end_pos    = 0;
+    int         elem_start_pos  = 0;
+    int         index           = 0;
+    int         index_1         = 0;
+    cuscomplex  press_i         = cuscomplex( 0.0, 0.0 );
+
+    for ( int ih=0; ih<input->heads_np; ih++ )
+    {
+        // Definition of the target function to integrate incident
+        // wave potential for the desised heading
+        auto    target_fcn  =   [ 
+                                    input,
+                                    ang_freq, 
+                                    k,
+                                    ih
+                                ]
+                                (
+                                    cusfloat ,
+                                    cusfloat ,
+                                    cusfloat x,
+                                    cusfloat y,
+                                    cusfloat z
+                                )
+                                {
+                                    return wave_potential_airy_space(
+                                                                        1.0,
+                                                                        ang_freq,
+                                                                        k,
+                                                                        input->water_depth,
+                                                                        input->grav_acc,
+                                                                        x,
+                                                                        y,
+                                                                        z,
+                                                                        input->heads[ih]
+                                                                    );
+                                };
+        
+        // Loop around bodies to calculate the pressure of the incident wave
+        // over each panel of the mesh
+        for ( int ib=0; ib<mesh_gp->meshes_np; ib++ )
+        {
+            // Calculate MPI data chunks
+            elem_end_pos    = 0;
+            elem_start_pos  = 0;
+            mpi_config->get_1d_bounds( 
+                                            mesh_gp->panels_np[ib], 
+                                            elem_start_pos, 
+                                            elem_end_pos 
+                                        );
+
+            // Loop over panels integrating incident wave pressure
+            for ( int ie=elem_start_pos; ie<elem_end_pos; ie++ )
+            {
+                // Integrate pressure over panel
+                index           = max_panels * ib + ie;
+                pressure[index] = adaptive_quadrature_panel(
+                                                                mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie],
+                                                                target_fcn,
+                                                                0.001,
+                                                                &gp,
+                                                                false
+                                                            );
+            }
+        }
+
+        // Loop over bodies to calculate the projection of the Froude-Krylov force
+        // over each DOF
+        for ( int ib=0; ib<mesh_gp->meshes_np; ib++ )
+        {
+            // Calculate MPI data chunks
+            elem_end_pos    = 0;
+            elem_start_pos  = 0;
+            mpi_config->get_1d_bounds( 
+                                            mesh_gp->panels_np[ib], 
+                                            elem_start_pos, 
+                                            elem_end_pos 
+                                        );
+
+            for ( int id=0; id<input->dofs_np; id++ )
+            {
+                // Generate index for the current Froude-Krylov force and
+                // to clean the memory space
+                index                   = (
+                                                ih * ( mesh_gp->meshes_np * input->dofs_np )
+                                                +
+                                                ib * input->dofs_np
+                                                +
+                                                id
+                                            );
+                
+                froude_krylov[index]    = 0.0;
+                // Loop over panels to sum all the pressures
+                for ( int ie=elem_start_pos; ie<elem_end_pos; ie++ )
+                {
+                    // Integrate pressure over panel
+                    index_1                 = max_panels * ib + ie;
+                    press_i                 = pressure[index_1] * mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->normal_vec[id];
+                    froude_krylov[index]    += cuscomplex( 0.0, -ang_freq * rho_w ) * press_i;
+                }
+                std::cout << "Heading: " << input->heads[ih] << " - IB: " << ib << " - Dof: " << id << " - Froude-Krylov: " << froude_krylov[index] << std::endl;
+            }
+        }
+    }
+
+    // Deallocate local heap memory
+    mkl_free( pressure );
 }
 
 
@@ -405,8 +559,6 @@ void    calculate_hydromechanic_coeffs(
                                         elem_start_pos, 
                                         elem_end_pos 
                                     );
-        elem_end_pos    += mesh_gp->panels_cnp[ib];
-        elem_start_pos  += mesh_gp->panels_cnp[ib];
 
         for ( int id=0; id<dofs_np; id++ )
         {
@@ -421,12 +573,12 @@ void    calculate_hydromechanic_coeffs(
                 for ( int ie=elem_start_pos; ie<elem_end_pos; ie++ )
                 {
                     // Set new panel
-                    hmf_interf->set_panel( mesh_gp->panels[ie] );
+                    hmf_interf->set_panel( mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie] );
 
                     // Integrate pressure over panel
                     index           = ( max_panels * mesh_gp->meshes_np ) * id + max_panels * jb + ie;
                     pressure[index] = adaptive_quadrature_panel(
-                                                                    mesh_gp->panels[ie],
+                                                                    mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie],
                                                                     target_fcn,
                                                                     1.0,
                                                                     &gp,
@@ -458,12 +610,9 @@ void    calculate_hydromechanic_coeffs(
                     damping_rad[index]  = 0.0;
                     for ( int ie=elem_start_pos; ie<elem_end_pos; ie++ )
                     {
-                        // Set new panel
-                        hmf_interf->set_panel( mesh_gp->panels[ie] );
-
                         // Integrate pressure over panel
                         index_1             = ( max_panels * mesh_gp->meshes_np ) * id + max_panels * jb + ie;
-                        press_i             = pressure[index_1] * mesh_gp->panels[ie]->normal_vec[jd];
+                        press_i             = pressure[index_1] * mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->normal_vec[jd];
                         // std::cout << "press_i: " << press_i << " - Normal: " << mesh_gp->panels[ie]->normal_vec[jd] << std::endl;
                         added_mass[index]   -=  rho_w * press_i.imag( ) / ang_freq;
                         damping_rad[index]  -=  rho_w * press_i.real( );
@@ -482,11 +631,11 @@ void    calculate_hydromechanic_coeffs(
 
 
 void    calculate_panel_potentials(
-                                        Input*          input,
-                                        MpiConfig*      mpi_config,
-                                        MeshGroup*      mesh_gp,
-                                        cuscomplex*     all_sources,
-                                        cusfloat        ang_freq
+                                            Input*          input,
+                                            MpiConfig*      mpi_config,
+                                            MeshGroup*      mesh_gp,
+                                            cuscomplex*     all_sources,
+                                            cusfloat        ang_freq
                                     )
 {
     GaussPoints gp( 10 );
@@ -595,13 +744,13 @@ void    calculate_panel_potentials(
 
 
 void    calculate_sources_intensity(
-                                        Input*          input,
-                                        SclCmpx*        scl,
-                                        MeshGroup*      mesh_gp,
-                                        GWFDnInterface* green_interf,
-                                        cusfloat        w,
-                                        cuscomplex*     sysmat,
-                                        cuscomplex*     sources_int
+                                            Input*          input,
+                                            SclCmpx*        scl,
+                                            MeshGroup*      mesh_gp,
+                                            GWFDnInterface* green_interf,
+                                            cusfloat        w,
+                                            cuscomplex*     sysmat,
+                                            cuscomplex*     sources_int
                                    )
 {
     GaussPoints gp = GaussPoints( 4 );
