@@ -4,6 +4,7 @@
 
 // Include general usage scientific libraries
 #include <cmath>
+#include <complex>
 
 // Inlude local modules
 #include "config.hpp"
@@ -139,4 +140,76 @@ void w2ki(cusfloat w, cusfloat h, cusfloat g, int n, cusfloat* kn)
         // Storage the result
         kn[i] = ki;
     }
+}
+
+
+cuscomplex  wave_potential_airy_space( 
+                                            cusfloat aw,
+                                            cusfloat w,
+                                            cusfloat k,
+                                            cusfloat h,
+                                            cusfloat g,
+                                            cusfloat x,
+                                            cusfloat y,
+                                            cusfloat z,
+                                            cusfloat mu
+                                    )
+{
+    cuscomplex  exp_arg = cuscomplex( 0.0, k * ( x * std::cos( mu ) + y * std::sin( mu ) ) );
+    cusfloat    phi_0   = aw * g * std::cosh( k * ( h + z ) ) / w / std::cosh( k * h );
+    return cuscomplex( 0.0, -phi_0 ) * std::exp( exp_arg );
+}
+
+
+cuscomplex  wave_potential_airy_space_dx( 
+                                            cusfloat aw,
+                                            cusfloat w,
+                                            cusfloat k,
+                                            cusfloat h,
+                                            cusfloat g,
+                                            cusfloat x,
+                                            cusfloat y,
+                                            cusfloat z,
+                                            cusfloat mu
+                                        )
+{
+    cuscomplex  exp_arg = cuscomplex( 0.0, k * ( x * std::cos( mu ) + y * std::sin( mu ) ) );
+    cusfloat    phi_0   = aw * g * std::cosh( k * ( h + z ) ) / w / std::cosh( k * h ) * k * std::cos( mu );
+    return phi_0 * std::exp( exp_arg );
+}
+
+
+cuscomplex  wave_potential_airy_space_dy( 
+                                            cusfloat aw,
+                                            cusfloat w,
+                                            cusfloat k,
+                                            cusfloat h,
+                                            cusfloat g,
+                                            cusfloat x,
+                                            cusfloat y,
+                                            cusfloat z,
+                                            cusfloat mu
+                                        )
+{
+    cuscomplex  exp_arg = cuscomplex( 0.0, k * ( x * std::cos( mu ) + y * std::sin( mu ) ) );
+    cusfloat    phi_0   = aw * g * std::cosh( k * ( h + z ) ) / w / std::cosh( k * h ) * k * std::sin( mu );
+    return phi_0 * std::exp( exp_arg );
+}
+
+
+cuscomplex  wave_potential_airy_space_dz( 
+                                            cusfloat aw,
+                                            cusfloat w,
+                                            cusfloat k,
+                                            cusfloat h,
+                                            cusfloat g,
+                                            cusfloat x,
+                                            cusfloat y,
+                                            cusfloat z,
+                                            cusfloat mu
+                                        )
+{
+    cuscomplex  exp_arg = cuscomplex( 0.0, k * ( x * std::cos( mu ) + y * std::sin( mu ) ) );
+    cusfloat    phi_0   = aw * g * k * std::sinh( k * ( h + z ) ) / w / std::cosh( k * h );
+    return cuscomplex( 0.0, -phi_0 ) * std::exp( exp_arg );
 }
