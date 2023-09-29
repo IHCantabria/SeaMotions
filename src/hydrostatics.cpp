@@ -45,28 +45,34 @@ void Hydrostatics::_calculate(
                                     return 1.0;
                                 };
 
-    auto wl_area_mom_x_fcn  =   [ ]
+    auto wl_area_mom_x_fcn  =   [ this ]
                                 ( cusfloat, cusfloat, cusfloat x, cusfloat , cusfloat ) -> cuscomplex
                                 {
-                                    return x;
+                                    return x - this->cog[0];
                                 };
 
-    auto wl_area_mom_y_fcn  =   [ ]
+    auto wl_area_mom_y_fcn  =   [ this ]
                                 ( cusfloat, cusfloat, cusfloat , cusfloat y, cusfloat ) -> cuscomplex
                                 {
-                                    return y;
+                                    return y - this->cog[1];
                                 };
 
-    auto wl_area_ixx_fcn    =   [ ]
+    auto wl_area_ixx_fcn    =   [ this ]
                                 ( cusfloat, cusfloat, cusfloat , cusfloat y, cusfloat ) -> cuscomplex
                                 {
-                                    return y*y;
+                                    return pow2s( y - this->cog[1] );
+                                };
+
+    auto wl_area_ixy_fcn    =   [ this ]
+                                ( cusfloat, cusfloat, cusfloat x, cusfloat y, cusfloat ) -> cuscomplex
+                                {
+                                    return ( x - this->cog[0] ) * ( y - this->cog[1] );
                                 };
     
-    auto wl_area_iyy_fcn    =   [ ]
+    auto wl_area_iyy_fcn    =   [ this ]
                                 ( cusfloat, cusfloat, cusfloat x, cusfloat , cusfloat ) -> cuscomplex
                                 {
-                                    return x*x;
+                                    return pow2s( x - this->cog[0] );
                                 };
 
     // Loop over panels to calculate total hydrostatic force
@@ -75,6 +81,7 @@ void Hydrostatics::_calculate(
     cusfloat amxi           = 0.0;
     cusfloat amyi           = 0.0;
     cusfloat aixi           = 0.0;
+    cusfloat aixyi          = 0.0;
     cusfloat aiyi           = 0.0;
     cusfloat area_eps       = 0.1;
     cusfloat normal_sign    = 0.0;
@@ -91,6 +98,7 @@ void Hydrostatics::_calculate(
     cusfloat _wl_area_mx    = 0.0;
     cusfloat _wl_area_my    = 0.0;
     cusfloat _wl_area_ixx   = 0.0;
+    cusfloat _wl_area_ixy   = 0.0;
     cusfloat _wl_area_iyy   = 0.0;
 
 
@@ -232,6 +240,15 @@ void Hydrostatics::_calculate(
             _wl_area_ixx        -= aixi * normal_sign;
 
             // Integrate panel area inertia around x axis
+            aixyi               = adaptive_quadrature_panel(
+                                                                panel_proj,
+                                                                wl_area_ixy_fcn,
+                                                                area_eps,
+                                                                1
+                                                            ).real( );
+            _wl_area_ixy        -= aixyi * normal_sign;
+
+            // Integrate panel area inertia around x axis
             aiyi                = adaptive_quadrature_panel(
                                                                 panel_proj,
                                                                 wl_area_iyy_fcn,
@@ -266,19 +283,23 @@ void Hydrostatics::_calculate(
             _wl_area            -= ai * normal_sign;
 
             // Integrate panel area moments around x axis
-            amxi                = ai * panel->center[0];
+            amxi                = ai * ( panel->center[0] - this->cog[0] );
             _wl_area_mx         -= amxi * normal_sign;
 
             // Integrate panel area moments around y axis
-            amyi                = ai * panel->center[1];
+            amyi                = ai * ( panel->center[1] - this->cog[1] );
             _wl_area_my         -= amyi * normal_sign;
 
             // Integrate panel area inertia around x axis
-            aixi                = ai * pow2s( panel->center[1] );
+            aixi                = ai * pow2s( panel->center[1] - this->cog[1] );
             _wl_area_ixx        -= aixi * normal_sign;
 
+            // Integrate panel area inertia in the XY plane
+            aixyi               = ai * ( panel->center[0] - this->cog[0] ) * ( panel->center[1] - this->cog[1] );
+            _wl_area_ixy        -= aixyi * normal_sign;
+
             // Integrate panel area inertia around x axis
-            aiyi                = ai * pow2s( panel->center[0] );
+            aiyi                = ai * pow2s( panel->center[0] - this->cog[0] );
             _wl_area_iyy        -= aiyi * normal_sign;
 
         }
@@ -384,6 +405,18 @@ void Hydrostatics::_calculate(
                 );
     _wl_area_ixx    = _wl_area_ixx_d;
 
+    // Sum all the area interia in XY plane
+    cusfloat _wl_area_ixy_d = 0.0;
+    MPI_Allreduce(
+                    &_wl_area_ixy,
+                    &_wl_area_ixy_d,
+                    1,
+                    mpi_cusfloat,
+                    MPI_SUM,
+                    MPI_COMM_WORLD
+                );
+    _wl_area_ixy    = _wl_area_ixy_d;
+
     // Sum all the area interia around Y axis
     cusfloat _wl_area_iyy_d = 0.0;
     MPI_Allreduce(
@@ -413,6 +446,7 @@ void Hydrostatics::_calculate(
     this->wl_area_mx    = _wl_area_mx;
     this->wl_area_my    = _wl_area_my;
     this->wl_area_ixx   = _wl_area_ixx;
+    this->wl_area_ixy   = _wl_area_ixy;
     this->wl_area_iyy   = _wl_area_iyy;
 
     // Calculate water line area centre of gravity
@@ -438,6 +472,38 @@ void Hydrostatics::_calculate(
     // Calculate metacentric height
     this->gmx = this->kmx - this->kg;
     this->gmy = this->kmy - this->kg;
+
+    /*********************************************/
+    /******* Calculate hydrostatic matrix ********/
+    /*********************************************/
+
+    // Clean hydrostatic stiffness matrix
+    clear_vector( 36, this->hydstiffmat );
+
+    // K33 - Heave
+    this->hydstiffmat[14] = this->grav_acc * this->rho_water * wl_area;
+
+    // K34 - K43 - Heave/Roll
+    this->hydstiffmat[15] = this->grav_acc * this->rho_water * this->wl_area_my;
+    this->hydstiffmat[20] = this->grav_acc * this->rho_water * this->wl_area_my;
+
+    // K35 - K53 - Heave/Pitch
+    this->hydstiffmat[16] = - this->grav_acc * this->rho_water * this->wl_area_mx;
+    this->hydstiffmat[26] = - this->grav_acc * this->rho_water * this->wl_area_mx;
+
+    // K44 - Roll
+    this->hydstiffmat[21] = this->grav_acc * this->rho_water * ( this->wl_area_iyy + this->volume * ( this->cob[2] - this->cog[2] ) );
+
+    // K45 - K54 - Roll/Pitch
+    this->hydstiffmat[22] = this->grav_acc * this->rho_water * this->wl_area_ixy;
+    this->hydstiffmat[27] = this->grav_acc * this->rho_water * this->wl_area_ixy;
+
+    // K55 - Pitch
+    this->hydstiffmat[28] = this->grav_acc * this->rho_water * ( this->wl_area_ixx + this->volume * ( this->cob[2] - this->cog[2] ) );
+
+    // K46 - K56 - Yaw
+    this->hydstiffmat[23] = - this->grav_acc * this->rho_water * ( this->cob[0] - this->cog[0] ) * this->volume;
+    this->hydstiffmat[29] = - this->grav_acc * this->rho_water * ( this->cob[1] - this->cog[1] ) * this->volume;
 
 }
 
@@ -499,4 +565,7 @@ void Hydrostatics::print( void )
     std::cout << "      + KG [m]:                   " << this->kg << std::endl;
     std::cout << "      + GMX [m]:                  " << this->gmx << std::endl;
     std::cout << "      + GMY [m]:                  " << this->gmy << std::endl;
+    std::cout << " - Hydrostatic Stiffness Matrix: "  << std::endl;
+    std::cout << "--------------------------------"   << std::endl;
+    print_matrix( 6, 6, this->hydstiffmat, 6, 0, 1 );
 }
