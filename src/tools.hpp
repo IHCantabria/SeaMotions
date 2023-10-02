@@ -194,6 +194,10 @@ template<typename T>    inline  void        split_string(
                                                                             std::string v 
                                                         );
 
+                                void        str_to_lower( 
+                                                                            std::string* str 
+                                                        );
+
 #include "tools.txx"
 
 #endif

@@ -125,6 +125,16 @@ bool str_to_bool( std::string v )
 }
 
 
+void str_to_lower( std::string* str )
+{
+    std::transform(
+                        str->begin(), 
+                        str->end(), 
+                        str->begin(),
+                        [](unsigned char c){ return std::tolower(c); }
+                    );
+}
+
 //  Windows
 #ifdef _WIN32
 #include <Windows.h>
