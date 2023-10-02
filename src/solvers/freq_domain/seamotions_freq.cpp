@@ -63,22 +63,28 @@ int main( int argc, char* argv[] )
     /*****************************************/
     MPI_Barrier( MPI_COMM_WORLD );
     double start = MPI_Wtime( );
-    int body_num = 0;
-    Hydrostatics hydrostatics( 
-                                    input->bodies[body_num]->mesh,
-                                    input->water_density,
-                                    input->grav_acc,
-                                    input->bodies[body_num]->mass,
-                                    input->bodies[body_num]->cog,
-                                    input->bodies[body_num]->rad_inertia,
-                                    &mpi_config
-                                );
+    Hydrostatics** hydrostatics = new Hydrostatics*[input->bodies_np];
+    for ( int i=0; i<input->bodies_np; i++ )
+    {
+        hydrostatics[i] =   new Hydrostatics( 
+                                                input->bodies[i]->mesh,
+                                                input->water_density,
+                                                input->grav_acc,
+                                                input->bodies[i]->mass,
+                                                input->bodies[i]->cog,
+                                                input->bodies[i]->rad_inertia,
+                                                &mpi_config
+                                            );
+    }
     MPI_Barrier( MPI_COMM_WORLD );
     double end = MPI_Wtime( );
 
     if ( mpi_config.is_root( ) )
     {
-        hydrostatics.print( );
+        for ( int i=0 ; i<input->bodies_np; i++ )
+        {
+            hydrostatics[i]->print( );
+        }
         std::cout << "Execution time [s]: " << (end - start) << std::endl;
     }
 
@@ -98,7 +104,7 @@ int main( int argc, char* argv[] )
     calculate_freq_domain_coeffs(
                                     &mpi_config,
                                     input, 
-                                    &hydrostatics,
+                                    hydrostatics,
                                     output 
                                 );
 
@@ -112,6 +118,12 @@ int main( int argc, char* argv[] )
     /*****************************************/
     delete input;
     delete output;
+
+    for ( int i=0; i<input->bodies_np; i++ )
+    {
+        delete hydrostatics[i];
+    }
+    delete [] hydrostatics;
 
     std::cout << "Seamotions Freqcuency ended!" << std::endl;
 

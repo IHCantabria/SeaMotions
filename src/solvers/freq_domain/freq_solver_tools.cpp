@@ -136,7 +136,7 @@ void    calculate_diffraction_forces(
 void    calculate_freq_domain_coeffs(
                                             MpiConfig*      mpi_config,
                                             Input*          input,
-                                            Hydrostatics*   hydrostatics,
+                                            Hydrostatics**  hydrostatics,
                                             Output*         output
                                     )
 {
@@ -172,6 +172,7 @@ void    calculate_freq_domain_coeffs(
     /****************************************************/
     int         hydmech_np      = pow2s( input->dofs_np * mesh_gp->meshes_np );
     int         wave_exc_np     = input->heads_np * mesh_gp->meshes_np * input->dofs_np;
+
     cusfloat*   added_mass      = generate_empty_vector<cusfloat>( hydmech_np );
     cuscomplex* all_sources     = generate_empty_vector<cuscomplex>( ( input->dofs_np + input->heads_np ) * mesh_gp->source_nodes_tnp );
     cusfloat*   damping_rad     = generate_empty_vector<cusfloat>( hydmech_np );
@@ -338,7 +339,6 @@ void    calculate_freq_domain_coeffs(
                     );
 
         // Calculate raos
-
         MPI_Barrier( MPI_COMM_WORLD );
 
     }

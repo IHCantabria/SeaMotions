@@ -30,7 +30,7 @@ void    calculate_diffraction_forces(
 void    calculate_freq_domain_coeffs(
                                             MpiConfig*      mpi_config,
                                             Input*          input,
-                                            Hydrostatics*   hydrostatics,
+                                            Hydrostatics**  hydrostatics,
                                             Output*         output
                                     );
 
