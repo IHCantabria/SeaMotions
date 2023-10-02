@@ -2,6 +2,7 @@
 // Include local modules
 #include "../math/shape_functions.hpp"
 #include "mesh.hpp"
+#include "../tools.hpp"
 
 
 void Mesh::_calculate_bounding_box(
@@ -250,23 +251,34 @@ bool Mesh::_is_valid_type(
 
 
 void Mesh::_load_poly_mesh( 
-                            std::string file_path 
+                            std::string file_path,
+                            std::string body_name
                         )
 {
     // Define auxiliar variable to help in the file parsing
+    int                 a0                  = 0;
+    int                 a1                  = 0;
     int                 aux_int;
     std::string         aux_str;
-    int                 elem_count = 0;
-    int                 elem_valid_count = 0;
-    int                 elem_total = 0;
-    int                 elem_id = 0;
+    std::string         _body_name;
+    int                 elem_count          = 0;
+    int                 elem_valid_count    = 0;
+    int                 elem_total          = 0;
+    int                 elem_id             = 0;
+    int                 header_code         = 0;
     std::istringstream  iss;
+    int                 items_np            = 0;
     std::string         line;
-    int                 mnpe = 0;
-    int                 node_count = 0;
-    int                 node_id = 0;
-    int                 npe = 0;
-    int                 section_id = 0;
+    int                 mnpe                = 0;
+    int                 node_count          = 0;
+    int                 node_id             = 0;
+    int                 npe                 = 0;
+    int                 section_id          = 0;
+    int                 sel_count           = 0;
+
+    // Lower case body name to compare with the 
+    // names read from files
+    str_to_lower( &body_name );
 
     // Open file unit
     std::ifstream infile( file_path );
@@ -381,11 +393,16 @@ void Mesh::_load_poly_mesh(
 
     }
 
-    // Allocate space for the elements data
-    this->elems_np  = elem_valid_count;
+    // Storage maximum elements per node values and 
+    // it's extended counterpart to storage the number of 
+    // elements per node in the same vector
     this->mnpe      = mnpe;
     this->enrl      = mnpe + 1;
-    this->elems     = generate_empty_vector<int>( this->enrl*this->elems_np );
+
+    // Allocate space for the local variables to tempora storage the elements
+    // and to storage the selection indexes
+    int* _elems     = generate_empty_vector<int>( this->enrl * elem_valid_count );
+    int* _sel_elems = generate_empty_vector<int>( elem_valid_count );
 
     // Rewind file to the section after nodes definition
     infile.seekg( elems_table_pos, std::ios::beg );
@@ -421,11 +438,11 @@ void Mesh::_load_poly_mesh(
             if ( this->_is_valid_type( npe ) )
             {
                 renew_stream( iss, line );
-                this->elems[ this->enrl*elem_count ] = npe;
+                _elems[ this->enrl*elem_count ] = npe;
                 for ( int i=1; i<npe+1; i++ )
                 {
-                    iss >> this->elems[ this->enrl*elem_count + i ];
-                    this->elems[ this->enrl*elem_count + i ]--;
+                    iss >> _elems[ this->enrl*elem_count + i ];
+                    _elems[ this->enrl*elem_count + i ]--;
                 }
 
                 // Update valid element counter
@@ -439,18 +456,118 @@ void Mesh::_load_poly_mesh(
 
     }
 
+    // Read number of elements describing the target body
+    while ( true )
+    {
+        // Get new line
+        std::getline( infile, line );
+
+        // Check if the end of the file has been reached
+        if ( infile.eof( ) > 0 )
+        {
+            break;
+        }
+
+        // Check if there is a body header line
+        if ( !is_empty_line( line ) )
+        {
+            // Read element number and check for maximum nodes per element
+            renew_stream( iss, line );
+            iss >> header_code;
+            iss >> items_np;
+            iss >> aux_int;
+
+            if ( header_code == 21 )
+            {
+                // Loop until find a new line with at least one element
+                while ( true )
+                {
+                    // Get new line
+                    std::getline( infile, line );
+
+                    // Check if there is a body header line
+                    if ( !is_empty_line( line ) )
+                    {
+                        // Read element number and check for maximum nodes per element
+                        renew_stream( iss, line );
+                        iss >> _body_name;
+
+                        break;
+                    }
+                }
+
+                // Check if the body name is equal to the target one
+                str_to_lower( &_body_name );
+                if ( body_name.compare( _body_name ) == 0 )
+                {
+                    sel_count = 0;
+                    while ( true )
+                    {
+                        // Get new line
+                        std::getline( infile, line );
+
+                        // Check if there is a body header line
+                        if ( !is_empty_line( line ) )
+                        {
+                            // Read element number and check for maximum nodes per element
+                            renew_stream( iss, line );
+                            iss >> header_code;
+
+                            if ( header_code != 21 )
+                            {
+                                // Renew stream for the current line
+                                renew_stream( iss, line );
+
+                                // Loop over line elements
+                                while ( iss >> a0 >> a1 )
+                                {
+                                    _sel_elems[sel_count] = a1-1;
+                                    sel_count++;
+                                }
+                                
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Allocate space for the connectivity matrix
+    this->elems_np  = sel_count;
+    this->elems     = generate_empty_vector<int>( this->enrl * this->elems_np );
+
+    // Get selected elements for the target body
+    for ( int i=0; i<sel_count; i++ )
+    {
+        for ( int j=0; j<this->enrl; j++ )
+        {
+            this->elems[i*this->enrl+j] = _elems[_sel_elems[i]*this->enrl+j];
+        }
+    }
+
     // Close file unit
     infile.close( );
+
+
+    // Deallocate heap memory space associated to the current method
+    mkl_free( _elems );
+    mkl_free( _sel_elems );
 }
 
 
 Mesh::Mesh( 
                             std::string file_path,
+                            std::string body_name,
                             cusfloat*   cog 
             )
 {
     // Load mesh
-    this->_load_poly_mesh( file_path );
+    this->_load_poly_mesh( file_path, body_name );
 
     // Calculate bounding box of the mesh
     this->_calculate_bounding_box( );

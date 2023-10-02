@@ -41,7 +41,8 @@ private:
                            );
 
     void    _load_poly_mesh( 
-                                        std::string file_path 
+                                        std::string file_path,
+                                        std::string body_name
                            );
 
 public:
@@ -70,6 +71,7 @@ public:
 
     Mesh( 
                                 std::string file_path,
+                                std::string body_name,
                                 cusfloat*   cog
         );
 
