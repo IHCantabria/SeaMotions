@@ -18,6 +18,7 @@ public:
     cusfloat    mass            = 0.0;
     Mesh*       mesh            = nullptr;
     std::string mesh_finame     = "";
+    std::string mesh_body_name  = "";
     cusfloat    rad_inertia[3]  = { 0.0, 0.0, 0.0 };
 
     // Define class constructor and destructor

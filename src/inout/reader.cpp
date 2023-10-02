@@ -123,17 +123,24 @@ void read_body(
     // Skip header
     _skip_header( infile, line_count, 3 );
 
-    // Read mesh
+    // Read mesh file name
     target_signal   = "MeshFile";
     read_signal     = _read_channel_value( infile, body->mesh_finame );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
+    // Read mesh body name
+    target_signal   = "BodyName";
+    read_signal     = _read_channel_value( infile, body->mesh_body_name );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Load mesh for the current body
     fs::path mesh_foname_( std::string( "mesh" ) );
     fs::path mesh_finame_( body->mesh_finame );
     fs::path mesh_fipath_ = folder_path_ / mesh_foname_ / mesh_finame_;
 
     body->mesh      = new   Mesh( 
                                       mesh_fipath_.string( ),
+                                      body->mesh_body_name,
                                       body->cog                                    
                                   );
     body->is_mesh   = true;
