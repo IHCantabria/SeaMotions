@@ -171,6 +171,7 @@ void    calculate_freq_domain_coeffs(
     /****** Allocate space for the simulation data ******/
     /****************************************************/
     int         hydmech_np      = pow2s( input->dofs_np * mesh_gp->meshes_np );
+    int         hydstiff_np     = pow2s( input->dofs_np * mesh_gp->meshes_np );
     int         wave_exc_np     = input->heads_np * mesh_gp->meshes_np * input->dofs_np;
 
     cusfloat*   added_mass      = generate_empty_vector<cusfloat>( hydmech_np );
@@ -184,12 +185,14 @@ void    calculate_freq_domain_coeffs(
     cusfloat*   added_mass_p0       = nullptr;
     cusfloat*   damping_rad_p0      = nullptr;
     cuscomplex* froude_krylov_p0    = nullptr;
+    cusfloat*   hydrostiff_p0       = nullptr;
     cuscomplex* wave_diffrac_p0     = nullptr;
     if ( mpi_config->is_root( ) )
     {
         added_mass_p0       = generate_empty_vector<cusfloat>( hydmech_np );
         damping_rad_p0      = generate_empty_vector<cusfloat>( hydmech_np );
         froude_krylov_p0    = generate_empty_vector<cuscomplex>( wave_exc_np );
+        hydrostiff_p0       = generate_empty_vector<cusfloat>( hydstiff_np );
         wave_diffrac_p0     = generate_empty_vector<cuscomplex>( wave_exc_np );
     }
 
@@ -215,6 +218,18 @@ void    calculate_freq_domain_coeffs(
                                                                 input->water_depth,
                                                                 input->grav_acc
                                                         );
+
+    /****************************************************/
+    /******* Calculate global hydrostatic matrix ********/
+    /****************************************************/
+    if ( mpi_config->is_root( ) )
+    {
+        calculate_global_hydstiffness(
+                                            input,
+                                            hydrostatics,
+                                            hydrostiff_p0
+                                        );
+    }
 
     /****************************************************/
     /******* Calculate hydrodynamic coefficients ********/
@@ -499,6 +514,35 @@ void    calculate_froude_krylov(
 
     // Deallocate local heap memory
     mkl_free( pressure );
+}
+
+
+void    calculate_global_hydstiffness(
+                                            Input*          input,
+                                            Hydrostatics**  hydrostatics,
+                                            cusfloat*       hydstiffness
+                                    )
+{
+    int index   = 0;
+    for ( int i=0; i<input->bodies_np; i++ )
+    {
+        for ( int j=0; j<input->dofs_np; j++ )
+        {
+            for ( int k=0; k<input->dofs_np; k++ )
+            {
+                index               =   (
+                                            i * input->bodies_np *  pow2s( input->dofs_np ) 
+                                            + 
+                                            i * input->dofs_np 
+                                            + 
+                                            j * input->dofs_np * input->bodies_np
+                                            +
+                                            k
+                                        );
+                hydstiffness[index] = hydrostatics[i]->hydstiffmat[j*input->dofs_np+k];
+            }
+        }
+    }
 }
 
 

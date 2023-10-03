@@ -43,6 +43,12 @@ void    calculate_froude_krylov(
                                             cuscomplex*     froude_krylov
                                 );
 
+void    calculate_global_hydstiffness(
+                                            Input*          input,
+                                            Hydrostatics**  hydrostatics,
+                                            cusfloat*       hydstiffness
+                                    );
+
 void    calculate_hydromechanic_coeffs(
                                             Input*          input,
                                             MpiConfig*      mpi_config,
