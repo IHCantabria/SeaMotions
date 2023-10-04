@@ -8,9 +8,12 @@
 
 
 Output::Output( 
-                    Input* input
+                                        Input*      input
                 )
 {
+    // Storage pointer to the input class instance
+    this->_input = input;
+
     // Generate output results file path
     std::filesystem::path _case_fopath( input->case_fopath );
     std::filesystem::path _results_finame( std::string( "results.hydb.h5" ) );
@@ -25,6 +28,11 @@ Output::Output(
 
     // Storage frequencies and headings datasets dimensions
     this->_ds_fh[0]     = input->angfreqs_np;
+
+    // Storage structural mass and hydrostatic stiffness datasets dimensions
+    this->_ds_mh[0]     = input->bodies_np;
+    this->_ds_mh[1]     = input->dofs_np;
+    this->_ds_mh[2]     = input->dofs_np;
 
     // Storage hydromechanics coefficients datasets dimensions
     this->_ds_hm[0]    = input->bodies_np;
@@ -114,6 +122,17 @@ Output::Output(
 
     }
 
+    if ( input->out_hydstiff )
+    {
+        CREATE_DATASET( 
+                            fid,
+                            _DN_HYDSTIFF,
+                            _DS_MH_NP,
+                            this->_ds_mh,
+                            cusfloat_h5
+                        );
+    }
+
     // Create dataset for the frequencies set
     CREATE_DATASET( 
                         fid,
@@ -187,6 +206,18 @@ Output::Output(
         
     }
 
+    // Create dataset for structural mass
+    if ( input->out_struct_mass )
+    {
+        CREATE_DATASET( 
+                            fid,
+                            _DN_STRUCT_MASS,
+                            _DS_MH_NP,
+                            this->_ds_mh,
+                            cusfloat_h5
+                        );
+    }
+
     // Create dataset for wave exciting forces
     if ( input->out_wex )
     {
@@ -215,7 +246,7 @@ Output::Output(
 
 
 void    Output::save_frequencies(
-                                    cusfloat*   freqs
+                                        cusfloat*   freqs
                                 )
 {
     // Open file unit
@@ -240,7 +271,7 @@ void    Output::save_frequencies(
 
 
 void    Output::save_headings(
-                                    cusfloat*   heads
+                                        cusfloat*   heads
                             )
 {
     // Open file unit
@@ -258,6 +289,105 @@ void    Output::save_headings(
                             heads,
                             cusfloat_h5
                         );
+
+    // Close file unit
+    fid.close( );
+}
+
+
+void    Output::save_hydstiffness(
+                                        Hydrostatics** hydrostatics
+                                )
+{
+    // Open file unit
+    H5::H5File fid( this->_results_fipath.c_str( ), H5F_ACC_RDWR );
+
+    // Loop over bodies to storage hydrostatic stiffness data matrix
+    hsize_t offset[_DS_MH_NP] = { 0, 0, 0 };
+
+    for ( int i=0; i<this->_input->bodies_np; i++ )
+    {
+        offset[0] = i;
+        SAVE_DATASET_CHUNK(
+                                fid,
+                                _DN_HYDSTIFF,
+                                _DS_MH_NP,
+                                this->_ds_mh,
+                                this->_ds_mh,
+                                offset,
+                                hydrostatics[i]->hydstiffmat,
+                                cusfloat_h5
+                            );
+    }
+
+    // Close file unit
+    fid.close( );
+}
+
+
+void    Output::save_structural_mass( 
+                                        void 
+                                    )
+{
+    // Open file unit
+    H5::H5File fid( this->_results_fipath.c_str( ), H5F_ACC_RDWR );
+
+    // Allocate space for the ith body 
+    // structural mass matrix
+    cusfloat*   body_mass    = generate_empty_vector<cusfloat>( pow2s( this->_input->dofs_np ) );
+
+    // Storage structural mass matrix for all the bodies 
+    // in the simulation
+    hsize_t offset[_DS_MH_NP] = { 0, 0, 0 };
+
+    for ( int i=0; i<this->_input->bodies_np; i++ )
+    {
+        // Clear structural mass matrix to delete spurious
+        // data from the previous body if any
+        clear_vector( pow2s( this->_input->dofs_np ), body_mass );
+
+        // Create ith body mass matrix
+        // Define body mass matrix
+        body_mass[0]    = this->_input->bodies[i]->mass;  // Surge
+        body_mass[7]    = this->_input->bodies[i]->mass;  // Sway
+        body_mass[14]   = this->_input->bodies[i]->mass; // Heave
+
+        if ( this->_input->bodies[i]->interia_by_rad )
+        {
+            body_mass[21] = this->_input->bodies[i]->mass * pow2s( this->_input->bodies[i]->rad_inertia[0] ); // Roll
+            body_mass[28] = this->_input->bodies[i]->mass * pow2s( this->_input->bodies[i]->rad_inertia[1] ); // Pitch
+            body_mass[35] = this->_input->bodies[i]->mass * pow2s( this->_input->bodies[i]->rad_inertia[2] ); // Yaw
+        }
+        else
+        {
+            body_mass[21] = this->_input->bodies[i]->inertia[0]; // Roll
+            body_mass[22] = this->_input->bodies[i]->inertia[1]; // Roll - Pitch
+            body_mass[23] = this->_input->bodies[i]->inertia[2]; // Roll - Yaw
+            body_mass[27] = this->_input->bodies[i]->inertia[1]; // Pitch - Roll
+            body_mass[28] = this->_input->bodies[i]->inertia[3]; // Pitch
+            body_mass[29] = this->_input->bodies[i]->inertia[4]; // Pitch - Yaw
+            body_mass[33] = this->_input->bodies[i]->inertia[2]; // Yaw - Roll
+            body_mass[34] = this->_input->bodies[i]->inertia[4]; // Yaw - Pitch-
+            body_mass[35] = this->_input->bodies[i]->inertia[5]; // Yaw
+        }
+
+        // Storage data
+        offset[0] = i;
+        SAVE_DATASET_CHUNK(
+                                fid,
+                                _DN_STRUCT_MASS,
+                                _DS_MH_NP,
+                                this->_ds_mh,
+                                this->_ds_mh,
+                                offset,
+                                body_mass,
+                                cusfloat_h5
+                            );
+
+    }
+
+    // Delete local heap memory
+    mkl_free( body_mass );
 
     // Close file unit
     fid.close( );

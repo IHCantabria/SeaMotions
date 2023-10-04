@@ -99,6 +99,28 @@ int main( int argc, char* argv[] )
     }
 
     /*****************************************/
+    /****** Storage Initial Parameters *******/
+    /*****************************************/
+
+    // Storage frequency set
+    output->save_frequencies( input->freqs );
+
+    // Storage headings set
+    output->save_headings( input->heads.data( ) );
+
+    // Storage structural mass
+    if ( input->out_struct_mass )
+    {
+        output->save_structural_mass( );
+    }
+
+    // Storage hydrostatic stiffness matrix
+    if ( input->out_hydstiff )
+    {
+        output->save_hydstiffness( hydrostatics );
+    }
+
+    /*****************************************/
     /***** Calculate Source Distribution *****/
     /*****************************************/
     calculate_freq_domain_coeffs(
