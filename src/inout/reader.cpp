@@ -101,6 +101,42 @@ void read_body(
     read_signal     = _read_channel_value( infile, body->cog[2] );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
+    // Read switch to define how the intertia is defined, by the 
+    // radius of gyrantion or by the inertial matrix components
+    target_signal   = "IBR";
+    read_signal     = _read_channel_value( infile, body->interia_by_rad );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read IXX
+    target_signal   = "IXX";
+    read_signal     = _read_channel_value( infile, body->inertia[0] );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read IXY
+    target_signal   = "IXY";
+    read_signal     = _read_channel_value( infile, body->inertia[1] );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read IXZ
+    target_signal   = "IXZ";
+    read_signal     = _read_channel_value( infile, body->inertia[2] );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read IYY
+    target_signal   = "IYY";
+    read_signal     = _read_channel_value( infile, body->inertia[3] );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read IYZ
+    target_signal   = "IYZ";
+    read_signal     = _read_channel_value( infile, body->inertia[4] );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read IZZ
+    target_signal   = "IZZ";
+    read_signal     = _read_channel_value( infile, body->inertia[5] );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
     // Read RXX
     target_signal   = "RXX";
     read_signal     = _read_channel_value( infile, body->rad_inertia[0] );

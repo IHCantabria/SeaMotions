@@ -13,13 +13,15 @@ struct BodyDef
 {
 public:
     // Define class attributes
-    cusfloat    cog[3]          = { 0.0, 0.0, 0.0 };
-    bool        is_mesh         = false;
-    cusfloat    mass            = 0.0;
-    Mesh*       mesh            = nullptr;
-    std::string mesh_finame     = "";
-    std::string mesh_body_name  = "";
-    cusfloat    rad_inertia[3]  = { 0.0, 0.0, 0.0 };
+    cusfloat        cog[3]          = { 0.0, 0.0, 0.0 };
+    bool            is_mesh         = false;
+    cusfloat        inertia[6]      = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+    bool            interia_by_rad  = false;
+    cusfloat        mass            = 0.0;
+    Mesh*           mesh            = nullptr;
+    std::string     mesh_finame     = "";
+    std::string     mesh_body_name  = "";
+    cusfloat        rad_inertia[3]  = { 0.0, 0.0, 0.0 };
 
     // Define class constructor and destructor
     ~BodyDef( void );
