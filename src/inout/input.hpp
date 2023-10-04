@@ -34,11 +34,13 @@ public:
     bool                        out_diffrac     = false;
     bool                        out_fk          = false;
     bool                        out_hydmech     = false;
+    bool                        out_hydstiff    = false;
     bool                        out_pressure    = false;
     bool                        out_mdrift      = false;
     bool                        out_qtf         = false;
     bool                        out_raos        = false;
     bool                        out_sources     = false;
+    bool                        out_struct_mass = false;
     bool                        out_wex         = false;
     int                         poly_order      = 0;
     cusfloat                    water_density   = 0.0;

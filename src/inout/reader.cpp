@@ -270,6 +270,11 @@ void    read_case(
     read_signal     = _read_channel_value( infile, input->out_hydmech );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
+    // Read output flag for hydrostatic stiffness matrix
+    target_signal   = "OutHydStiff";
+    read_signal     = _read_channel_value( infile, input->out_hydstiff );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
     // Read output flag for pressure over the panels
     target_signal   = "OutPress";
     read_signal     = _read_channel_value( infile, input->out_pressure );
@@ -293,6 +298,11 @@ void    read_case(
     // Read output flag for sources intensity over the panels
     target_signal   = "OutSources";
     read_signal     = _read_channel_value( infile, input->out_sources );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read output flag for structural mass
+    target_signal   = "OutStMass";
+    read_signal     = _read_channel_value( infile, input->out_struct_mass );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read output flag for wave excitation forces
