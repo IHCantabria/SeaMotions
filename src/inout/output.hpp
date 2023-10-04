@@ -48,6 +48,13 @@ public:
             );
 
     // Define class methods
+    void    save_frequencies(
+                                cusfloat*   freqs
+                            );
+    
+    void    save_headings(
+                                cusfloat*   heads
+                            );
 };
 
 

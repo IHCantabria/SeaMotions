@@ -85,18 +85,6 @@ Output::Output(
                         cusfloat_h5
                     );
 
-    hsize_t offset_freqs[_DS_HF_NP] = { 0 };
-    SAVE_DATASET_CHUNK(
-                            fid,
-                            _DN_FREQS,
-                            _DS_HF_NP,
-                            this->_ds_fh,
-                            this->_ds_fh,
-                            offset_freqs,
-                            input->freqs,
-                            cusfloat_h5
-                        );
-
     // Create dataset for the headings set
     CREATE_DATASET( 
                         fid,
@@ -106,18 +94,6 @@ Output::Output(
                         cusfloat_h5
                     );
 
-    hsize_t offset_heads[_DS_HF_NP] = { 0 };
-    SAVE_DATASET_CHUNK(
-                            fid,
-                            _DN_HEADS,
-                            _DS_HF_NP,
-                            this->_ds_fh,
-                            this->_ds_fh,
-                            offset_heads,
-                            input->heads.data( ),
-                            cusfloat_h5
-                        );
-    
     // Create dataset for mean drift forces
     if ( input->out_mdrift )
     {
@@ -198,3 +174,69 @@ Output::Output(
     fid.close( );
 
 }
+
+
+void    Output::save_frequencies(
+                                    cusfloat*   freqs
+                                )
+{
+    // Open file unit
+    H5::H5File fid( this->_results_fipath.c_str( ), H5F_ACC_RDWR );
+
+    // Storage data
+    hsize_t offset_freqs[_DS_HF_NP] = { 0 };
+    SAVE_DATASET_CHUNK(
+                            fid,
+                            _DN_FREQS,
+                            _DS_HF_NP,
+                            this->_ds_fh,
+                            this->_ds_fh,
+                            offset_freqs,
+                            freqs,
+                            cusfloat_h5
+                        );
+
+    // Close file unit
+    fid.close( );
+}
+
+
+void    Output::save_headings(
+                                    cusfloat*   heads
+                            )
+{
+    // Open file unit
+    H5::H5File fid( this->_results_fipath.c_str( ), H5F_ACC_RDWR );
+
+    // Storage data
+    hsize_t offset_heads[_DS_HF_NP] = { 0 };
+    SAVE_DATASET_CHUNK(
+                            fid,
+                            _DN_HEADS,
+                            _DS_HF_NP,
+                            this->_ds_fh,
+                            this->_ds_fh,
+                            offset_heads,
+                            heads,
+                            cusfloat_h5
+                        );
+
+    // Close file unit
+    fid.close( );
+}
+
+
+// void Output::save_frequency_set( 
+//                                     int         freq_num,
+//                                     cusfloat*   added_mass,
+//                                     cusfloat*   damping,
+//                                     cusfloat*   diffraction_mag,
+//                                     cusfloat*   diffraction_pha,
+//                                     cusfloat*   froude_krylov_mag,
+//                                     cusfloat*   froufe_krylov_pha,
+//                                     cusfloat*   wave_excitation_mag,
+//                                     cusfloat*   wave_excitation_pha
+//                                 )
+// {
+
+// }
