@@ -13,9 +13,11 @@
 // Define output channels name
 #define  _DN_ADDED_MASS   "added_mass"
 #define  _DN_DAMPING_RAD  "damping_rad"
+#define  _DN_DIFFRAC      "diffraction_force"
 #define  _DN_DIFFRAC_MAG  "diffraction_force_mag"
 #define  _DN_DIFFRAC_PHA  "diffraction_force_pha"
 #define  _DN_FREQS        "frequencies"
+#define  _DN_FK           "froude_krylov_force"
 #define  _DN_FK_MAG       "froude_krylov_force_mag"
 #define  _DN_FK_PHA       "froude_krylov_force_pha"
 #define  _DN_HEADS        "headings"
@@ -26,6 +28,7 @@
 #define  _DN_RAO_MAG      "rao_mag"
 #define  _DN_RAO_PHA      "rao_pha"
 #define  _DN_STRUCT_MASS  "mass"
+#define  _DN_WEX          "wave_exciting"
 #define  _DN_WEX_MAG      "wave_exciting_mag"
 #define  _DN_WEX_PHA      "wave_exciting_pha"
 
@@ -70,15 +73,21 @@ public:
                                             Hydrostatics** hydrostatics
                                 );
 
-    // void    save_hydromechanic_coeffs(
-    //                                         int         freq_index,
-    //                                         cusfloat*   added_mass,
-    //                                         cusfloat*   damping_rad
-    //                                     );
+    void    save_hydromechanic_coeffs(
+                                            int         freq_index,
+                                            cusfloat*   added_mass,
+                                            cusfloat*   damping_rad
+                                        );
 
     void    save_structural_mass( 
                                             void 
                                 );
+
+    void    save_wave_exciting_forces(
+                                            int         freq_index,
+                                            std::string channel_name,
+                                            cuscomplex* forces
+                                        );
 };
 
 

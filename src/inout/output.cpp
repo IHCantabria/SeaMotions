@@ -2,6 +2,9 @@
 // Include general usage libraries
 #include <filesystem>
 
+// Include general usage scientific libraries
+#include <cmath>
+
 // Include local modules
 #include "output.hpp"
 #include "../tools.hpp"
@@ -245,6 +248,84 @@ Output::Output(
 }
 
 
+void    Output::save_wave_exciting_forces(
+                                            int         freq_index,
+                                            std::string channel_name,
+                                            cuscomplex* forces
+                                        )
+{
+    // Define datasets name
+    std::string _dn_mag = channel_name + std::string( "_mag" );
+    std::string _dn_pha = channel_name + std::string( "_pha" );
+
+    // Open file unit
+    H5::H5File fid( this->_results_fipath.c_str( ), H5F_ACC_RDWR );
+
+    // Allocate space for ith body data
+    cusfloat* data_mag = generate_empty_vector<cusfloat>( this->_input->dofs_np );
+    cusfloat* data_pha = generate_empty_vector<cusfloat>( this->_input->dofs_np );
+
+    // Storage input data into disk
+    hsize_t _ds_wx_ch[_DS_WX_NP]    = { 1, 1, 1, this->_input->dofs_np };
+    int     index                   = 0;
+    hsize_t offset[_DS_WX_NP]       = { 0, 0, freq_index, 0 };
+
+    for ( int i=0; i<this->_input->heads_np; i++ )
+    {
+        for ( int j=0; j<this->_input->bodies_np; j++ )
+        {
+            // Process data to have the format of magnitude and phase
+            for ( int k=0; k<this->_input->dofs_np; k++ )
+            {
+                index       = (
+                                    i * this->_input->bodies_np * this->_input->dofs_np
+                                    +
+                                    j * this->_input->dofs_np
+                                    +
+                                    k
+                                );
+                data_mag[k] = std::abs( forces[index] );
+                data_pha[k] = std::atan2( forces[index].real( ), forces[index].imag( ) );
+            }
+
+            // Storage data
+            offset[0] = i;
+            offset[1] = j;
+
+            SAVE_DATASET_CHUNK(
+                                    fid,
+                                    _dn_mag.c_str( ),
+                                    _DS_WX_NP,
+                                    this->_ds_wx,
+                                    _ds_wx_ch,
+                                    offset,
+                                    data_mag,
+                                    cusfloat_h5
+                                );
+
+            SAVE_DATASET_CHUNK(
+                                    fid,
+                                    _dn_pha.c_str( ),
+                                    _DS_WX_NP,
+                                    this->_ds_wx,
+                                    _ds_wx_ch,
+                                    offset,
+                                    data_pha,
+                                    cusfloat_h5
+                                );
+
+        }
+    }
+
+    // Close file unit
+    fid.close( );
+
+    // Deallocate heap memory used for the current function
+    mkl_free( data_mag );
+    mkl_free( data_pha );
+}
+
+
 void    Output::save_frequencies(
                                             cusfloat*   freqs
                                 )
@@ -295,33 +376,90 @@ void    Output::save_headings(
 }
 
 
-// void    Output::save_hydromechanic_coeffs(
-//                                             int         freq_index,
-//                                             cusfloat*   added_mass,
-//                                             cusfloat*   damping_rad
-//                                         )
-// {
-//     // Open file unit
-//     H5::H5File fid( this->_results_fipath.c_str( ), H5F_ACC_RDWR );
+void    Output::save_hydromechanic_coeffs(
+                                            int         freq_index,
+                                            cusfloat*   added_mass,
+                                            cusfloat*   damping_rad
+                                        )
+{
+    // Open file unit
+    H5::H5File fid( this->_results_fipath.c_str( ), H5F_ACC_RDWR );
 
-//     // Storage data into disk
-//     for ( int i=0; i<this->_input->bodies_np; i++ )
-//     {
-//         for ( int j=0; j<this->_input->bodies_np; j++ )
-//         {
-//             for ( int k=0; k<this->_input->dofs_np; k++ )
-//             {
-//                 for ( int m=0; m<this->_input->dofs_np; m++ )
-//                 {
+    // Allocate space for body data chunks
+    cusfloat*   amb = generate_empty_vector<cusfloat>( pow2s( this->_input->dofs_np ) );
+    cusfloat*   drb = generate_empty_vector<cusfloat>( pow2s( this->_input->dofs_np ) );
 
-//                 }
-//             }
-//         }
-//     }
+    // Storage data into disk
+    hsize_t _ds_hm_ch[_DS_HM_NP]    = { 1, 1, 1, this->_input->dofs_np, this->_input->dofs_np };
+    hsize_t offset[_DS_HM_NP]       = { 0, 0, freq_index, 0, 0 };
 
-//     // Close file unit
-//     fid.close( );
-// }
+    int index_global                = 0;
+    int index_local                 = 0;
+
+    for ( int i=0; i<this->_input->bodies_np; i++ )
+    {
+        for ( int j=0; j<this->_input->bodies_np; j++ )
+        {
+            // Define body data chunk
+            for ( int k=0; k<this->_input->dofs_np; k++ )
+            {
+                for ( int m=0; m<this->_input->dofs_np; m++ )
+                {
+                    // Define indexes to access to the required
+                    // memory allocation
+                    index_global    = (
+                                            i * this->_input->bodies_np * pow2s( this->_input->dofs_np )
+                                            +
+                                            j * this->_input->dofs_np
+                                            +
+                                            k * this->_input->bodies_np * this->_input->dofs_np
+                                            +
+                                            m
+                                        );
+                    index_local     = k * this->_input->dofs_np+m;
+
+                    // Copy data from global matrixes to local body matrixes
+                    amb[index_local] = added_mass[index_global];
+                    drb[index_local] = damping_rad[index_global];
+                }
+            }
+
+            // Set dataset chunk offset
+            offset[0] = i;
+            offset[1] = j;
+
+            // Storage data
+            SAVE_DATASET_CHUNK(
+                                    fid,
+                                    _DN_ADDED_MASS,
+                                    _DS_HM_NP,
+                                    this->_ds_hm,
+                                    _ds_hm_ch,
+                                    offset,
+                                    amb,
+                                    cusfloat_h5
+                                );
+
+            SAVE_DATASET_CHUNK(
+                                    fid,
+                                    _DN_DAMPING_RAD,
+                                    _DS_HM_NP,
+                                    this->_ds_hm,
+                                    _ds_hm_ch,
+                                    offset,
+                                    drb,
+                                    cusfloat_h5
+                                );
+        }
+    }
+
+    // Close file unit
+    fid.close( );
+
+    // Deallocate heap memory
+    mkl_free( amb );
+    mkl_free( drb );
+}
 
 
 void    Output::save_hydstiffness(
