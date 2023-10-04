@@ -586,13 +586,13 @@ void    calculate_global_structural_mass(
 {
     // Allocate space for the body ith structural mass
     // matrix
-    cusfloat*   body_mass   = generate_empty_vector<cusfloat>( 36 );
+    cusfloat*   body_mass   = generate_empty_vector<cusfloat>( pow2s( input->dofs_np ) );
     int index = 0;
     for ( int i=0; i<input->bodies_np; i++ )
     {
         // Clear body matrix to not get spurious data from 
         // the previous body definition
-        clear_vector( 36, body_mass );
+        clear_vector( pow2s( input->dofs_np ), body_mass );
 
         // Define body mass matrix
         body_mass[0] = input->bodies[i]->mass;  // Surge
