@@ -49,6 +49,11 @@ void    calculate_global_hydstiffness(
                                             cusfloat*       hydstiffness
                                     );
 
+void    calculate_global_structural_mass(
+                                            Input*          input,
+                                            cusfloat*       structural_mass_p0
+                                        );
+
 void    calculate_hydromechanic_coeffs(
                                             Input*          input,
                                             MpiConfig*      mpi_config,
@@ -76,5 +81,18 @@ void    calculate_sources_intensity(
                                             cuscomplex*     sysmat,
                                             cuscomplex*     sources_int
                                    );
+
+void    calculate_raos(
+                                            Input*          input,
+                                            MpiConfig*      mpi_config,
+                                            cusfloat*       structural_mass,
+                                            cusfloat*       added_mass,
+                                            cusfloat*       damping_rad,
+                                            cusfloat*       hydstiffness,
+                                            cuscomplex*     wave_diffrac,
+                                            cuscomplex*     froude_krylov,
+                                            cusfloat        ang_freq,
+                                            cuscomplex*     rao
+                        );
 
 #endif

@@ -171,7 +171,6 @@ void    calculate_freq_domain_coeffs(
     /****** Allocate space for the simulation data ******/
     /****************************************************/
     int         hydmech_np      = pow2s( input->dofs_np * mesh_gp->meshes_np );
-    int         hydstiff_np     = pow2s( input->dofs_np * mesh_gp->meshes_np );
     int         wave_exc_np     = input->heads_np * mesh_gp->meshes_np * input->dofs_np;
 
     cusfloat*   added_mass      = generate_empty_vector<cusfloat>( hydmech_np );
@@ -186,13 +185,17 @@ void    calculate_freq_domain_coeffs(
     cusfloat*   damping_rad_p0      = nullptr;
     cuscomplex* froude_krylov_p0    = nullptr;
     cusfloat*   hydrostiff_p0       = nullptr;
+    cuscomplex* raos_p0             = nullptr;
+    cusfloat*   structural_mass_p0  = nullptr;
     cuscomplex* wave_diffrac_p0     = nullptr;
     if ( mpi_config->is_root( ) )
     {
         added_mass_p0       = generate_empty_vector<cusfloat>( hydmech_np );
         damping_rad_p0      = generate_empty_vector<cusfloat>( hydmech_np );
         froude_krylov_p0    = generate_empty_vector<cuscomplex>( wave_exc_np );
-        hydrostiff_p0       = generate_empty_vector<cusfloat>( hydstiff_np );
+        hydrostiff_p0       = generate_empty_vector<cusfloat>( hydmech_np );
+        raos_p0             = generate_empty_vector<cuscomplex>( wave_exc_np );
+        structural_mass_p0  = generate_empty_vector<cusfloat>( hydmech_np );
         wave_diffrac_p0     = generate_empty_vector<cuscomplex>( wave_exc_np );
     }
 
@@ -218,6 +221,18 @@ void    calculate_freq_domain_coeffs(
                                                                 input->water_depth,
                                                                 input->grav_acc
                                                         );
+
+    /****************************************************/
+    /***** Calculate global structural mass matrix ******/
+    /****************************************************/
+    if ( mpi_config->is_root( ) )
+    {
+        calculate_global_structural_mass(
+                                            input,
+                                            structural_mass_p0
+                                        );
+    }
+
 
     /****************************************************/
     /******* Calculate global hydrostatic matrix ********/
@@ -354,6 +369,21 @@ void    calculate_freq_domain_coeffs(
                     );
 
         // Calculate raos
+        if ( mpi_config->is_root( ) )
+        {
+            calculate_raos(
+                                input,
+                                mpi_config,
+                                structural_mass_p0,
+                                added_mass_p0,
+                                damping_rad_p0,
+                                hydrostiff_p0,
+                                wave_diffrac_p0,
+                                froude_krylov_p0,
+                                input->angfreqs[i],
+                                raos_p0
+                            );
+        }
         MPI_Barrier( MPI_COMM_WORLD );
 
     }
@@ -364,6 +394,9 @@ void    calculate_freq_domain_coeffs(
         mkl_free( added_mass_p0 );
         mkl_free( damping_rad_p0 );
         mkl_free( froude_krylov_p0 );
+        mkl_free( hydrostiff_p0 );
+        mkl_free( raos_p0 );
+        mkl_free( structural_mass_p0 );
         mkl_free( wave_diffrac_p0 );
     }
     
@@ -543,6 +576,70 @@ void    calculate_global_hydstiffness(
             }
         }
     }
+}
+
+
+void    calculate_global_structural_mass(
+                                            Input*          input,
+                                            cusfloat*       structural_mass_p0
+                                        )
+{
+    // Allocate space for the body ith structural mass
+    // matrix
+    cusfloat*   body_mass   = generate_empty_vector<cusfloat>( 36 );
+    int index = 0;
+    for ( int i=0; i<input->bodies_np; i++ )
+    {
+        // Clear body matrix to not get spurious data from 
+        // the previous body definition
+        clear_vector( 36, body_mass );
+
+        // Define body mass matrix
+        body_mass[0] = input->bodies[i]->mass;  // Surge
+        body_mass[7] = input->bodies[i]->mass;  // Sway
+        body_mass[14] = input->bodies[i]->mass; // Heave
+
+        if ( input->bodies[i]->interia_by_rad )
+        {
+            body_mass[21] = input->bodies[i]->mass * pow2s( input->bodies[i]->rad_inertia[0] ); // Roll
+            body_mass[28] = input->bodies[i]->mass * pow2s( input->bodies[i]->rad_inertia[1] ); // Pitch
+            body_mass[35] = input->bodies[i]->mass * pow2s( input->bodies[i]->rad_inertia[2] ); // Yaw
+        }
+        else
+        {
+            body_mass[21] = input->bodies[i]->inertia[0]; // Roll
+            body_mass[22] = input->bodies[i]->inertia[1]; // Roll - Pitch
+            body_mass[23] = input->bodies[i]->inertia[2]; // Roll - Yaw
+            body_mass[27] = input->bodies[i]->inertia[1]; // Pitch - Roll
+            body_mass[28] = input->bodies[i]->inertia[3]; // Pitch
+            body_mass[29] = input->bodies[i]->inertia[4]; // Pitch - Yaw
+            body_mass[33] = input->bodies[i]->inertia[2]; // Yaw - Roll
+            body_mass[34] = input->bodies[i]->inertia[4]; // Yaw - Pitch-
+            body_mass[35] = input->bodies[i]->inertia[5]; // Yaw
+        }
+
+        // Copy ith body structural mass matrix to the global matrix assembly
+        for ( int j=0; j<input->dofs_np; j++ )
+        {
+            for ( int k=0; k<input->dofs_np; k++ )
+            {
+                index                       =   (
+                                                    i * input->bodies_np *  pow2s( input->dofs_np ) 
+                                                    + 
+                                                    i * input->dofs_np 
+                                                    + 
+                                                    j * input->dofs_np * input->bodies_np
+                                                    +
+                                                    k
+                                                );
+                structural_mass_p0[index]   = body_mass[j*input->dofs_np+k];
+            }
+        }
+    }
+
+    // Deallocate heap memory space for variables in the
+    // current function
+    mkl_free( body_mass );
 }
 
 
@@ -970,7 +1067,7 @@ void    calculate_sources_intensity(
                                                                 );
             
             // Calculate normal derivative of the wave flow velocities for the jth panel
-            sources_int[count]  = (
+            sources_int[count]  = -(
                                         wave_dx * mesh_gp->source_nodes[j]->normal_vec[0]
                                         +
                                         wave_dy * mesh_gp->source_nodes[j]->normal_vec[1]
@@ -993,4 +1090,139 @@ void    calculate_sources_intensity(
     //     std::cout << "Sources[" << count+j << "]: " << sources_int[count+j] << std::endl;
     // }
     
+}
+
+
+void    calculate_raos(
+                                            Input*          input,
+                                            MpiConfig*      mpi_config,
+                                            cusfloat*       structural_mass,
+                                            cusfloat*       added_mass,
+                                            cusfloat*       damping_rad,
+                                            cusfloat*       hydstiffness,
+                                            cuscomplex*     wave_diffrac,
+                                            cuscomplex*     froude_krylov,
+                                            cusfloat        ang_freq,
+                                            cuscomplex*     rao
+                        )
+{
+    // Allocate space to hold the system matrix
+    cuscomplex* sysmat  = generate_empty_vector<cuscomplex>( pow2s( input->bodies_np * input->dofs_np ) );
+
+    // Clear input rao vector to avoid problems with residual data
+    clear_vector( input->bodies_np * input->dofs_np * input->heads_np, rao );
+
+    // Fill in matrix system
+    int         index   = 0;
+    cusfloat    mass_i = 0.0;
+    for ( int i=0; i<input->bodies_np; i++ )
+    {
+        for ( int j=0; j<input->bodies_np; j++ )
+        {
+            for ( int k=0; k<input->dofs_np; k++ )
+            {
+                for ( int m=0; m<input->dofs_np; m++ )
+                {
+                    // Get structural mass
+                    index = (
+                                i * input->bodies_np * pow2s( input->dofs_np )
+                                +
+                                j * input->dofs_np
+                                +
+                                k * input->bodies_np * input->dofs_np
+                                +
+                                m
+                            );
+                    sysmat[index] = cuscomplex( 
+                                                    -pow2s( ang_freq ) * ( structural_mass[index] + added_mass[index] ) + hydstiffness[index],
+                                                    ang_freq * damping_rad[index]
+                                                );
+                    if ( k==0 & m==0 )
+                    {
+                        std::cout << "mass_i: " << mass_i << std::endl;
+                        std::cout << "added_mass: " << added_mass[index] << std::endl;
+                        std::cout << "daming: " << damping_rad[index] << std::endl;
+                        std::cout << "hydstiffness: " << hydstiffness[index] << std::endl;
+                        std::cout << "sysmat[index]: " << sysmat[index] << std::endl;
+                    }
+                }
+            }
+        }
+    }
+
+    for ( int i=0; i<6; i++ )
+    {
+        std::cout << "sysmat[" << i << ", :]: ";
+        for ( int j=0; j<6; j++ )
+        {
+            std::cout << sysmat[6*i+j] << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    // Fill in right hand side vector
+    for ( int i=0; i<input->heads_np; i++ )
+    {
+        for ( int j=0; j<input->bodies_np; j++ )
+        {
+            for ( int k=0; k<input->dofs_np; k++ )
+            {
+                index = (
+                            i * input->bodies_np * input->dofs_np
+                            +
+                            j * input->dofs_np
+                            +
+                            k
+                        );
+                rao[index] = wave_diffrac[index] + froude_krylov[index];
+                if ( k == 0 )
+                {
+                    std::cout << "Wave Diffrac: " << wave_diffrac[index] << std::endl;
+                    std::cout << "Froude Krylov: " << froude_krylov[index] << std::endl;
+                    std::cout << "Wave Total: " << rao[index] << std::endl;
+                }
+            }
+        }
+    }
+
+    std::cout << "Fw: " << std::endl;
+    for ( int i=0; i<6; i++ )
+    {
+        std::cout << "Fw[" << i << "]: " << rao[i] << std::endl;
+    }
+    
+    // Define linear equations solver
+    SclCmpx scl( 
+                    input->bodies_np * input->dofs_np,
+                    input->heads_np,
+                    1,
+                    mpi_config->proc_root
+                );
+
+    // Solve sytem of equations
+    scl.Solve( sysmat, rao );
+
+    for ( int i=0; i<input->heads_np; i++ )
+    {
+        std::cout << "Heading: " << input->heads[i] << std::endl;
+        for ( int j=0; j<input->bodies_np; j++ )
+        {
+            std::cout << " -> Bodies: " << j << std::endl;
+            for ( int k=0; k<input->dofs_np; k++ )
+            {
+                index = (
+                            i * input->bodies_np * input->dofs_np
+                            +
+                            j * input->dofs_np
+                            +
+                            k
+                        );
+                std::cout << " --> Dof[" << k << "]: " << rao[index] << " - Mag: " << std::abs( rao[index] ) << " - Phase: " << std::arg( rao[index] ) << std::endl;
+            }
+        }
+    }
+
+    // Deallocate local heap memory
+    mkl_free( sysmat );
+
 }
