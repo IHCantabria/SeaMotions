@@ -12,7 +12,11 @@
 // Define output channels name
 #define  _DN_ADDED_MASS   "added_mass"
 #define  _DN_DAMPING_RAD  "damping_rad"
+#define  _DN_DIFFRAC_MAG  "diffraction_force_mag"
+#define  _DN_DIFFRAC_PHA  "diffraction_force_pha"
 #define  _DN_FREQS        "frequencies"
+#define  _DN_FK_MAG       "froude_krylov_force_mag"
+#define  _DN_FK_PHA       "froude_krylov_force_pha"
 #define  _DN_HEADS        "headings"
 #define  _DN_MDRIFT       "mean_drift"
 #define  _DN_QTF_DIFF     "qtf_diff"

@@ -54,6 +54,44 @@ Output::Output(
     // Open file unit
     H5::H5File fid( this->_results_fipath.c_str( ), H5F_ACC_TRUNC );
 
+    if ( input->out_diffrac )
+    {
+        CREATE_DATASET( 
+                            fid,
+                            _DN_DIFFRAC_MAG,
+                            _DS_WX_NP,
+                            this->_ds_wx,
+                            cusfloat_h5
+                        );
+
+        CREATE_DATASET( 
+                            fid,
+                            _DN_DIFFRAC_PHA,
+                            _DS_WX_NP,
+                            this->_ds_wx,
+                            cusfloat_h5
+                        );
+    }
+
+    if ( input->out_fk )
+    {
+        CREATE_DATASET( 
+                            fid,
+                            _DN_FK_MAG,
+                            _DS_WX_NP,
+                            this->_ds_wx,
+                            cusfloat_h5
+                        );
+
+        CREATE_DATASET( 
+                            fid,
+                            _DN_FK_PHA,
+                            _DS_WX_NP,
+                            this->_ds_wx,
+                            cusfloat_h5
+                        );
+    }
+
     if ( input->out_hydmech )
     {
         // Create dataset for added mass
