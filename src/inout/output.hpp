@@ -59,19 +59,25 @@ public:
 
     // Define class methods
     void    save_frequencies(
-                                    cusfloat*   freqs
+                                            cusfloat*   freqs
                             );
     
     void    save_headings(
-                                    cusfloat*   heads
+                                            cusfloat*   heads
                             );
 
     void    save_hydstiffness(
-                                    Hydrostatics** hydrostatics
+                                            Hydrostatics** hydrostatics
                                 );
 
+    // void    save_hydromechanic_coeffs(
+    //                                         int         freq_index,
+    //                                         cusfloat*   added_mass,
+    //                                         cusfloat*   damping_rad
+    //                                     );
+
     void    save_structural_mass( 
-                                    void 
+                                            void 
                                 );
 };
 

@@ -8,7 +8,7 @@
 
 
 Output::Output( 
-                                        Input*      input
+                                            Input*      input
                 )
 {
     // Storage pointer to the input class instance
@@ -246,7 +246,7 @@ Output::Output(
 
 
 void    Output::save_frequencies(
-                                        cusfloat*   freqs
+                                            cusfloat*   freqs
                                 )
 {
     // Open file unit
@@ -271,7 +271,7 @@ void    Output::save_frequencies(
 
 
 void    Output::save_headings(
-                                        cusfloat*   heads
+                                            cusfloat*   heads
                             )
 {
     // Open file unit
@@ -295,15 +295,45 @@ void    Output::save_headings(
 }
 
 
+// void    Output::save_hydromechanic_coeffs(
+//                                             int         freq_index,
+//                                             cusfloat*   added_mass,
+//                                             cusfloat*   damping_rad
+//                                         )
+// {
+//     // Open file unit
+//     H5::H5File fid( this->_results_fipath.c_str( ), H5F_ACC_RDWR );
+
+//     // Storage data into disk
+//     for ( int i=0; i<this->_input->bodies_np; i++ )
+//     {
+//         for ( int j=0; j<this->_input->bodies_np; j++ )
+//         {
+//             for ( int k=0; k<this->_input->dofs_np; k++ )
+//             {
+//                 for ( int m=0; m<this->_input->dofs_np; m++ )
+//                 {
+
+//                 }
+//             }
+//         }
+//     }
+
+//     // Close file unit
+//     fid.close( );
+// }
+
+
 void    Output::save_hydstiffness(
-                                        Hydrostatics** hydrostatics
+                                            Hydrostatics** hydrostatics
                                 )
 {
     // Open file unit
     H5::H5File fid( this->_results_fipath.c_str( ), H5F_ACC_RDWR );
 
     // Loop over bodies to storage hydrostatic stiffness data matrix
-    hsize_t offset[_DS_MH_NP] = { 0, 0, 0 };
+    hsize_t offset[_DS_MH_NP]       = { 0, 0, 0 };
+    hsize_t _ds_mh_ch[_DS_MH_NP]    = { 1, this->_input->dofs_np, this->_input->dofs_np };
 
     for ( int i=0; i<this->_input->bodies_np; i++ )
     {
@@ -313,7 +343,7 @@ void    Output::save_hydstiffness(
                                 _DN_HYDSTIFF,
                                 _DS_MH_NP,
                                 this->_ds_mh,
-                                this->_ds_mh,
+                                _ds_mh_ch,
                                 offset,
                                 hydrostatics[i]->hydstiffmat,
                                 cusfloat_h5
@@ -326,7 +356,7 @@ void    Output::save_hydstiffness(
 
 
 void    Output::save_structural_mass( 
-                                        void 
+                                            void 
                                     )
 {
     // Open file unit
@@ -338,7 +368,8 @@ void    Output::save_structural_mass(
 
     // Storage structural mass matrix for all the bodies 
     // in the simulation
-    hsize_t offset[_DS_MH_NP] = { 0, 0, 0 };
+    hsize_t offset[_DS_MH_NP]       = { 0, 0, 0 };
+    hsize_t _ds_mh_ch[_DS_MH_NP]    = { 1, this->_input->dofs_np, this->_input->dofs_np };
 
     for ( int i=0; i<this->_input->bodies_np; i++ )
     {
@@ -378,7 +409,7 @@ void    Output::save_structural_mass(
                                 _DN_STRUCT_MASS,
                                 _DS_MH_NP,
                                 this->_ds_mh,
-                                this->_ds_mh,
+                                _ds_mh_ch,
                                 offset,
                                 body_mass,
                                 cusfloat_h5
