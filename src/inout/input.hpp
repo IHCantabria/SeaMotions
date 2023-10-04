@@ -31,6 +31,8 @@ public:
     cusfloat                    grav_acc        = 0.0;
     std::string                 heads_units     = "";
     bool                        is_bodies       = false;
+    bool                        out_diffrac     = false;
+    bool                        out_fk          = false;
     bool                        out_hydmech     = false;
     bool                        out_pressure    = false;
     bool                        out_mdrift      = false;

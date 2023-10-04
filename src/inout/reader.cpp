@@ -255,6 +255,16 @@ void    read_case(
     // Skip header
     _skip_header( infile, line_count, 3 );
 
+    // Read output flag for diffraction force
+    target_signal   = "OutDiffrac";
+    read_signal     = _read_channel_value( infile, input->out_diffrac );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read output flag for Froude-Krylov force
+    target_signal   = "OutFK";
+    read_signal     = _read_channel_value( infile, input->out_fk );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
     // Read output flag for hydromechanic coefficients
     target_signal   = "OutHydMech";
     read_signal     = _read_channel_value( infile, input->out_hydmech );
