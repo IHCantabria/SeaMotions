@@ -188,6 +188,7 @@ void    calculate_freq_domain_coeffs(
     cuscomplex* raos_p0             = nullptr;
     cusfloat*   structural_mass_p0  = nullptr;
     cuscomplex* wave_diffrac_p0     = nullptr;
+    cuscomplex* wave_exc_p0         = nullptr;
     if ( mpi_config->is_root( ) )
     {
         added_mass_p0       = generate_empty_vector<cusfloat>( hydmech_np );
@@ -197,6 +198,7 @@ void    calculate_freq_domain_coeffs(
         raos_p0             = generate_empty_vector<cuscomplex>( wave_exc_np );
         structural_mass_p0  = generate_empty_vector<cusfloat>( hydmech_np );
         wave_diffrac_p0     = generate_empty_vector<cuscomplex>( wave_exc_np );
+        wave_exc_p0         = generate_empty_vector<cuscomplex>( wave_exc_np );
     }
 
     /****************************************************/
@@ -368,6 +370,17 @@ void    calculate_freq_domain_coeffs(
                         MPI_COMM_WORLD
                     );
 
+        // Calculate total wave exciting forces
+        if ( mpi_config->is_root( ) )
+        {
+            sv_add(
+                        wave_exc_np,
+                        wave_diffrac_p0,
+                        froude_krylov_p0,
+                        wave_exc_p0
+                    );
+        }
+
         // Calculate raos
         if ( mpi_config->is_root( ) )
         {
@@ -384,6 +397,63 @@ void    calculate_freq_domain_coeffs(
                                 raos_p0
                             );
         }
+
+        // Output values to disk
+        if ( mpi_config->is_root( ) )
+        {
+            if ( input->out_hydmech )
+            {
+                output->save_hydromechanics_format(
+                                                        i,
+                                                        _DN_ADDED_MASS,
+                                                        added_mass_p0
+                                                    );
+
+                output->save_hydromechanics_format(
+                                                        i,
+                                                        _DN_DAMPING_RAD,
+                                                        added_mass_p0
+                                                    );
+            }
+
+            if ( input->out_diffrac )
+            {
+                output->save_wave_exciting_format(
+                                                    i,
+                                                    _DN_DIFFRAC,
+                                                    wave_diffrac_p0
+                                                );
+            }
+
+            if ( input->out_fk )
+            {
+                output->save_wave_exciting_format(
+                                                    i,
+                                                    _DN_FK,
+                                                    froude_krylov_p0
+                                                );
+            }
+
+            if ( input->out_wex )
+            {
+                output->save_wave_exciting_format(
+                                                    i,
+                                                    _DN_WEX,
+                                                    wave_exc_p0
+                                                );
+            }
+
+            if ( input->out_raos )
+            {
+                output->save_wave_exciting_format(
+                                                    i,
+                                                    _DN_RAO,
+                                                    raos_p0
+                                                );
+            }
+
+        }
+
         MPI_Barrier( MPI_COMM_WORLD );
 
     }
@@ -398,6 +468,7 @@ void    calculate_freq_domain_coeffs(
         mkl_free( raos_p0 );
         mkl_free( structural_mass_p0 );
         mkl_free( wave_diffrac_p0 );
+        mkl_free( wave_exc_p0 );
     }
     
     mkl_free( added_mass );
