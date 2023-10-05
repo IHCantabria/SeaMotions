@@ -25,6 +25,7 @@
 #define  _DN_MDRIFT       "mean_drift"
 #define  _DN_QTF_DIFF     "qtf_diff"
 #define  _DN_QTF_SUM      "qtf_sum"
+#define  _DN_RAO          "rao"
 #define  _DN_RAO_MAG      "rao_mag"
 #define  _DN_RAO_PHA      "rao_pha"
 #define  _DN_STRUCT_MASS  "mass"
@@ -73,17 +74,17 @@ public:
                                             Hydrostatics** hydrostatics
                                 );
 
-    void    save_hydromechanic_coeffs(
+    void    save_hydromechanics_format(
                                             int         freq_index,
-                                            cusfloat*   added_mass,
-                                            cusfloat*   damping_rad
+                                            std::string channel_name,
+                                            cusfloat*   added_mass
                                         );
 
     void    save_structural_mass( 
                                             void 
                                 );
 
-    void    save_wave_exciting_forces(
+    void    save_wave_exciting_format(
                                             int         freq_index,
                                             std::string channel_name,
                                             cuscomplex* forces
