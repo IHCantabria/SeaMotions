@@ -194,16 +194,16 @@ Output::Output(
         CREATE_DATASET( 
                             fid,
                             _DN_RAO_MAG,
-                            _DS_HM_NP,
-                            this->_ds_hm,
+                            _DS_WX_NP,
+                            this->_ds_wx,
                             cusfloat_h5
                         );
 
         CREATE_DATASET( 
                             fid,
                             _DN_RAO_PHA,
-                            _DS_HM_NP,
-                            this->_ds_hm,
+                            _DS_WX_NP,
+                            this->_ds_wx,
                             cusfloat_h5
                         );
         
