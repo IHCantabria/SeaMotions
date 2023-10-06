@@ -33,6 +33,7 @@ public:
     MKL_INT     lddA;
     MKL_INT     proc_rank;
     MKL_INT     num_block_size;
+    MKL_INT     num_block_size_rhs;
     MKL_INT     num_cols_rhs = 1;
     MKL_INT     num_cols_local;
     MKL_INT     num_procs;
@@ -130,7 +131,7 @@ void ScalapackSolver<T>::Initialize(void)
     descB = new MKL_INT [9];
     lddA = num_rows_local > 1 ? num_rows_local : 1;
     descinit_(descA, &num_rows, &num_rows, &num_block_size, &num_block_size, &izero, &izero, &ictxt, &lddA, &info);
-    descinit_(descB, &num_rows, &num_cols_rhs, &num_block_size, &num_block_size, &izero, &izero, &ictxt, &lddA, &info);
+    descinit_(descB, &num_rows, &num_cols_rhs, &num_block_size, &num_block_size_rhs, &izero, &izero, &ictxt, &lddA, &info);
 
     // descA[0] = 1; // descriptor type
     // descA[1] = ictxt; // blacs context
@@ -274,8 +275,9 @@ ScalapackSolver<T>::ScalapackSolver(
         num_procs_col = num_procs;
     }
 
-    num_block_size = num_rows/num_procs_col + num_rows%num_procs_col;
-    num_block_size = num_block_size > 0 ? num_block_size: 1;
+    num_block_size      = num_rows/num_procs_col + num_rows%num_procs_col;
+    num_block_size      = num_block_size > 0 ? num_block_size: 1;
+    num_block_size_rhs  = num_block_size > this->num_cols_rhs ? num_block_size : this->num_cols_rhs;
 
     // Initalize solver
     this->Initialize();
