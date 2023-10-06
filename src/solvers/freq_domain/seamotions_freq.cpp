@@ -102,22 +102,26 @@ int main( int argc, char* argv[] )
     /****** Storage Initial Parameters *******/
     /*****************************************/
 
-    // Storage frequency set
-    output->save_frequencies( input->freqs );
-
-    // Storage headings set
-    output->save_headings( input->heads.data( ) );
-
-    // Storage structural mass
-    if ( input->out_struct_mass )
+    if ( mpi_config.is_root( ) )
     {
-        output->save_structural_mass( );
-    }
+        // Storage frequency set
+        output->save_frequencies( input->freqs );
 
-    // Storage hydrostatic stiffness matrix
-    if ( input->out_hydstiff )
-    {
-        output->save_hydstiffness( hydrostatics );
+        // Storage headings set
+        output->save_headings( input->heads.data( ) );
+
+        // Storage structural mass
+        if ( input->out_struct_mass )
+        {
+            output->save_structural_mass( );
+        }
+
+        // Storage hydrostatic stiffness matrix
+        if ( input->out_hydstiff )
+        {
+            output->save_hydstiffness( hydrostatics );
+        }
+
     }
 
     /*****************************************/
