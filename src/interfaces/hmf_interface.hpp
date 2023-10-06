@@ -16,13 +16,14 @@ private:
     cusfloat        _ang_freq               = 0.0;
     cusfloat        _grav_acc               = 0.0;
     int             _dof_j                  = 0;
+    int             _end_index              = 0;
     GRFInterface*   _green_interf_steady    = nullptr;
     GWFInterface*   _green_interf_wave      = nullptr;
+    int             _offset_index           = 0;
     PanelGeom*      _panel                  = nullptr;
     SourceNode**    _source_nodes           = nullptr;
-    int             _source_nodes_np        = 0;
     cuscomplex*     _source_values          = nullptr;
-    int             _start_index_i          = 0;
+    int             _start_index            = 0;
     cusfloat        _water_depth            = 0.0;
 
 public:
@@ -30,9 +31,10 @@ public:
     HMFInterface(
                                     SourceNode**    source_nodes,
                                     cuscomplex*     source_values,
-                                    int             source_nodes_np,             
                                     PanelGeom*      panel,
-                                    int             start_index_i,
+                                    int             offset_index,
+                                    int             start_index,
+                                    int             end_index,
                                     int             dof_j,
                                     cusfloat        ang_freq,
                                     cusfloat        water_depth,
@@ -57,8 +59,10 @@ public:
                             );
 
     void        set_start_index_i(
-                                    int dof_i
-                        );
+                                    int offset_index,
+                                    int start_index,
+                                    int end_index
+                                );
     
     void        set_dof_j(
                                     int dof_j

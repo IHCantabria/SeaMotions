@@ -7,9 +7,10 @@
 HMFInterface::HMFInterface(
                                 SourceNode**    source_nodes,
                                 cuscomplex*     source_values,
-                                int             source_nodes_np,
                                 PanelGeom*      panel,
-                                int             start_index_i,
+                                int             offset_index,
+                                int             start_index,
+                                int             end_index,
                                 int             dof_j,
                                 cusfloat        ang_freq,
                                 cusfloat        water_depth,
@@ -20,11 +21,12 @@ HMFInterface::HMFInterface(
     this->_ang_freq         = ang_freq;
     this->_grav_acc         = grav_acc;
     this->_dof_j            = dof_j;
+    this->_end_index        = end_index;
+    this->_offset_index     = offset_index;
     this->_panel            = panel;
     this->_source_nodes     = source_nodes;
-    this->_source_nodes_np  = source_nodes_np;
     this->_source_values    = source_values;
-    this->_start_index_i    = start_index_i;
+    this->_start_index      = start_index;
     this->_water_depth      = water_depth;
 
     // Generate green function interface
@@ -105,10 +107,10 @@ cuscomplex  HMFInterface::operator()(
     cuscomplex  potential       = std::complex( 0.0, 0.0 );
     cuscomplex  pot_i_steady    = std::complex( 0.0, 0.0 );
     cuscomplex  pot_i_wave      = std::complex( 0.0, 0.0 );
-    for ( int i=0; i<this->_source_nodes_np; i++ )
+    for ( int i=this->_start_index; i<this->_end_index; i++ )
     {
         // Set new source values
-        index   =   this->_start_index_i + i;
+        index   =   this->_offset_index + i;
         // std::cout << "Source index: " << index << " - Source Value: " << this->_source_values[index] << std::endl;
         this->_green_interf_steady->set_source(
                                                 this->_source_nodes[i],
@@ -145,10 +147,14 @@ cuscomplex  HMFInterface::operator()(
 
 
 void    HMFInterface::set_start_index_i(
-                                            int start_index
+                                            int offset_index,
+                                            int start_index,
+                                            int end_index
                                         )
 {
-    this->_start_index_i = start_index;
+    this->_offset_index = offset_index;
+    this->_start_index  = start_index;
+    this->_end_index    = end_index;
 }
 
 

@@ -58,9 +58,6 @@ void    calculate_diffraction_forces(
     // cuscomplex  pressure = 0.0;
     for ( int ih=0; ih<input->heads_np; ih++ )
     {
-        // Set start index for the sources evaluation
-        hmf_interf->set_start_index_i( mesh_gp->source_nodes_tnp * ( dofs_np + ih ) );
-
         for ( int ib=0; ib<mesh_gp->meshes_np; ib++ )
         {
             // Calculate MPI data chunks
@@ -71,6 +68,13 @@ void    calculate_diffraction_forces(
                                             elem_start_pos, 
                                             elem_end_pos 
                                         );
+
+            // Set start index for the sources evaluation
+            hmf_interf->set_start_index_i( 
+                                                mesh_gp->source_nodes_tnp * ( dofs_np + ih ),
+                                                mesh_gp->source_nodes_cnp[ib],
+                                                mesh_gp->source_nodes_cnp[ib+1]
+                                            );
 
             // Loop over panels to integrate the wave radiation
             // pressure along the floating object external shape
@@ -117,9 +121,6 @@ void    calculate_diffraction_forces(
                 wave_diffrac[index]   = 0.0;
                 for ( int ie=elem_start_pos; ie<elem_end_pos; ie++ )
                 {
-                    // Set new panel
-                    hmf_interf->set_panel( mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie] );
-
                     // Integrate pressure over panel
                     index_1             = max_panels * ib + ie;
                     press_i             = pressure[index_1] * mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->normal_vec[id];
@@ -215,8 +216,9 @@ void    calculate_freq_domain_coeffs(
     HMFInterface*   hmf_interf      = new   HMFInterface(
                                                                 mesh_gp->source_nodes,
                                                                 all_sources,
-                                                                mesh_gp->source_nodes_tnp,
                                                                 mesh_gp->panels[0],
+                                                                0,
+                                                                0,
                                                                 0,
                                                                 0,
                                                                 input->angfreqs[0],
@@ -287,7 +289,8 @@ void    calculate_freq_domain_coeffs(
         // Update sources values for the integration objects
         hmf_interf->set_source_values( all_sources );
 
-        for ( int i=6*scl.num_rows; i<7*scl.num_rows; i++ )
+        std::cout << "Scl.NumRows: " << scl.num_rows << std::endl;
+        for ( int i=0*scl.num_rows; i<1*scl.num_rows; i++ )
         {
             std::cout << "Panel[" << i << "]: " << all_sources[i] << " - " << std::abs( all_sources[i] ) << " - " << std::arg( all_sources[i] )*180.0/PI << std::endl;
         }
@@ -778,7 +781,11 @@ void    calculate_hydromechanic_coeffs(
             {
                 // Set ith dof
                 // std::cout << "start index: " << mesh_gp->source_nodes_tnp*id + mesh_gp->source_nodes_cnp[jb] << std::endl; 
-                hmf_interf->set_start_index_i( mesh_gp->source_nodes_tnp*id + mesh_gp->source_nodes_cnp[jb] );
+                hmf_interf->set_start_index_i( 
+                                                    mesh_gp->source_nodes_tnp*id,
+                                                    mesh_gp->source_nodes_cnp[jb],
+                                                    mesh_gp->source_nodes_cnp[jb+1]
+                                                );
 
                 // Loop over panels to integrate the wave radiation
                 // pressure along the floating object external shape
@@ -830,7 +837,7 @@ void    calculate_hydromechanic_coeffs(
                         damping_rad[index]  -=  rho_w * press_i.real( );
                     }
 
-                    std::cout << "Dof i: " << id << " - Dof j: " << jd << " - AddedMass: " << added_mass[index] << " - Damping: " << damping_rad[index] << std::endl;
+                    std::cout << "Body: " << ib << " - " << jb << " - Dof i: " << id << " - Dof j: " << jd << " - AddedMass: " << added_mass[index] << " - Damping: " << damping_rad[index] << " - Index: " << index << std::endl;
 
                 }
             }
@@ -1032,7 +1039,7 @@ void    calculate_sources_intensity(
             // {
             //     std::cout << "I: " << i << " - J: " << j << " - Zero value" << std::endl;
             // }
-            
+            std::cout << "index: " << col_count*scl->num_rows_local+row_count <<  " - int_value: " << int_value << std::endl;
             sysmat[col_count*scl->num_rows_local+row_count] = int_value;
             // outfile << int_value.real( ) << " " << int_value.imag( ) << std::endl;
             // std::cout << "Index Count: " << col_count*scl->num_rows_local+row_count << std::endl;
@@ -1040,6 +1047,7 @@ void    calculate_sources_intensity(
             // Advance row count
             row_count++;
         }
+        std::cout << std::endl;
         // Advance column count
         col_count++;
     }
@@ -1077,9 +1085,10 @@ void    calculate_sources_intensity(
             // std::cout << " - " << mesh_gp->source_nodes[j]->normal_vec[2];
             // std::cout << std::endl;
             // outfile << sources_int[start_pos+count].real( ) << " " << sources_int[start_pos+count].imag( ) << std::endl;
-            // std::cout << "sources_int[" << count <<"]: " << sources_int[count] << std::endl;
+            std::cout << "sources_int[" << count <<"]: " << sources_int[count] << std::endl;
             count++;
         }
+        std::cout << std::endl;
         // break;
     }
     // outfile.close( );
