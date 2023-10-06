@@ -22,38 +22,40 @@ class ScalapackSolver
 {
 public:
     // Declare public variables
-    MKL_INT* descA;
-    MKL_INT* descB;
-    MKL_INT iam = -1;
-    MKL_INT info;
-    MKL_INT izero = 0;
-    char layout='R'; // Block cyclic, Row major processor mapping
-    MKL_INT lddA;
-    MKL_INT proc_rank;
-    MKL_INT num_block_size;
-    MKL_INT num_cols_rhs = 1;
-    MKL_INT num_cols_local;
-    MKL_INT num_procs;
-    MKL_INT num_procs_blas;
-    MKL_INT num_procs_col;
-    MKL_INT num_procs_row;
-    MKL_INT num_rows;
-    MKL_INT num_rows_local;
-    MPI_Comm rhs_comm;
-    MPI_Group rhs_group;
-    MKL_INT start_col;
-    MKL_INT start_col_0;
-    MKL_INT start_row;
-    MKL_INT start_row_0;
-    MKL_INT end_col;
-    MKL_INT end_col_0;
-    MKL_INT end_row;
-    MKL_INT end_row_0;
-    MKL_INT ictxt, myrow, mycol;
-    MKL_INT zero = 0;
+    MKL_INT*    descA;
+    MKL_INT*    descB;
+    MPI_Comm    global_comm;
+    MPI_Group   global_comm_gp;
+    MKL_INT     iam = -1;
+    MKL_INT     info;
+    MKL_INT     izero = 0;
+    char        layout='R'; // Block cyclic, Row major processor mapping
+    MKL_INT     lddA;
+    MKL_INT     proc_rank;
+    MKL_INT     num_block_size;
+    MKL_INT     num_cols_rhs = 1;
+    MKL_INT     num_cols_local;
+    MKL_INT     num_procs;
+    MKL_INT     num_procs_blas;
+    MKL_INT     num_procs_col;
+    MKL_INT     num_procs_row;
+    MKL_INT     num_rows;
+    MKL_INT     num_rows_local;
+    MPI_Comm    rhs_comm;
+    MPI_Group   rhs_group;
+    MKL_INT     start_col;
+    MKL_INT     start_col_0;
+    MKL_INT     start_row;
+    MKL_INT     start_row_0;
+    MKL_INT     end_col;
+    MKL_INT     end_col_0;
+    MKL_INT     end_row;
+    MKL_INT     end_row_0;
+    MKL_INT     ictxt, myrow, mycol;
+    MKL_INT     zero = 0;
 
     // Declare Constructors
-    ScalapackSolver(MKL_INT num_rows, MKL_INT num_cols_rhs,  MKL_INT num_procs, MKL_INT proc_rank);
+    ScalapackSolver(MKL_INT num_rows, MKL_INT num_cols_rhs,  MKL_INT num_procs, MKL_INT proc_rank, MPI_Comm global_comm_inc);
 
     // Declare Class Methdos
     void GenerateRhsComm(void);
@@ -69,13 +71,13 @@ void ScalapackSolver<T>::GenerateRhsComm(void)
     MKL_INT* cols_position = NULL;
     cols_position = new MKL_INT[num_procs];
     
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Allgather(&mycol, 1, MPI_INT, cols_position, 1, MPI_INT, MPI_COMM_WORLD);
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(this->global_comm);
+    MPI_Allgather(&mycol, 1, MPI_INT, cols_position, 1, MPI_INT, this->global_comm);
+    MPI_Barrier(this->global_comm);
 
-    // Get the group of processes in MPI_COMM_WORLD
+    // Get the group of processes in global_comm
     MPI_Group world_group;
-    MPI_Comm_group(MPI_COMM_WORLD, &world_group);
+    MPI_Comm_group(this->global_comm, &world_group);
     MKL_INT new_ranks[num_procs_row];
 
     MKL_INT count = 0;
@@ -90,7 +92,7 @@ void ScalapackSolver<T>::GenerateRhsComm(void)
 
     // Construct a group containing all of the prime ranks in world_group
     MPI_Group_incl(world_group, num_procs_row, new_ranks, &rhs_group);
-    MPI_Comm_create_group(MPI_COMM_WORLD, rhs_group, 0, &rhs_comm);
+    MPI_Comm_create_group(this->global_comm, rhs_group, 0, &rhs_comm);
     
     // Delete matrixes
     delete [] cols_position;
@@ -100,12 +102,12 @@ void ScalapackSolver<T>::GenerateRhsComm(void)
 template <class T>
 T* ScalapackSolver<T>::GetGlobalRhs(T* subrhs, T* sol_vec)
 {
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(this->global_comm);
     if (rhs_comm != MPI_COMM_NULL)
     {
         cmpi_gather<T>( subrhs, num_rows_local, sol_vec, num_rows_local, 0, rhs_comm );
     }
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(this->global_comm);
 
     return sol_vec;
 }
@@ -119,7 +121,6 @@ void ScalapackSolver<T>::Initialize(void)
     blacs_get(&zero, &zero, &ictxt ); // -> Create context
     blacs_gridinit(&ictxt, &layout, &num_procs_row, &num_procs_col); // Context -> Initialize the grid
     blacs_gridinfo(&ictxt, &num_procs_row, &num_procs_col, &myrow, &mycol); // Context -> Context grid info (# procs row/col, current procs row/col)
-
     // Compute size of the local matrixes
     num_rows_local = numroc(&num_rows, &num_block_size, &myrow, &izero, &num_procs_row); // My proc -> row of local A
     num_cols_local = numroc(&num_rows, &num_block_size, &mycol, &izero, &num_procs_col); // My proc -> col of local A
@@ -164,12 +165,12 @@ void ScalapackSolver<T>::Initialize(void)
         cols_position = new MKL_INT[num_procs];
     }
 
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Gather(&num_rows_local, 1, MPI_INT, num_rows_div, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Gather(&num_cols_local, 1, MPI_INT, num_cols_div, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Gather(&myrow, 1, MPI_INT, rows_position, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Gather(&mycol, 1, MPI_INT, cols_position, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(this->global_comm);
+    MPI_Gather(&num_rows_local, 1, MPI_INT, num_rows_div, 1, MPI_INT, 0, this->global_comm);
+    MPI_Gather(&num_cols_local, 1, MPI_INT, num_cols_div, 1, MPI_INT, 0, this->global_comm);
+    MPI_Gather(&myrow, 1, MPI_INT, rows_position, 1, MPI_INT, 0, this->global_comm);
+    MPI_Gather(&mycol, 1, MPI_INT, cols_position, 1, MPI_INT, 0, this->global_comm);
+    MPI_Barrier(this->global_comm);
 
     // Allocate variables
     MKL_INT* start_cols = NULL;
@@ -198,10 +199,10 @@ void ScalapackSolver<T>::Initialize(void)
 
     }
 
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Scatter(start_rows, 1, MPI_INT, &start_row, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Scatter(start_cols, 1, MPI_INT, &start_col, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(this->global_comm);
+    MPI_Scatter(start_rows, 1, MPI_INT, &start_row, 1, MPI_INT, 0, this->global_comm);
+    MPI_Scatter(start_cols, 1, MPI_INT, &start_col, 1, MPI_INT, 0, this->global_comm);
+    MPI_Barrier(this->global_comm);
 
     // Get end positions of the matrix
     this->end_row = this->start_row + this->num_rows_local;
@@ -234,17 +235,19 @@ void ScalapackSolver<T>::Initialize(void)
 
 template <class T>
 ScalapackSolver<T>::ScalapackSolver(
-                                        MKL_INT num_rows_inc, 
-                                        MKL_INT num_cols_rhs_inc,
-                                        MKL_INT num_procs_inc, 
-                                        MKL_INT proc_rank_inc
+                                        MKL_INT     num_rows_inc, 
+                                        MKL_INT     num_cols_rhs_inc,
+                                        MKL_INT     num_procs_inc, 
+                                        MKL_INT     proc_rank_inc,
+                                        MPI_Comm    global_comm_inc
                                     )
 {
     // Assing variables
-    proc_rank = proc_rank_inc;
-    num_rows = num_rows_inc;
-    num_procs = num_procs_inc;
-    num_cols_rhs = num_cols_rhs_inc;
+    this->global_comm   = global_comm_inc;
+    this->proc_rank     = proc_rank_inc;
+    this->num_rows      = num_rows_inc;
+    this->num_procs     = num_procs_inc;
+    this->num_cols_rhs  = num_cols_rhs_inc;
 
     // Calculate processors per row and column
     if (num_procs < 1)
@@ -286,9 +289,9 @@ void ScalapackSolver<T>::Solve(T* subsysmat, T* subrhs)
     MKL_INT startrow = 1;
     MKL_INT startcol = 1;
     MKL_INT* ipiv = new MKL_INT[num_rows_local + num_block_size];
-    MPI_Barrier( MPI_COMM_WORLD );
+    MPI_Barrier( this->global_comm );
     pgesv<T>(&num_rows, &num_cols_rhs, subsysmat, &startrow, &startcol, descA, ipiv, subrhs, &startrow, &startrow, descB, &info);
-    MPI_Barrier( MPI_COMM_WORLD );
+    MPI_Barrier( this->global_comm );
 
     if ( info != 0 )
     {
