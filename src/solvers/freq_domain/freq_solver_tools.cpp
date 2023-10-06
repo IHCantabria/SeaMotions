@@ -19,6 +19,7 @@ void    calculate_diffraction_forces(
                                             cuscomplex*     wave_diffrac
                                     )
 {
+    std::cout << "Prock Rank Entry: " << mpi_config->proc_rank << std::endl;
     // Define local variables
     int         dofs_np = input->dofs_np;
     cusfloat    rho_w   = input->water_density;
@@ -72,8 +73,8 @@ void    calculate_diffraction_forces(
             // Set start index for the sources evaluation
             hmf_interf->set_start_index_i( 
                                                 mesh_gp->source_nodes_tnp * ( dofs_np + ih ),
-                                                mesh_gp->source_nodes_cnp[ib],
-                                                mesh_gp->source_nodes_cnp[ib+1]
+                                                0,
+                                                mesh_gp->source_nodes_tnp
                                             );
 
             // Loop over panels to integrate the wave radiation
@@ -92,7 +93,8 @@ void    calculate_diffraction_forces(
                                                                 &gp,
                                                                 true
                                                             );
-                // std::cout << "Potential[" << ie << "]: " << pressure[index] << std::endl;
+                std::cout << "Potential[" << ib << ", " << ie << "]: " << pressure[index];
+                std::cout << " - I1: " << mesh_gp->panels_cnp[ib]+ie << " - index: " << index <<   " - Proc.Rank: " << mpi_config->proc_rank << std::endl << std::flush;
             }
         }
 
@@ -127,7 +129,7 @@ void    calculate_diffraction_forces(
                     // std::cout << "Pressure[" << ie << "]: " << w*rho_w*press_i << std::endl;
                     wave_diffrac[index] += cuscomplex( 0.0, -w * rho_w ) * press_i;
                 }
-                std::cout << "Heading: " << input->heads[ih] << " - IB: " << ib << " - Dof: " << id << " - Wave Diffrac: " << wave_diffrac[index] << std::endl;
+                // std::cout << "Heading: " << input->heads[ih] << " - IB: " << ib << " - Dof: " << id << " - Wave Diffrac: " << wave_diffrac[index] << std::endl;
             }
         }
     }
@@ -141,9 +143,9 @@ void    calculate_freq_domain_coeffs(
                                             Output*         output
                                     )
 {
-    // /****************************************************/
-    // /*** Create total mesh for the interacting bodies ***/
-    // /****************************************************/
+    /****************************************************/
+    /*** Create total mesh for the interacting bodies ***/
+    /****************************************************/
 
     // Group all meshes in a vector
     Mesh** all_meshes = new Mesh*[input->bodies_np];
@@ -165,7 +167,8 @@ void    calculate_freq_domain_coeffs(
                     mesh_gp->source_nodes_tnp,
                     input->dofs_np + input->heads_np,
                     mpi_config->procs_total,
-                    mpi_config->proc_rank
+                    mpi_config->proc_rank,
+                    MPI_COMM_WORLD
                 );
 
     /****************************************************/
@@ -190,17 +193,15 @@ void    calculate_freq_domain_coeffs(
     cusfloat*   structural_mass_p0  = nullptr;
     cuscomplex* wave_diffrac_p0     = nullptr;
     cuscomplex* wave_exc_p0         = nullptr;
-    if ( mpi_config->is_root( ) )
-    {
-        added_mass_p0       = generate_empty_vector<cusfloat>( hydmech_np );
-        damping_rad_p0      = generate_empty_vector<cusfloat>( hydmech_np );
-        froude_krylov_p0    = generate_empty_vector<cuscomplex>( wave_exc_np );
-        hydrostiff_p0       = generate_empty_vector<cusfloat>( hydmech_np );
-        raos_p0             = generate_empty_vector<cuscomplex>( wave_exc_np );
-        structural_mass_p0  = generate_empty_vector<cusfloat>( hydmech_np );
-        wave_diffrac_p0     = generate_empty_vector<cuscomplex>( wave_exc_np );
-        wave_exc_p0         = generate_empty_vector<cuscomplex>( wave_exc_np );
-    }
+
+    added_mass_p0       = generate_empty_vector<cusfloat>( hydmech_np );
+    damping_rad_p0      = generate_empty_vector<cusfloat>( hydmech_np );
+    froude_krylov_p0    = generate_empty_vector<cuscomplex>( wave_exc_np );
+    hydrostiff_p0       = generate_empty_vector<cusfloat>( hydmech_np );
+    raos_p0             = generate_empty_vector<cuscomplex>( wave_exc_np );
+    structural_mass_p0  = generate_empty_vector<cusfloat>( hydmech_np );
+    wave_diffrac_p0     = generate_empty_vector<cuscomplex>( wave_exc_np );
+    wave_exc_p0         = generate_empty_vector<cuscomplex>( wave_exc_np );
 
     /****************************************************/
     /********* Create Green function interface *********/
@@ -266,7 +267,8 @@ void    calculate_freq_domain_coeffs(
         // Calculate sources intensity
         MPI_Barrier( MPI_COMM_WORLD );
         calculate_sources_intensity(
-                                        input, 
+                                        input,
+                                        mpi_config,
                                         &scl,
                                         mesh_gp,
                                         green_dn_interf,
@@ -285,15 +287,58 @@ void    calculate_freq_domain_coeffs(
                         mpi_cuscomplex,
                         MPI_COMM_WORLD
                     );
+        // for ( int j=0; j<7; j++ )
+        // {
+        //     scl.GetGlobalRhs( &(sources[j*scl.num_rows_local]), &(all_sources[j*scl.num_rows_local]) );
+        // }
 
         // Update sources values for the integration objects
         hmf_interf->set_source_values( all_sources );
 
-        std::cout << "Scl.NumRows: " << scl.num_rows << std::endl;
-        for ( int i=0*scl.num_rows; i<1*scl.num_rows; i++ )
+        std::cout << "Scl.NumRows: " << scl.num_rows << " - Scl.NumRowsLocal: " << scl.num_rows_local << std::endl;
+        for ( int j=0; j<scl.num_rows*(input->dofs_np+input->heads_np); j++ )
         {
-            std::cout << "Panel[" << i << "]: " << all_sources[i] << " - " << std::abs( all_sources[i] ) << " - " << std::arg( all_sources[i] )*180.0/PI << std::endl;
+            // std::cout << "Panel[" << j << "]: " << all_sources[j] << " - " << sources[j] << " - " << std::abs( all_sources[j] ) << " - " << std::arg( all_sources[j] )*180.0/PI << std::endl;
+            std::cout << "Panel[" << j << "]: " << all_sources[j] << std::endl << std::flush;
         }
+
+        // if ( mpi_config->procs_total == 1 )
+        // {
+        //     std::ofstream outfile( "my_coeffs.dat" );
+
+        //     outfile << scl.num_rows*(input->dofs_np+input->heads_np) << std::endl;
+        //     for ( int j=0; j<scl.num_rows*(input->dofs_np+input->heads_np); j++ )
+        //     {
+        //         outfile << all_sources[j].real( ) << "  " << all_sources[j].imag( ) << std::endl;
+        //     }
+
+        //     outfile.close( );
+        // }
+
+        // if ( mpi_config->procs_total > 1 )
+        // {
+        //     std::ifstream infile( "my_coeffs.dat" );
+
+        //     cusfloat a, b;
+        //     cuscomplex c;
+        //     int rows_np = 0;
+        //     infile >> rows_np;
+        //     for ( int j=0; j<rows_np; j++ )
+        //     {
+        //         infile >> a >> b;
+        //         c = all_sources[j];
+        //         all_sources[j] = cuscomplex( a, b );
+        //         if ( mpi_config->proc_rank == 0 )
+        //         {
+        //             std::cout << "Index: " << j << " - Diff: " << c-all_sources[j] << " - AllSources: " << all_sources[j] << std::endl << std::flush;
+        //         }
+        //     }
+        // }
+
+        // for ( int j=0; j<scl.num_rows*(input->dofs_np+input->heads_np); j++ )
+        // {
+        //     all_sources[j] = 1.0;
+        // }
 
         calculate_panel_potentials(
                                             input,
@@ -313,26 +358,29 @@ void    calculate_freq_domain_coeffs(
                                             added_mass,
                                             damping_rad
                                         );
-
+        std::cout << "(P" << mpi_config->proc_rank << ") " << "Reducing Added Mass..." << std::flush;
         MPI_Reduce(
                         added_mass,
                         added_mass_p0,
                         hydmech_np,
                         mpi_cusfloat,
                         MPI_SUM,
-                        mpi_config->proc_rank,
+                        mpi_config->proc_root,
                         MPI_COMM_WORLD
                     );
+        std::cout << "(P" << mpi_config->proc_rank << ") " << "--> Done!" << std::endl << std::flush;
 
+        std::cout << "(P" << mpi_config->proc_rank << ") " << "Reducing Damping..." << std::flush;
         MPI_Reduce(
                         damping_rad,
                         damping_rad_p0,
                         hydmech_np,
                         mpi_cusfloat,
                         MPI_SUM,
-                        mpi_config->proc_rank,
+                        mpi_config->proc_root,
                         MPI_COMM_WORLD
                     );
+        std::cout << "(P" << mpi_config->proc_rank << ") " << "--> Done!" << std::endl;
 
         // Calculate Froude-Krylov forces
         calculate_froude_krylov(
@@ -353,7 +401,20 @@ void    calculate_freq_domain_coeffs(
                         MPI_COMM_WORLD
                     );
 
+        if ( mpi_config->is_root( ) )
+        {
+            for ( int i=0; i<input->heads_np; i++ )
+            {
+                for ( int j=0; j<input->dofs_np; j++ )
+                {
+                    std::cout << "FK - HD: " << i << " - Dof: " << j << " - Value: " << froude_krylov_p0[input->dofs_np*i+j];
+                    std::cout << " |Value|: " << std::abs( froude_krylov_p0[input->dofs_np*i+j] ) << std::endl << std::flush;
+                }
+            }
+        }
+
         // Calculate diffraction forces
+        MPI_Barrier( MPI_COMM_WORLD );
         calculate_diffraction_forces(
                                             input,
                                             mpi_config,
@@ -372,6 +433,18 @@ void    calculate_freq_domain_coeffs(
                         mpi_config->proc_root,
                         MPI_COMM_WORLD
                     );
+        
+        if ( mpi_config->is_root( ) )
+        {
+            for ( int i=0; i<input->heads_np; i++ )
+            {
+                for ( int j=0; j<input->dofs_np; j++ )
+                {
+                    std::cout << "WD - HD: " << i << " - Dof: " << j << " - Value: " << wave_diffrac_p0[input->dofs_np*i+j];
+                    std::cout << " |Value|: " << std::abs( wave_diffrac_p0[input->dofs_np*i+j] ) << std::endl << std::flush;
+                }
+            }
+        }
 
         // Calculate total wave exciting forces
         if ( mpi_config->is_root( ) )
@@ -462,17 +535,14 @@ void    calculate_freq_domain_coeffs(
     }
 
     // Delete heap memory allocated data
-    if ( mpi_config->is_root( ) )
-    {
-        mkl_free( added_mass_p0 );
-        mkl_free( damping_rad_p0 );
-        mkl_free( froude_krylov_p0 );
-        mkl_free( hydrostiff_p0 );
-        mkl_free( raos_p0 );
-        mkl_free( structural_mass_p0 );
-        mkl_free( wave_diffrac_p0 );
-        mkl_free( wave_exc_p0 );
-    }
+    mkl_free( added_mass_p0 );
+    mkl_free( damping_rad_p0 );
+    mkl_free( froude_krylov_p0 );
+    mkl_free( hydrostiff_p0 );
+    mkl_free( raos_p0 );
+    mkl_free( structural_mass_p0 );
+    mkl_free( wave_diffrac_p0 );
+    mkl_free( wave_exc_p0 );
     
     mkl_free( added_mass );
     mkl_free( all_sources );
@@ -577,6 +647,8 @@ void    calculate_froude_krylov(
                                                                 &gp,
                                                                 false
                                                             );
+                // std::cout << "Froude-Krylov - Index: " << index << " - Index_1: " << mesh_gp->panels_cnp[ib]+ie;
+                // std::cout << " - ie: " << ie << " - ib: " << ib << " - pressure: " << pressure[index] << std::endl << std::flush;
             }
         }
 
@@ -613,8 +685,9 @@ void    calculate_froude_krylov(
                     index_1                 = max_panels * ib + ie;
                     press_i                 = pressure[index_1] * mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->normal_vec[id];
                     froude_krylov[index]    += cuscomplex( 0.0, -ang_freq * rho_w ) * press_i;
+                    // std::cout << "IB: " << ib << " - Dof: " << id << " - pressure: " << pressure[index_1] << " - normal: " << mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->normal_vec[id] << std::endl;
                 }
-                std::cout << "Heading: " << input->heads[ih] << " - IB: " << ib << " - Dof: " << id << " - Froude-Krylov: " << froude_krylov[index] << std::endl;
+                // std::cout << "Heading: " << input->heads[ih] << " - IB: " << ib << " - Dof: " << id << " - Froude-Krylov: " << froude_krylov[index] << std::endl;
             }
         }
     }
@@ -837,7 +910,7 @@ void    calculate_hydromechanic_coeffs(
                         damping_rad[index]  -=  rho_w * press_i.real( );
                     }
 
-                    std::cout << "Body: " << ib << " - " << jb << " - Dof i: " << id << " - Dof j: " << jd << " - AddedMass: " << added_mass[index] << " - Damping: " << damping_rad[index] << " - Index: " << index << std::endl;
+                    // std::cout << "Body: " << ib << " - " << jb << " - Dof i: " << id << " - Dof j: " << jd << " - AddedMass: " << added_mass[index] << " - Damping: " << damping_rad[index] << " - Index: " << index << std::endl;
 
                 }
             }
@@ -845,7 +918,9 @@ void    calculate_hydromechanic_coeffs(
     }
 
     // Deallocate local allocated heap memory
+    // std::cout << "(P" << mpi_config->proc_rank << ") " << "Deallocating HydMech Pressure..." << std::flush;
     mkl_free( pressure );
+    // std::cout << "(P" << mpi_config->proc_rank << ") " << "-->Done!" << std::endl << std::flush;
 }
 
 
@@ -964,6 +1039,7 @@ void    calculate_panel_potentials(
 
 void    calculate_sources_intensity(
                                             Input*          input,
+                                            MpiConfig*      mpi_config,
                                             SclCmpx*        scl,
                                             MeshGroup*      mesh_gp,
                                             GWFDnInterface* green_interf,
@@ -1099,7 +1175,7 @@ void    calculate_sources_intensity(
     /****** Fill Wave Exciting RHS  ********/
     /***************************************/
     // Define local variables to manage array indexes
-                count       = input->dofs_np * mesh_gp->source_nodes_tnp;
+                count       = 60;
     cusfloat    k           = w2k( w, input->water_depth, input->grav_acc );
     cuscomplex  wave_dx     = cuscomplex( 0.0, 0.0 );
     cuscomplex  wave_dy     = cuscomplex( 0.0, 0.0 );
@@ -1154,7 +1230,10 @@ void    calculate_sources_intensity(
                                         +
                                         wave_dz * mesh_gp->source_nodes[j]->normal_vec[2]
                                     );
-            // std::cout << "sources_int[" << count << "]: " << sources_int[count] << std::endl;
+            if ( mpi_config->is_root( ) && count > 59 )
+            {
+                std::cout << "sources_int[" << count << "]: " << sources_int[count] << std::endl;
+            }
             count++;
         }
     }
@@ -1163,6 +1242,14 @@ void    calculate_sources_intensity(
     std::cout << "Calculating system of equations..." << std::endl;
     scl->Solve( sysmat, sources_int );
     std::cout << "--> Done!" << std::endl;
+
+    for ( int i=0; i<70; i++ )
+    {
+        if ( mpi_config->is_root( ) && count > 0 )
+        {
+            std::cout << "sol[" << i << "]: " << sources_int[i] << std::endl;
+        }
+    }
 
     // count       = input->dofs_np * mesh_gp->source_nodes_tnp;
     // for ( int j=scl->start_row_0; j<scl->end_row_0; j++ )
@@ -1270,17 +1357,30 @@ void    calculate_raos(
     {
         std::cout << "Fw[" << i << "]: " << rao[i] << std::endl;
     }
-    
-    // Define linear equations solver
-    SclCmpx scl( 
-                    input->bodies_np * input->dofs_np,
-                    input->heads_np,
-                    1,
-                    mpi_config->proc_root
-                );
 
-    // Solve sytem of equations
-    scl.Solve( sysmat, rao );
+    // Solve system of equations
+    int     rows_np = input->bodies_np * input->dofs_np;
+    int     info    = 0;
+    int*    ipiv    = generate_empty_vector<int>( rows_np );
+    gesv<cuscomplex>( 
+                        &rows_np,
+                        &(input->heads_np),
+                        sysmat,
+                        &(rows_np),
+                        ipiv,
+                        rao,
+                        &(rows_np),
+                        &info
+                    );
+
+    mkl_free( ipiv );
+
+    if ( info != 0 )
+    {
+        std::cerr << "ERROR - Calculating RAO" << std::endl;
+        std::cerr << "Error solving system of equations - Info: " << info << std::endl;
+        throw std::runtime_error( "" );
+    }
 
     for ( int i=0; i<input->heads_np; i++ )
     {

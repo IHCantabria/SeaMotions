@@ -74,6 +74,7 @@ void    calculate_panel_potentials(
 
 void    calculate_sources_intensity(
                                             Input*          input,
+                                            MpiConfig*      mpi_config,
                                             SclCmpx*        scl,
                                             MeshGroup*      mesh,
                                             GWFDnInterface* green_interf,
