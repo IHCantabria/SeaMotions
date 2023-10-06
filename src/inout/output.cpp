@@ -53,8 +53,8 @@ Output::Output(
     this->_ds_qf[5]   = input->dofs_np;
 
     // Storage mean drift dataset dimensions for the ith body
-    this->_ds_wx[0]    = input->bodies_np;
-    this->_ds_wx[1]    = input->heads_np;
+    this->_ds_wx[0]    = input->heads_np;
+    this->_ds_wx[1]    = input->bodies_np;
     this->_ds_wx[2]    = input->angfreqs_np;
     this->_ds_wx[3]    = input->dofs_np;
 
