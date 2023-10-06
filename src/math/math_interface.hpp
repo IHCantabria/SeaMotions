@@ -71,6 +71,21 @@ inline const auto& cblas_nrm2<std::complex<float>> = cblas_scnrm2;
 template<>
 inline const auto& cblas_nrm2<std::complex<double>> = cblas_dznrm2;
 
+// Interface for lapack routines
+template<typename T>
+inline const auto& gesv = sgesv;
+
+template<>
+inline const auto& gesv<float> = sgesv;
+
+template<>
+inline const auto& gesv<double> = dgesv;
+
+template<>
+inline const auto& gesv<std::complex<float>> = cgesv;
+
+template<>
+inline const auto& gesv<std::complex<double>> = zgesv;
 
 // Interface for ScaLapack routines
 template<typename T>
