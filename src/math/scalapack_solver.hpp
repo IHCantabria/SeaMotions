@@ -32,6 +32,7 @@ public:
     char        layout='R'; // Block cyclic, Row major processor mapping
     MKL_INT     lddA;
     MKL_INT     proc_rank;
+    MKL_INT     proc_root;
     MKL_INT     num_block_size;
     MKL_INT     num_block_size_rhs;
     MKL_INT     num_cols_rhs = 1;
@@ -56,7 +57,14 @@ public:
     MKL_INT     zero = 0;
 
     // Declare Constructors
-    ScalapackSolver(MKL_INT num_rows, MKL_INT num_cols_rhs,  MKL_INT num_procs, MKL_INT proc_rank, MPI_Comm global_comm_inc);
+    ScalapackSolver(
+                        MKL_INT num_rows, 
+                        MKL_INT num_cols_rhs,  
+                        MKL_INT num_procs, 
+                        MKL_INT proc_rank,
+                        MKL_INT proc_root,
+                        MPI_Comm global_comm_inc
+                    );
 
     // Declare Class Methdos
     void GenerateRhsComm(void);
@@ -79,17 +87,15 @@ void ScalapackSolver<T>::GenerateRhsComm(void)
     // Get the group of processes in global_comm
     MPI_Group world_group;
     MPI_Comm_group(this->global_comm, &world_group);
-    MKL_INT new_ranks[num_procs_row];
 
-    MKL_INT count = 0;
-    for (MKL_INT i=0; i<num_procs; i++)
-    {
-        if (cols_position[i] == 0)
-        {
-            new_ranks[count] = i;
-            count++;
-        }
-    }
+    // Set new ranks to compose the rhs_comm. In this case
+    // will be the root process only due to the processors
+    // layout configured for Scalapack Solver in this class
+    MKL_INT new_ranks[num_procs_row];
+    new_ranks[0] = this->proc_root;
+    std::cout << "proc_root: " << this->proc_root << std::endl;
+    std::cout << "Rank[0]: " << new_ranks[0] << std::endl;
+
 
     // Construct a group containing all of the prime ranks in world_group
     MPI_Group_incl(world_group, num_procs_row, new_ranks, &rhs_group);
@@ -240,12 +246,14 @@ ScalapackSolver<T>::ScalapackSolver(
                                         MKL_INT     num_cols_rhs_inc,
                                         MKL_INT     num_procs_inc, 
                                         MKL_INT     proc_rank_inc,
+                                        MKL_INT     proc_root_inc,
                                         MPI_Comm    global_comm_inc
                                     )
 {
     // Assing variables
     this->global_comm   = global_comm_inc;
     this->proc_rank     = proc_rank_inc;
+    this->proc_root     = proc_root_inc;
     this->num_rows      = num_rows_inc;
     this->num_procs     = num_procs_inc;
     this->num_cols_rhs  = num_cols_rhs_inc;
