@@ -168,6 +168,7 @@ void    calculate_freq_domain_coeffs(
                     input->dofs_np + input->heads_np,
                     mpi_config->procs_total,
                     mpi_config->proc_rank,
+                    mpi_config->proc_root,
                     MPI_COMM_WORLD
                 );
 
@@ -178,7 +179,6 @@ void    calculate_freq_domain_coeffs(
     int         wave_exc_np     = input->heads_np * mesh_gp->meshes_np * input->dofs_np;
 
     cusfloat*   added_mass      = generate_empty_vector<cusfloat>( hydmech_np );
-    cuscomplex* all_sources     = generate_empty_vector<cuscomplex>( ( input->dofs_np + input->heads_np ) * mesh_gp->source_nodes_tnp );
     cusfloat*   damping_rad     = generate_empty_vector<cusfloat>( hydmech_np );
     cuscomplex* froude_krylov   = generate_empty_vector<cuscomplex>( wave_exc_np );
     cuscomplex* sources         = generate_empty_vector<cuscomplex>( ( input->dofs_np + input->heads_np ) * scl.num_rows_local );
@@ -216,7 +216,7 @@ void    calculate_freq_domain_coeffs(
     
     HMFInterface*   hmf_interf      = new   HMFInterface(
                                                                 mesh_gp->source_nodes,
-                                                                all_sources,
+                                                                sources,
                                                                 mesh_gp->panels[0],
                                                                 0,
                                                                 0,
@@ -278,28 +278,26 @@ void    calculate_freq_domain_coeffs(
                                     );
         
         // Gather source values from each processor
-        MPI_Allgather(
-                        sources,
-                        scl.num_rows_local * ( input->dofs_np + input->heads_np ),
-                        mpi_cuscomplex,
-                        all_sources,
-                        scl.num_rows * ( input->dofs_np + input->heads_np ),
-                        mpi_cuscomplex,
-                        MPI_COMM_WORLD
-                    );
+        MPI_Bcast(
+                    sources,
+                    scl.num_rows * ( input->dofs_np + input->heads_np ),
+                    mpi_cuscomplex,
+                    mpi_config->proc_root,
+                    MPI_COMM_WORLD                
+                );
         // for ( int j=0; j<7; j++ )
         // {
-        //     scl.GetGlobalRhs( &(sources[j*scl.num_rows_local]), &(all_sources[j*scl.num_rows_local]) );
+        //     scl.GetGlobalRhs( &(sources[j*scl.num_rows_local]), &(sources[j*scl.num_rows_local]) );
         // }
 
         // Update sources values for the integration objects
-        hmf_interf->set_source_values( all_sources );
+        hmf_interf->set_source_values( sources );
 
         std::cout << "Scl.NumRows: " << scl.num_rows << " - Scl.NumRowsLocal: " << scl.num_rows_local << std::endl;
         for ( int j=0; j<scl.num_rows*(input->dofs_np+input->heads_np); j++ )
         {
-            // std::cout << "Panel[" << j << "]: " << all_sources[j] << " - " << sources[j] << " - " << std::abs( all_sources[j] ) << " - " << std::arg( all_sources[j] )*180.0/PI << std::endl;
-            std::cout << "Panel[" << j << "]: " << all_sources[j] << std::endl << std::flush;
+            // std::cout << "Panel[" << j << "]: " << sources[j] << " - " << sources[j] << " - " << std::abs( sources[j] ) << " - " << std::arg( sources[j] )*180.0/PI << std::endl;
+            std::cout << "Panel[" << j << "]: " << sources[j] << std::endl << std::flush;
         }
 
         // if ( mpi_config->procs_total == 1 )
@@ -309,7 +307,7 @@ void    calculate_freq_domain_coeffs(
         //     outfile << scl.num_rows*(input->dofs_np+input->heads_np) << std::endl;
         //     for ( int j=0; j<scl.num_rows*(input->dofs_np+input->heads_np); j++ )
         //     {
-        //         outfile << all_sources[j].real( ) << "  " << all_sources[j].imag( ) << std::endl;
+        //         outfile << sources[j].real( ) << "  " << sources[j].imag( ) << std::endl;
         //     }
 
         //     outfile.close( );
@@ -326,25 +324,25 @@ void    calculate_freq_domain_coeffs(
         //     for ( int j=0; j<rows_np; j++ )
         //     {
         //         infile >> a >> b;
-        //         c = all_sources[j];
-        //         all_sources[j] = cuscomplex( a, b );
+        //         c = sources[j];
+        //         sources[j] = cuscomplex( a, b );
         //         if ( mpi_config->proc_rank == 0 )
         //         {
-        //             std::cout << "Index: " << j << " - Diff: " << c-all_sources[j] << " - AllSources: " << all_sources[j] << std::endl << std::flush;
+        //             std::cout << "Index: " << j << " - Diff: " << c-sources[j] << " - AllSources: " << sources[j] << std::endl << std::flush;
         //         }
         //     }
         // }
 
         // for ( int j=0; j<scl.num_rows*(input->dofs_np+input->heads_np); j++ )
         // {
-        //     all_sources[j] = 1.0;
+        //     sources[j] = 1.0;
         // }
 
         calculate_panel_potentials(
                                             input,
                                             mpi_config,
                                             mesh_gp,
-                                            all_sources,
+                                            sources,
                                             input->angfreqs[i]
                                     );
 
@@ -535,6 +533,10 @@ void    calculate_freq_domain_coeffs(
     }
 
     // Delete heap memory allocated data
+    MPI_Barrier( MPI_COMM_WORLD );
+    delete green_dn_interf;
+    delete hmf_interf;
+
     mkl_free( added_mass_p0 );
     mkl_free( damping_rad_p0 );
     mkl_free( froude_krylov_p0 );
@@ -545,15 +547,14 @@ void    calculate_freq_domain_coeffs(
     mkl_free( wave_exc_p0 );
     
     mkl_free( added_mass );
-    mkl_free( all_sources );
     mkl_free( damping_rad );
     mkl_free( froude_krylov );
     mkl_free( sources );
     mkl_free( sysmat );
     mkl_free( wave_diffrac );
 
-    delete green_dn_interf;
-    delete hmf_interf;
+    
+    delete mesh_gp;
     delete [] all_meshes;
 }
 
@@ -928,7 +929,7 @@ void    calculate_panel_potentials(
                                             Input*          input,
                                             MpiConfig*      mpi_config,
                                             MeshGroup*      mesh_gp,
-                                            cuscomplex*     all_sources,
+                                            cuscomplex*     sources,
                                             cusfloat        ang_freq
                                     )
 {
@@ -946,13 +947,13 @@ void    calculate_panel_potentials(
     // Create Function to integrate potential value
     GRFInterface*   green_interf_steady = new   GRFInterface(
                                                                 mesh_gp->source_nodes[0],
-                                                                all_sources[0],
+                                                                sources[0],
                                                                 mesh_gp->panels[0]->center,
                                                                 input->water_depth
                                                             );
     GWFInterface*   green_interf_wave   = new   GWFInterface(
                                                                 mesh_gp->source_nodes[0],
-                                                                all_sources[0],
+                                                                sources[0],
                                                                 mesh_gp->panels[0]->center,
                                                                 ang_freq,
                                                                 input->water_depth,
@@ -1005,11 +1006,11 @@ void    calculate_panel_potentials(
             // Set current source value
             green_interf_steady->set_source(
                                             mesh_gp->source_nodes[j],
-                                            all_sources[j]
+                                            sources[j]
                                         );
             green_interf_wave->set_source(
                                             mesh_gp->source_nodes[j],
-                                            all_sources[j]
+                                            sources[j]
                                         );
             
             pot_i_steady    = adaptive_quadrature_panel(
@@ -1025,7 +1026,7 @@ void    calculate_panel_potentials(
                                                             &gp
                                                         );
             panel_potential +=  ( pot_i_steady + pot_i_wave ) /4.0 / PI;
-            // std::cout << "pot_i[" << j << "]: " << pot_i/4.0/PI << " - Source Value: " << all_sources[j] << std::endl;
+            // std::cout << "pot_i[" << j << "]: " << pot_i/4.0/PI << " - Source Value: " << sources[j] << std::endl;
         }
         // std::cout << "Potential[" << i << "]: " << panel_potential << " - " << std::abs( panel_potential ) << " - " << std::arg( panel_potential )*180.0/PI << std::endl;
         // throw std::runtime_error( "" );
@@ -1133,8 +1134,12 @@ void    calculate_sources_intensity(
     int _cols_np = scl->end_col - scl->start_col;
     std::cout << "--> Done!" << std::endl;
     std::cout << "count_total: " << count_total << std::endl;
-    std::cout << "Num.Rows: " << _rows_np << std::endl;
-    std::cout << "Num.Cols: " << _cols_np << std::endl;
+    std::cout << "Num.Rows: " << scl->num_rows_local << " - " << scl->num_rows << std::endl;
+    std::cout << "Num.Cols: " << scl->num_cols_local << std::endl;
+    std::cout << "StartRow: " << scl->start_row << " - StartRow0: " << scl->start_row_0 << std::endl;
+    std::cout << "StartCol: " << scl->start_col << " - StartCol0: " << scl->start_col_0 << std::endl;
+    std::cout << "EndRow: " << scl->end_row << " - EndRow0: " << scl->end_row_0 << std::endl;
+    std::cout << "EndCol: " << scl->end_col << " - EndCol0: " << scl->end_col_0 << std::endl;
 
     /***************************************/
     /***** Fill Hydromechanics RHS  ********/
