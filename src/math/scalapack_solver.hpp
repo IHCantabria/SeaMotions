@@ -207,15 +207,15 @@ void ScalapackSolver<T>::Initialize(void)
 
     // Get end positions of the matrix
     this->end_row = this->start_row + this->num_rows_local;
-    this->end_row = ( this->end_row > this->num_rows ) ? this->num_rows : this->end_row;
+    this->end_row = ( this->end_row > this->num_rows ) ? this->num_rows+1 : this->end_row;
     this->end_col = this->start_col + this->num_cols_local;
-    this->end_col = ( this->end_col > this->num_rows ) ? this->num_rows : this->end_col;
+    this->end_col = ( this->end_col > this->num_rows ) ? this->num_rows+1 : this->end_col;
     this->end_row += 1;
     this->end_col += 1;
 
     // Get 0 reference position start and end intervals
-    this->end_col_0     = this->end_col - 1;
-    this->end_row_0     = this->end_row - 1;
+    this->end_col_0     = this->end_col - 2;
+    this->end_row_0     = this->end_row - 2;
     this->start_col_0   = this->start_col - 1;
     this->start_row_0   = this->start_row - 1;
 
