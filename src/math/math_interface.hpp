@@ -87,6 +87,16 @@ inline const auto& gesv<std::complex<float>> = cgesv;
 template<>
 inline const auto& gesv<std::complex<double>> = zgesv;
 
+// Interface for number sorting functions
+template<typename T>
+inline const auto& lasrt2           = slasrt2;
+
+template<>
+inline const auto& lasrt2<float>    = slasrt2;
+
+template<>
+inline const auto& lasrt2<double>   = dlasrt2;
+
 // Interface for ScaLapack routines
 template<typename T>
 inline const auto& pgesv = psgesv;
