@@ -486,7 +486,7 @@ void    calculate_freq_domain_coeffs(
                 output->save_hydromechanics_format(
                                                         i,
                                                         _DN_DAMPING_RAD,
-                                                        added_mass_p0
+                                                        damping_rad_p0
                                                     );
             }
 
