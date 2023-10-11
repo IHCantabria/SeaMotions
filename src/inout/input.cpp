@@ -4,6 +4,7 @@
 
 // Include local modules
 #include "input.hpp"
+#include "../math/math_interface.hpp"
 #include "../math/math_tools.hpp"
 
 
@@ -52,6 +53,28 @@ void Input::configure( void )
         throw std::runtime_error( "" );
     }
 
+    // Sort frequencies from the lowest to the highest
+    int* sort_keys  = generate_empty_vector<int>( this->angfreqs_np );
+    int  info       = 0;
+    lasrt2<cusfloat>( 
+                        "I",
+                        &this->angfreqs_np,
+                        this->angfreqs.data(),
+                        sort_keys,
+                        &info
+                    );
+
+    if ( info != 0 )
+    {
+        std::cerr << "ERROR - lasrt2" << std::endl;
+        std::cerr << "Sort algorithm could not sort the input angular frequencies.";
+        std::cerr << " - Error Code: " << info << std::endl;
+        throw std::runtime_error( "" );
+    }
+
+    mkl_free( sort_keys );
+
+    // Create a vector for the frequencies
     this->freqs = generate_empty_vector<cusfloat>( this->angfreqs_np );
     for ( int i=0; i<this->angfreqs_np; i++ )
     {
