@@ -1180,7 +1180,7 @@ void    calculate_sources_intensity(
     /****** Fill Wave Exciting RHS  ********/
     /***************************************/
     // Define local variables to manage array indexes
-                count       = 60;
+                count       = input->dofs_np * mesh_gp->source_nodes_tnp;
     cusfloat    k           = w2k( w, input->water_depth, input->grav_acc );
     cuscomplex  wave_dx     = cuscomplex( 0.0, 0.0 );
     cuscomplex  wave_dy     = cuscomplex( 0.0, 0.0 );
@@ -1235,10 +1235,7 @@ void    calculate_sources_intensity(
                                         +
                                         wave_dz * mesh_gp->source_nodes[j]->normal_vec[2]
                                     );
-            if ( mpi_config->is_root( ) && count > 59 )
-            {
-                std::cout << "sources_int[" << count << "]: " << sources_int[count] << std::endl;
-            }
+            
             count++;
         }
     }
@@ -1247,20 +1244,6 @@ void    calculate_sources_intensity(
     std::cout << "Calculating system of equations..." << std::endl;
     scl->Solve( sysmat, sources_int );
     std::cout << "--> Done!" << std::endl;
-
-    for ( int i=0; i<70; i++ )
-    {
-        if ( mpi_config->is_root( ) && count > 0 )
-        {
-            std::cout << "sol[" << i << "]: " << sources_int[i] << std::endl;
-        }
-    }
-
-    // count       = input->dofs_np * mesh_gp->source_nodes_tnp;
-    // for ( int j=scl->start_row_0; j<scl->end_row_0; j++ )
-    // {
-    //     std::cout << "Sources[" << count+j << "]: " << sources_int[count+j] << std::endl;
-    // }
     
 }
 
