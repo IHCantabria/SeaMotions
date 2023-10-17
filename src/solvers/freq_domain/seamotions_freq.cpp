@@ -62,7 +62,8 @@ int main( int argc, char* argv[] )
     /**** Launch Hydrostatics Calculation ****/
     /*****************************************/
     MPI_Barrier( MPI_COMM_WORLD );
-    double start = MPI_Wtime( );
+    double hydrostat_tstart     = MPI_Wtime( );
+
     Hydrostatics** hydrostatics = new Hydrostatics*[input->bodies_np];
     for ( int i=0; i<input->bodies_np; i++ )
     {
@@ -77,15 +78,11 @@ int main( int argc, char* argv[] )
                                             );
     }
     MPI_Barrier( MPI_COMM_WORLD );
-    double end = MPI_Wtime( );
+    double hydrostat_tend = MPI_Wtime( );
 
     if ( mpi_config.is_root( ) )
     {
-        for ( int i=0 ; i<input->bodies_np; i++ )
-        {
-            hydrostatics[i]->print( );
-        }
-        std::cout << "Execution time [s]: " << (end - start) << std::endl;
+        std::cout << "Execution time [s]: " << ( hydrostat_tend - hydrostat_tstart ) << std::endl;
     }
 
     /*****************************************/

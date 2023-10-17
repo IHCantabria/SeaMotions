@@ -74,7 +74,6 @@ void    calculate_panel_potentials(
 
 void    calculate_sources_intensity(
                                             Input*          input,
-                                            MpiConfig*      mpi_config,
                                             SclCmpx*        scl,
                                             MeshGroup*      mesh,
                                             GWFDnInterface* green_interf,
@@ -85,7 +84,6 @@ void    calculate_sources_intensity(
 
 void    calculate_raos(
                                             Input*          input,
-                                            MpiConfig*      mpi_config,
                                             cusfloat*       structural_mass,
                                             cusfloat*       added_mass,
                                             cusfloat*       damping_rad,

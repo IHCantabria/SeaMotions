@@ -47,7 +47,6 @@ inline cuscomplex   _adaptive_quadrature_panel(
 
     // Compare the cumulative integral value with the previous
     // solution
-    // std::cout << "Adapted Solution: " << int_sol << " - Prev. Sol: " << prev_int << std::endl;
     bool is_equal = !assert_complex_equality( prev_int, int_sol, tol );
     if ( 
             is_equal
@@ -154,7 +153,6 @@ inline cuscomplex adaptive_quadrature_panel(
                                                     int_sol_1, 
                                                     tol 
                                                 );
-            // std::cout << "int_sol_0: " << int_sol_0 << " - int_sol_1: " << int_sol_1 << " - Diff: " << int_sol_0-int_sol_1 << " - tol: " << tol << " - is_equal: " << is_equal << std::endl;
             if ( is_equal )
             {
                 break;
@@ -174,7 +172,6 @@ inline cuscomplex adaptive_quadrature_panel(
                                             1
                                         );
     }
-    // std::cout << "First Integration Value: " << int_sol_1 << std::endl;
 
     // Define adaption level
     int adapt_level = 0;
@@ -191,8 +188,6 @@ inline cuscomplex adaptive_quadrature_panel(
                                                         adapt_level
                                                     );
     }
-
-    // std::cout << "Final Solution: " << int_sol_1 << std::endl;
 
     return int_sol_1;
 }
@@ -299,7 +294,6 @@ cusfloat romberg_quadrature(
         h /= 2.0;
         for (int j=1; j<=trap_steps; j++)
         {
-            // std::cout << " --> Root: " << a+(2*j-1)*h << " - Value: " << f(a+(2*j-1)*h) << std::endl;
             local_trap += f(a+(2*j-1)*h);
         }
         local_trap *= h;

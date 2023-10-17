@@ -93,8 +93,6 @@ void    calculate_diffraction_forces(
                                                                 &gp,
                                                                 true
                                                             );
-                std::cout << "Potential[" << ib << ", " << ie << "]: " << pressure[index];
-                std::cout << " - I1: " << mesh_gp->panels_cnp[ib]+ie << " - index: " << index <<   " - Proc.Rank: " << mpi_config->proc_rank << std::endl << std::flush;
             }
         }
 
@@ -126,10 +124,8 @@ void    calculate_diffraction_forces(
                     // Integrate pressure over panel
                     index_1             = max_panels * ib + ie;
                     press_i             = pressure[index_1] * mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->normal_vec[id];
-                    // std::cout << "Pressure[" << ie << "]: " << w*rho_w*press_i << std::endl;
                     wave_diffrac[index] += cuscomplex( 0.0, -w * rho_w ) * press_i;
                 }
-                // std::cout << "Heading: " << input->heads[ih] << " - IB: " << ib << " - Dof: " << id << " - Wave Diffrac: " << wave_diffrac[index] << std::endl;
             }
         }
     }
@@ -258,6 +254,9 @@ void    calculate_freq_domain_coeffs(
     // Loop over frequencies
     for ( int i=0; i<input->angfreqs_np; i++ )
     {
+        MPI_Barrier( MPI_COMM_WORLD );
+        double freq_tstart = MPI_Wtime( );
+
         std::cout << "Calculating angular frequency: " << input->angfreqs[i] << std::endl;
         // Recalculate wave properties for the current 
         // angular frequency
@@ -268,7 +267,6 @@ void    calculate_freq_domain_coeffs(
         MPI_Barrier( MPI_COMM_WORLD );
         calculate_sources_intensity(
                                         input,
-                                        mpi_config,
                                         &scl,
                                         mesh_gp,
                                         green_dn_interf,
@@ -285,58 +283,9 @@ void    calculate_freq_domain_coeffs(
                     mpi_config->proc_root,
                     MPI_COMM_WORLD                
                 );
-        // for ( int j=0; j<7; j++ )
-        // {
-        //     scl.GetGlobalRhs( &(sources[j*scl.num_rows_local]), &(sources[j*scl.num_rows_local]) );
-        // }
 
         // Update sources values for the integration objects
         hmf_interf->set_source_values( sources );
-
-        std::cout << "Scl.NumRows: " << scl.num_rows << " - Scl.NumRowsLocal: " << scl.num_rows_local << std::endl;
-        for ( int j=0; j<scl.num_rows*(input->dofs_np+input->heads_np); j++ )
-        {
-            // std::cout << "Panel[" << j << "]: " << sources[j] << " - " << sources[j] << " - " << std::abs( sources[j] ) << " - " << std::arg( sources[j] )*180.0/PI << std::endl;
-            std::cout << "Panel[" << j << "]: " << sources[j] << std::endl << std::flush;
-        }
-
-        // if ( mpi_config->procs_total == 1 )
-        // {
-        //     std::ofstream outfile( "my_coeffs.dat" );
-
-        //     outfile << scl.num_rows*(input->dofs_np+input->heads_np) << std::endl;
-        //     for ( int j=0; j<scl.num_rows*(input->dofs_np+input->heads_np); j++ )
-        //     {
-        //         outfile << sources[j].real( ) << "  " << sources[j].imag( ) << std::endl;
-        //     }
-
-        //     outfile.close( );
-        // }
-
-        // if ( mpi_config->procs_total > 1 )
-        // {
-        //     std::ifstream infile( "my_coeffs.dat" );
-
-        //     cusfloat a, b;
-        //     cuscomplex c;
-        //     int rows_np = 0;
-        //     infile >> rows_np;
-        //     for ( int j=0; j<rows_np; j++ )
-        //     {
-        //         infile >> a >> b;
-        //         c = sources[j];
-        //         sources[j] = cuscomplex( a, b );
-        //         if ( mpi_config->proc_rank == 0 )
-        //         {
-        //             std::cout << "Index: " << j << " - Diff: " << c-sources[j] << " - AllSources: " << sources[j] << std::endl << std::flush;
-        //         }
-        //     }
-        // }
-
-        // for ( int j=0; j<scl.num_rows*(input->dofs_np+input->heads_np); j++ )
-        // {
-        //     sources[j] = 1.0;
-        // }
 
         calculate_panel_potentials(
                                             input,
@@ -356,7 +305,7 @@ void    calculate_freq_domain_coeffs(
                                             added_mass,
                                             damping_rad
                                         );
-        std::cout << "(P" << mpi_config->proc_rank << ") " << "Reducing Added Mass..." << std::flush;
+        
         MPI_Reduce(
                         added_mass,
                         added_mass_p0,
@@ -366,9 +315,7 @@ void    calculate_freq_domain_coeffs(
                         mpi_config->proc_root,
                         MPI_COMM_WORLD
                     );
-        std::cout << "(P" << mpi_config->proc_rank << ") " << "--> Done!" << std::endl << std::flush;
 
-        std::cout << "(P" << mpi_config->proc_rank << ") " << "Reducing Damping..." << std::flush;
         MPI_Reduce(
                         damping_rad,
                         damping_rad_p0,
@@ -378,7 +325,6 @@ void    calculate_freq_domain_coeffs(
                         mpi_config->proc_root,
                         MPI_COMM_WORLD
                     );
-        std::cout << "(P" << mpi_config->proc_rank << ") " << "--> Done!" << std::endl;
 
         // Calculate Froude-Krylov forces
         calculate_froude_krylov(
@@ -398,18 +344,6 @@ void    calculate_freq_domain_coeffs(
                         mpi_config->proc_root,
                         MPI_COMM_WORLD
                     );
-
-        if ( mpi_config->is_root( ) )
-        {
-            for ( int i=0; i<input->heads_np; i++ )
-            {
-                for ( int j=0; j<input->dofs_np; j++ )
-                {
-                    std::cout << "FK - HD: " << i << " - Dof: " << j << " - Value: " << froude_krylov_p0[input->dofs_np*i+j];
-                    std::cout << " |Value|: " << std::abs( froude_krylov_p0[input->dofs_np*i+j] ) << std::endl << std::flush;
-                }
-            }
-        }
 
         // Calculate diffraction forces
         MPI_Barrier( MPI_COMM_WORLD );
@@ -432,18 +366,6 @@ void    calculate_freq_domain_coeffs(
                         MPI_COMM_WORLD
                     );
         
-        if ( mpi_config->is_root( ) )
-        {
-            for ( int i=0; i<input->heads_np; i++ )
-            {
-                for ( int j=0; j<input->dofs_np; j++ )
-                {
-                    std::cout << "WD - HD: " << i << " - Dof: " << j << " - Value: " << wave_diffrac_p0[input->dofs_np*i+j];
-                    std::cout << " |Value|: " << std::abs( wave_diffrac_p0[input->dofs_np*i+j] ) << std::endl << std::flush;
-                }
-            }
-        }
-
         // Calculate total wave exciting forces
         if ( mpi_config->is_root( ) )
         {
@@ -460,7 +382,6 @@ void    calculate_freq_domain_coeffs(
         {
             calculate_raos(
                                 input,
-                                mpi_config,
                                 structural_mass_p0,
                                 added_mass_p0,
                                 damping_rad_p0,
@@ -529,7 +450,12 @@ void    calculate_freq_domain_coeffs(
         }
 
         MPI_Barrier( MPI_COMM_WORLD );
+        double freq_tend = MPI_Wtime( );
 
+        if ( mpi_config->is_root( ) )
+        {
+            std::cout << "Execution time [s]: " << ( freq_tend - freq_tstart ) << std::endl;
+        }
     }
 
     // Delete heap memory allocated data
@@ -837,7 +763,6 @@ void    calculate_hydromechanic_coeffs(
     int         index           = 0;
     int         index_1         = 0;
     cuscomplex  press_i         = 0.0;
-    // cuscomplex  pressure = 0.0;
     for ( int ib=0; ib<mesh_gp->meshes_np; ib++ )
     {
         // Calculate MPI data chunks
@@ -854,7 +779,6 @@ void    calculate_hydromechanic_coeffs(
             for ( int jb=0; jb<mesh_gp->meshes_np; jb++ )
             {
                 // Set ith dof
-                // std::cout << "start index: " << mesh_gp->source_nodes_tnp*id + mesh_gp->source_nodes_cnp[jb] << std::endl; 
                 hmf_interf->set_start_index_i( 
                                                     mesh_gp->source_nodes_tnp*id,
                                                     mesh_gp->source_nodes_cnp[jb],
@@ -877,7 +801,6 @@ void    calculate_hydromechanic_coeffs(
                                                                     &gp,
                                                                     true
                                                                 );
-                    // std::cout << "Pressure [" << index << "]: " << pressure[index] << std::endl;
                 }
             }
         }
@@ -906,12 +829,9 @@ void    calculate_hydromechanic_coeffs(
                         // Integrate pressure over panel
                         index_1             = ( max_panels * mesh_gp->meshes_np ) * id + max_panels * jb + ie;
                         press_i             = pressure[index_1] * mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->normal_vec[jd];
-                        // std::cout << "press_i: " << press_i << " - Normal: " << mesh_gp->panels[ie]->normal_vec[jd] << std::endl;
                         added_mass[index]   -=  rho_w * press_i.imag( ) / ang_freq;
                         damping_rad[index]  -=  rho_w * press_i.real( );
                     }
-
-                    // std::cout << "Body: " << ib << " - " << jb << " - Dof i: " << id << " - Dof j: " << jd << " - AddedMass: " << added_mass[index] << " - Damping: " << damping_rad[index] << " - Index: " << index << std::endl;
 
                 }
             }
@@ -919,9 +839,7 @@ void    calculate_hydromechanic_coeffs(
     }
 
     // Deallocate local allocated heap memory
-    // std::cout << "(P" << mpi_config->proc_rank << ") " << "Deallocating HydMech Pressure..." << std::flush;
     mkl_free( pressure );
-    // std::cout << "(P" << mpi_config->proc_rank << ") " << "-->Done!" << std::endl << std::flush;
 }
 
 
@@ -994,8 +912,6 @@ void    calculate_panel_potentials(
         green_interf_steady->set_field_point( mesh_gp->panels[i]->center );
         green_interf_wave->set_field_point( mesh_gp->panels[i]->center );
 
-        // std::cout << "Field Point: " << mesh_gp->panels[i]->center[0] << " - " << mesh_gp->panels[i]->center[1] << " - " << mesh_gp->panels[i]->center[2] << std::endl;
-
         // Clean panel potential
         panel_potential = complex( 0.0, 0.0 );
 
@@ -1026,10 +942,7 @@ void    calculate_panel_potentials(
                                                             &gp
                                                         );
             panel_potential +=  ( pot_i_steady + pot_i_wave ) /4.0 / PI;
-            // std::cout << "pot_i[" << j << "]: " << pot_i/4.0/PI << " - Source Value: " << sources[j] << std::endl;
         }
-        // std::cout << "Potential[" << i << "]: " << panel_potential << " - " << std::abs( panel_potential ) << " - " << std::arg( panel_potential )*180.0/PI << std::endl;
-        // throw std::runtime_error( "" );
     }
 
     // Delete heap allocated memory
@@ -1040,7 +953,6 @@ void    calculate_panel_potentials(
 
 void    calculate_sources_intensity(
                                             Input*          input,
-                                            MpiConfig*      mpi_config,
                                             SclCmpx*        scl,
                                             MeshGroup*      mesh_gp,
                                             GWFDnInterface* green_interf,
@@ -1068,20 +980,13 @@ void    calculate_sources_intensity(
                     };
 
     // Loop over panels to integrate value
-    std::cout << "GWFDnInterface: " << green_interf << std::endl;
-    std::cout << "Creating system matrix..." << std::endl;
     int         col_count   = 0;
     cuscomplex  int_value( 0.0, 0.0 );
     SourceNode* source_i    = nullptr;
     int         row_count   = 0;
 
-    // std::ofstream outfile( "matrix.dat" );
-    // outfile << "Num.Rows: " << scl->num_rows << std::endl;
-    // MPI_Barrier( MPI_COMM_WORLD );
-    int count_total = 0;
     for ( int i=scl->start_col_0; i<scl->end_col_0; i++ )
     {
-        // std::cout << "Source[i]: " << i << " - " << mesh_gp->source_nodes[i] << std::endl;
         // Get memory address of the ith panel
         source_i = mesh_gp->source_nodes[i];
         green_interf->set_source_i( source_i );
@@ -1091,7 +996,6 @@ void    calculate_sources_intensity(
         row_count = 0;
         for ( int j=scl->start_row_0; j<scl->end_row_0; j++ )
         {
-            // std::cout << "Panel[j]: " << j << " - " << mesh->source_nodes[j] << std::endl;
             // Get memory address of the panel jth
             green_interf->set_source_j( mesh_gp->source_nodes[j] );
 
@@ -1105,46 +1009,27 @@ void    calculate_sources_intensity(
                 int_value   =   adaptive_quadrature_panel(
                                                                 source_i->panel,
                                                                 lmb_fcn,
-                                                                0.001,
+                                                                1.0,
                                                                 &gp,
                                                                 false
                                                             );
                 int_value   =   int_value / 4.0 / PI;
             }
 
-            // if ( std::abs( int_value.real( ) ) < 1e-10 )
-            // {
-            //     std::cout << "I: " << i << " - J: " << j << " - Zero value" << std::endl;
-            // }
-            std::cout << "index: " << col_count*scl->num_rows_local+row_count <<  " - int_value: " << int_value << std::endl;
             sysmat[col_count*scl->num_rows_local+row_count] = int_value;
-            // outfile << int_value.real( ) << " " << int_value.imag( ) << std::endl;
-            // std::cout << "Index Count: " << col_count*scl->num_rows_local+row_count << std::endl;
-            count_total += 1;
+
             // Advance row count
             row_count++;
         }
-        std::cout << std::endl;
+
         // Advance column count
         col_count++;
     }
 
-    // MPI_Barrier( MPI_COMM_WORLD );
-    int _rows_np = scl->end_row - scl->start_row;
-    int _cols_np = scl->end_col - scl->start_col;
-    std::cout << "--> Done!" << std::endl;
-    std::cout << "count_total: " << count_total << std::endl;
-    std::cout << "Num.Rows: " << scl->num_rows_local << " - " << scl->num_rows << std::endl;
-    std::cout << "Num.Cols: " << scl->num_cols_local << std::endl;
-    std::cout << "StartRow: " << scl->start_row << " - StartRow0: " << scl->start_row_0 << std::endl;
-    std::cout << "StartCol: " << scl->start_col << " - StartCol0: " << scl->start_col_0 << std::endl;
-    std::cout << "EndRow: " << scl->end_row << " - EndRow0: " << scl->end_row_0 << std::endl;
-    std::cout << "EndCol: " << scl->end_col << " - EndCol0: " << scl->end_col_0 << std::endl;
-
     /***************************************/
     /***** Fill Hydromechanics RHS  ********/
     /***************************************/
-    std::cout << "Calculating RHS..." << std::endl;
+
     // Declare local variables to be used
     int         count           = 0;
 
@@ -1156,25 +1041,9 @@ void    calculate_sources_intensity(
         for ( int j=scl->start_row_0; j<scl->end_row_0; j++ )
         {
             sources_int[count] = complex( 0.0, w * mesh_gp->source_nodes[j]->normal_vec[i] );
-            // std::cout << "Source Node [" << j << "]: " << mesh_gp->source_nodes[j]->normal_vec[i] << std::endl;
-            // std::cout << " - Center Panel:  " << mesh_gp->source_nodes[j]->position[0];
-            // std::cout << " - " << mesh_gp->source_nodes[j]->position[1];
-            // std::cout << " - " << mesh_gp->source_nodes[j]->position[2];
-            // std::cout << std::endl;
-            // std::cout << " - Normal Vec: " << mesh_gp->source_nodes[j]->normal_vec[0];
-            // std::cout << " - " << mesh_gp->source_nodes[j]->normal_vec[1];
-            // std::cout << " - " << mesh_gp->source_nodes[j]->normal_vec[2];
-            // std::cout << std::endl;
-            // outfile << sources_int[start_pos+count].real( ) << " " << sources_int[start_pos+count].imag( ) << std::endl;
-            std::cout << "sources_int[" << count <<"]: " << sources_int[count] << std::endl;
             count++;
         }
-        std::cout << std::endl;
-        // break;
     }
-    // outfile.close( );
-
-    std::cout << "--> Done!" << std::endl;
 
     /***************************************/
     /****** Fill Wave Exciting RHS  ********/
@@ -1241,16 +1110,12 @@ void    calculate_sources_intensity(
     }
 
     // Solve system of equations
-    std::cout << "Calculating system of equations..." << std::endl;
     scl->Solve( sysmat, sources_int );
-    std::cout << "--> Done!" << std::endl;
-    
 }
 
 
 void    calculate_raos(
                                             Input*          input,
-                                            MpiConfig*      mpi_config,
                                             cusfloat*       structural_mass,
                                             cusfloat*       added_mass,
                                             cusfloat*       damping_rad,
@@ -1269,7 +1134,6 @@ void    calculate_raos(
 
     // Fill in matrix system
     int         index   = 0;
-    cusfloat    mass_i = 0.0;
     for ( int i=0; i<input->bodies_np; i++ )
     {
         for ( int j=0; j<input->bodies_np; j++ )
@@ -1292,27 +1156,9 @@ void    calculate_raos(
                                                     -pow2s( ang_freq ) * ( structural_mass[index] + added_mass[index] ) + hydstiffness[index],
                                                     ang_freq * damping_rad[index]
                                                 );
-                    if ( k==0 & m==0 )
-                    {
-                        std::cout << "mass_i: " << mass_i << std::endl;
-                        std::cout << "added_mass: " << added_mass[index] << std::endl;
-                        std::cout << "daming: " << damping_rad[index] << std::endl;
-                        std::cout << "hydstiffness: " << hydstiffness[index] << std::endl;
-                        std::cout << "sysmat[index]: " << sysmat[index] << std::endl;
-                    }
                 }
             }
         }
-    }
-
-    for ( int i=0; i<6; i++ )
-    {
-        std::cout << "sysmat[" << i << ", :]: ";
-        for ( int j=0; j<6; j++ )
-        {
-            std::cout << sysmat[6*i+j] << " ";
-        }
-        std::cout << std::endl;
     }
 
     // Fill in right hand side vector
@@ -1330,20 +1176,8 @@ void    calculate_raos(
                             k
                         );
                 rao[index] = wave_diffrac[index] + froude_krylov[index];
-                if ( k == 0 )
-                {
-                    std::cout << "Wave Diffrac: " << wave_diffrac[index] << std::endl;
-                    std::cout << "Froude Krylov: " << froude_krylov[index] << std::endl;
-                    std::cout << "Wave Total: " << rao[index] << std::endl;
-                }
             }
         }
-    }
-
-    std::cout << "Fw: " << std::endl;
-    for ( int i=0; i<6; i++ )
-    {
-        std::cout << "Fw[" << i << "]: " << rao[i] << std::endl;
     }
 
     // Solve system of equations
@@ -1368,26 +1202,6 @@ void    calculate_raos(
         std::cerr << "ERROR - Calculating RAO" << std::endl;
         std::cerr << "Error solving system of equations - Info: " << info << std::endl;
         throw std::runtime_error( "" );
-    }
-
-    for ( int i=0; i<input->heads_np; i++ )
-    {
-        std::cout << "Heading: " << input->heads[i] << std::endl;
-        for ( int j=0; j<input->bodies_np; j++ )
-        {
-            std::cout << " -> Bodies: " << j << std::endl;
-            for ( int k=0; k<input->dofs_np; k++ )
-            {
-                index = (
-                            i * input->bodies_np * input->dofs_np
-                            +
-                            j * input->dofs_np
-                            +
-                            k
-                        );
-                std::cout << " --> Dof[" << k << "]: " << rao[index] << " - Mag: " << std::abs( rao[index] ) << " - Phase: " << std::arg( rao[index] ) << std::endl;
-            }
-        }
     }
 
     // Deallocate local heap memory
