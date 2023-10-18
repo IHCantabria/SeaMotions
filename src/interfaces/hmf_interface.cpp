@@ -14,7 +14,9 @@ HMFInterface::HMFInterface(
                                 int             dof_j,
                                 cusfloat        ang_freq,
                                 cusfloat        water_depth,
-                                cusfloat        grav_acc
+                                cusfloat        grav_acc,
+                                cusfloat        press_abs_err_in,
+                                cusfloat        press_rel_err_in
                             )
 {
     // Storage necessary input class arguments into the attributes
@@ -24,6 +26,8 @@ HMFInterface::HMFInterface(
     this->_end_index        = end_index;
     this->_offset_index     = offset_index;
     this->_panel            = panel;
+    this->_press_abs_err    = press_abs_err_in;
+    this->_press_rel_err    = press_rel_err_in;
     this->_source_nodes     = source_nodes;
     this->_source_values    = source_values;
     this->_start_index      = start_index;
@@ -125,15 +129,15 @@ cuscomplex  HMFInterface::operator()(
         pot_i_steady    =  adaptive_quadrature_panel(
                                                         this->_source_nodes[i]->panel,
                                                         steady_fcn,
-                                                        0.01,
-                                                        &gp
+                                                        this->_press_abs_err,
+                                                        this->_press_rel_err
                                                     );
         
         pot_i_wave      =  adaptive_quadrature_panel(
                                                         this->_source_nodes[i]->panel,
                                                         wave_fcn,
-                                                        0.001,
-                                                        &gp
+                                                        this->_press_abs_err,
+                                                        this->_press_rel_err
                                                     );
         // std::cout << "Potential [" << i <<  "]: " << potential_i / 4.0 / PI << " - Source: " << this->_source_values[index] << std::endl;
         potential       += ( pot_i_steady + pot_i_wave ) / 4.0 / PI; // * this->_panel->normal_vec[this->_dof_j];

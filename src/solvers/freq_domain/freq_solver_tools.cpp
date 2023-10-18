@@ -19,7 +19,6 @@ void    calculate_diffraction_forces(
                                             cuscomplex*     wave_diffrac
                                     )
 {
-    std::cout << "Prock Rank Entry: " << mpi_config->proc_rank << std::endl;
     // Define local variables
     int         dofs_np = input->dofs_np;
     cusfloat    rho_w   = input->water_density;
@@ -89,8 +88,8 @@ void    calculate_diffraction_forces(
                 pressure[index] = adaptive_quadrature_panel(
                                                                 mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie],
                                                                 target_fcn,
-                                                                1.0,
-                                                                &gp,
+                                                                input->press_abs_err,
+                                                                input->press_rel_err,
                                                                 true
                                                             );
             }
@@ -220,7 +219,9 @@ void    calculate_freq_domain_coeffs(
                                                                 0,
                                                                 input->angfreqs[0],
                                                                 input->water_depth,
-                                                                input->grav_acc
+                                                                input->grav_acc,
+                                                                input->press_abs_err,
+                                                                input->press_rel_err
                                                         );
 
     /****************************************************/
@@ -570,8 +571,8 @@ void    calculate_froude_krylov(
                 pressure[index] = adaptive_quadrature_panel(
                                                                 mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie],
                                                                 target_fcn,
-                                                                0.001,
-                                                                &gp,
+                                                                input->press_abs_err,
+                                                                input->press_rel_err,
                                                                 false
                                                             );
                 // std::cout << "Froude-Krylov - Index: " << index << " - Index_1: " << mesh_gp->panels_cnp[ib]+ie;
@@ -797,8 +798,8 @@ void    calculate_hydromechanic_coeffs(
                     pressure[index] = adaptive_quadrature_panel(
                                                                     mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie],
                                                                     target_fcn,
-                                                                    1.0,
-                                                                    &gp,
+                                                                    input->press_abs_err,
+                                                                    input->press_rel_err,
                                                                     true
                                                                 );
                 }
@@ -932,14 +933,14 @@ void    calculate_panel_potentials(
             pot_i_steady    = adaptive_quadrature_panel(
                                                             mesh_gp->source_nodes[j]->panel,
                                                             steady_fcn,
-                                                            0.01,
-                                                            &gp
+                                                            input->press_abs_err,
+                                                            input->press_rel_err
                                                         );
             pot_i_wave      = adaptive_quadrature_panel(
                                                             mesh_gp->source_nodes[j]->panel,
                                                             wave_fcn,
-                                                            0.01,
-                                                            &gp
+                                                            input->press_abs_err,
+                                                            input->press_rel_err
                                                         );
             panel_potential +=  ( pot_i_steady + pot_i_wave ) /4.0 / PI;
         }
@@ -1009,8 +1010,8 @@ void    calculate_sources_intensity(
                 int_value   =   adaptive_quadrature_panel(
                                                                 source_i->panel,
                                                                 lmb_fcn,
-                                                                1.0,
-                                                                &gp,
+                                                                input->gfdn_abs_err,
+                                                                input->gfdn_rel_err,
                                                                 false
                                                             );
                 int_value   =   int_value / 4.0 / PI;

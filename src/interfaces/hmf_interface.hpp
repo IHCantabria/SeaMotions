@@ -21,6 +21,8 @@ private:
     GWFInterface*   _green_interf_wave      = nullptr;
     int             _offset_index           = 0;
     PanelGeom*      _panel                  = nullptr;
+    cusfloat        _press_abs_err          = 0.0;
+    cusfloat        _press_rel_err          = 0.0;
     SourceNode**    _source_nodes           = nullptr;
     cuscomplex*     _source_values          = nullptr;
     int             _start_index            = 0;
@@ -38,7 +40,9 @@ public:
                                     int             dof_j,
                                     cusfloat        ang_freq,
                                     cusfloat        water_depth,
-                                    cusfloat        grav_acc
+                                    cusfloat        grav_acc,
+                                    cusfloat        press_abs_err_in,
+                                    cusfloat        press_rel_err_in
                 );
 
     ~HMFInterface(

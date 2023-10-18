@@ -15,7 +15,8 @@ inline cuscomplex   _adaptive_quadrature_panel(
                                                     PanelGeom*      panel,
                                                     T               target_fcn,
                                                     cuscomplex      prev_int,
-                                                    cusfloat        tol,
+                                                    cusfloat        abs_tol,
+                                                    cusfloat        rel_tol,
                                                     int             prev_gpo,
                                                     int             adapt_level
                                             )
@@ -47,7 +48,23 @@ inline cuscomplex   _adaptive_quadrature_panel(
 
     // Compare the cumulative integral value with the previous
     // solution
-    bool is_equal = !assert_complex_equality( prev_int, int_sol, tol );
+    bool is_equal_abs = assert_complex_equality( 
+                                                    prev_int, 
+                                                    int_sol,
+                                                    abs_tol 
+                                                );
+    bool is_equal_rel = false;
+    if ( int_sol != 0.0 )
+    {
+        assert_complex_equality(
+                                    ( prev_int - int_sol ) / int_sol,
+                                    cuscomplex( 0.0, 0.0 ),
+                                    rel_tol
+                                );
+    }
+
+    bool is_equal = !( is_equal_abs || is_equal_rel );
+
     if ( 
             is_equal
             &&
@@ -65,7 +82,8 @@ inline cuscomplex   _adaptive_quadrature_panel(
                                                         panel_list->panels[i],
                                                         target_fcn,
                                                         int_values[i],
-                                                        tol,
+                                                        abs_tol,
+                                                        rel_tol,
                                                         gpo,
                                                         adapt_level
                                                     );
@@ -88,44 +106,17 @@ inline cuscomplex   _adaptive_quadrature_panel(
 
 
 template<typename T>   
-inline cuscomplex   adaptive_quadrature_panel(
-                                                    PanelGeom*  panel,
-                                                    T           target_fcn,
-                                                    cusfloat    tol,
-                                                    int         gp_order,
-                                                    bool        block_adaption
-                                            )
-{
-    // Start gauss points
-    GaussPoints* gp = new GaussPoints( gp_order );
-
-    // Launch adaptive interation
-    cuscomplex  int_sol =  adaptive_quadrature_panel(
-                                                        panel,
-                                                        target_fcn,
-                                                        tol,
-                                                        gp,
-                                                        block_adaption
-                                                    );
-    
-    // Delete local heap memory
-    delete gp;
-
-    return int_sol;
-}
-
-
-template<typename T>   
 inline cuscomplex adaptive_quadrature_panel(
                                                     PanelGeom*      panel,
                                                     T               target_fcn,
-                                                    cusfloat        tol,
-                                                    GaussPoints*    gp,
+                                                    cusfloat        abs_tol,
+                                                    cusfloat        rel_tol,
                                                     bool            block_adaption
                                             )
 {
     // Define local variables
-    bool is_equal = false;
+    bool is_equal_abs   = false;
+    bool is_equal_rel   = false;
 
     // Integrate parent panel
     cuscomplex  int_sol_0, int_sol_00, int_sol_1;
@@ -148,12 +139,21 @@ inline cuscomplex adaptive_quadrature_panel(
                                             );
 
             // Check for convergence
-            is_equal = assert_complex_equality( 
-                                                    int_sol_0, 
-                                                    int_sol_1, 
-                                                    tol 
-                                                );
-            if ( is_equal )
+            is_equal_abs = assert_complex_equality( 
+                                                        int_sol_0, 
+                                                        int_sol_1, 
+                                                        abs_tol 
+                                                    );
+            if ( int_sol_1 != 0.0 )
+            {
+                is_equal_rel = assert_complex_equality( 
+                                                            ( int_sol_0 - int_sol_1 ) / int_sol_1, 
+                                                            cuscomplex( 0.0, 0.0 ), 
+                                                            rel_tol 
+                                                        );
+            }
+
+            if ( is_equal_abs || is_equal_rel )
             {
                 break;
             }
@@ -177,13 +177,18 @@ inline cuscomplex adaptive_quadrature_panel(
     int adapt_level = 0;
                                         
     // Launch adaptive interation
-    if ( !block_adaption && !is_equal )
+    if ( 
+            !block_adaption 
+            && 
+            !( is_equal_abs || is_equal_rel ) 
+        )
     {
         int_sol_1   =   _adaptive_quadrature_panel(
                                                         panel,
                                                         target_fcn,
                                                         int_sol_1,
-                                                        tol,
+                                                        abs_tol,
+                                                        rel_tol,
                                                         4,
                                                         adapt_level
                                                     );

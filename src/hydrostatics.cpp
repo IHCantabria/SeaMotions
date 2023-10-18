@@ -77,19 +77,21 @@ void Hydrostatics::_calculate(
 
     // Loop over panels to calculate total hydrostatic force
     // over the floating object
-    cusfloat ai             = 0.0;
-    cusfloat amxi           = 0.0;
-    cusfloat amyi           = 0.0;
-    cusfloat aixi           = 0.0;
-    cusfloat aixyi          = 0.0;
-    cusfloat aiyi           = 0.0;
-    cusfloat area_eps       = 0.1;
+    cusfloat _ai            = 0.0;
+    cusfloat _amxi          = 0.0;
+    cusfloat _amyi          = 0.0;
+    cusfloat _aixi          = 0.0;
+    cusfloat _aixyi         = 0.0;
+    cusfloat _aiyi          = 0.0;
+    cusfloat _area_abs_eps  = 0.1;
+    cusfloat _area_rel_eps  = 0.0;
     cusfloat normal_sign    = 0.0;
     cusfloat vi             = 0.0;
     cusfloat vim_x          = 0.0;
     cusfloat vim_y          = 0.0;
     cusfloat vim_z          = 0.0;
-    cusfloat _vol_eps       = 0.1;
+    cusfloat _vol_abs_eps   = 0.1;
+    cusfloat _vol_rel_eps   = 0.0;
     cusfloat _volume        = 0.0;
     cusfloat _volume_mom_x  = 0.0;
     cusfloat _volume_mom_y  = 0.0;
@@ -169,8 +171,8 @@ void Hydrostatics::_calculate(
             vi                  = adaptive_quadrature_panel(
                                                                 panel_proj,
                                                                 volume_fcn,
-                                                                _vol_eps,
-                                                                1
+                                                                _vol_abs_eps,
+                                                                _vol_rel_eps
                                                             ).real( );
             _volume             +=  vi * normal_sign;
 
@@ -180,8 +182,8 @@ void Hydrostatics::_calculate(
             vim_x               = adaptive_quadrature_panel(
                                                                 panel_proj,
                                                                 volume_mom_x_fcn,
-                                                                _vol_eps,
-                                                                1
+                                                                _vol_abs_eps,
+                                                                _vol_rel_eps
                                                             ).real( );
             _volume_mom_x       +=  vim_x * normal_sign;
 
@@ -189,8 +191,8 @@ void Hydrostatics::_calculate(
             vim_y               = adaptive_quadrature_panel(
                                                                 panel_proj,
                                                                 volume_mom_y_fcn,
-                                                                _vol_eps,
-                                                                1
+                                                                _vol_abs_eps,
+                                                                _vol_rel_eps
                                                             ).real( );
             _volume_mom_y       +=  vim_y * normal_sign;
 
@@ -198,64 +200,64 @@ void Hydrostatics::_calculate(
             vim_z               = adaptive_quadrature_panel(
                                                                 panel_proj,
                                                                 volume_mom_z_fcn,
-                                                                _vol_eps,
-                                                                1
+                                                                _vol_abs_eps,
+                                                                _vol_rel_eps
                                                             ).real( );
             _volume_mom_z       +=  vim_z * normal_sign;
 
             // Integrate panel area
-            ai                  = adaptive_quadrature_panel(
+            _ai                  = adaptive_quadrature_panel(
                                                                 panel_proj,
                                                                 wl_area_fcn,
-                                                                area_eps,
-                                                                1
+                                                                _area_abs_eps,
+                                                                _area_rel_eps
                                                             ).real( );
-            _wl_area            -= ai * normal_sign;
+            _wl_area            -= _ai * normal_sign;
 
             // Integrate panel area moments around x axis
-            amxi                = adaptive_quadrature_panel(
+            _amxi                = adaptive_quadrature_panel(
                                                                 panel_proj,
                                                                 wl_area_mom_x_fcn,
-                                                                area_eps,
-                                                                1
+                                                                _area_abs_eps,
+                                                                _area_rel_eps
                                                             ).real( );
-            _wl_area_mx         -= amxi * normal_sign;
+            _wl_area_mx         -= _amxi * normal_sign;
 
             // Integrate panel area moments around y axis
-            amyi                = adaptive_quadrature_panel(
+            _amyi                = adaptive_quadrature_panel(
                                                                 panel_proj,
                                                                 wl_area_mom_y_fcn,
-                                                                area_eps,
-                                                                1
+                                                                _area_abs_eps,
+                                                                _area_rel_eps
                                                             ).real( );
-            _wl_area_my         -= amyi * normal_sign;
+            _wl_area_my         -= _amyi * normal_sign;
 
             // Integrate panel area inertia around x axis
-            aixi                = adaptive_quadrature_panel(
+            _aixi                = adaptive_quadrature_panel(
                                                                 panel_proj,
                                                                 wl_area_ixx_fcn,
-                                                                area_eps,
-                                                                1
+                                                                _area_abs_eps,
+                                                                _area_rel_eps
                                                             ).real( );
-            _wl_area_ixx        -= aixi * normal_sign;
+            _wl_area_ixx        -= _aixi * normal_sign;
 
             // Integrate panel area inertia around x axis
-            aixyi               = adaptive_quadrature_panel(
+            _aixyi               = adaptive_quadrature_panel(
                                                                 panel_proj,
                                                                 wl_area_ixy_fcn,
-                                                                area_eps,
-                                                                1
+                                                                _area_abs_eps,
+                                                                _area_rel_eps
                                                             ).real( );
-            _wl_area_ixy        -= aixyi * normal_sign;
+            _wl_area_ixy        -= _aixyi * normal_sign;
 
             // Integrate panel area inertia around x axis
-            aiyi                = adaptive_quadrature_panel(
+            _aiyi                = adaptive_quadrature_panel(
                                                                 panel_proj,
                                                                 wl_area_iyy_fcn,
-                                                                area_eps,
-                                                                1
+                                                                _area_abs_eps,
+                                                                _area_rel_eps
                                                             ).real( );
-            _wl_area_iyy        -= aiyi * normal_sign;
+            _wl_area_iyy        -= _aiyi * normal_sign;
 
         }
         else
@@ -279,28 +281,28 @@ void Hydrostatics::_calculate(
             _volume_mom_z       +=  vim_z * normal_sign;
 
             // Integrate panel area
-            ai                  = panel_proj->area;
-            _wl_area            -= ai * normal_sign;
+            _ai                  = panel_proj->area;
+            _wl_area            -= _ai * normal_sign;
 
             // Integrate panel area moments around x axis
-            amxi                = ai * ( panel->center[0] - this->cog[0] );
-            _wl_area_mx         -= amxi * normal_sign;
+            _amxi                = _ai * ( panel->center[0] - this->cog[0] );
+            _wl_area_mx         -= _amxi * normal_sign;
 
             // Integrate panel area moments around y axis
-            amyi                = ai * ( panel->center[1] - this->cog[1] );
-            _wl_area_my         -= amyi * normal_sign;
+            _amyi                = _ai * ( panel->center[1] - this->cog[1] );
+            _wl_area_my         -= _amyi * normal_sign;
 
             // Integrate panel area inertia around x axis
-            aixi                = ai * pow2s( panel->center[1] - this->cog[1] );
-            _wl_area_ixx        -= aixi * normal_sign;
+            _aixi                = _ai * pow2s( panel->center[1] - this->cog[1] );
+            _wl_area_ixx        -= _aixi * normal_sign;
 
             // Integrate panel area inertia in the XY plane
-            aixyi               = ai * ( panel->center[0] - this->cog[0] ) * ( panel->center[1] - this->cog[1] );
-            _wl_area_ixy        -= aixyi * normal_sign;
+            _aixyi               = _ai * ( panel->center[0] - this->cog[0] ) * ( panel->center[1] - this->cog[1] );
+            _wl_area_ixy        -= _aixyi * normal_sign;
 
             // Integrate panel area inertia around x axis
-            aiyi                = ai * pow2s( panel->center[0] - this->cog[0] );
-            _wl_area_iyy        -= aiyi * normal_sign;
+            _aiyi                = _ai * pow2s( panel->center[0] - this->cog[0] );
+            _wl_area_iyy        -= _aiyi * normal_sign;
 
         }
 

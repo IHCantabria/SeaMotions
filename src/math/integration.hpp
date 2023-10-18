@@ -21,16 +21,8 @@ typedef std::function <cuscomplex(cuscomplex)> fcc_type;
 template<typename T>    inline  cuscomplex  adaptive_quadrature_panel(
                                                                             PanelGeom*      panel,
                                                                             T               fcn,
-                                                                            cusfloat        tol,
-                                                                            int             gp_order,
-                                                                            bool            block_adaption=false
-                                                                        );
-
-template<typename T>    inline  cuscomplex  adaptive_quadrature_panel(
-                                                                            PanelGeom*      panel,
-                                                                            T               fcn,
-                                                                            cusfloat        tol,
-                                                                            GaussPoints*    gp,
+                                                                            cusfloat        abs_tol,
+                                                                            cusfloat        rel_tol,
                                                                             bool            block_adaption=false
                                                                         );
 
