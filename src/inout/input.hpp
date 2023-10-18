@@ -24,11 +24,13 @@ public:
     std::string                 case_fopath     = "";
     int                         dofs_np         = 6;
     std::string                 folder_path     = "";
+    cusfloat                    gfdn_abs_err    = 0.0;
+    cusfloat                    gfdn_rel_err    = 0.0;
+    cusfloat                    grav_acc        = 0.0;
     cusfloat*                   freqs           = nullptr;
     std::string                 freqs_unit      = "";
     std::vector<cusfloat>       heads           ;
     int                         heads_np        = 0;
-    cusfloat                    grav_acc        = 0.0;
     std::string                 heads_units     = "";
     bool                        is_bodies       = false;
     bool                        out_diffrac     = false;
@@ -43,6 +45,8 @@ public:
     bool                        out_struct_mass = false;
     bool                        out_wex         = false;
     int                         poly_order      = 0;
+    cusfloat                    press_abs_err   = 0.0;
+    cusfloat                    press_rel_err   = 0.0;
     cusfloat                    water_density   = 0.0;
     cusfloat                    water_depth     = 0.0;
 

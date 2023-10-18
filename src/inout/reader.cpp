@@ -225,9 +225,29 @@ void    read_case(
     // Skip header
     _skip_header( infile, line_count, 3 );
 
+    // Read absolute error for green function normal derivative integration over panel
+    target_signal   = "GFDnAbsErr";
+    read_signal     = _read_channel_value( infile, input->gfdn_abs_err );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read relative error for green function normal derivative integration over panel
+    target_signal   = "GFDnRelErr";
+    read_signal     = _read_channel_value( infile, input->gfdn_rel_err );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
     // Read polynomial order to interpolate the solution
     target_signal   = "PolyOrder";
     read_signal     = _read_channel_value( infile, input->poly_order );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read absolute error for pressure integration over panel
+    target_signal   = "PressAbsErr";
+    read_signal     = _read_channel_value( infile, input->press_abs_err );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read relative error for pressure integration over panel
+    target_signal   = "PressRelErr";
+    read_signal     = _read_channel_value( infile, input->press_rel_err );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     //////////////////////////////////////////////
