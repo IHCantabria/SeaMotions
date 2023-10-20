@@ -45,6 +45,8 @@ public:
     bool                        out_struct_mass = false;
     bool                        out_wex         = false;
     int                         poly_order      = 0;
+    cusfloat                    pot_abs_err     = 0.0;
+    cusfloat                    pot_rel_err     = 0.0;
     cusfloat                    press_abs_err   = 0.0;
     cusfloat                    press_rel_err   = 0.0;
     cusfloat                    water_density   = 0.0;

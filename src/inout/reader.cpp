@@ -240,6 +240,16 @@ void    read_case(
     read_signal     = _read_channel_value( infile, input->poly_order );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
+    // Read absolute error for potential integration over panel
+    target_signal   = "PotAbsErr";
+    read_signal     = _read_channel_value( infile, input->pot_abs_err );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read relative error for potential integration over panel
+    target_signal   = "PotRelErr";
+    read_signal     = _read_channel_value( infile, input->pot_rel_err );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
     // Read absolute error for pressure integration over panel
     target_signal   = "PressAbsErr";
     read_signal     = _read_channel_value( infile, input->press_abs_err );
