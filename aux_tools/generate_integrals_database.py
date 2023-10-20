@@ -232,7 +232,7 @@ def fit_L1_Afix_Bfix()->None:
     B = 0.1
 
     # Launch fit
-    fit_integral_1d(lambda z: L1(A, B, z)[0].real, fit_props, f"L1_A: {A:0.2E} - B: {B:0.2E}", show_figs=True)
+    fit_integral_1d(lambda z: L1(A, B, z)[0].real, fit_props, f"L1_A: {A:0.2E} - B: {B:0.2E}")
 
 
 def fit_L1_Hfix()->None:
@@ -250,7 +250,7 @@ def fit_L1_Hfix()->None:
     H = 30.0
 
     # Launch fit
-    fit_integral_2d(lambda x, y: L1(x, y, H)[0].real, fit_props, f"L1_H: {H:0.2E}", show_figs=True)
+    fit_integral_2d(lambda x, y: L1(x, y, H)[0].real, fit_props, f"L1_H: {H:0.2E}")
 
 
 def fit_L2()->None:
@@ -1307,7 +1307,7 @@ def fit_L3_Afix_Bfix()->None:
     B = 1.0
 
     # Launch fit
-    fit_integral_1d(lambda z: L3(A, B, z)[0].real, fit_props, f"L3_A: {A:0.2E} - B: {B:0.2E}", show_figs=True)
+    fit_integral_1d(lambda z: L3(A, B, z)[0].real, fit_props, f"L3_A: {A:0.2E} - B: {B:0.2E}")
 
 
 def fit_L3_Hfix()->None:
@@ -1325,7 +1325,7 @@ def fit_L3_Hfix()->None:
     H = 50.0
 
     # Launch fit
-    fit_integral_2d(lambda x, y: L3(x, y, H)[0].real, fit_props, f"L3_H: {H:0.2E}", show_figs=True)
+    fit_integral_2d(lambda x, y: L3(x, y, H)[0].real, fit_props, f"L3_H: {H:0.2E}")
 
 
 def fit_L3_P0()->None:
@@ -1918,7 +1918,7 @@ def fit_M1_Hfix()->None:
     H = 1.5
 
     # Launch fit
-    fit_integral_2d(lambda x, y: M1(x, y, H)[0].real, fit_props, f"M1_H: {H:0.2E}", show_figs=True)
+    fit_integral_2d(lambda x, y: M1(x, y, H)[0].real, fit_props, f"M1_H: {H:0.2E}")
 
 
 def fit_M2()->None:
