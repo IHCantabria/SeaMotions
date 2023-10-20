@@ -8,6 +8,7 @@
 // Include local modules
 #include "output.hpp"
 #include "../tools.hpp"
+#include "../version.hpp"
 
 
 Output::Output( 
@@ -64,6 +65,10 @@ Output::Output(
 
     // Open file unit
     H5::H5File fid( this->_results_fipath.c_str( ), H5F_ACC_TRUNC );
+
+    CREATE_ATTRIBUTE( fid, "version_major", VERSION_MAJOR, H5::PredType::NATIVE_INT );
+    CREATE_ATTRIBUTE( fid, "version_minor", VERSION_MINOR, H5::PredType::NATIVE_INT );
+    CREATE_ATTRIBUTE( fid, "version_patch", VERSION_PATCH, H5::PredType::NATIVE_INT );
 
     if ( input->out_diffrac )
     {
