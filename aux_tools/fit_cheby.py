@@ -221,7 +221,7 @@ def fit_integral_1d(f_residual: Callable,
     err_abs = np_abs(Ffe-Fr)
     pos = err_abs > err_tol
     err_over_thr = pos.sum()/err_abs.shape[0]*100
-    print("Error Statistics:")
+    print(f"Error Statistics - {region_name}:")
     print(f" -> Maximum: {err_abs.max()}")
     print(f" -> Minimum: {err_abs.min()}")
     print(f" -> Mean: {err_abs.mean()}")
@@ -380,7 +380,7 @@ def fit_integral_2d(f_residual: Callable,
     fit_stats.num_coeffs = C_filter.shape[0]
 
     # Print error statistics
-    print(f"ERROR STATISTICS - REGION: {region_name}")
+    print(f"Error Statistics - {region_name}:")
     print(f" -> Maximum: {fit_stats.max_err}")
     print(f" -> Minimum: {fit_stats.min_err}")
     print(f" -> Mean: {fit_stats.mean_err}")
