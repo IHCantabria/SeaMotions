@@ -120,7 +120,6 @@ void    calculate_diffraction_forces_nlin(
     cuscomplex* pressure    = generate_empty_vector<cuscomplex>( mesh_gp->meshes_np * max_panels );
 
     // Loop over first dimension of degrees of freedrom
-    GaussPoints gp( 2 );
     int         elem_end_pos    = 0;
     int         elem_start_pos  = 0;
     int         index           = 0;
@@ -161,7 +160,7 @@ void    calculate_diffraction_forces_nlin(
                                                                 target_fcn,
                                                                 input->press_abs_err,
                                                                 input->press_rel_err,
-                                                                true
+                                                                false
                                                             );
             }
         }
@@ -701,7 +700,6 @@ void    calculate_froude_krylov(
 
     // Loop around headings to get the Froude-Krylov force
     // for each of them
-    GaussPoints gp( 2 );
     int         elem_end_pos    = 0;
     int         elem_start_pos  = 0;
     int         index           = 0;
@@ -764,8 +762,6 @@ void    calculate_froude_krylov(
                                                                 input->press_rel_err,
                                                                 false
                                                             );
-                // std::cout << "Froude-Krylov - Index: " << index << " - Index_1: " << mesh_gp->panels_cnp[ib]+ie;
-                // std::cout << " - ie: " << ie << " - ib: " << ib << " - pressure: " << pressure[index] << std::endl << std::flush;
             }
         }
 
@@ -802,9 +798,7 @@ void    calculate_froude_krylov(
                     index_1                 = max_panels * ib + ie;
                     press_i                 = pressure[index_1] * mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->normal_vec[id];
                     froude_krylov[index]    += cuscomplex( 0.0, -ang_freq * rho_w ) * press_i;
-                    // std::cout << "IB: " << ib << " - Dof: " << id << " - pressure: " << pressure[index_1] << " - normal: " << mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->normal_vec[id] << std::endl;
                 }
-                // std::cout << "Heading: " << input->heads[ih] << " - IB: " << ib << " - Dof: " << id << " - Froude-Krylov: " << froude_krylov[index] << std::endl;
             }
         }
     }
@@ -1018,7 +1012,6 @@ void    calculate_hydromechanic_coeffs_nlin(
     cuscomplex* pressure    = generate_empty_vector<cuscomplex>( mesh_gp->meshes_np * dofs_np * max_panels );
 
     // Loop over first dimension of degrees of freedrom
-    GaussPoints gp( 2 );
     int         elem_end_pos    = 0;
     int         elem_start_pos  = 0;
     int         index           = 0;
@@ -1061,7 +1054,7 @@ void    calculate_hydromechanic_coeffs_nlin(
                                                                     target_fcn,
                                                                     input->press_abs_err,
                                                                     input->press_rel_err,
-                                                                    true
+                                                                    false
                                                                 );
                 }
             }
@@ -1157,8 +1150,8 @@ void    calculate_influence_potential_steady(
             pot_steady_term = adaptive_quadrature_panel(
                                                             mesh_gp->source_nodes[j]->panel,
                                                             steady_fcn,
-                                                            input->press_abs_err,
-                                                            input->press_rel_err
+                                                            input->pot_abs_err,
+                                                            input->pot_rel_err
                                                         );
             
             inf_pot_mat[count] = pot_steady_term / 4.0 / PI;
@@ -1225,8 +1218,8 @@ void    calculate_influence_potential_total(
             pot_wave_term           = adaptive_quadrature_panel(
                                                                     mesh_gp->source_nodes[j]->panel,
                                                                     wave_fcn,
-                                                                    input->press_abs_err,
-                                                                    input->press_rel_err
+                                                                    input->pot_abs_err,
+                                                                    input->pot_rel_err
                                                                 );
             
             inf_pot_total[count]    = inf_pot_steady[count] + pot_wave_term / 4.0 / PI;
@@ -1280,8 +1273,6 @@ void    calculate_panel_potentials_nlin(
                                                 cusfloat        ang_freq
                                         )
 {
-    GaussPoints gp( 10 );
-
     // Calculate MPI data chunks
     int elem_end_pos     = 0;
     int elem_start_pos   = 0;
@@ -1361,14 +1352,14 @@ void    calculate_panel_potentials_nlin(
             pot_i_steady    = adaptive_quadrature_panel(
                                                             mesh_gp->source_nodes[j]->panel,
                                                             steady_fcn,
-                                                            input->press_abs_err,
-                                                            input->press_rel_err
+                                                            input->pot_abs_err,
+                                                            input->pot_rel_err
                                                         );
             pot_i_wave      = adaptive_quadrature_panel(
                                                             mesh_gp->source_nodes[j]->panel,
                                                             wave_fcn,
-                                                            input->press_abs_err,
-                                                            input->press_rel_err
+                                                            input->pot_abs_err,
+                                                            input->pot_rel_err
                                                         );
             panel_potential +=  ( pot_i_steady + pot_i_wave ) /4.0 / PI;
         }
