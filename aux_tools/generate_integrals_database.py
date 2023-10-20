@@ -282,7 +282,7 @@ def fit_L2_P0()->None:
     fit_props.fit_points_to_order()
 
     # Launch fit
-    cheby_coeffs, ncx = fit_integral_1d(lambda z: L2(z)[0].real, fit_props, f"L2", show_figs=True)
+    cheby_coeffs, ncx = fit_integral_1d(lambda z: L2(z)[0].real, fit_props, f"L2")
 
     return data_to_dict(fit_props, cheby_coeffs, ncx, array([]), array([]))
 
@@ -300,7 +300,7 @@ def fit_L2_P1()->None:
     fit_props.fit_points_to_order()
 
     # Launch fit
-    cheby_coeffs, ncx = fit_integral_1d(lambda z: L2(z)[0].real, fit_props, f"L2", show_figs=True)
+    cheby_coeffs, ncx = fit_integral_1d(lambda z: L2(z)[0].real, fit_props, f"L2")
 
     return data_to_dict(fit_props, cheby_coeffs, ncx, array([]), array([]))
 
@@ -1950,7 +1950,7 @@ def fit_M2_P0()->None:
     fit_props.fit_points_to_order()
 
     # Launch fit
-    cheby_coeffs, ncx = fit_integral_1d(lambda z: M2(z)[0].real, fit_props, f"M2", show_figs=True)
+    cheby_coeffs, ncx = fit_integral_1d(lambda z: M2(z)[0].real, fit_props, f"M2")
 
     return data_to_dict(fit_props, cheby_coeffs, ncx, array([]), array([]))
 
@@ -1968,7 +1968,7 @@ def fit_M2_P1()->None:
     fit_props.fit_points_to_order()
 
     # Launch fit
-    cheby_coeffs, ncx = fit_integral_1d(lambda z: M2(z)[0].real, fit_props, f"M2", show_figs=True)
+    cheby_coeffs, ncx = fit_integral_1d(lambda z: M2(z)[0].real, fit_props, f"M2")
 
     return data_to_dict(fit_props, cheby_coeffs, ncx, array([]), array([]))
 
