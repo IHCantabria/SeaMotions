@@ -21,8 +21,8 @@
                             data_type                                           \
                         )                                                       \
 {                                                                               \
-    DataSpace   attr_space(H5S_SCALAR);                                         \
-    Attribute   attr_handle    = fid.createAttribute(                           \
+    H5::DataSpace   attr_space(H5S_SCALAR);                                     \
+    H5::Attribute   attr_handle    = fid.createAttribute(                       \
                                                         attr_name,              \
                                                         data_type,              \
                                                         attr_space              \
