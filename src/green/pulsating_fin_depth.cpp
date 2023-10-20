@@ -21,12 +21,12 @@ using namespace std;
 using namespace std::literals::complex_literals;
 
 
-cusfloat G1(
-            cusfloat A,
-            cusfloat B,
-            cusfloat H,
-            IntegralsDb &idb
-            )
+cusfloat    G1(
+                                                cusfloat A,
+                                                cusfloat B,
+                                                cusfloat H,
+                                                IntegralsDb &idb
+                )
 {
     cusfloat sol = 0.0;
     if (H > 1)
@@ -49,11 +49,11 @@ cusfloat G1(
 }
 
 
-cusfloat G1_dA(
-                cusfloat A,
-                cusfloat B,
-                cusfloat H,
-                IntegralsDb &idb
+cusfloat    G1_dA(
+                                                cusfloat A,
+                                                cusfloat B,
+                                                cusfloat H,
+                                                IntegralsDb &idb
                 )
     {
     cusfloat sol = 0.0;
@@ -77,11 +77,11 @@ cusfloat G1_dA(
 }
 
 
-cusfloat G1_dB(
-                cusfloat A,
-                cusfloat B,
-                cusfloat H,
-                IntegralsDb &idb
+cusfloat    G1_dB(
+                                                cusfloat A,
+                                                cusfloat B,
+                                                cusfloat H,
+                                                IntegralsDb &idb
                 )
 {
     cusfloat sol = 0.0;
@@ -105,10 +105,11 @@ cusfloat G1_dB(
 }
 
 
-cusfloat G2(cusfloat A,
-            cusfloat B,
-            cusfloat H,
-            IntegralsDb &idb
+cusfloat    G2(
+                                                cusfloat A,
+                                                cusfloat B,
+                                                cusfloat H,
+                                                IntegralsDb &idb
             )
 {
     cusfloat sol = 0.0;
@@ -129,11 +130,11 @@ cusfloat G2(cusfloat A,
 }
 
 
-cusfloat G2_dA(
-                cusfloat A,
-                cusfloat B,
-                cusfloat H,
-                IntegralsDb &idb
+cusfloat    G2_dA(
+                                                cusfloat A,
+                                                cusfloat B,
+                                                cusfloat H,
+                                                IntegralsDb &idb
                 )
 {
     cusfloat sol = 0.0;
@@ -154,10 +155,11 @@ cusfloat G2_dA(
 }
 
 
-cusfloat G2_dB(cusfloat A,
-                cusfloat B,
-                cusfloat H,
-                IntegralsDb &idb
+cusfloat    G2_dB(
+                                                cusfloat A,
+                                                cusfloat B,
+                                                cusfloat H,
+                                                IntegralsDb &idb
                 )
 {
     cusfloat sol = 0.0;
@@ -178,13 +180,13 @@ cusfloat G2_dB(cusfloat A,
 }
 
 
-cuscomplex G_integral(
-                        cusfloat R,
-                        cusfloat z,
-                        cusfloat zeta,
-                        cusfloat h,
-                        WaveDispersionData &wave_data,
-                        IntegralsDb &idb
+cuscomplex  G_integral(
+                                                cusfloat R,
+                                                cusfloat z,
+                                                cusfloat zeta,
+                                                cusfloat h,
+                                                WaveDispersionData &wave_data,
+                                                IntegralsDb &idb
                     )
 {
     /**
@@ -227,14 +229,14 @@ cuscomplex G_integral(
 }
 
 
-cuscomplex G_integral_steady(
-                                cusfloat x,
-                                cusfloat y,
-                                cusfloat z,
-                                cusfloat xi,
-                                cusfloat eta,
-                                cusfloat zeta,
-                                cusfloat h
+cuscomplex  G_integral_steady(
+                                                cusfloat x,
+                                                cusfloat y,
+                                                cusfloat z,
+                                                cusfloat xi,
+                                                cusfloat eta,
+                                                cusfloat zeta,
+                                                cusfloat h
                             )
 {
     /**
@@ -277,16 +279,16 @@ cuscomplex G_integral_steady(
 }
 
 
-cuscomplex G_integral_wave(
-                                cusfloat x,
-                                cusfloat y,
-                                cusfloat z,
-                                cusfloat xi,
-                                cusfloat eta,
-                                cusfloat zeta,
-                                cusfloat h,
-                                WaveDispersionData &wave_data,
-                                IntegralsDb &idb
+cuscomplex  G_integral_wave(
+                                                cusfloat x,
+                                                cusfloat y,
+                                                cusfloat z,
+                                                cusfloat xi,
+                                                cusfloat eta,
+                                                cusfloat zeta,
+                                                cusfloat h,
+                                                WaveDispersionData &wave_data,
+                                                IntegralsDb &idb
                             )
 {
     /**
@@ -314,13 +316,13 @@ cuscomplex G_integral_wave(
 
 
 
-cuscomplex G_integral_dr(
-                        cusfloat R,
-                        cusfloat z,
-                        cusfloat zeta,
-                        cusfloat h,
-                        WaveDispersionData &wave_data,
-                        IntegralsDb &idb
+cuscomplex  G_integral_dr(
+                                                cusfloat R,
+                                                cusfloat z,
+                                                cusfloat zeta,
+                                                cusfloat h,
+                                                WaveDispersionData &wave_data,
+                                                IntegralsDb &idb
                         )
 {
     /**
@@ -376,13 +378,97 @@ cuscomplex G_integral_dr(
 }
 
 
-cuscomplex G_integral_dz(
-                        cusfloat R,
-                        cusfloat z,
-                        cusfloat zeta,
-                        cusfloat h,
-                        WaveDispersionData &wave_data,
-                        IntegralsDb &idb
+cuscomplex  G_integral_steady_dr(
+                                                cusfloat R,
+                                                cusfloat z,
+                                                cusfloat zeta,
+                                                cusfloat h
+                                )
+{
+    /**
+     * @brief Calculate the derivative with respect to R of finite water depth 
+     *      Green function: steady sources + wave term at the integral region
+     *      (R/h>1.0)
+     * 
+     * \param R Eucledian distance in the horizontal plane
+     * \param z Z Coordinate of the field point
+     * \param zeta Z Coordinate of the source point
+     * \param h Water depth
+     * \param wave_data Wave dispersion data object initialized with John's constants
+     * \param idb Integrals Database 
+     * 
+     */
+
+    // Calculate derivative properties
+    cusfloat v0 = abs(z-zeta);
+    cusfloat v1 = z+zeta+2*h;
+    cusfloat v2 = abs(z+zeta);
+    cusfloat v3 = z-zeta+2*h;
+    cusfloat v4 = zeta-z+2*h;
+    cusfloat v5 = z+zeta+4*h;
+    cusfloat r0 = sqrt(pow2s(R) + pow2s(v0));
+    cusfloat r1 = sqrt(pow2s(R) + pow2s(v1));
+    cusfloat r2 = sqrt(pow2s(R) + pow2s(v2));
+    cusfloat r3 = sqrt(pow2s(R) + pow2s(v3));
+    cusfloat r4 = sqrt(pow2s(R) + pow2s(v4));
+    cusfloat r5 = sqrt(pow2s(R) + pow2s(v5));
+
+    // Calculate steady part of the Green function
+    cuscomplex green_steady = -R*(
+                                    1/pow3s(r0)
+                                    +
+                                    1/pow3s(r1)
+                                    +
+                                    1/pow3s(r2)
+                                    +
+                                    1/pow3s(r3)
+                                    +
+                                    1/pow3s(r4)
+                                    +
+                                    1/pow3s(r5)
+                                    ) + 0.0i;
+
+    return green_steady;
+}
+
+
+cuscomplex G_integral_wave_dr(
+                                                cusfloat R,
+                                                cusfloat z,
+                                                cusfloat zeta,
+                                                cusfloat h,
+                                                WaveDispersionData &wave_data,
+                                                IntegralsDb &idb
+                                )
+{
+    /**
+     * @brief Calculate the derivative with respect to R of finite water depth 
+     *      Green function: steady sources + wave term at the integral region
+     *      (R/h>1.0)
+     * 
+     * \param R Eucledian distance in the horizontal plane
+     * \param z Z Coordinate of the field point
+     * \param zeta Z Coordinate of the source point
+     * \param h Water depth
+     * \param wave_data Wave dispersion data object initialized with John's constants
+     * \param idb Integrals Database 
+     * 
+     */
+
+    // Add wave term
+    cuscomplex green_wave = wave_term_fin_depth_integral_dr(R, z, zeta, h, wave_data, idb);
+
+    return green_wave;
+}
+
+
+cuscomplex  G_integral_dz(
+                                                cusfloat R,
+                                                cusfloat z,
+                                                cusfloat zeta,
+                                                cusfloat h,
+                                                WaveDispersionData &wave_data,
+                                                IntegralsDb &idb
                         )
 {
     /**
@@ -438,12 +524,98 @@ cuscomplex G_integral_dz(
 }
 
 
-cuscomplex john_series(
-                        cusfloat R,
-                        cusfloat z, 
-                        cusfloat zeta, 
-                        cusfloat h,
-                        WaveDispersionData &wave_data
+cuscomplex  G_integral_steady_dz(
+                                                cusfloat R,
+                                                cusfloat z,
+                                                cusfloat zeta,
+                                                cusfloat h
+                                )
+{
+    /**
+     * @brief Calculate the derivative with respect to Z of finite water depth 
+     *      Green function: steady sources + wave term at the integral region
+     *      (R/h>1.0)
+     * 
+     * \param R Eucledian distance in the horizontal plane
+     * \param z Z Coordinate of the field point
+     * \param zeta Z Coordinate of the source point
+     * \param h Water depth
+     * \param wave_data Wave dispersion data object initialized with John's constants
+     * \param idb Integrals Database 
+     * 
+     */
+
+    // Calculate derivative properties
+    cusfloat v0 = abs(z-zeta);
+    cusfloat v1 = z+zeta+2*h;
+    cusfloat v2 = abs(z+zeta);
+    cusfloat v3 = z-zeta+2*h;
+    cusfloat v4 = zeta-z+2*h;
+    cusfloat v5 = z+zeta+4*h;
+    cusfloat r0 = sqrt(pow2s(R) + pow2s(v0));
+    cusfloat r1 = sqrt(pow2s(R) + pow2s(v1));
+    cusfloat r2 = sqrt(pow2s(R) + pow2s(v2));
+    cusfloat r3 = sqrt(pow2s(R) + pow2s(v3));
+    cusfloat r4 = sqrt(pow2s(R) + pow2s(v4));
+    cusfloat r5 = sqrt(pow2s(R) + pow2s(v5));
+
+    // Calculate steady part of the Green function
+    cuscomplex green_steady = -(
+                                sign(z-zeta)*v0/pow3s(r0)
+                                +
+                                v1/pow3s(r1)
+                                +
+                                sign(z+zeta)*v2/pow3s(r2)
+                                +
+                                v3/pow3s(r3)
+                                -
+                                v4/pow3s(r4)
+                                +
+                                v5/pow3s(r5)
+                                ) + 0.0i;
+
+    return green_steady;
+}
+
+
+cuscomplex  G_integral_wave_dz(
+                                                cusfloat R,
+                                                cusfloat z,
+                                                cusfloat zeta,
+                                                cusfloat h,
+                                                WaveDispersionData &wave_data,
+                                                IntegralsDb &idb
+                            )
+{
+    /**
+     * @brief Calculate the derivative with respect to Z of finite water depth 
+     *      Green function: steady sources + wave term at the integral region
+     *      (R/h>1.0)
+     * 
+     * \param R Eucledian distance in the horizontal plane
+     * \param z Z Coordinate of the field point
+     * \param zeta Z Coordinate of the source point
+     * \param h Water depth
+     * \param wave_data Wave dispersion data object initialized with John's constants
+     * \param idb Integrals Database 
+     * 
+     */
+
+    // Add wave term
+    cuscomplex green_wave = wave_term_fin_depth_integral_dz(R, z, zeta, h, wave_data, idb);
+
+    return green_wave;
+}
+
+
+
+
+cuscomplex  john_series(
+                                                cusfloat R,
+                                                cusfloat z, 
+                                                cusfloat zeta, 
+                                                cusfloat h,
+                                                WaveDispersionData &wave_data
                         )
 {
     /**
@@ -534,15 +706,15 @@ cuscomplex john_series(
 }
 
 
-cuscomplex john_series(
-                        cusfloat x,
-                        cusfloat y,
-                        cusfloat z,
-                        cusfloat xi,
-                        cusfloat eta,
-                        cusfloat zeta,
-                        cusfloat h,
-                        WaveDispersionData &wave_data
+cuscomplex  john_series(
+                                                cusfloat x,
+                                                cusfloat y,
+                                                cusfloat z,
+                                                cusfloat xi,
+                                                cusfloat eta,
+                                                cusfloat zeta,
+                                                cusfloat h,
+                                                WaveDispersionData &wave_data
                         )
 {
     /**
@@ -569,7 +741,7 @@ cuscomplex john_series(
 }
 
 
-tuple<cuscomplex, cuscomplex> john_series_dhoriz(
+tuplecc     john_series_dhoriz(
                                                 cusfloat x,
                                                 cusfloat y,
                                                 cusfloat z,
@@ -578,7 +750,7 @@ tuple<cuscomplex, cuscomplex> john_series_dhoriz(
                                                 cusfloat zeta,
                                                 cusfloat h,
                                                 WaveDispersionData &wave_data
-                                                )
+                                )
 {
     /**
      * @brief Derivative with respect to X and Y of the John series representation of the 
@@ -615,12 +787,12 @@ tuple<cuscomplex, cuscomplex> john_series_dhoriz(
 }
 
 
-cuscomplex john_series_dr(
-                            cusfloat R,
-                            cusfloat z,
-                            cusfloat zeta,
-                            cusfloat h,
-                            WaveDispersionData &wave_data
+cuscomplex  john_series_dr(
+                                                cusfloat R,
+                                                cusfloat z,
+                                                cusfloat zeta,
+                                                cusfloat h,
+                                                WaveDispersionData &wave_data
                             )
 {
     /**
@@ -707,15 +879,15 @@ cuscomplex john_series_dr(
 }
 
 
-cuscomplex john_series_dx(
-                            cusfloat x,
-                            cusfloat y,
-                            cusfloat z,
-                            cusfloat xi,
-                            cusfloat eta,
-                            cusfloat zeta,
-                            cusfloat h,
-                            WaveDispersionData &wave_data
+cuscomplex  john_series_dx(
+                                                cusfloat x,
+                                                cusfloat y,
+                                                cusfloat z,
+                                                cusfloat xi,
+                                                cusfloat eta,
+                                                cusfloat zeta,
+                                                cusfloat h,
+                                                WaveDispersionData &wave_data
                             )
 {
     /**
@@ -747,15 +919,15 @@ cuscomplex john_series_dx(
 }
 
 
-cuscomplex john_series_dy(
-                            cusfloat x,
-                            cusfloat y,
-                            cusfloat z,
-                            cusfloat xi,
-                            cusfloat eta,
-                            cusfloat zeta,
-                            cusfloat h,
-                            WaveDispersionData &wave_data
+cuscomplex  john_series_dy(
+                                                cusfloat x,
+                                                cusfloat y,
+                                                cusfloat z,
+                                                cusfloat xi,
+                                                cusfloat eta,
+                                                cusfloat zeta,
+                                                cusfloat h,
+                                                WaveDispersionData &wave_data
                             )
 {
     /**
@@ -787,12 +959,12 @@ cuscomplex john_series_dy(
 }
 
 
-cuscomplex john_series_dz(
-                            cusfloat R,
-                            cusfloat z,
-                            cusfloat zeta,
-                            cusfloat h,
-                            WaveDispersionData &wave_data
+cuscomplex  john_series_dz(
+                                                cusfloat R,
+                                                cusfloat z,
+                                                cusfloat zeta,
+                                                cusfloat h,
+                                                WaveDispersionData &wave_data
                             )
 {
     /**
@@ -884,15 +1056,15 @@ cuscomplex john_series_dz(
 }
 
 
-cuscomplex john_series_dz(
-                            cusfloat x,
-                            cusfloat y,
-                            cusfloat z,
-                            cusfloat xi,
-                            cusfloat eta,
-                            cusfloat zeta,
-                            cusfloat h,
-                            WaveDispersionData &wave_data
+cuscomplex  john_series_dz(
+                                                cusfloat x,
+                                                cusfloat y,
+                                                cusfloat z,
+                                                cusfloat xi,
+                                                cusfloat eta,
+                                                cusfloat zeta,
+                                                cusfloat h,
+                                                WaveDispersionData &wave_data
                             )
 {
     /**
@@ -925,16 +1097,16 @@ cuscomplex john_series_dz(
 }
 
 
-cuscomplex wave_term_fin_depth(
-                                cusfloat x,
-                                cusfloat y,
-                                cusfloat z,
-                                cusfloat xi,
-                                cusfloat eta,
-                                cusfloat zeta,
-                                cusfloat h,
-                                WaveDispersionData &wave_data,
-                                IntegralsDb &idb
+cuscomplex  wave_term_fin_depth(
+                                                cusfloat x,
+                                                cusfloat y,
+                                                cusfloat z,
+                                                cusfloat xi,
+                                                cusfloat eta,
+                                                cusfloat zeta,
+                                                cusfloat h,
+                                                WaveDispersionData &wave_data,
+                                                IntegralsDb &idb
                                 )
 {
     // Calculate R value
@@ -958,13 +1130,13 @@ cuscomplex wave_term_fin_depth(
 }
 
 
-cuscomplex wave_term_fin_depth_integral(
-                                        cusfloat R,
-                                        cusfloat z,
-                                        cusfloat zeta,
-                                        cusfloat h,
-                                        WaveDispersionData &wave_data,
-                                        IntegralsDb &idb
+cuscomplex  wave_term_fin_depth_integral(
+                                                cusfloat R,
+                                                cusfloat z,
+                                                cusfloat zeta,
+                                                cusfloat h,
+                                                WaveDispersionData &wave_data,
+                                                IntegralsDb &idb
                                         )
 {
     /**
@@ -1038,13 +1210,13 @@ cuscomplex wave_term_fin_depth_integral(
 }
 
 
-cuscomplex wave_term_fin_depth_integral_dr(
-                                            cusfloat R,
-                                            cusfloat z,
-                                            cusfloat zeta,
-                                            cusfloat h,
-                                            WaveDispersionData &wave_data,
-                                            IntegralsDb &idb
+cuscomplex  wave_term_fin_depth_integral_dr(
+                                                cusfloat R,
+                                                cusfloat z,
+                                                cusfloat zeta,
+                                                cusfloat h,
+                                                WaveDispersionData &wave_data,
+                                                IntegralsDb &idb
                                             )
 {
     /**
@@ -1119,13 +1291,13 @@ cuscomplex wave_term_fin_depth_integral_dr(
 }
 
 
-cuscomplex wave_term_fin_depth_integral_dz(
-                                            cusfloat R,
-                                            cusfloat z,
-                                            cusfloat zeta,
-                                            cusfloat h,
-                                            WaveDispersionData &wave_data,
-                                            IntegralsDb &idb
+cuscomplex  wave_term_fin_depth_integral_dz(
+                                                cusfloat R,
+                                                cusfloat z,
+                                                cusfloat zeta,
+                                                cusfloat h,
+                                                WaveDispersionData &wave_data,
+                                                IntegralsDb &idb
                                             )
 {
     /**
