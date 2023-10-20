@@ -5,6 +5,7 @@
 // Include local modules
 #include "../../containers/mpi_config.hpp"
 #include "../../interfaces/hmf_interface.hpp"
+#include "../../interfaces/grfdn_interface.hpp"
 #include "../../interfaces/gwfdn_interface.hpp"
 #include "../../hydrostatics.hpp"
 #include "../../inout/input.hpp"
@@ -74,20 +75,28 @@ void    calculate_hydromechanic_coeffs_nlin(
                                                 cusfloat*       damping_rad
                                         );
 
-void    calculate_influence_potential_mat(
+void    calculate_influence_potential_steady(
+                                                Input*          input,
+                                                MpiConfig*      mpi_config,
+                                                MeshGroup*      mesh_gp,
+                                                cuscomplex*     inf_pot_mat
+                                            );
+
+void    calculate_influence_potential_total(
                                                 Input*          input,
                                                 MpiConfig*      mpi_config,
                                                 MeshGroup*      mesh_gp,
                                                 cusfloat        ang_freq,
-                                                cuscomplex*     pot_mat
+                                                cuscomplex*     inf_pot_steady,
+                                                cuscomplex*     inf_pot_total
                                         );
 
 void    calculate_panel_potentials_lin(
                                                 Input*          input,
-                                                MpiConfig*      mpi_config,
                                                 cuscomplex*     inf_pot_mat,
                                                 int             rows_np,
                                                 int             cols_np,
+                                                int             start_col,
                                                 cuscomplex*     sources,
                                                 cuscomplex*     panel_pot
                                         );
@@ -104,11 +113,20 @@ void    calculate_sources_intensity(
                                                 Input*          input,
                                                 SclCmpx*        scl,
                                                 MeshGroup*      mesh,
-                                                GWFDnInterface* green_interf,
+                                                GWFDnInterface* gwf_interf,
                                                 cusfloat        w,
+                                                cuscomplex*     sysmat_steady,
                                                 cuscomplex*     sysmat,
                                                 cuscomplex*     sources_int
                                    );
+
+void    calculate_sources_sysmat_steady(
+                                                Input*          input,
+                                                SclCmpx*        scl,
+                                                MeshGroup*      mesh_gp,
+                                                GRFDnInterface* grf_interf,
+                                                cuscomplex*     sysmat
+                                        );
 
 void    calculate_raos(
                                                 Input*          input,

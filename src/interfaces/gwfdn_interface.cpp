@@ -62,22 +62,22 @@ cuscomplex  GWFDnInterface::operator()(
                                     );
 
     // Calculate Green function derivatives
-    cuscomplex  dG_dR   = G_integral_dr(
-                                            R,
-                                            this->_source_j->position[2],
-                                            z,
-                                            this->_water_depth,
-                                            *(this->_wave_data),
-                                            *(this->_integrals_db)
-                                        );
-    cuscomplex  dG_dZ   = G_integral_dz(
-                                            R,
-                                            this->_source_j->position[2],
-                                            z,
-                                            this->_water_depth,
-                                            *(this->_wave_data),
-                                            *(this->_integrals_db)
-                                        );
+    cuscomplex  dG_dR   = G_integral_wave_dr(
+                                                R,
+                                                this->_source_j->position[2],
+                                                z,
+                                                this->_water_depth,
+                                                *(this->_wave_data),
+                                                *(this->_integrals_db)
+                                            );
+    cuscomplex  dG_dZ   = G_integral_wave_dz(
+                                                R,
+                                                this->_source_j->position[2],
+                                                z,
+                                                this->_water_depth,
+                                                *(this->_wave_data),
+                                                *(this->_integrals_db)
+                                            );
 
     // Calculate X and Y cartesian coordinates derivatives
     cusfloat    dX      = this->_source_j->position[0] - x;
