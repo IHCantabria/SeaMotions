@@ -221,11 +221,11 @@ def fit_integral_1d(f_residual: Callable,
     err_abs = np_abs(Ffe-Fr)
     pos = err_abs > err_tol
     err_over_thr = pos.sum()/err_abs.shape[0]*100
-    print(f"Error Statistics - {region_name}:")
-    print(f" -> Maximum: {err_abs.max()}")
-    print(f" -> Minimum: {err_abs.min()}")
-    print(f" -> Mean: {err_abs.mean()}")
-    print(f" -> Values over threshold [{err_tol:0.1E}]: {err_over_thr} %")
+    print(f"Error Statistics - {region_name}:", flush=True)
+    print(f" -> Maximum: {err_abs.max()}", flush=True)
+    print(f" -> Minimum: {err_abs.min()}", flush=True)
+    print(f" -> Mean: {err_abs.mean()}", flush=True)
+    print(f" -> Values over threshold [{err_tol:0.1E}]: {err_over_thr} %", flush=True)
 
     # Plot residual function
     fig = plt.figure()
@@ -380,11 +380,11 @@ def fit_integral_2d(f_residual: Callable,
     fit_stats.num_coeffs = C_filter.shape[0]
 
     # Print error statistics
-    print(f"Error Statistics - {region_name}:")
-    print(f" -> Maximum: {fit_stats.max_err}")
-    print(f" -> Minimum: {fit_stats.min_err}")
-    print(f" -> Mean: {fit_stats.mean_err}")
-    print(f" -> Values over threshold [{err_tol:0.1E}]: {fit_stats.err_over_thr} %")
+    print(f"Error Statistics - {region_name}:", flush=True)
+    print(f" -> Maximum: {fit_stats.max_err}", flush=True)
+    print(f" -> Minimum: {fit_stats.min_err}", flush=True)
+    print(f" -> Mean: {fit_stats.mean_err}", flush=True)
+    print(f" -> Values over threshold [{err_tol:0.1E}]: {fit_stats.err_over_thr} %", flush=True)
     print("\n")
 
     # Plot residual function
@@ -540,11 +540,11 @@ def fit_integral_3d(f_residual: Callable,
     err_abs = np_abs(Ffe-Fr)
     pos = err_abs > err_tol
     err_over_thr = pos.sum()/err_abs.shape[0]/err_abs.shape[1]/err_abs.shape[2]*100
-    print(f"Error Statistics - {region_name}:")
-    print(f" -> Maximum: {err_abs.max()}")
-    print(f" -> Minimum: {err_abs.min()}")
-    print(f" -> Mean: {err_abs.mean()}")
-    print(f" -> Values over threshold [{err_tol:0.1E}]: {err_over_thr} %")
-    print(f" -> Num. Coeffs: {C.shape[0]} - Num. Coeffs Filter: {C_filter.shape[0]}")
+    print(f"Error Statistics - {region_name}:", flush=True)
+    print(f" -> Maximum: {err_abs.max()}", flush=True)
+    print(f" -> Minimum: {err_abs.min()}", flush=True)
+    print(f" -> Mean: {err_abs.mean()}", flush=True)
+    print(f" -> Values over threshold [{err_tol:0.1E}]: {err_over_thr} %", flush=True)
+    print(f" -> Num. Coeffs: {C.shape[0]} - Num. Coeffs Filter: {C_filter.shape[0]}", flush=True)
 
     return C_filter, NCX_filter, NCY_filter, NCZ_filter
