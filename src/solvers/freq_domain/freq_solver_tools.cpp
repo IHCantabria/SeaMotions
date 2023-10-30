@@ -398,13 +398,6 @@ void    calculate_freq_domain_coeffs(
                     MPI_COMM_WORLD                
                 );
 
-
-        if ( mpi_config->is_root( ) )
-        {
-            std::cout << "Sources" << std::endl;
-            print_vector( 5, sources, 1, 6 );
-        }
-
         // Update sources values for the integration objects
         hmf_interf->set_source_values( sources );
 
