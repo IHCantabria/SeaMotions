@@ -276,6 +276,6 @@ if __name__ == "__main__":
                 ]
     for int_name in int_names:
         this_path = os.path.dirname(os.path.abspath(__file__))
-        database_path = os.path.join(this_path, f"{int_name}_database.h5")
+        database_path = os.path.join(this_path, "0_databases",  "1_finite_water_depth", "Prec_1Em3", f"{int_name}_database.h5")
         files_folder_path = os.path.join(os.path.dirname(this_path), "src", "green", "fin_depth_coeffs")
         generate_coeffs_modules(database_path, files_folder_path, int_name)
