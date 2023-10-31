@@ -13,6 +13,9 @@ from base_integrals import fxy, fxy_dx
 from fit_cheby import FitProperties, fit_integral_2d
 
 
+FIT_TOL = 1E-3
+
+
 def factorial(n: int)->int:
     if n < 2:
         return 1
@@ -35,7 +38,7 @@ def fit_residual_region_test()->None:
     fit_props.y_min = 1e-3
     fit_props.cheby_order_x = 20
     fit_props.cheby_order_y = 20
-    fit_props.cheby_tol = 1e-7
+    fit_props.cheby_tol = FIT_TOL
     fit_props.x_map_fcn = lambda x: x
     fit_props.y_map_fcn = lambda y: y
 
@@ -62,7 +65,7 @@ def fit_residual_region_11(show_figs=False, show_summary_fig=False):
             fit_props.y_log_scale = False
             fit_props.y_max = y[j+1]
             fit_props.y_min = y[j]
-            fit_props.cheby_tol = 1e-8
+            fit_props.cheby_tol = FIT_TOL
             fit_props.x_map_fcn = lambda x: x
             fit_props.y_map_fcn = lambda y: y
 
@@ -94,7 +97,7 @@ def fit_residual_region_11_dx(show_figs=False, show_summary_fig=False):
             fit_props.y_log_scale = True
             fit_props.y_max = y[j+1]
             fit_props.y_min = y[j]
-            fit_props.cheby_tol = 1e-8
+            fit_props.cheby_tol = FIT_TOL
             fit_props.x_map_fcn = lambda x: x
             fit_props.y_map_fcn = lambda y: y
 
@@ -128,7 +131,7 @@ def fit_residual_region_11A_dx(show_figs=False, show_summary_fig=False):
             fit_props.y_log_scale = True
             fit_props.y_max = y[j+1]
             fit_props.y_min = y[j]
-            fit_props.cheby_tol = 1e-8
+            fit_props.cheby_tol = FIT_TOL
             fit_props.x_map_fcn = lambda x: x
             fit_props.y_map_fcn = lambda y: y
 
@@ -160,7 +163,7 @@ def fit_residual_region_11B_dx(show_figs=False, show_summary_fig=False):
             fit_props.y_log_scale = True
             fit_props.y_max = y[j+1]
             fit_props.y_min = y[j]
-            fit_props.cheby_tol = 1e-8
+            fit_props.cheby_tol = FIT_TOL
             fit_props.x_map_fcn = lambda x: x
             fit_props.y_map_fcn = lambda y: y
 
@@ -204,7 +207,7 @@ def fit_residual_region_12(show_figs=False, show_summary_fig=False):
             fit_props.y_log_scale = False
             fit_props.y_max = y[j+1]
             fit_props.y_min = y[j]
-            fit_props.cheby_tol = 1e-8
+            fit_props.cheby_tol = FIT_TOL
             fit_props.x_map_fcn = lambda x: x
             fit_props.y_map_fcn = lambda y: y
 
@@ -237,7 +240,7 @@ def fit_residual_region_12_dx(show_figs=False, show_summary_fig=False):
             fit_props.y_log_scale = False
             fit_props.y_max = y[j+1]
             fit_props.y_min = y[j]
-            fit_props.cheby_tol = 1e-7
+            fit_props.cheby_tol = FIT_TOL
             fit_props.x_map_fcn = lambda x: x
             fit_props.y_map_fcn = lambda y: y
 
@@ -283,7 +286,7 @@ def fit_residual_region_21(show_figs=False, show_summary_fig=False):
             fit_props.y_log_scale = False
             fit_props.y_max = y[j+1]
             fit_props.y_min = y[j]
-            fit_props.cheby_tol = 1e-8
+            fit_props.cheby_tol = FIT_TOL
             fit_props.x_map_fcn = lambda x: x
             fit_props.y_map_fcn = lambda y: y
 
@@ -316,7 +319,7 @@ def fit_residual_region_21_dx(show_figs=False, show_summary_fig=False):
             fit_props.y_log_scale = False
             fit_props.y_max = y[j+1]
             fit_props.y_min = y[j]
-            fit_props.cheby_tol = 1e-8
+            fit_props.cheby_tol = FIT_TOL
             fit_props.x_map_fcn = lambda x: x
             fit_props.y_map_fcn = lambda y: y
 
@@ -349,7 +352,7 @@ def fit_residual_region_22(show_figs=False, show_summary_fig=False):
             fit_props.y_log_scale = False
             fit_props.y_max = y[j+1]
             fit_props.y_min = y[j]
-            fit_props.cheby_tol = 1e-8
+            fit_props.cheby_tol = FIT_TOL
             fit_props.x_map_fcn = lambda x: x
             fit_props.y_map_fcn = lambda y: y
 
@@ -383,7 +386,7 @@ def fit_residual_region_22_dx(show_figs=False, show_summary_fig=False):
             fit_props.y_log_scale = True
             fit_props.y_max = y[j+1]
             fit_props.y_min = y[j]
-            fit_props.cheby_tol = 1e-8
+            fit_props.cheby_tol = FIT_TOL
             fit_props.x_map_fcn = lambda x: x
             fit_props.y_map_fcn = lambda y: y
 
