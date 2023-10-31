@@ -63,6 +63,7 @@ int main( int argc, char* argv[] )
     /*****************************************/
     MPI_Barrier( MPI_COMM_WORLD );
     double hydrostat_tstart     = MPI_Wtime( );
+    double case_tstart          = MPI_Wtime( );
 
     Hydrostatics** hydrostatics = new Hydrostatics*[input->bodies_np];
     for ( int i=0; i<input->bodies_np; i++ )
@@ -134,6 +135,7 @@ int main( int argc, char* argv[] )
     /*****************************************/
     /********* Close MPI environment *********/
     /*****************************************/
+    double case_tend = MPI_Wtime( );
     MPI_Finalize( );
 
     /*****************************************/
@@ -148,6 +150,8 @@ int main( int argc, char* argv[] )
     }
     delete [] hydrostatics;
 
+
+    std::cout << "Elapsed wall time for calculation [s]: " << case_tend - case_tstart << std::endl;
     std::cout << "Seamotions Freqcuency ended!" << std::endl;
 
     return 0;
