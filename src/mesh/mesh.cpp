@@ -59,7 +59,7 @@ void Mesh::_calculate_bounding_box(
 
 
 void Mesh::_create_panels(
-                            cusfloat* cog
+                                        cusfloat*   cog
                         )
 {
     // Create array to stogate the panels
@@ -86,6 +86,9 @@ void Mesh::_create_panels(
             this->panels[i]->z[j]   = this->z[node_num];
         }
 
+        // Set panel type
+        this->panels[i]->type = this->panels_type[i];
+
         // Calculate panel properties
         this->panels[i]->calculate_properties( cog );
 
@@ -94,8 +97,8 @@ void Mesh::_create_panels(
 
 
 void Mesh::define_source_nodes(
-                                    int         poly_order,
-                                    cusfloat*   cog
+                                        int         poly_order,
+                                        cusfloat*   cog
                                 )
 {
     // Get nodes per element depending on the element type
@@ -205,11 +208,11 @@ void Mesh::define_source_nodes(
 
 
 void Mesh::get_elem_nodes( 
-                            int         elem_num, 
-                            int&        npe, 
-                            cusfloat*   xn, 
-                            cusfloat*   yn,
-                            cusfloat*   zn
+                                        int         elem_num, 
+                                        int&        npe, 
+                                        cusfloat*   xn, 
+                                        cusfloat*   yn,
+                                        cusfloat*   zn
                         )
 {
     // Get nodes per element
@@ -233,7 +236,7 @@ void Mesh::get_elem_nodes(
 
 
 bool Mesh::_is_valid_type( 
-                            int elem_type 
+                                        int         elem_type 
                         )
 {
     bool is_valid = false;
@@ -250,9 +253,94 @@ bool Mesh::_is_valid_type(
 }
 
 
+void Mesh::_joint_meshes(
+                                        std::vector<Mesh*>  meshes
+                        )
+{
+    // Get the cumulative number of elements and nodes
+    std::vector<int> elems_np_cum;
+    std::vector<int> nodes_np_cum;
+
+    elems_np_cum.push_back( 0 );
+    nodes_np_cum.push_back( 0 );
+
+    for ( int i=0; i<meshes.size( ); i++ )
+    {
+        elems_np_cum.push_back( 
+                                    meshes[i]->elems_np 
+                                    +
+                                    elems_np_cum[i]
+                                );
+        nodes_np_cum.push_back( 
+                                    meshes[i]->nodes_np
+                                    +
+                                    nodes_np_cum[i]
+                                );
+    }
+
+    this->elems_np = elems_np_cum[ meshes.size( ) ];
+    this->nodes_np = nodes_np_cum[ meshes.size( ) ];
+
+    // Get maximum nodes per element and it's extended counterpart
+    // to allocate space for all the elements in the mesh
+    this->enrl = 0;
+    this->mnpe = 0;
+    for ( int i=0; i<meshes.size( ); i++ )
+    {
+        if (  meshes[i]->enrl > this->enrl)
+        {
+            this->enrl = meshes[i]->enrl;
+        }
+
+        if (  meshes[i]->mnpe > this->mnpe)
+        {
+            this->mnpe = meshes[i]->mnpe;
+        }
+    }
+
+    // Allocate space for the full elements and nodes lists
+    this->elems         = generate_empty_vector<int>( this->elems_np * this->enrl );
+    this->panels_type   = generate_empty_vector<int>( this->elems_np );
+    this->x             = generate_empty_vector<cusfloat>(  this->nodes_np );
+    this->y             = generate_empty_vector<cusfloat>(  this->nodes_np );
+    this->z             = generate_empty_vector<cusfloat>(  this->nodes_np );
+
+    // Fill elements and nodes positions lists
+    int count_elems     = 0;
+    int global_index    = 0;
+    int local_index     = 0;
+    for ( int i=0; i<meshes.size( ); i++ )
+    {
+        // Add elements
+        for ( int j=0; j<meshes[i]->elems_np; j++ )
+        {
+            local_index                         = meshes[i]->enrl * j;
+            this->elems[count_elems*this->enrl] = meshes[i]->elems[local_index];
+            this->panels_type[count_elems]      = meshes[i]->panels_type[j];
+
+            for ( int k=0; k<meshes[i]->elems[local_index]; k++ )
+            {
+                this->elems[count_elems*this->enrl+k+1] = meshes[i]->elems[local_index+k+1] + nodes_np_cum[i] ;
+            }
+
+            count_elems++;
+        }
+
+        // Add node positions
+        for ( int j=0; j<meshes[i]->nodes_np; j++ )
+        {
+            global_index            = nodes_np_cum[i] + j;
+            this->x[global_index]   = meshes[i]->x[j];
+            this->y[global_index]   = meshes[i]->y[j];
+            this->z[global_index]   = meshes[i]->z[j];
+        }
+    }
+}
+
+
 void Mesh::_load_poly_mesh( 
-                            std::string file_path,
-                            std::string body_name
+                                        std::string file_path,
+                                        std::string body_name
                         )
 {
     // Define auxiliar variable to help in the file parsing
@@ -513,7 +601,11 @@ void Mesh::_load_poly_mesh(
                             renew_stream( iss, line );
                             iss >> header_code;
 
-                            if ( header_code != 21 )
+                            if ( header_code > 20 )
+                            {
+                                break;
+                            }
+                            else
                             {
                                 // Renew stream for the current line
                                 renew_stream( iss, line );
@@ -524,11 +616,6 @@ void Mesh::_load_poly_mesh(
                                     _sel_elems[sel_count] = a1-1;
                                     sel_count++;
                                 }
-                                
-                            }
-                            else
-                            {
-                                break;
                             }
                         }
                     }
@@ -561,13 +648,33 @@ void Mesh::_load_poly_mesh(
 
 
 Mesh::Mesh( 
-                            std::string file_path,
-                            std::string body_name,
-                            cusfloat*   cog 
+                                        std::string file_path,
+                                        std::string body_name,
+                                        cusfloat*   cog,
+                                        int         panel_type
             )
 {
     // Load mesh
     this->_load_poly_mesh( file_path, body_name );
+
+    // Generate vector with the panels type
+    this->set_all_panels_type( panel_type );
+
+    // Calculate bounding box of the mesh
+    this->_calculate_bounding_box( );
+
+    // Create panels for each element
+    this->_create_panels( cog );
+}
+
+
+Mesh::Mesh(
+                                        std::vector<Mesh*>  meshes,
+                                        cusfloat*           cog
+            )
+{
+    // Joint input meshes in a single one
+    this->_joint_meshes( meshes );
 
     // Calculate bounding box of the mesh
     this->_calculate_bounding_box( );
@@ -578,9 +685,10 @@ Mesh::Mesh(
 
 
 Mesh::~Mesh( 
-                            void 
+                                        void 
             )
 {
+    std::cout << "Deleting mesh object..." << std::endl;
     // Delete source nodes
     if ( this->_is_source_nodes )
     {
@@ -601,9 +709,24 @@ Mesh::~Mesh(
     // Delete elements
     mkl_free( this->elems );
 
+    // Delete panel type
+    mkl_free( this->panels_type );
+
     // Delete nodal positions
     mkl_free( this->x );
     mkl_free( this->y );
     mkl_free( this->z );
 
+}
+
+
+void Mesh::set_all_panels_type(
+                                        int panel_type
+                                )
+{
+    this->panels_type = generate_empty_vector<int>( this->elems_np );
+    for ( int i=0; i<this->elems_np; i++ )
+    {
+        this->panels_type[i] = panel_type;
+    }
 }

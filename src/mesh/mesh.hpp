@@ -18,6 +18,10 @@
 #include "../../src/math/math_tools.hpp"
 #include "../../src/tools.hpp"
 
+// Define panels type
+#define DIFFRAC_PANEL_CODE  0
+#define LID_PANEL_CODE      1
+
 
 struct Mesh
 {
@@ -33,16 +37,20 @@ private:
                                     );
     
     void    _create_panels(
-                                        cusfloat* cog
+                                        cusfloat*           cog
                             );
     
     bool    _is_valid_type( 
-                                        int elem_type 
+                                        int                 elem_type 
                            );
+    
+    void    _joint_meshes(
+                                        std::vector<Mesh*>  meshes
+                        );
 
     void    _load_poly_mesh( 
-                                        std::string file_path,
-                                        std::string body_name
+                                        std::string         file_path,
+                                        std::string         body_name
                            );
 
 public:
@@ -54,6 +62,7 @@ public:
     int             mnpe            = 0;
     int             nodes_np        = 0;
     PanelGeom**     panels          = nullptr;
+    int*            panels_type     = nullptr;
     SourceNode**    source_nodes    = nullptr;
     int             source_nodes_np = 0;
     cusfloat*       x               = nullptr;
@@ -70,9 +79,16 @@ public:
     Mesh( ) = default;
 
     Mesh( 
-                                std::string file_path,
-                                std::string body_name,
-                                cusfloat*   cog
+                                std::string         file_path,
+                                std::string         body_name,
+                                cusfloat*           cog,
+                                int                 panel_type
+        );
+
+    Mesh(
+                                std::vector<Mesh*>  meshes,
+                                cusfloat*           cog
+
         );
 
     ~Mesh( 
@@ -81,17 +97,21 @@ public:
 
     // Define class methods
     void define_source_nodes(
-                                int         poly_order,
-                                cusfloat*   cog
+                                int                 poly_order,
+                                cusfloat*           cog
                             );
     
     void get_elem_nodes( 
-                                int         elem_num, 
-                                int&        npe, 
-                                cusfloat*   xn, 
-                                cusfloat*   yn,
-                                cusfloat*   zn
+                                int                 elem_num, 
+                                int&                npe, 
+                                cusfloat*           xn, 
+                                cusfloat*           yn,
+                                cusfloat*           zn
                         );
+
+    void set_all_panels_type(
+                                int                 panel_type
+                            );
     
 };
 
