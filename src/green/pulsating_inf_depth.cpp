@@ -54,7 +54,21 @@ cusfloat wave_term_inf_depth(
                             )
 {
     cusfloat sol = 0.0;
-    if (x_ndim < 3.0 && y_ndim < 4.0)
+    if ( y_ndim < 1e-8 )
+    {
+        sol = 2 * ( 
+                        std::log( 2.0 )
+                        -
+                        EULERGAMMA
+                        -
+                        std::log( 
+                                    y_ndim
+                                    +
+                                    std::sqrt( pow2s( x_ndim ) + pow2s( y_ndim ) )
+                                )
+                    );
+    }
+    else if (x_ndim < 3.0 && y_ndim < 4.0)
     {
         sol = idb.r11->calculate_xy(x_ndim, y_ndim);
     }
@@ -139,7 +153,12 @@ cusfloat wave_term_inf_depth_dxndim(
 {
     // Get integral value depending on the region
     cusfloat sol = 0.0;
-    if (x_ndim < 3.0 && y_ndim < 4.0)
+    if ( y_ndim < 1e-8 )
+    {
+        cusfloat dist_ndim = std::sqrt( pow2s( x_ndim ) + pow2s( y_ndim ) );
+        sol = - 2.0 * ( x_ndim / dist_ndim / ( y_ndim + dist_ndim ) );
+    }
+    else if (x_ndim < 3.0 && y_ndim < 4.0)
     {
         if ((x_ndim < 0.5) && (y_ndim < 0.5))
         {
