@@ -17,6 +17,7 @@ public:
     bool            is_mesh         = false;
     cusfloat        inertia[6]      = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
     bool            interia_by_rad  = false;
+    int             lid_type        = 0;
     cusfloat        mass            = 0.0;
     Mesh*           mesh            = nullptr;
     std::string     mesh_finame     = "";

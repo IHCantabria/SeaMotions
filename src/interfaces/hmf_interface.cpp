@@ -2,6 +2,7 @@
 // Include local modules
 #include "../math/integration.hpp"
 #include "hmf_interface.hpp"
+#include "../mesh/mesh.hpp"
 
 
 HMFInterface::HMFInterface(
@@ -111,31 +112,35 @@ cuscomplex  HMFInterface::operator()(
         // Set new source values
         index   =   this->_offset_index + i;
 
-        this->_green_interf_steady->set_source(
-                                                this->_source_nodes[i],
-                                                this->_source_values[index]
-                                            );
-        this->_green_interf_wave->set_source(
-                                                this->_source_nodes[i],
-                                                this->_source_values[index]
-                                            );
+        if ( this->_source_nodes[i]->panel->type == DIFFRAC_PANEL_CODE )
+        {
+            this->_green_interf_steady->set_source(
+                                                    this->_source_nodes[i],
+                                                    this->_source_values[index]
+                                                );
+            this->_green_interf_wave->set_source(
+                                                    this->_source_nodes[i],
+                                                    this->_source_values[index]
+                                                );
 
-        // Integrate source value over the panel
-        pot_i_steady    =  adaptive_quadrature_panel(
-                                                        this->_source_nodes[i]->panel,
-                                                        steady_fcn,
-                                                        this->_pot_abs_err,
-                                                        this->_pot_rel_err
-                                                    );
-        
-        pot_i_wave      =  adaptive_quadrature_panel(
-                                                        this->_source_nodes[i]->panel,
-                                                        wave_fcn,
-                                                        this->_pot_abs_err,
-                                                        this->_pot_rel_err
-                                                    );
-                                                    
-        potential       += ( pot_i_steady + pot_i_wave ) / 4.0 / PI; // * this->_panel->normal_vec[this->_dof_j];
+            // Integrate source value over the panel
+            pot_i_steady    =  adaptive_quadrature_panel(
+                                                            this->_source_nodes[i]->panel,
+                                                            steady_fcn,
+                                                            this->_pot_abs_err,
+                                                            this->_pot_rel_err
+                                                        );
+            
+            pot_i_wave      =  adaptive_quadrature_panel(
+                                                            this->_source_nodes[i]->panel,
+                                                            wave_fcn,
+                                                            this->_pot_abs_err,
+                                                            this->_pot_rel_err
+                                                        );
+                                                        
+            potential       += ( pot_i_steady + pot_i_wave ) / 4.0 / PI; // * this->_panel->normal_vec[this->_dof_j];
+
+        }
 
     }
 

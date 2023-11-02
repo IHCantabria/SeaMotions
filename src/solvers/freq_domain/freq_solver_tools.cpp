@@ -155,13 +155,16 @@ void    calculate_diffraction_forces_nlin(
 
                 // Integrate pressure over panel
                 index           = max_panels * ib + ie;
-                pressure[index] = adaptive_quadrature_panel(
-                                                                mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie],
-                                                                target_fcn,
-                                                                input->press_abs_err,
-                                                                input->press_rel_err,
-                                                                false
-                                                            );
+                if ( mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->type == DIFFRAC_PANEL_CODE )
+                {
+                    pressure[index] = adaptive_quadrature_panel(
+                                                                    mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie],
+                                                                    target_fcn,
+                                                                    input->press_abs_err,
+                                                                    input->press_rel_err,
+                                                                    false
+                                                                );
+                }
             }
         }
 
@@ -397,6 +400,11 @@ void    calculate_freq_domain_coeffs(
                     mpi_config->proc_root,
                     MPI_COMM_WORLD                
                 );
+
+        if ( mpi_config->is_root( ) )
+        {
+            print_vector( scl.num_rows, sources, 1, 6 );
+        }
 
         // Update sources values for the integration objects
         hmf_interf->set_source_values( sources );
@@ -748,13 +756,16 @@ void    calculate_froude_krylov(
             {
                 // Integrate pressure over panel
                 index           = max_panels * ib + ie;
-                pressure[index] = adaptive_quadrature_panel(
-                                                                mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie],
-                                                                target_fcn,
-                                                                input->press_abs_err,
-                                                                input->press_rel_err,
-                                                                false
-                                                            );
+                if ( mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->type == 0 )
+                {
+                    pressure[index] = adaptive_quadrature_panel(
+                                                                    mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie],
+                                                                    target_fcn,
+                                                                    input->press_abs_err,
+                                                                    input->press_rel_err,
+                                                                    false
+                                                                );
+                }
             }
         }
 
@@ -1042,13 +1053,16 @@ void    calculate_hydromechanic_coeffs_nlin(
 
                     // Integrate pressure over panel
                     index           = ( max_panels * mesh_gp->meshes_np ) * id + max_panels * jb + ie;
-                    pressure[index] = adaptive_quadrature_panel(
-                                                                    mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie],
-                                                                    target_fcn,
-                                                                    input->press_abs_err,
-                                                                    input->press_rel_err,
-                                                                    false
-                                                                );
+                    if ( mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->type == DIFFRAC_PANEL_CODE )
+                    {
+                        pressure[index] = adaptive_quadrature_panel(
+                                                                        mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie],
+                                                                        target_fcn,
+                                                                        input->press_abs_err,
+                                                                        input->press_rel_err,
+                                                                        false
+                                                                    );
+                    }
                 }
             }
         }
@@ -1140,14 +1154,21 @@ void    calculate_influence_potential_steady(
                                             );
             
             // Compute steady and wave terms over the panel
-            pot_steady_term = adaptive_quadrature_panel(
-                                                            mesh_gp->source_nodes[j]->panel,
-                                                            steady_fcn,
-                                                            input->pot_abs_err,
-                                                            input->pot_rel_err
-                                                        );
-            
-            inf_pot_mat[count] = pot_steady_term / 4.0 / PI;
+            if ( 
+                    mesh_gp->source_nodes[i]->panel->type == DIFFRAC_PANEL_CODE
+                    &&
+                    mesh_gp->source_nodes[j]->panel->type == DIFFRAC_PANEL_CODE
+                )
+            {
+                pot_steady_term = adaptive_quadrature_panel(
+                                                                mesh_gp->source_nodes[j]->panel,
+                                                                steady_fcn,
+                                                                input->pot_abs_err,
+                                                                input->pot_rel_err
+                                                            );
+                
+                inf_pot_mat[count] = pot_steady_term / 4.0 / PI;
+            }
             count++;
         }
     }
@@ -1208,14 +1229,26 @@ void    calculate_influence_potential_total(
                                         );
             
             // Compute steady and wave terms over the panel
-            pot_wave_term           = adaptive_quadrature_panel(
-                                                                    mesh_gp->source_nodes[j]->panel,
-                                                                    wave_fcn,
-                                                                    input->pot_abs_err,
-                                                                    input->pot_rel_err
-                                                                );
+            if ( 
+                    mesh_gp->source_nodes[i]->panel->type == DIFFRAC_PANEL_CODE
+                    &&
+                    mesh_gp->source_nodes[j]->panel->type == DIFFRAC_PANEL_CODE
+                )
+            {
+                pot_wave_term           = adaptive_quadrature_panel(
+                                                                        mesh_gp->source_nodes[j]->panel,
+                                                                        wave_fcn,
+                                                                        input->pot_abs_err,
+                                                                        input->pot_rel_err
+                                                                    );
+                inf_pot_total[count]    = inf_pot_steady[count] + pot_wave_term / 4.0 / PI;
+
+            }
+            else
+            {
+                inf_pot_total[count]    = cuscomplex( 0.0, 0.0 );
+            }
             
-            inf_pot_total[count]    = inf_pot_steady[count] + pot_wave_term / 4.0 / PI;
             count++;
         }
     }
@@ -1332,29 +1365,37 @@ void    calculate_panel_potentials_nlin(
         // over ith panel center
         for ( int j=0; j<mesh_gp->source_nodes_tnp; j++ )
         {
-            // Set current source value
-            green_interf_steady->set_source(
-                                            mesh_gp->source_nodes[j],
-                                            sources[j]
-                                        );
-            green_interf_wave->set_source(
-                                            mesh_gp->source_nodes[j],
-                                            sources[j]
-                                        );
-            
-            pot_i_steady    = adaptive_quadrature_panel(
-                                                            mesh_gp->source_nodes[j]->panel,
-                                                            steady_fcn,
-                                                            input->pot_abs_err,
-                                                            input->pot_rel_err
-                                                        );
-            pot_i_wave      = adaptive_quadrature_panel(
-                                                            mesh_gp->source_nodes[j]->panel,
-                                                            wave_fcn,
-                                                            input->pot_abs_err,
-                                                            input->pot_rel_err
-                                                        );
-            panel_potential +=  ( pot_i_steady + pot_i_wave ) /4.0 / PI;
+            if ( 
+                    mesh_gp->panels[i]->type == DIFFRAC_PANEL_CODE
+                    &&
+                    mesh_gp->source_nodes[j]->panel->type == DIFFRAC_PANEL_CODE
+                )
+            {
+                // Set current source value
+                green_interf_steady->set_source(
+                                                mesh_gp->source_nodes[j],
+                                                sources[j]
+                                            );
+                green_interf_wave->set_source(
+                                                mesh_gp->source_nodes[j],
+                                                sources[j]
+                                            );
+                
+                pot_i_steady    = adaptive_quadrature_panel(
+                                                                mesh_gp->source_nodes[j]->panel,
+                                                                steady_fcn,
+                                                                input->pot_abs_err,
+                                                                input->pot_rel_err
+                                                            );
+                pot_i_wave      = adaptive_quadrature_panel(
+                                                                mesh_gp->source_nodes[j]->panel,
+                                                                wave_fcn,
+                                                                input->pot_abs_err,
+                                                                input->pot_rel_err
+                                                            );
+                panel_potential +=  ( pot_i_steady + pot_i_wave ) /4.0 / PI;
+
+            }
         }
     }
 
@@ -1396,6 +1437,7 @@ void    calculate_sources_intensity(
     int         index       = 0;
     cuscomplex  int_value( 0.0, 0.0 );
     cuscomplex  wave_value( 0.0, 0.0 );
+    PanelGeom*  panel_j     = nullptr;
     SourceNode* source_i    = nullptr;
     int         row_count   = 0;
 
@@ -1411,12 +1453,20 @@ void    calculate_sources_intensity(
         for ( int j=scl->start_row_0; j<scl->end_row_0; j++ )
         {
             // Get memory address of the panel jth
+            panel_j = mesh_gp->source_nodes[j]->panel;
             gwf_interf->set_source_j( mesh_gp->source_nodes[j] );
 
             // Integrate green function normal derivative along the current panel
             if ( i == j )
             {
-                int_value   =   -std::complex( 0.5, 0.0 );
+                if ( panel_j->type == DIFFRAC_PANEL_CODE )
+                {
+                    int_value   =   -cuscomplex( 0.5, 0.0 );
+                }
+                else if ( panel_j->type == LID_PANEL_CODE )
+                {
+                    int_value   =   -cuscomplex( 4.0 * PI, 0.0 );
+                }
             }
             else
             {
@@ -1428,6 +1478,14 @@ void    calculate_sources_intensity(
                                                                 false
                                                             );
                 int_value       =   wave_value / 4.0 / PI;
+                if ( 
+                        panel_j->type == LID_PANEL_CODE
+                        &&
+                        source_i->panel->type == LID_PANEL_CODE
+                    )
+                {
+                    int_value   = - int_value;
+                }
             }
             index           = col_count*scl->num_rows_local+row_count;
             sysmat[index]   = sysmat_steady[index] + int_value;
@@ -1453,10 +1511,20 @@ void    calculate_sources_intensity(
     {
         for ( int j=scl->start_row_0; j<scl->end_row_0; j++ )
         {
-            sources_int[count] = complex( 0.0, w * mesh_gp->source_nodes[j]->normal_vec[i] );
+            panel_j = mesh_gp->source_nodes[j]->panel;
+            if ( panel_j->type == DIFFRAC_PANEL_CODE )
+            {
+                sources_int[count] = cuscomplex( 0.0, w * mesh_gp->source_nodes[j]->normal_vec[i] );
+            }
+            else if ( panel_j->type == LID_PANEL_CODE )
+            {
+                sources_int[count] = cuscomplex( 0.0, 0.0 );
+            }
             count++;
         }
     }
+
+    print_vector( scl->num_rows, sources_int, 1, 6 );
 
     /***************************************/
     /****** Fill Wave Exciting RHS  ********/
@@ -1472,51 +1540,59 @@ void    calculate_sources_intensity(
     {
         for ( int j=scl->start_row_0; j<scl->end_row_0; j++ )
         {
-            // Get wave potential derivatives for the panel
-            wave_dx             =   wave_potential_airy_space_dx(
-                                                                    1.0,
-                                                                    w,
-                                                                    k,
-                                                                    input->water_depth,
-                                                                    input->grav_acc,
-                                                                    mesh_gp->source_nodes[j]->panel->center[0],
-                                                                    mesh_gp->source_nodes[j]->panel->center[1],
-                                                                    mesh_gp->source_nodes[j]->panel->center[2],
-                                                                    input->heads[i]
-                                                                );
+            panel_j = mesh_gp->source_nodes[j]->panel;
+            if ( panel_j->type == DIFFRAC_PANEL_CODE )
+            {
+                // Get wave potential derivatives for the panel
+                wave_dx             =   wave_potential_airy_space_dx(
+                                                                        1.0,
+                                                                        w,
+                                                                        k,
+                                                                        input->water_depth,
+                                                                        input->grav_acc,
+                                                                        mesh_gp->source_nodes[j]->panel->center[0],
+                                                                        mesh_gp->source_nodes[j]->panel->center[1],
+                                                                        mesh_gp->source_nodes[j]->panel->center[2],
+                                                                        input->heads[i]
+                                                                    );
 
-            wave_dy             =   wave_potential_airy_space_dy(
-                                                                    1.0,
-                                                                    w,
-                                                                    k,
-                                                                    input->water_depth,
-                                                                    input->grav_acc,
-                                                                    mesh_gp->source_nodes[j]->panel->center[0],
-                                                                    mesh_gp->source_nodes[j]->panel->center[1],
-                                                                    mesh_gp->source_nodes[j]->panel->center[2],
-                                                                    input->heads[i]
-                                                                );
+                wave_dy             =   wave_potential_airy_space_dy(
+                                                                        1.0,
+                                                                        w,
+                                                                        k,
+                                                                        input->water_depth,
+                                                                        input->grav_acc,
+                                                                        mesh_gp->source_nodes[j]->panel->center[0],
+                                                                        mesh_gp->source_nodes[j]->panel->center[1],
+                                                                        mesh_gp->source_nodes[j]->panel->center[2],
+                                                                        input->heads[i]
+                                                                    );
 
-            wave_dz             =   wave_potential_airy_space_dz(
-                                                                    1.0,
-                                                                    w,
-                                                                    k,
-                                                                    input->water_depth,
-                                                                    input->grav_acc,
-                                                                    mesh_gp->source_nodes[j]->panel->center[0],
-                                                                    mesh_gp->source_nodes[j]->panel->center[1],
-                                                                    mesh_gp->source_nodes[j]->panel->center[2],
-                                                                    input->heads[i]
-                                                                );
-            
-            // Calculate normal derivative of the wave flow velocities for the jth panel
-            sources_int[count]  = -(
-                                        wave_dx * mesh_gp->source_nodes[j]->normal_vec[0]
-                                        +
-                                        wave_dy * mesh_gp->source_nodes[j]->normal_vec[1]
-                                        +
-                                        wave_dz * mesh_gp->source_nodes[j]->normal_vec[2]
-                                    );
+                wave_dz             =   wave_potential_airy_space_dz(
+                                                                        1.0,
+                                                                        w,
+                                                                        k,
+                                                                        input->water_depth,
+                                                                        input->grav_acc,
+                                                                        mesh_gp->source_nodes[j]->panel->center[0],
+                                                                        mesh_gp->source_nodes[j]->panel->center[1],
+                                                                        mesh_gp->source_nodes[j]->panel->center[2],
+                                                                        input->heads[i]
+                                                                    );
+                
+                // Calculate normal derivative of the wave flow velocities for the jth panel
+                sources_int[count]  = -(
+                                            wave_dx * mesh_gp->source_nodes[j]->normal_vec[0]
+                                            +
+                                            wave_dy * mesh_gp->source_nodes[j]->normal_vec[1]
+                                            +
+                                            wave_dz * mesh_gp->source_nodes[j]->normal_vec[2]
+                                        );
+            }
+            else if ( panel_j->type == LID_PANEL_CODE )
+            {
+                sources_int[count]  = cuscomplex( 0.0, 0.0 );
+            }
             
             count++;
         }
@@ -1587,6 +1663,15 @@ void    calculate_sources_sysmat_steady(
                                                                 false
                                                             );
                 int_value       =   steady_value / 4.0 / PI;
+            }
+
+            if ( 
+                    mesh_gp->source_nodes[j]->panel->type == LID_PANEL_CODE
+                    &&
+                    source_i->panel->type == LID_PANEL_CODE
+                )
+            {
+                int_value       = - int_value;
             }
 
             sysmat[col_count*scl->num_rows_local+row_count] = int_value;

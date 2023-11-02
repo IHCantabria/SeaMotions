@@ -27,6 +27,7 @@ public:
     cusfloat                normal_vec[6]           = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
     int                     num_nodes               = 0;
     cusfloat                sysref_centre[3]        = { 0.0, 0.0, 0.0 };
+    int                     type                    = 0;
     cusfloat                x[MAX_PANEL_NODES];
     cusfloat                xl[MAX_PANEL_NODES];
     cusfloat                y[MAX_PANEL_NODES];

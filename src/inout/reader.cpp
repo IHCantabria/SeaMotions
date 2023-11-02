@@ -159,14 +159,19 @@ void read_body(
     // Skip header
     _skip_header( infile, line_count, 3 );
 
+    // Read mesh body name
+    target_signal   = "BodyName";
+    read_signal     = _read_channel_value( infile, body->mesh_body_name );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
     // Read mesh file name
     target_signal   = "MeshFile";
     read_signal     = _read_channel_value( infile, body->mesh_finame );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
-    // Read mesh body name
-    target_signal   = "BodyName";
-    read_signal     = _read_channel_value( infile, body->mesh_body_name );
+    // Read usage of internal lid
+    target_signal   = "LidType";
+    read_signal     = _read_channel_value( infile, body->lid_type );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Load mesh for the current body
@@ -175,11 +180,44 @@ void read_body(
     fs::path mesh_fipath_ = folder_path_ / mesh_foname_ / mesh_finame_;
 
     body->mesh      = new   Mesh( 
-                                      mesh_fipath_.string( ),
-                                      body->mesh_body_name,
-                                      body->cog                                    
+                                    mesh_fipath_.string( ),
+                                    body->mesh_body_name,
+                                    body->cog,
+                                    DIFFRAC_PANEL_CODE                                
                                   );
     body->is_mesh   = true;
+
+    // Load lid if it is required by the user
+    if ( body->lid_type == 1 )
+    {  
+        // Define lid name
+        std::stringstream ss;
+        ss << body->mesh_body_name << "_lid";
+        
+        // Load lid mesh
+        Mesh* lid_mesh = new Mesh(
+                                    mesh_fipath_.string( ),
+                                    ss.str( ),
+                                    body->cog,
+                                    LID_PANEL_CODE
+                                );
+
+        // Joint body and lid meshes
+        std::vector<Mesh*> meshes;
+        meshes.push_back( body->mesh );
+        meshes.push_back( lid_mesh );
+
+        body->mesh  = new Mesh(
+                                    meshes,
+                                    body->cog
+                                );
+
+        // Delete body and lid meshes
+        for ( auto mi: meshes )
+        {
+            delete mi;
+        }
+    }
 
     // Close file unit
     infile.close();
