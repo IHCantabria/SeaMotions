@@ -2,7 +2,8 @@
 *.obj
 *.exe
 *.pyc
-/aux_tools/0_databases
+/aux_tools/0_databases_abs_err
+/aux_tools/1_databases_rel_err
 /src/version.cpp
 launch-vtune.bat
 settings.json
