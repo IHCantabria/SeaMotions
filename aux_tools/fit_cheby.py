@@ -7,6 +7,7 @@ from mpl_toolkits.mplot3d import axes3d
 import matplotlib.pyplot as plt
 from numpy import array, linspace, log10, meshgrid, ndarray, sqrt, zeros
 from numpy import abs as np_abs
+from numpy import max as np_max
 from numpy.linalg import solve as np_solve
 from scipy.special import eval_chebyt, roots_chebyt
 
@@ -199,7 +200,7 @@ def fit_integral_1d(f_residual: Callable,
     
     # Filter coefficients to the precision required
     n_cheby = linspace(0, cheby_order-1, cheby_order, dtype=int)
-    pos = np_abs(C) > cheby_tol
+    pos = np_abs(C) > np_max( np_abs(C) ) * cheby_tol
     C_filter = C[pos]
     NCX_filter = n_cheby[pos]
 
@@ -321,7 +322,7 @@ def fit_integral_2d(f_residual: Callable,
     n_cheby_x = linspace(0, cheby_order_x-1, cheby_order_x, dtype=int)
     n_cheby_y = linspace(0, cheby_order_y-1, cheby_order_y, dtype=int)
     NCX,NCY = meshgrid(n_cheby_x, n_cheby_y, indexing="ij")
-    pos = np_abs(C) > cheby_tol
+    pos = np_abs(C) > np_max( np_abs(C)) * cheby_tol
     C_filter = C[pos]
     NCX_filter = (NCX.ravel())[pos]
     NCY_filter = (NCY.ravel())[pos]
@@ -503,7 +504,7 @@ def fit_integral_3d(f_residual: Callable,
     n_cheby_y = linspace(0, cheby_order_y-1, cheby_order_y, dtype=int)
     n_cheby_z = linspace(0, cheby_order_z-1, cheby_order_z, dtype=int)
     NCX,NCY,NCZ = meshgrid(n_cheby_x, n_cheby_y, n_cheby_z, indexing="ij")
-    pos = np_abs(C) > cheby_tol
+    pos = np_abs(C) > np_max( np_abs(C) ) * cheby_tol
     C_filter = C[pos]
     NCX_filter = (NCX.ravel())[pos]
     NCY_filter = (NCY.ravel())[pos]
