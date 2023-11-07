@@ -81,6 +81,20 @@ void Input::configure( void )
         this->freqs[i] = angfreq_to_freq( this->angfreqs[i] );
     }
 
+    // Detect points over the free surface
+    if ( 
+            this->out_mdrift
+            ||
+            this->out_qtf
+        )
+    {
+        // Detect points over the free surface
+        for ( int i=0; i<this->bodies_np; i++ )
+        {
+            this->bodies[i]->mesh->detect_wl_points( this->wl_det_prec );
+        }
+    }
+
     // Calculate source nodes
     for ( int i=0; i<this->bodies_np; i++ )
     {

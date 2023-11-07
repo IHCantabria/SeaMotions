@@ -20,7 +20,9 @@ public:
     cusfloat                area                    = 0.0;
     cusfloat                body_cog[3]             = { 0.0, 0.0, 0.0 };
     cusfloat                center[3]               = {0.0, 0.0, 0.0};
+    cusfloat                center_wl[3]            = {0.0, 0.0, 0.0};
     cusfloat                global_to_local_mat[9];
+    bool                    is_wl_boundary          = false;
     cusfloat                length                  = 0.0;
     cusfloat                local_to_global_mat[9];
     static constexpr int    MAX_PANEL_NODES         = 4;
@@ -28,11 +30,15 @@ public:
     int                     num_nodes               = 0;
     cusfloat                sysref_centre[3]        = { 0.0, 0.0, 0.0 };
     int                     type                    = 0;
+    int                     wl_nodes[2]             = { 0, 0 };
     cusfloat                x[MAX_PANEL_NODES];
+    cusfloat                x_wl[2]                 = { 0.0, 0.0 };
     cusfloat                xl[MAX_PANEL_NODES];
     cusfloat                y[MAX_PANEL_NODES];
+    cusfloat                y_wl[2]                 = { 0.0, 0.0 };
     cusfloat                yl[MAX_PANEL_NODES];
     cusfloat                z[MAX_PANEL_NODES];
+    cusfloat                z_wl[2]                 = { 0.0, 0.0 };
     cusfloat                zl[MAX_PANEL_NODES];
 
     // Define class constructors and destructor

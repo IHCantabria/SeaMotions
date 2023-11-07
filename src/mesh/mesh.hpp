@@ -62,6 +62,7 @@ public:
     int             mnpe            = 0;
     int             nodes_np        = 0;
     PanelGeom**     panels          = nullptr;
+    PanelGeom**     panels_wl       = nullptr;
     int*            panels_type     = nullptr;
     SourceNode**    source_nodes    = nullptr;
     int             source_nodes_np = 0;
@@ -96,22 +97,26 @@ public:
         );
 
     // Define class methods
-    void define_source_nodes(
-                                int                 poly_order,
-                                cusfloat*           cog
+    void    define_source_nodes(
+                                   int                 poly_order,
+                                   cusfloat*           cog
+                               );
+
+    void    detect_wl_points(
+                                    cusfloat           wl_det_prec
                             );
     
-    void get_elem_nodes( 
-                                int                 elem_num, 
-                                int&                npe, 
-                                cusfloat*           xn, 
-                                cusfloat*           yn,
-                                cusfloat*           zn
-                        );
+    void    get_elem_nodes( 
+                                   int                 elem_num, 
+                                   int&                npe, 
+                                   cusfloat*           xn, 
+                                   cusfloat*           yn,
+                                   cusfloat*           zn
+                           );
 
-    void set_all_panels_type(
-                                int                 panel_type
-                            );
+    void    set_all_panels_type(
+                                   int                 panel_type
+                               );
     
 };
 

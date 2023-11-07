@@ -207,6 +207,93 @@ void Mesh::define_source_nodes(
 }
 
 
+void Mesh::detect_wl_points(
+                                        cusfloat    wl_det_prec
+                            )
+{
+    // Loop over elements to check how many points they
+    // have on the WL
+    int*    elems_wl        = generate_empty_vector<int>( this->elems_np * this->enrl );
+    int     global_index    = 0;
+    int     node_j          = 0;
+
+    for ( int i=0; i<this->elems_np; i++ )
+    {
+        global_index = i * this->enrl;
+        for ( int j=0; j<this->elems[global_index]; j++ )
+        {
+            node_j = this->elems[global_index+1+j];
+            if ( 
+                    ( this->z[node_j] > -wl_det_prec )
+                    &&
+                    ( this->z[node_j] < wl_det_prec )
+                )
+            {
+                elems_wl[global_index]                          += 1;
+                elems_wl[global_index+elems_wl[global_index]]   = node_j;
+            }
+        }
+    }
+
+    // Check for those elements that have two nodes on the water line
+    int         count   = 0;
+    PanelGeom*  panel_i;
+    for ( int i=0; i<this->elems_np; i++ )
+    {
+        global_index = i * this->enrl;
+        if ( elems_wl[global_index] > 2 )
+        {
+            std::stringstream ss;
+            ss << "ERROR - INPUT" << std::endl;
+            ss << "Element: " << i << " more than two nodes on the WL: " << elems_wl[global_index] << std::endl;
+            ss << "Nodes: " << elems_wl[global_index+1];
+            for ( int j=2; j<elems_wl[global_index]+1; j++ )
+            {
+                ss << " - " << elems_wl[global_index+j];
+            }
+            ss << std::endl;
+            throw std::runtime_error( ss.str( ).c_str( ) );
+        }
+
+        if ( elems_wl[global_index] == 2 )
+        {
+            panel_i                 = this->panels[i];
+            panel_i->is_wl_boundary = true;
+            for ( int j=1; j<elems_wl[global_index]+1; j++ )
+            {
+                node_j                  = elems_wl[global_index+j];
+                panel_i->wl_nodes[j-1]  = node_j;
+                panel_i->x_wl[j-1]      = this->x[node_j];
+                panel_i->y_wl[j-1]      = this->y[node_j];
+                panel_i->center_wl[0]   += this->x[node_j];
+                panel_i->center_wl[1]   += this->y[node_j];
+            }
+            panel_i->center_wl[0] /= 2.0;
+            panel_i->center_wl[1] /= 2.0;
+
+            count++;
+        }
+    }
+
+    // Create a list to pack all the panels that have boundary over the
+    // water line
+    this->panels_wl     = new PanelGeom*[count];
+
+    count = 0;
+    for ( int i=0; i<this->elems_np; i++ )
+    {
+        if ( elems_wl[global_index] == 2 )
+        {
+            this->panels_wl[count] = panel_i;
+            count++;
+        }
+    }
+
+    // Delete heap memory allocated in the current method
+    mkl_free( elems_wl );
+}
+
+
 void Mesh::get_elem_nodes( 
                                         int         elem_num, 
                                         int&        npe, 
@@ -624,6 +711,17 @@ void Mesh::_load_poly_mesh(
         }
     }
 
+    if ( sel_count == 0 )
+    {
+        std::stringstream ss;
+        ss << std::endl;
+        ss << "ERROR - INPUT" << std::endl;
+        ss << "Not possible to find region with name: '" << body_name << "'";
+        ss << " in file: " << file_path << std::endl;
+        std::cerr << ss.str( ) << std::endl;
+        throw std::runtime_error( ss.str( ).c_str( ) );
+    }
+
     // Allocate space for the connectivity matrix
     this->elems_np  = sel_count;
     this->elems     = generate_empty_vector<int>( this->enrl * this->elems_np );
@@ -705,6 +803,7 @@ Mesh::~Mesh(
         delete this->panels[i];
     }
     delete [ ] this->panels;
+    delete [ ] this->panels_wl;
 
     // Delete elements
     mkl_free( this->elems );
