@@ -401,11 +401,6 @@ void    calculate_freq_domain_coeffs(
                     MPI_COMM_WORLD                
                 );
 
-        if ( mpi_config->is_root( ) )
-        {
-            print_vector( scl.num_rows, sources, 1, 6 );
-        }
-
         // Update sources values for the integration objects
         hmf_interf->set_source_values( sources );
 
@@ -1515,16 +1510,14 @@ void    calculate_sources_intensity(
             if ( panel_j->type == DIFFRAC_PANEL_CODE )
             {
                 sources_int[count] = cuscomplex( 0.0, w * mesh_gp->source_nodes[j]->normal_vec[i] );
-            }
+                            }
             else if ( panel_j->type == LID_PANEL_CODE )
             {
                 sources_int[count] = cuscomplex( 0.0, 0.0 );
             }
             count++;
         }
-    }
-
-    print_vector( scl->num_rows, sources_int, 1, 6 );
+        }
 
     /***************************************/
     /****** Fill Wave Exciting RHS  ********/
