@@ -298,6 +298,11 @@ void    read_case(
     read_signal     = _read_channel_value( infile, input->press_rel_err );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
+    // Read water line points detection precision
+    target_signal   = "WLDetPrec";
+    read_signal     = _read_channel_value( infile, input->wl_det_prec );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
     //////////////////////////////////////////////
     /************** Body Definition *************/
     //////////////////////////////////////////////
