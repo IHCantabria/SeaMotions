@@ -13,7 +13,7 @@ from base_integrals import fxy, fxy_dx
 from fit_cheby import FitProperties, fit_integral_2d
 
 
-FIT_TOL = 1E-3
+FIT_TOL = 1E-6
 
 
 def factorial(n: int)->int:
@@ -479,11 +479,6 @@ def residual_region_22_dx(X: float, Y: float)->float:
     for i in range(3):
         poly = legendre(i)
         polyd = poly.deriv()
-        print(f"i: {i:d} - pn: ", factorial(i))
-        print(f"i: {i:d} - l_der_raw: ", polyval(polyd, costh))
-        print(f"i: {i:d} - l_raw: ", eval_legendre(i, costh))
-        print(f"i: {i:d} - l1: ", polyval(polyd, costh)*costhd/R**(i+1))
-        print(f"i: {i:d} - l2: ", eval_legendre(i, costh)*2*(i+1)*X/R**(i+2))
         f -= factorial(i)*(
                             polyval(polyd, costh)*costhd/R**(i+1)
                             -
