@@ -34,12 +34,15 @@ public:
     cusfloat                x[MAX_PANEL_NODES];
     cusfloat                x_wl[2]                 = { 0.0, 0.0 };
     cusfloat                xl[MAX_PANEL_NODES];
+    cusfloat                xlc[MAX_PANEL_NODES];
     cusfloat                y[MAX_PANEL_NODES];
     cusfloat                y_wl[2]                 = { 0.0, 0.0 };
     cusfloat                yl[MAX_PANEL_NODES];
+    cusfloat                ylc[MAX_PANEL_NODES];
     cusfloat                z[MAX_PANEL_NODES];
     cusfloat                z_wl[2]                 = { 0.0, 0.0 };
     cusfloat                zl[MAX_PANEL_NODES];
+    cusfloat                zlc[MAX_PANEL_NODES];
 
     // Define class constructors and destructor
     ~PanelGeom( 
@@ -81,6 +84,11 @@ public:
                                         int          num_node, 
                                         cusfloat*    node_pos
                                    );
+
+    void    get_node_local_position_c(   
+                                        int          num_node, 
+                                        cusfloat*    node_pos
+                                    );
 
     int     is_inside(                  
                                         cusfloat*   field_point

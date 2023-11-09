@@ -168,6 +168,24 @@ void PanelGeom::calculate_properties(
         this->zl[i] = local_pos[2];
     }
 
+    for (int i=0; i<this->num_nodes; i++)
+    {
+        // Remove mean point of the panel in order to rotate the panel
+        // around a point inside of it
+        global_pos[0] = this->x[i] - this->center[0];
+        global_pos[1] = this->y[i] - this->center[1];
+        global_pos[2] = this->z[i] - this->center[2];
+
+        // Rotate node position to express the node coordinates in
+        // the local coordinate system
+        cblas_gemv<cusfloat>(CblasRowMajor, CblasNoTrans, 3, 3, 1.0, this->global_to_local_mat, 3, global_pos, 1, 0, local_pos, 1);
+
+        // Storage of the solution in the local x,y,z storage vectors
+        this->xlc[i] = local_pos[0];
+        this->ylc[i] = local_pos[1];
+        this->zlc[i] = local_pos[2];
+    }
+
     // Calculate normal vector components for rotational modes
     // around the COG of the body
     copy_vector( 3, cog, this->body_cog );
@@ -258,6 +276,14 @@ void PanelGeom::get_node_local_position( int num_node, cusfloat* node_pos )
     node_pos[0] = this->xl[num_node];
     node_pos[1] = this->yl[num_node];
     node_pos[2] = this->zl[num_node];
+}
+
+
+void PanelGeom::get_node_local_position_c( int num_node, cusfloat* node_pos )
+{
+    node_pos[0] = this->xlc[num_node];
+    node_pos[1] = this->ylc[num_node];
+    node_pos[2] = this->zlc[num_node];
 }
 
 
