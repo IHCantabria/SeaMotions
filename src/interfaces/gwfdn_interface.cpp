@@ -60,6 +60,11 @@ cuscomplex  GWFDnInterface::operator()(
                                         +
                                         pow2s( this->_source_j->position[1] - y )
                                     );
+    
+    if ( R < ZEROTH_EPS )
+    {
+        R = ZEROTH_EPS;
+    }
 
     // Calculate Green function derivatives
     cuscomplex  dG_dR   = G_integral_wave_dr(
