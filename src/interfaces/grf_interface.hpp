@@ -12,7 +12,7 @@ struct GRFInterface
 {
 private:
     // Define class attributes
-    cusfloat*           _field_point    = nullptr;
+    cusfloat            _field_point[3] = { 0.0, 0.0, 0.0 };
     SourceNode*         _source         = nullptr;
     cuscomplex          _source_value   = 0.0;
     cusfloat            _water_depth    = 0.0;

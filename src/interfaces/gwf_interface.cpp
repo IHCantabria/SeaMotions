@@ -16,12 +16,13 @@ GWFInterface::GWFInterface(
                         )
 {
     // Storage necessary input class arguements into class attributes
-    this->_field_point  = field_point_in;
     this->_grav_acc     = grav_acc_in;
     this->_source       = source_in;
     this->_source_value = source_value_in;
     this->_water_depth  = water_depth_in;
 
+    copy_vector( 3, field_point_in, this->_field_point );
+    
     // Define wave dispersion data
     this->_wave_data    = new WaveDispersionData(
                                                     ang_freq,

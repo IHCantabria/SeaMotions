@@ -12,7 +12,7 @@ struct GWFInterface
 {
 private:
     // Define class attributes
-    cusfloat*           _field_point    = nullptr;
+    cusfloat            _field_point[3] = { 0.0, 0.0, 0.0 };
     cusfloat            _grav_acc       = 0.0;
     IntegralsDb*        _integrals_db   = nullptr;
     SourceNode*         _source         = nullptr;
