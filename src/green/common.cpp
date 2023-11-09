@@ -12,9 +12,15 @@ void calculate_distance_node_field(PanelGeom &panel, cusfloat (&field_point_loca
     cusfloat node_pos[3];
     for (int i=0; i<panel.num_nodes; i++)
     {
-        panel.get_node_local_position(i, node_pos);
+        panel.get_node_local_position_c(i, node_pos);
         sv_sub(3, field_point_local, node_pos, node_fieldp_vec);
         sv_mod(3, node_fieldp_vec, node_fieldp_mod[i]);
+
+        // Check for 0 component
+        node_fieldp_vec[0] = check_zero_eps( node_fieldp_vec[0], ZEROTH_EPS );
+        node_fieldp_vec[1] = check_zero_eps( node_fieldp_vec[1], ZEROTH_EPS );
+        node_fieldp_vec[2] = check_zero_eps( node_fieldp_vec[2], ZEROTH_EPS );
+        node_fieldp_mod[i] = check_zero_eps( node_fieldp_mod[i], ZEROTH_EPS );
 
         // Storage vector components for futher use
         node_fieldp_dx[i] = node_fieldp_vec[0];
@@ -30,8 +36,8 @@ void calculate_nodes_distance(PanelGeom &panel, cusfloat* delta_xi, cusfloat* de
     for (int i=0; i<panel.num_nodes; i++)
     {
         i1 = (i+1)%panel.num_nodes;
-        delta_xi[i] = panel.xl[i1] - panel.xl[i];
-        delta_eta[i] = panel.yl[i1] - panel.yl[i];
+        delta_xi[i] = panel.xlc[i1] - panel.xlc[i];
+        delta_eta[i] = panel.ylc[i1] - panel.ylc[i];
     }
 }
 
