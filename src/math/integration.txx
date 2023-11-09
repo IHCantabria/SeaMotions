@@ -111,7 +111,8 @@ inline cuscomplex adaptive_quadrature_panel(
                                                     T               target_fcn,
                                                     cusfloat        abs_tol,
                                                     cusfloat        rel_tol,
-                                                    bool            block_adaption
+                                                    bool            block_adaption,
+                                                    bool            even_order
                                             )
 {
     // Define local variables
@@ -123,13 +124,22 @@ inline cuscomplex adaptive_quadrature_panel(
     
     if ( !block_adaption )
     {
+        // Define polynomial adaption parameters
+        int first_order     = 2;
+        int last_order      = 10;
+        int step_order      = 2;
+        if ( !even_order )
+        {
+            first_order     = 1;
+            step_order      = 1;
+        }
         int_sol_0   =  quadrature_panel(
                                         panel,
                                         target_fcn,
-                                        2
+                                        first_order
                                     );
         int_sol_00  = int_sol_0;
-        for ( int igo=4; igo<10; igo+=2 )
+        for ( int igo=first_order+step_order; igo<last_order; igo+=step_order )
         {
             // Integrate function with the new
             int_sol_1   =  quadrature_panel(

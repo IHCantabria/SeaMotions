@@ -23,7 +23,8 @@ template<typename T>    inline  cuscomplex  adaptive_quadrature_panel(
                                                                             T               fcn,
                                                                             cusfloat        abs_tol,
                                                                             cusfloat        rel_tol,
-                                                                            bool            block_adaption=false
+                                                                            bool            block_adaption=false,
+                                                                            bool            even_order=true
                                                                         );
 
                                 cuscomplex  complex_integration(
