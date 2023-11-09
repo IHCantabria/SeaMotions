@@ -79,6 +79,11 @@ template<typename T>    inline  int         assert_vector_equality(
                                                                         cusfloat &sol, 
                                                                         int &info
                                                         );
+
+                                cusfloat check_zero_eps( 
+                                                                        cusfloat value,
+                                                                        cusfloat eps
+                                                        );
         
 template<typename T>    inline  T*          generate_empty_vector(          
                                                                         int size

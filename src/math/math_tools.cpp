@@ -137,6 +137,20 @@ void bisection(
 }
 
 
+cusfloat check_zero_eps( 
+                            cusfloat value,
+                            cusfloat eps
+                        )
+{
+    if ( std::abs( value ) < eps )
+    {
+        value = eps;
+    }
+    
+    return value;
+}
+
+
 cusfloat deg_to_rad(  cusfloat deg )
 {
     return deg*PI/180.0;
