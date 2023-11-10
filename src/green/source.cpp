@@ -13,23 +13,36 @@
 #include "../math/math_tools.hpp"
 
 
-void calculate_source_monopole_potential(PanelGeom &panel, cusfloat r0, cusfloat &phi)
+void    calculate_source_monopole_potential(
+                                            PanelGeom*      panel, 
+                                            cusfloat        r0, 
+                                            cusfloat&       phi
+                                        )
 {
-    phi = panel.area/r0;
+    phi = panel->area/r0;
 }
 
 
-void calculate_source_monopole_velocity(PanelGeom &panel, cusfloat r0, cusfloat (&field_point)[3],
-    cusfloat (&velocity)[3])
+void    calculate_source_monopole_velocity(
+                                            PanelGeom*      panel, 
+                                            cusfloat        r0, 
+                                            cusfloat*       field_point,
+                                            cusfloat*       velocity
+                                        )
 {
-    velocity[0] = field_point[0]*panel.area/pow3s(r0);
-    velocity[1] = field_point[1]*panel.area/pow3s(r0);
-    velocity[2] = field_point[2]*panel.area/pow3s(r0);
+    velocity[0] = field_point[0]*panel->area/pow3s(r0);
+    velocity[1] = field_point[1]*panel->area/pow3s(r0);
+    velocity[2] = field_point[2]*panel->area/pow3s(r0);
 }
 
 
-void calculate_source_potential_newman(PanelGeom &panel, cusfloat (&field_point)[3], int fp_local_flag, 
-    int multipole_flag, cusfloat &phi)
+void    calculate_source_potential_newman(
+                                            PanelGeom*      panel, 
+                                            cusfloat*       field_point, 
+                                            int             fp_local_flag, 
+                                            int             multipole_flag, 
+                                            cusfloat&       phi
+                                        )
 {
     // Reset potential value
     phi = 0.0;
@@ -41,20 +54,20 @@ void calculate_source_potential_newman(PanelGeom &panel, cusfloat (&field_point)
     {
         // Calculate vector from center of the panel to field point
         cusfloat field_point_local_aux[3];
-        sv_sub(3, field_point, panel.center, field_point_local_aux);
+        sv_sub(3, field_point, panel->center, field_point_local_aux);
 
         // Calculate distance from the center of the panel to the field point
         cusfloat r0 = cblas_nrm2<cusfloat>(3, field_point_local_aux, 1);
 
         // Check if multipole expansion applies
-        if ((r0/panel.length > 4.0) && multipole_flag)
+        if ((r0/panel->length > 4.0) && multipole_flag)
         {
             calculate_source_monopole_potential(panel, r0, phi);
             return;
         }
 
         // Change from global system of coordinates to the local one
-        cblas_gemv<cusfloat>(CblasRowMajor, CblasNoTrans, 3, 3, 1.0, panel.global_to_local_mat, 3, field_point_local_aux, 1, 0, field_point_local, 1);
+        cblas_gemv<cusfloat>(CblasRowMajor, CblasNoTrans, 3, 3, 1.0, panel->global_to_local_mat, 3, field_point_local_aux, 1, 0, field_point_local, 1);
     }
     else if (fp_local_flag == 1)
     {
@@ -68,7 +81,7 @@ void calculate_source_potential_newman(PanelGeom &panel, cusfloat (&field_point)
         cusfloat r0 = cblas_nrm2<cusfloat>(3, field_point_local, 1);
 
         // Check if multipole expansion applies
-        if ((r0/panel.length > 4.0) && multipole_flag)
+        if ((r0/panel->length > 4.0) && multipole_flag)
         {
             calculate_source_monopole_potential(panel, r0, phi);
             return;
@@ -80,32 +93,32 @@ void calculate_source_potential_newman(PanelGeom &panel, cusfloat (&field_point)
     }
 
     // Calculate distances from each node to the field point in local coordinates
-    cusfloat node_fieldp_dx[panel.MAX_PANEL_NODES];
-    cusfloat node_fieldp_dy[panel.MAX_PANEL_NODES];
-    cusfloat node_fieldp_dz[panel.MAX_PANEL_NODES];
-    cusfloat node_fieldp_mod[panel.MAX_PANEL_NODES];
+    cusfloat node_fieldp_dx[panel->MAX_PANEL_NODES];
+    cusfloat node_fieldp_dy[panel->MAX_PANEL_NODES];
+    cusfloat node_fieldp_dz[panel->MAX_PANEL_NODES];
+    cusfloat node_fieldp_mod[panel->MAX_PANEL_NODES];
     calculate_distance_node_field(panel, field_point_local, node_fieldp_mod, node_fieldp_dx, node_fieldp_dy, node_fieldp_dz);
 
     // Calculate distances in between nodes
-    cusfloat delta_xi [panel.MAX_PANEL_NODES];
-    cusfloat delta_eta [panel.MAX_PANEL_NODES];
+    cusfloat delta_xi [panel->MAX_PANEL_NODES];
+    cusfloat delta_eta [panel->MAX_PANEL_NODES];
     calculate_nodes_distance(panel, delta_xi, delta_eta);
 
-    cusfloat sides_len [panel.MAX_PANEL_NODES];
+    cusfloat sides_len [panel->MAX_PANEL_NODES];
     calculate_sides_len_local(panel, delta_xi, delta_eta, sides_len);
 
     // Calculate polar angles
-    cusfloat polar_angles [panel.MAX_PANEL_NODES];
+    cusfloat polar_angles [panel->MAX_PANEL_NODES];
     calculate_polar_angles(panel, delta_xi, delta_eta, polar_angles);
 
     // Calculate velocity potential
     int i1 = 0;
     cusfloat r_sum = 0.0;
     cusfloat a, b;
-    for (int i=0; i<panel.num_nodes; i++)
+    for (int i=0; i<panel->num_nodes; i++)
     {
         // Calculate next index
-        i1 = (i+1)%panel.num_nodes;
+        i1 = (i+1)%panel->num_nodes;
 
         // Calculate potential
         r_sum = node_fieldp_mod[i]+node_fieldp_mod[i1];
@@ -121,8 +134,13 @@ void calculate_source_potential_newman(PanelGeom &panel, cusfloat (&field_point)
 }
 
 
-void calculate_source_velocity_newman(PanelGeom &panel, cusfloat (&field_point)[3], int fp_local_flag,
-    int multipole_flag, cusfloat (&velocity)[3])
+void    calculate_source_velocity_newman(
+                                            PanelGeom*      panel, 
+                                            cusfloat*       field_point, 
+                                            int             fp_local_flag,
+                                            int             multipole_flag, 
+                                            cusfloat        *velocity
+                                        )
 {
     // Create axuliar velocity vector to store the velocities in local coordinates
     cusfloat velocity_local[3] = {0.0, 0.0, 0.0};
@@ -134,20 +152,20 @@ void calculate_source_velocity_newman(PanelGeom &panel, cusfloat (&field_point)[
     {
         // Calculate vector from center of the panel to field point
         cusfloat field_point_local_aux[3];
-        sv_sub(3, field_point, panel.center, field_point_local_aux);
+        sv_sub(3, field_point, panel->center, field_point_local_aux);
                 
         // Calculate distance from the center of the panel to the field point
         cusfloat r0 = cblas_nrm2<cusfloat>(3, field_point_local_aux, 1);
 
         // Check if multipole expansion applies
-        if ((r0/panel.length > 4.0) && multipole_flag)
+        if ((r0/panel->length > 4.0) && multipole_flag)
         {
             calculate_source_monopole_velocity(panel, r0, field_point_local_aux, velocity);
             return;
         }
 
         // Change from global system of coordinates to the local one
-        cblas_gemv<cusfloat>(CblasRowMajor, CblasNoTrans, 3, 3, 1.0, panel.global_to_local_mat, 3, field_point_local_aux, 1, 0, field_point_local, 1);
+        cblas_gemv<cusfloat>(CblasRowMajor, CblasNoTrans, 3, 3, 1.0, panel->global_to_local_mat, 3, field_point_local_aux, 1, 0, field_point_local, 1);
     }
     else if (fp_local_flag == 1)
     {
@@ -161,7 +179,7 @@ void calculate_source_velocity_newman(PanelGeom &panel, cusfloat (&field_point)[
         cusfloat r0 = cblas_nrm2<cusfloat>(3, field_point_local, 1);
 
         // Check if multipole expansion applies
-        if ((r0/panel.length > 4.0) && multipole_flag)
+        if ((r0/panel->length > 4.0) && multipole_flag)
         {
             calculate_source_monopole_velocity(panel, r0, field_point_local, velocity);
             return;
@@ -173,28 +191,28 @@ void calculate_source_velocity_newman(PanelGeom &panel, cusfloat (&field_point)[
     }
 
     // Calculate distances from each node to the field point in local coordinates
-    cusfloat node_fieldp_dx[panel.MAX_PANEL_NODES];
-    cusfloat node_fieldp_dy[panel.MAX_PANEL_NODES];
-    cusfloat node_fieldp_dz[panel.MAX_PANEL_NODES];
-    cusfloat node_fieldp_mod[panel.MAX_PANEL_NODES];
+    cusfloat node_fieldp_dx[panel->MAX_PANEL_NODES];
+    cusfloat node_fieldp_dy[panel->MAX_PANEL_NODES];
+    cusfloat node_fieldp_dz[panel->MAX_PANEL_NODES];
+    cusfloat node_fieldp_mod[panel->MAX_PANEL_NODES];
     calculate_distance_node_field(panel, field_point_local, node_fieldp_mod, node_fieldp_dx, node_fieldp_dy, node_fieldp_dz);
 
     // Calculate distances in between nodes
-    cusfloat delta_xi [panel.MAX_PANEL_NODES];
-    cusfloat delta_eta [panel.MAX_PANEL_NODES];
+    cusfloat delta_xi [panel->MAX_PANEL_NODES];
+    cusfloat delta_eta [panel->MAX_PANEL_NODES];
     calculate_nodes_distance(panel, delta_xi, delta_eta);
 
-    cusfloat sides_len [panel.MAX_PANEL_NODES];
+    cusfloat sides_len [panel->MAX_PANEL_NODES];
     calculate_sides_len_local(panel, delta_xi, delta_eta, sides_len);
 
     // Calculate induced velocities
     cusfloat r_sum = 0.0;
     cusfloat b, b0, b1;
     int i1;
-    for (int i=0; i<panel.num_nodes; i++)
+    for (int i=0; i<panel->num_nodes; i++)
     {
         // Calculate forward index
-        i1 = (i+1)%panel.num_nodes;
+        i1 = (i+1)%panel->num_nodes;
 
         // Calculate potential-like coefficients
         r_sum = node_fieldp_mod[i]+node_fieldp_mod[i1];
@@ -216,7 +234,7 @@ void calculate_source_velocity_newman(PanelGeom &panel, cusfloat (&field_point)[
     // vector was given in that base
     if (fp_local_flag == 0)
     {
-        cblas_gemv<cusfloat>(CblasRowMajor, CblasNoTrans, 3, 3, 1.0, panel.local_to_global_mat, 3, velocity_local, 1, 0, velocity, 1);
+        cblas_gemv<cusfloat>(CblasRowMajor, CblasNoTrans, 3, 3, 1.0, panel->local_to_global_mat, 3, velocity_local, 1, 0, velocity, 1);
     }
     else
     {
@@ -225,8 +243,13 @@ void calculate_source_velocity_newman(PanelGeom &panel, cusfloat (&field_point)[
 }
 
 
-void calculate_source_potential_hess(PanelGeom &panel, cusfloat (&field_point)[3], int fp_local_flag, 
-    int multipole_flag, cusfloat &phi)
+void    calculate_source_potential_hess(
+                                            PanelGeom*      panel,
+                                            cusfloat*       field_point,
+                                            int             fp_local_flag,
+                                            int             multipole_flag,
+                                            cusfloat        &phi
+                                        )
 {
     // Reset potential value
     phi = 0.0;
@@ -238,20 +261,20 @@ void calculate_source_potential_hess(PanelGeom &panel, cusfloat (&field_point)[3
     {
         // Calculate vector from center of the panel to field point
         cusfloat field_point_local_aux[3];
-        sv_sub(3, field_point, panel.center, field_point_local_aux);
+        sv_sub(3, field_point, panel->center, field_point_local_aux);
 
         // Calculate distance from the center of the panel to the field point
         cusfloat r0 = cblas_nrm2<cusfloat>(3, field_point_local_aux, 1);
 
         // Check if multipole expansion applies
-        if ((r0/panel.length > 4.0) && multipole_flag)
+        if ((r0/panel->length > 4.0) && multipole_flag)
         {
             calculate_source_monopole_potential(panel, r0, phi);
             return;
         }
 
         // Change from global system of coordinates to the local one
-        cblas_gemv<cusfloat>(CblasRowMajor, CblasNoTrans, 3, 3, 1.0, panel.global_to_local_mat, 3, field_point_local_aux, 1, 0, field_point_local, 1);
+        cblas_gemv<cusfloat>(CblasRowMajor, CblasNoTrans, 3, 3, 1.0, panel->global_to_local_mat, 3, field_point_local_aux, 1, 0, field_point_local, 1);
     }
     else if (fp_local_flag == 1)
     {
@@ -265,7 +288,7 @@ void calculate_source_potential_hess(PanelGeom &panel, cusfloat (&field_point)[3
         cusfloat r0 = cblas_nrm2<cusfloat>(3, field_point_local, 1);
 
         // Check if multipole expansion applies
-        if ((r0/panel.length > 4.0) && multipole_flag)
+        if ((r0/panel->length > 4.0) && multipole_flag)
         {
             calculate_source_monopole_potential(panel, r0, phi);
             return;
@@ -277,28 +300,28 @@ void calculate_source_potential_hess(PanelGeom &panel, cusfloat (&field_point)[3
     }
 
     // Calculate distances from each node to the field point in local coordinates
-    cusfloat node_fieldp_dx[panel.MAX_PANEL_NODES];
-    cusfloat node_fieldp_dy[panel.MAX_PANEL_NODES];
-    cusfloat node_fieldp_dz[panel.MAX_PANEL_NODES];
-    cusfloat node_fieldp_mod[panel.MAX_PANEL_NODES];
+    cusfloat node_fieldp_dx[panel->MAX_PANEL_NODES];
+    cusfloat node_fieldp_dy[panel->MAX_PANEL_NODES];
+    cusfloat node_fieldp_dz[panel->MAX_PANEL_NODES];
+    cusfloat node_fieldp_mod[panel->MAX_PANEL_NODES];
     calculate_distance_node_field(panel, field_point_local, node_fieldp_mod, node_fieldp_dx, node_fieldp_dy, node_fieldp_dz);
 
     // Calculate distances in between nodes
-    cusfloat delta_xi [panel.MAX_PANEL_NODES];
-    cusfloat delta_eta [panel.MAX_PANEL_NODES];
+    cusfloat delta_xi [panel->MAX_PANEL_NODES];
+    cusfloat delta_eta [panel->MAX_PANEL_NODES];
     calculate_nodes_distance(panel, delta_xi, delta_eta);
 
-    cusfloat sides_len [panel.MAX_PANEL_NODES];
+    cusfloat sides_len [panel->MAX_PANEL_NODES];
     calculate_sides_len_local(panel, delta_xi, delta_eta, sides_len);
 
     // Calcualte potential value
     int j;
     cusfloat a, b, si, sj, r;
     cusfloat cx, cy, r_sum;
-    for (int i=0; i<panel.num_nodes; i++)
+    for (int i=0; i<panel->num_nodes; i++)
     {
         // Calculate forward index
-        j = (i+1)%panel.num_nodes;
+        j = (i+1)%panel->num_nodes;
 
         // Calculate local parameters
         a = delta_xi[i]/sides_len[i];
@@ -318,14 +341,19 @@ void calculate_source_potential_hess(PanelGeom &panel, cusfloat (&field_point)[3
     }
 
     // Add the last contribution
-    int is_inside = panel.is_inside(field_point_local);
+    int is_inside = panel->is_inside(field_point_local);
     phi -= std::abs(node_fieldp_dz[0])*is_inside*2*PI;
 
 }
 
 
-void calculate_source_velocity_hess(PanelGeom &panel, cusfloat (&field_point)[3], int fp_local_flag, 
-    int multipole_flag, cusfloat (&velocity)[3])
+void    calculate_source_velocity_hess(
+                                            PanelGeom*      panel,
+                                            cusfloat*       field_point, 
+                                            int             fp_local_flag, 
+                                            int             multipole_flag,
+                                            cusfloat        *velocity
+                                        )
 {
     // Create axuliar velocity vector to store the velocities in local coordinates
     cusfloat velocity_local[3] = {0.0, 0.0, 0.0};
@@ -337,20 +365,20 @@ void calculate_source_velocity_hess(PanelGeom &panel, cusfloat (&field_point)[3]
     {
         // Calculate vector from center of the panel to field point
         cusfloat field_point_local_aux[3];
-        sv_sub(3, field_point, panel.center, field_point_local_aux);
+        sv_sub(3, field_point, panel->center, field_point_local_aux);
         
         // Calculate distance from the center of the panel to the field point
         cusfloat r0 = cblas_nrm2<cusfloat>(3, field_point_local_aux, 1);
 
         // Check if multipole expansion applies
-        if ((r0/panel.length > 4.0) && multipole_flag)
+        if ((r0/panel->length > 4.0) && multipole_flag)
         {
             calculate_source_monopole_velocity(panel, r0, field_point, velocity);
             return;
         }
 
         // Change from global system of coordinates to the local one
-        cblas_gemv<cusfloat>(CblasRowMajor, CblasNoTrans, 3, 3, 1.0, panel.global_to_local_mat, 3, field_point_local_aux, 1, 0, field_point_local, 1);
+        cblas_gemv<cusfloat>(CblasRowMajor, CblasNoTrans, 3, 3, 1.0, panel->global_to_local_mat, 3, field_point_local_aux, 1, 0, field_point_local, 1);
     }
     else if (fp_local_flag == 1)
     {
@@ -364,7 +392,7 @@ void calculate_source_velocity_hess(PanelGeom &panel, cusfloat (&field_point)[3]
         cusfloat r0 = cblas_nrm2<cusfloat>(3, field_point_local, 1);
 
         // Check if multipole expansion applies
-        if ((r0/panel.length > 4.0) && multipole_flag)
+        if ((r0/panel->length > 4.0) && multipole_flag)
         {
             calculate_source_monopole_velocity(panel, r0, field_point_local, velocity);
             return;
@@ -376,27 +404,27 @@ void calculate_source_velocity_hess(PanelGeom &panel, cusfloat (&field_point)[3]
     }
 
     // Calculate distances from each node to the field point in local coordinates
-    cusfloat node_fieldp_dx[panel.MAX_PANEL_NODES];
-    cusfloat node_fieldp_dy[panel.MAX_PANEL_NODES];
-    cusfloat node_fieldp_dz[panel.MAX_PANEL_NODES];
-    cusfloat node_fieldp_mod[panel.MAX_PANEL_NODES];
+    cusfloat node_fieldp_dx[panel->MAX_PANEL_NODES];
+    cusfloat node_fieldp_dy[panel->MAX_PANEL_NODES];
+    cusfloat node_fieldp_dz[panel->MAX_PANEL_NODES];
+    cusfloat node_fieldp_mod[panel->MAX_PANEL_NODES];
     calculate_distance_node_field(panel, field_point_local, node_fieldp_mod, node_fieldp_dx, node_fieldp_dy, node_fieldp_dz);
 
     // Calculate distances in between nodes
-    cusfloat delta_xi [panel.MAX_PANEL_NODES];
-    cusfloat delta_eta [panel.MAX_PANEL_NODES];
+    cusfloat delta_xi [panel->MAX_PANEL_NODES];
+    cusfloat delta_eta [panel->MAX_PANEL_NODES];
     calculate_nodes_distance(panel, delta_xi, delta_eta);
 
-    cusfloat sides_len [panel.MAX_PANEL_NODES];
+    cusfloat sides_len [panel->MAX_PANEL_NODES];
     calculate_sides_len_local(panel, delta_xi, delta_eta, sides_len);
 
     // Calculate velocities
     cusfloat eki, eki1, hki, hki1, mi, r_sum, log_r;
     int i1 = 0;
-    for (int i=0; i<panel.num_nodes; i++)
+    for (int i=0; i<panel->num_nodes; i++)
     {
         // Calculate forward index
-        i1 = (i+1)%panel.num_nodes;
+        i1 = (i+1)%panel->num_nodes;
 
         // Calculate local quatities
         eki = pow2s(node_fieldp_dz[i]) + pow2s(node_fieldp_dx[i]);
@@ -423,7 +451,7 @@ void calculate_source_velocity_hess(PanelGeom &panel, cusfloat (&field_point)[3]
     // vector was given in that base
     if (fp_local_flag == 0)
     {
-        cblas_gemv<cusfloat>(CblasRowMajor, CblasNoTrans, 3, 3, 1.0, panel.local_to_global_mat, 3, velocity_local, 1, 0, velocity, 1);
+        cblas_gemv<cusfloat>(CblasRowMajor, CblasNoTrans, 3, 3, 1.0, panel->local_to_global_mat, 3, velocity_local, 1, 0, velocity, 1);
     }
     else
     {

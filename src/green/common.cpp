@@ -4,15 +4,21 @@
 #include "../math/math_tools.hpp"
 
 
-void calculate_distance_node_field(PanelGeom &panel, cusfloat (&field_point_local)[3], cusfloat* node_fieldp_mod,
-    cusfloat* node_fieldp_dx, cusfloat* node_fieldp_dy, cusfloat* node_fieldp_dz)
+void    calculate_distance_node_field(
+                                        PanelGeom*      panel, 
+                                        cusfloat*       field_point_local, 
+                                        cusfloat*       node_fieldp_mod,
+                                        cusfloat*       node_fieldp_dx, 
+                                        cusfloat*       node_fieldp_dy, 
+                                        cusfloat*       node_fieldp_dz
+                                    )
 {
     // Calculate distances from each node to the field point in local coordinates
     cusfloat node_fieldp_vec[3];
     cusfloat node_pos[3];
-    for (int i=0; i<panel.num_nodes; i++)
+    for (int i=0; i<panel->num_nodes; i++)
     {
-        panel.get_node_local_position_c(i, node_pos);
+        panel->get_node_local_position_c(i, node_pos);
         sv_sub(3, field_point_local, node_pos, node_fieldp_vec);
         sv_mod(3, node_fieldp_vec, node_fieldp_mod[i]);
 
@@ -30,30 +36,44 @@ void calculate_distance_node_field(PanelGeom &panel, cusfloat (&field_point_loca
 }
 
 
-void calculate_nodes_distance(PanelGeom &panel, cusfloat* delta_xi, cusfloat* delta_eta)
+void    calculate_nodes_distance(
+                                        PanelGeom*      panel, 
+                                        cusfloat*       delta_xi, 
+                                        cusfloat*       delta_eta
+                                        )
 {
     int i1 = 0;
-    for (int i=0; i<panel.num_nodes; i++)
+    for (int i=0; i<panel->num_nodes; i++)
     {
-        i1 = (i+1)%panel.num_nodes;
-        delta_xi[i] = panel.xlc[i1] - panel.xlc[i];
-        delta_eta[i] = panel.ylc[i1] - panel.ylc[i];
+        i1 = (i+1)%panel->num_nodes;
+        delta_xi[i] = panel->xlc[i1] - panel->xlc[i];
+        delta_eta[i] = panel->ylc[i1] - panel->ylc[i];
     }
 }
 
 
-void calculate_polar_angles(PanelGeom &panel, cusfloat* delta_xi, cusfloat* delta_eta, cusfloat* polar_angles)
+void    calculate_polar_angles(
+                                        PanelGeom*      panel, 
+                                        cusfloat*       delta_xi, 
+                                        cusfloat*       delta_eta, 
+                                        cusfloat*       polar_angles
+                                )
 {
-    for (int i=0; i<panel.num_nodes; i++)
+    for (int i=0; i<panel->num_nodes; i++)
     {
         polar_angles[i] = std::atan2(delta_eta[i], delta_xi[i]);
     }
 }
 
 
-void calculate_sides_len_local(PanelGeom &panel, cusfloat* delta_xi, cusfloat* delta_eta, cusfloat* sides_len)
+void    calculate_sides_len_local(
+                                        PanelGeom*      panel, 
+                                        cusfloat*       delta_xi, 
+                                        cusfloat*       delta_eta, 
+                                        cusfloat*       sides_len
+                                    )
 {
-    for (int i=0; i<panel.num_nodes; i++)
+    for (int i=0; i<panel->num_nodes; i++)
     {
         sides_len[i] = std::sqrt(pow2s(delta_xi[i])+pow2s(delta_eta[i]));
     }
