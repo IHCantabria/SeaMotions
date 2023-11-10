@@ -263,6 +263,11 @@ void    read_case(
     // Skip header
     _skip_header( infile, line_count, 3 );
 
+    // Read flag to use the fast solver configuration
+    target_signal   = "FastSolver";
+    read_signal     = _read_channel_value( infile, input->is_fast_solver );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
     // Read absolute error for green function normal derivative integration over panel
     target_signal   = "GFDnAbsErr";
     read_signal     = _read_channel_value( infile, input->gfdn_abs_err );
@@ -271,6 +276,11 @@ void    read_case(
     // Read relative error for green function normal derivative integration over panel
     target_signal   = "GFDnRelErr";
     read_signal     = _read_channel_value( infile, input->gfdn_rel_err );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read method to solver the logarithmic singularity
+    target_signal   = "LogSingAna";
+    read_signal     = _read_channel_value( infile, input->is_log_sin_ana );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read polynomial order to interpolate the solution

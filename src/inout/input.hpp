@@ -33,6 +33,8 @@ public:
     int                         heads_np        = 0;
     std::string                 heads_units     = "";
     bool                        is_bodies       = false;
+    bool                        is_fast_solver  = false;
+    bool                        is_log_sin_ana  = false;
     bool                        out_diffrac     = false;
     bool                        out_fk          = false;
     bool                        out_hydmech     = false;
