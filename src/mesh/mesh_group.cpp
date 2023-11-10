@@ -3,10 +3,49 @@
 #include "mesh_group.hpp"
 
 
-MeshGroup::MeshGroup(
-                        Mesh**  meshes_in,
-                        int     meshes_np_in
-                    )
+void    MeshGroup::define_mirror_panels(
+                                            void
+                                        )
+{
+
+    // Allocate heap memory space for the mirror panels
+    this->panels_mirror = new PanelGeom*[this->panels_tnp];
+
+    // Loop over panels to define the mirror ones. Only 
+    // defined for diffraction panels
+    cusfloat    cog[3]  = { 0.0, 0.0, 0.0 };
+    PanelGeom*  panel_i = nullptr;
+    cusfloat    zm[4]   = { 0.0, 0.0, 0.0, 0.0 };
+
+    for ( int i=0; i<this->panels_tnp; i++ )
+    {
+        panel_i = this->panels[i];
+        if ( panel_i->type == DIFFRAC_PANEL_CODE )
+        {
+            // Get the z mirrored values
+            for ( int j=0; j<panel_i->num_nodes; j++ )
+            {
+                zm[j] = -panel_i->z[j];
+            }
+
+            // Create new panel
+            this->panels_mirror[i] = new PanelGeom(
+                                                        panel_i->num_nodes,
+                                                        panel_i->x,
+                                                        panel_i->y,
+                                                        zm,
+                                                        panel_i->type,
+                                                        cog
+                                                    );
+        }
+    }
+}
+
+
+        MeshGroup::MeshGroup(
+                                            Mesh**  meshes_in,
+                                            int     meshes_np_in
+                            )
 {
     // Storage necessary input arguments into class
     // attributes
@@ -62,9 +101,9 @@ MeshGroup::MeshGroup(
 }
 
 
-MeshGroup::~MeshGroup(
-                        void
-                    )
+        MeshGroup::~MeshGroup(
+                                            void
+                            )
 {
     delete [] this->panels;
     delete [] this->panels_np;
@@ -72,4 +111,13 @@ MeshGroup::~MeshGroup(
     delete [] this->source_nodes;
     delete [] this->source_nodes_np;
     delete [] this->source_nodes_cnp;
+
+    if ( this->is_panels_mirror ) 
+    {
+        for ( int i=0; i<this->panels_tnp; i++ )
+        {
+            delete this->panels_mirror[i];
+        }
+        delete [] this->panels_mirror;
+    }
 }

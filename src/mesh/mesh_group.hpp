@@ -12,9 +12,11 @@ struct MeshGroup
 {
 public:
     // Define class attributes
+    bool            is_panels_mirror    = false;
     Mesh**          meshes              = nullptr;
     int             meshes_np           = 0;
     PanelGeom**     panels              = nullptr;
+    PanelGeom**     panels_mirror       = nullptr;
     int*            panels_np           = nullptr;
     int*            panels_cnp          = nullptr;
     int             panels_tnp          = 0;
@@ -32,6 +34,11 @@ public:
     ~MeshGroup(
                     void
                 );
+
+    // Define class methods
+    void    define_mirror_panels(
+                                    void
+                                );
     
 };
 
