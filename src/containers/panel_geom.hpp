@@ -45,6 +45,17 @@ public:
     cusfloat                zlc[MAX_PANEL_NODES];
 
     // Define class constructors and destructor
+    PanelGeom( ) = default;
+
+    PanelGeom(
+                                        int         npe,
+                                        cusfloat*   x_in,
+                                        cusfloat*   y_in,
+                                        cusfloat*   z_in,
+                                        int         type_in,
+                                        cusfloat*   cog
+                );
+    
     ~PanelGeom( 
                                         void 
                 );

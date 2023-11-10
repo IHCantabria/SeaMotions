@@ -493,6 +493,32 @@ void PanelGeom::local_coords_from_z_proj(
 }
 
 
+PanelGeom::PanelGeom(
+                        int         npe,
+                        cusfloat*   x_in,
+                        cusfloat*   y_in,
+                        cusfloat*   z_in,
+                        int         type_in,
+                        cusfloat*   cog
+                    )
+{
+    // Get panel vertexes form element list
+    this->num_nodes = npe;
+    for ( int j=0; j<npe; j++ )
+    {
+        this->x[j]   = x_in[j];
+        this->y[j]   = y_in[j];
+        this->z[j]   = z_in[j];
+    }
+
+    // Set panel type
+    this->type = type_in;
+
+    // Calculate panel properties
+    this->calculate_properties( cog );
+}
+
+
 PanelGeom::~PanelGeom(
                         void
                     )
