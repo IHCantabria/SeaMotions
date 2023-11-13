@@ -10,6 +10,18 @@
 
 void Input::configure( void )
 {
+    // Check if the fast mode is used properly
+    if ( 
+            this->poly_order > 0 
+            &&
+            this->is_fast_solver
+        )
+    {
+        std::cerr << "Using Fast Mode with high order polynomials ";
+        std::cerr << "( > 0) is not allowed!" << std::endl;
+        throw std::runtime_error( "" );
+    }
+
     // Check headings input units
     if ( this->heads_units.compare( "deg" ) == 0 )
     {
