@@ -1345,10 +1345,6 @@ void    calculate_influence_potential_steady(
                         mesh_gp->source_nodes[j]->panel->type == DIFFRAC_PANEL_CODE
                     )
                 {
-                    if ( i==j )
-                    {
-                        int a = 0;
-                    }
                     pot_steady_term = adaptive_quadrature_panel(
                                                                     mesh_gp->source_nodes[j]->panel,
                                                                     steady_fcn,
@@ -1357,15 +1353,7 @@ void    calculate_influence_potential_steady(
                                                                 );
                     
                     inf_pot_mat[count] = pot_steady_term / 4.0 / PI;
-
-                    // calculate_source_potential_newman(
-                    //                                         *(mesh_gp->source_nodes[j]->panel), 
-                    //                                         mesh_gp->source_nodes[i]->panel->center, 
-                    //                                         0, 
-                    //                                         0, 
-                    //                                         pot_term_i
-                    //                                     );
-                    // inf_pot_mat[count]  = pot_term_i / 4.0 / PI;
+                                        
                 }
                 count++;
             }
@@ -1678,27 +1666,7 @@ void    calculate_sources_intensity(
                                                                 false,
                                                                 false
                                                             );
-                if ( 
-                        std::isnan( wave_value.real( ) )
-                        || 
-                        std::isnan( wave_value.imag( ) )
-                    )
-                {
-                    std::cout << "i: " << i << " - j:" << j << "Wave Value: " << wave_value << std::endl;
-                    std::cout << "Panel Pos: "; print_vector( 3, source_i->panel->center, 0, 3 );
-                    std::cout << "Field Point Pos: "; print_vector( 3, panel_j->center, 0, 3 );
-
-                    wave_value      =   adaptive_quadrature_panel(
-                                                                source_i->panel,
-                                                                wave_fcn,
-                                                                input->gfdn_abs_err,
-                                                                input->gfdn_rel_err,
-                                                                true,
-                                                                false
-                                                            );
-
-                    exit( 10 );
-                }
+                
                 int_value       =   wave_value / 4.0 / PI;
                 if ( 
                         panel_j->type == LID_PANEL_CODE
@@ -1838,7 +1806,6 @@ void    calculate_sources_sysmat_steady(
     /***************************************/
     // Loop over panels to integrate value
     int         col_count   = 0;
-    cusfloat    new_center[3];
     cuscomplex  int_value( 0.0, 0.0 );
     int         row_count   = 0;
 
