@@ -98,6 +98,17 @@ void    MeshGroup::define_mirror_panels(
             this->source_nodes[start_index+j] = this->meshes[i]->source_nodes[j];
         }
     }
+
+    // Calculate total number of diffracting panels
+    this->diffrac_panels_np = 0;
+    for ( int i=0; i<this->panels_tnp; i++ )
+    {
+        if ( this->panels[i]->type == DIFFRAC_PANEL_CODE )
+        {
+            this->diffrac_panels_np++;
+        }
+    }
+
 }
 
 

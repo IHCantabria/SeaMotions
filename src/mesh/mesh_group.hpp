@@ -12,6 +12,7 @@ struct MeshGroup
 {
 public:
     // Define class attributes
+    int             diffrac_panels_np   = 0;
     bool            is_panels_mirror    = false;
     Mesh**          meshes              = nullptr;
     int             meshes_np           = 0;
