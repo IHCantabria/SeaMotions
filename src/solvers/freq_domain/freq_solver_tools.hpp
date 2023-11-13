@@ -90,6 +90,8 @@ void    calculate_influence_potential_total(
                                                 MeshGroup*      mesh_gp,
                                                 cusfloat        ang_freq,
                                                 cuscomplex*     inf_pot_steady,
+                                                cusfloat*       field_points,
+                                                int             field_points_np,
                                                 cuscomplex*     inf_pot_total
                                         );
 

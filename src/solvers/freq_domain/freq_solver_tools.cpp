@@ -463,6 +463,8 @@ void    calculate_freq_domain_coeffs(
                                                     mesh_gp,
                                                     input->angfreqs[i],
                                                     inf_pot_steady_mat,
+                                                    potential_fp,
+                                                    potential_fp_np,
                                                     inf_pot_mat
                                                 );
 
@@ -1355,6 +1357,8 @@ void    calculate_influence_potential_total(
                                                 MeshGroup*      mesh_gp,
                                                 cusfloat        ang_freq,
                                                 cuscomplex*     inf_pot_steady,
+                                                cusfloat*       field_points,
+                                                int             field_points_np,
                                                 cuscomplex*     inf_pot_total
                                             )
 {
@@ -1386,11 +1390,11 @@ void    calculate_influence_potential_total(
     // Generate potential matrix
     int         count = 0;
     cuscomplex  pot_wave_term( 0.0, 0.0 );
-    for ( int i=0; i<mesh_gp->source_nodes_tnp; i++ )
+    for ( int i=0; i<field_points_np; i++ )
     {
         // Change field point
         green_interf_wave->set_field_point(
-                                                mesh_gp->source_nodes[i]->panel->center
+                                                &(field_points[3*i])
                                             );
 
         for ( int j=source_start_pos; j<source_end_pos; j++ )
@@ -1403,13 +1407,13 @@ void    calculate_influence_potential_total(
             
             // Compute steady and wave terms over the panel
             if ( 
-                    mesh_gp->source_nodes[i]->panel->type == DIFFRAC_PANEL_CODE
+                    mesh_gp->panels[i]->type == DIFFRAC_PANEL_CODE
                     &&
-                    mesh_gp->source_nodes[j]->panel->type == DIFFRAC_PANEL_CODE
+                    mesh_gp->panels[j]->type == DIFFRAC_PANEL_CODE
                 )
             {
                 pot_wave_term           = adaptive_quadrature_panel(
-                                                                        mesh_gp->source_nodes[j]->panel,
+                                                                        mesh_gp->panels[j],
                                                                         wave_fcn,
                                                                         input->pot_abs_err,
                                                                         input->pot_rel_err,
@@ -1792,7 +1796,6 @@ void    calculate_sources_sysmat_steady(
     // Loop over panels to integrate value
     int         col_count   = 0;
     cuscomplex  int_value( 0.0, 0.0 );
-    PanelGeom*  panel_j     = nullptr;
     int         row_count   = 0;
 
     if ( input->is_log_sin_ana )
