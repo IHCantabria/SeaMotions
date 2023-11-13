@@ -126,8 +126,6 @@ void    calculate_sources_sysmat_steady(
                                                 Input*          input,
                                                 SclCmpx*        scl,
                                                 MeshGroup*      mesh_gp,
-                                                cusfloat*       field_points,
-                                                int             field_points_np,
                                                 GRFDnInterface* grf_interf,
                                                 cuscomplex*     sysmat
                                         );

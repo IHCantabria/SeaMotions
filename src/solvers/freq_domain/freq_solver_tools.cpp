@@ -272,8 +272,6 @@ void    calculate_freq_domain_coeffs(
     cuscomplex* wave_exc_p0         = generate_empty_vector<cuscomplex>( wave_exc_np );
 
     // Define memory allocations for the constant source case ( Fast Mode )
-    cusfloat*   sources_fp          = nullptr;
-    int         sources_fp_np       = 0;
     cuscomplex* inf_pot_mat         = nullptr;
     cuscomplex* inf_pot_steady_mat  = nullptr;
     int         ipm_cols_np         = 0;
@@ -367,22 +365,12 @@ void    calculate_freq_domain_coeffs(
     // Calculate steady contribution to the sources intensity
     if ( input->is_fast_solver )
     {
-        // Define field points to calculate the source influence matrix
-        sources_fp_np   = mesh_gp->panels_tnp;
-        sources_fp      = generate_empty_vector<cusfloat>( 3 * sources_fp_np );
-        for ( int i=0; i<mesh_gp->panels_tnp; i++ )
-        {
-            copy_vector( 3, mesh_gp->panels[i]->center, &(sources_fp[3*i]) );
-        }
-
         // Calculate steady part of the sources influence matrix
         double source_steady_t0 = MPI_Wtime( );
         calculate_sources_sysmat_steady(
                                             input,
                                             &scl,
                                             mesh_gp,
-                                            sources_fp,
-                                            sources_fp_np,
                                             grf_dn_interf,
                                             sysmat_steady
                                         );
@@ -726,7 +714,6 @@ void    calculate_freq_domain_coeffs(
 
     if ( input->is_fast_solver )
     {
-        mkl_free( sources_fp );
         mkl_free( inf_pot_mat );
         mkl_free( inf_pot_steady_mat );
         mkl_free( panel_pot_p0 );
@@ -1353,7 +1340,7 @@ void    calculate_influence_potential_steady(
                                                                 );
                     
                     inf_pot_mat[count] = pot_steady_term / 4.0 / PI;
-                                        
+
                 }
                 count++;
             }
@@ -1795,8 +1782,6 @@ void    calculate_sources_sysmat_steady(
                                                 Input*          input,
                                                 SclCmpx*        scl,
                                                 MeshGroup*      mesh_gp,
-                                                cusfloat*       field_points,
-                                                int             field_points_np,
                                                 GRFDnInterface* grf_interf,
                                                 cuscomplex*     sysmat
                                         )
@@ -1807,9 +1792,8 @@ void    calculate_sources_sysmat_steady(
     // Loop over panels to integrate value
     int         col_count   = 0;
     cuscomplex  int_value( 0.0, 0.0 );
+    PanelGeom*  panel_j     = nullptr;
     int         row_count   = 0;
-
-    cusfloat velocity[3];
 
     if ( input->is_log_sin_ana )
     {
@@ -1825,6 +1809,16 @@ void    calculate_sources_sysmat_steady(
         cusfloat    vel_5[ndim];            clear_vector( ndim, vel_5 );
         cusfloat    vel_total[ndim];        clear_vector( ndim, vel_5 );
 
+        // Define field points to calculate the source influence matrix
+        int         field_points_np   = mesh_gp->panels_tnp;
+        cusfloat*   field_points      = generate_empty_vector<cusfloat>( 3 * field_points_np );
+
+        for ( int i=0; i<mesh_gp->panels_tnp; i++ )
+        {
+            copy_vector( 3, mesh_gp->panels[i]->center, &(field_points[3*i]) );
+        }
+
+        // Loop over panels and field points to create the steady source matrix
         for ( int i=scl->start_col_0; i<scl->end_col_0; i++ )
         {
             // Get pointer to ith panel
@@ -1952,6 +1946,9 @@ void    calculate_sources_sysmat_steady(
             // Advance column count
             col_count++;
         }
+
+        // Delete heap memory associated to this block of code
+        mkl_free( field_points );
     }
     else
     {
