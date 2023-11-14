@@ -14,32 +14,26 @@ HMFInterface::HMFInterface(
                                 int             end_index,
                                 int             dof_j,
                                 cusfloat        ang_freq,
-                                cusfloat        water_depth,
-                                cusfloat        grav_acc,
-                                cusfloat        pot_abs_err_in,
-                                cusfloat        pot_rel_err_in
+                                Input*          input_in
                             ) 
 {
     // Storage necessary input class arguments into the attributes
     this->_ang_freq         = ang_freq;
-    this->_grav_acc         = grav_acc;
     this->_dof_j            = dof_j;
     this->_end_index        = end_index;
+    this->_input            = input_in;
     this->_offset_index     = offset_index;
     this->_panel            = panel;
-    this->_pot_abs_err      = pot_abs_err_in;
-    this->_pot_rel_err      = pot_rel_err_in;
     this->_source_nodes     = source_nodes;
     this->_source_values    = source_values;
     this->_start_index      = start_index;
-    this->_water_depth      = water_depth;
 
     // Generate green function interface
     this->_green_interf_steady  = new   GRFInterface(
                                                         this->_source_nodes[0],
                                                         this->_source_values[0],
                                                         this->_panel->center,
-                                                        this->_water_depth
+                                                        this->_input->water_depth
                                                     );
     
     this->_green_interf_wave    = new   GWFInterface(
@@ -47,8 +41,8 @@ HMFInterface::HMFInterface(
                                                         this->_source_values[0],
                                                         this->_panel->center,
                                                         this->_ang_freq,
-                                                        this->_water_depth,
-                                                        this->_grav_acc
+                                                        this->_input->water_depth,
+                                                        this->_input->grav_acc
                                                     );
 
 }
@@ -127,15 +121,21 @@ cuscomplex  HMFInterface::operator()(
             pot_i_steady    =  adaptive_quadrature_panel(
                                                             this->_source_nodes[i]->panel,
                                                             steady_fcn,
-                                                            this->_pot_abs_err,
-                                                            this->_pot_rel_err
+                                                            this->_input->pot_abs_err,
+                                                            this->_input->pot_rel_err,
+                                                            this->_input->is_block_adaption,
+                                                            false,
+                                                            this->_input->gauss_order
                                                         );
             
             pot_i_wave      =  adaptive_quadrature_panel(
                                                             this->_source_nodes[i]->panel,
                                                             wave_fcn,
-                                                            this->_pot_abs_err,
-                                                            this->_pot_rel_err
+                                                            this->_input->pot_abs_err,
+                                                            this->_input->pot_rel_err,
+                                                            this->_input->is_block_adaption,
+                                                            false,
+                                                            this->_input->gauss_order
                                                         );
                                                         
             potential       += ( pot_i_steady + pot_i_wave ) / 4.0 / PI; // * this->_panel->normal_vec[this->_dof_j];

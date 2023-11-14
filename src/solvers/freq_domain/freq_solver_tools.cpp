@@ -163,7 +163,9 @@ void    calculate_diffraction_forces_nlin(
                                                                     target_fcn,
                                                                     input->press_abs_err,
                                                                     input->press_rel_err,
-                                                                    false
+                                                                    input->is_block_adaption,
+                                                                    true,
+                                                                    input->gauss_order
                                                                 );
                 }
             }
@@ -328,10 +330,7 @@ void    calculate_freq_domain_coeffs(
                                                                 0,
                                                                 0,
                                                                 input->angfreqs[0],
-                                                                input->water_depth,
-                                                                input->grav_acc,
-                                                                input->press_abs_err,
-                                                                input->press_rel_err
+                                                                input
                                                         );
 
     /****************************************************/
@@ -816,7 +815,9 @@ void    calculate_froude_krylov(
                                                                     target_fcn,
                                                                     input->press_abs_err,
                                                                     input->press_rel_err,
-                                                                    false
+                                                                    input->is_block_adaption,
+                                                                    true,
+                                                                    input->gauss_order
                                                                 );
                 }
             }
@@ -1113,7 +1114,9 @@ void    calculate_hydromechanic_coeffs_nlin(
                                                                         target_fcn,
                                                                         input->press_abs_err,
                                                                         input->press_rel_err,
-                                                                        false
+                                                                        input->is_block_adaption,
+                                                                        true,
+                                                                        input->gauss_order
                                                                     );
                     }
                 }
@@ -1338,7 +1341,10 @@ void    calculate_influence_potential_steady(
                                                                     mesh_gp->source_nodes[j]->panel,
                                                                     steady_fcn,
                                                                     input->pot_abs_err,
-                                                                    input->pot_rel_err
+                                                                    input->pot_rel_err,
+                                                                    input->is_block_adaption,
+                                                                    false,
+                                                                    input->gauss_order
                                                                 );
                     
                     inf_pot_mat[count] = pot_steady_term / 4.0 / PI;
@@ -1417,8 +1423,9 @@ void    calculate_influence_potential_total(
                                                                         wave_fcn,
                                                                         input->pot_abs_err,
                                                                         input->pot_rel_err,
+                                                                        input->is_block_adaption,
                                                                         false,
-                                                                        false
+                                                                        input->gauss_order
                                                                     );
                 inf_pot_total[count]    = inf_pot_steady[count] + pot_wave_term / 4.0 / PI;
 
@@ -1564,13 +1571,19 @@ void    calculate_panel_potentials_nlin(
                                                                 mesh_gp->source_nodes[j]->panel,
                                                                 steady_fcn,
                                                                 input->pot_abs_err,
-                                                                input->pot_rel_err
+                                                                input->pot_rel_err,
+                                                                input->is_block_adaption,
+                                                                false,
+                                                                input->gauss_order
                                                             );
                 pot_i_wave      = adaptive_quadrature_panel(
                                                                 mesh_gp->source_nodes[j]->panel,
                                                                 wave_fcn,
                                                                 input->pot_abs_err,
-                                                                input->pot_rel_err
+                                                                input->pot_rel_err,
+                                                                input->is_block_adaption,
+                                                                false,
+                                                                input->gauss_order
                                                             );
                 panel_potential +=  ( pot_i_steady + pot_i_wave ) /4.0 / PI;
 
@@ -1654,8 +1667,9 @@ void    calculate_sources_intensity(
                                                                 wave_fcn,
                                                                 input->gfdn_abs_err,
                                                                 input->gfdn_rel_err,
-                                                                false,
-                                                                false
+                                                                input->is_block_adaption,
+                                                                true,
+                                                                input->gauss_order
                                                             );
                 
                 int_value       =   wave_value / 4.0 / PI;
@@ -1998,8 +2012,9 @@ void    calculate_sources_sysmat_steady(
                                                                     steady_fcn,
                                                                     input->gfdn_abs_err,
                                                                     input->gfdn_rel_err,
+                                                                    input->is_block_adaption,
                                                                     false,
-                                                                    false
+                                                                    input->gauss_order
                                                                 );
                     int_value       =   int_value / 4.0 / PI;
                 }
