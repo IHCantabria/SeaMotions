@@ -63,6 +63,7 @@ public:
     int             nodes_np        = 0;
     PanelGeom**     panels          = nullptr;
     PanelGeom**     panels_wl       = nullptr;
+    int             panels_wl_np    = 0;
     int*            panels_type     = nullptr;
     SourceNode**    source_nodes    = nullptr;
     int             source_nodes_np = 0;

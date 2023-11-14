@@ -277,6 +277,7 @@ void Mesh::detect_wl_points(
 
     // Create a list to pack all the panels that have boundary over the
     // water line
+    this->panels_wl_np  = count;
     this->panels_wl     = new PanelGeom*[count];
 
     count = 0;
