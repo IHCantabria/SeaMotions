@@ -282,6 +282,7 @@ void Mesh::detect_wl_points(
     count = 0;
     for ( int i=0; i<this->elems_np; i++ )
     {
+        global_index = i * this->enrl;
         if ( elems_wl[global_index] == 2 )
         {
             this->panels_wl[count] = panel_i;
