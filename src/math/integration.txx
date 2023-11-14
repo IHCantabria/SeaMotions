@@ -112,7 +112,8 @@ inline cuscomplex adaptive_quadrature_panel(
                                                     cusfloat        abs_tol,
                                                     cusfloat        rel_tol,
                                                     bool            block_adaption,
-                                                    bool            even_order
+                                                    bool            even_order,
+                                                    int             go_fixed
                                             )
 {
     // Define local variables
@@ -179,7 +180,7 @@ inline cuscomplex adaptive_quadrature_panel(
         int_sol_1   =  quadrature_panel(
                                             panel,
                                             target_fcn,
-                                            1
+                                            go_fixed
                                         );
     }
 
