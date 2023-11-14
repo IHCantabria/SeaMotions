@@ -21,6 +21,10 @@ public:
     int*            panels_np           = nullptr;
     int*            panels_cnp          = nullptr;
     int             panels_tnp          = 0;
+    PanelGeom**     panels_wl           = nullptr;
+    int*            panels_wl_np        = nullptr;
+    int*            panels_wl_cnp       = nullptr;
+    int             panels_wl_tnp       = 0;
     SourceNode**    source_nodes        = nullptr;
     int*            source_nodes_np     = nullptr;
     int*            source_nodes_cnp    = nullptr;

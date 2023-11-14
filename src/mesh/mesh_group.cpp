@@ -55,6 +55,8 @@ void    MeshGroup::define_mirror_panels(
     // Allocate space for dimensions vectors
     this->panels_np         = new int[this->meshes_np];
     this->panels_cnp        = new int[this->meshes_np+1];
+    this->panels_wl_np      = new int[this->meshes_np];
+    this->panels_wl_cnp     = new int[this->meshes_np+1];
     this->source_nodes_np   = new int[this->meshes_np];
     this->source_nodes_cnp  = new int[this->meshes_np+1];
     
@@ -64,8 +66,12 @@ void    MeshGroup::define_mirror_panels(
     for ( int i=0; i<this->meshes_np; i++ )
     {
         // Get mesh group panels list dimensionts
-        this->panels_np[i]      = this->meshes[i]->elems_np;
-        this->panels_cnp[i+1]   = this->panels_cnp[i] + this->panels_np[i];
+        this->panels_np[i]          = this->meshes[i]->elems_np;
+        this->panels_cnp[i+1]       = this->panels_cnp[i] + this->panels_np[i];
+
+        // Get mesh group panels wl list dimension
+        this->panels_wl_np[i]       = this->meshes[i]->panels_wl_np;
+        this->panels_wl_cnp[i+1]    = this->panels_wl_cnp[i] + this->panels_wl_np[i];
 
         // Get mesh group source nodes list dimensions
         this->source_nodes_np[i]    = this->meshes[i]->source_nodes_np;
@@ -73,11 +79,13 @@ void    MeshGroup::define_mirror_panels(
     }
 
     this->panels_tnp        = this->panels_cnp[this->meshes_np];
+    this->panels_wl_tnp     = this->panels_wl_cnp[this->meshes_np];
     this->source_nodes_tnp  = this->source_nodes_cnp[this->meshes_np];
 
     // Allocate space to have a continium list of panels and
     // source nodes
     this->panels        = new PanelGeom*[this->panels_tnp];
+    this->panels_wl     = new PanelGeom*[this->panels_wl_tnp];
     this->source_nodes  = new SourceNode*[this->source_nodes_tnp];
     
     // Loop over meshes to copy all the references into the new vectors
@@ -89,6 +97,13 @@ void    MeshGroup::define_mirror_panels(
         for ( int j=0; j<this->meshes[i]->elems_np; j++ )
         {
             this->panels[start_index+j] = this->meshes[i]->panels[j];
+        }
+
+        // Loop over panels wl to copy its reference
+        start_index = this->panels_wl_cnp[i];
+        for ( int j=0; j<this->meshes[i]->panels_wl_np; j++ )
+        {
+            this->panels_wl[start_index+j] = this->meshes[i]->panels_wl[j];
         }
 
         // Loop over source nodes to copy its memory address
@@ -119,6 +134,9 @@ void    MeshGroup::define_mirror_panels(
     delete [] this->panels;
     delete [] this->panels_np;
     delete [] this->panels_cnp;
+    delete [] this->panels_wl;
+    delete [] this->panels_wl_np;
+    delete [] this->panels_wl_cnp;
     delete [] this->source_nodes;
     delete [] this->source_nodes_np;
     delete [] this->source_nodes_cnp;
