@@ -53,12 +53,12 @@ void    MeshGroup::define_mirror_panels(
     this->meshes_np     = meshes_np_in;
 
     // Allocate space for dimensions vectors
-    this->panels_np         = new int[this->meshes_np];
-    this->panels_cnp        = new int[this->meshes_np+1];
-    this->panels_wl_np      = new int[this->meshes_np];
-    this->panels_wl_cnp     = new int[this->meshes_np+1];
-    this->source_nodes_np   = new int[this->meshes_np];
-    this->source_nodes_cnp  = new int[this->meshes_np+1];
+    this->panels_np         = new int[this->meshes_np];     clear_vector( this->meshes_np, this->panels_np );
+    this->panels_cnp        = new int[this->meshes_np+1];   clear_vector( this->meshes_np+1, this->panels_cnp );
+    this->panels_wl_np      = new int[this->meshes_np];     clear_vector( this->meshes_np, this->panels_wl_np );
+    this->panels_wl_cnp     = new int[this->meshes_np+1];   clear_vector( this->meshes_np+1, this->panels_wl_cnp );
+    this->source_nodes_np   = new int[this->meshes_np];     clear_vector( this->meshes_np, this->source_nodes_np );
+    this->source_nodes_cnp  = new int[this->meshes_np+1];   clear_vector( this->meshes_np+1, this->source_nodes_cnp );
     
     // Loop over meshes to have their dimension
     this->panels_cnp[0]         = 0;
