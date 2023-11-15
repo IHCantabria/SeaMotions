@@ -194,8 +194,8 @@ set(
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/raos.cpp
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/wave_elevation.hpp
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/wave_elevation.cpp
-        ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/wave_exciting.hpp
-        ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/wave_exciting.cpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/froude_krylov.hpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/froude_krylov.cpp
     )
 
 # Pack tools module files
