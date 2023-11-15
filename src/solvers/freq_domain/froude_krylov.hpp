@@ -1,6 +1,6 @@
 
-#ifndef __fds_wave_exciting_hpp
-#define __fds_wave_exciting_hpp
+#ifndef __fds_froude_krylov_hpp
+#define __fds_froude_krylov_hpp
 
 // Include local modules
 #include "../../inout/input.hpp"

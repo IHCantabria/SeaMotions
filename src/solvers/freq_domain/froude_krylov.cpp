@@ -1,7 +1,7 @@
 
 // Include local modules
 #include "../../math/integration.hpp"
-#include "wave_exciting.hpp"
+#include "froude_krylov.hpp"
 #include "../../waves.hpp"
 
 
