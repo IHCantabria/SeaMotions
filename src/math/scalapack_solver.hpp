@@ -311,4 +311,9 @@ void ScalapackSolver<T>::Solve(T* subsysmat, T* subrhs)
     }
 }
 
+// Define custom types to have more handy ways to 
+// work with ScalapackSolver implementations
+typedef ScalapackSolver<cuscomplex> SclCmpx;
+
+
 #endif // scalapack_real_solver_hpp__
