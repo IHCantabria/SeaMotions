@@ -37,6 +37,7 @@ public:
     bool                        is_bodies           = false;
     bool                        is_fast_solver      = false;
     bool                        is_log_sin_ana      = false;
+    bool                        is_wl_points        = false;
     bool                        out_diffrac         = false;
     bool                        out_fk              = false;
     bool                        out_hydmech         = false;

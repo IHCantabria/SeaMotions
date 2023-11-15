@@ -94,10 +94,9 @@ void Input::configure( void )
     }
 
     // Detect points over the free surface
+    this->is_wl_points = ( this->out_mdrift || this->out_qtf );
     if ( 
-            this->out_mdrift
-            ||
-            this->out_qtf
+            this->is_wl_points
         )
     {
         // Detect points over the free surface

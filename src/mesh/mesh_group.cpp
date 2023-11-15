@@ -44,21 +44,27 @@ void    MeshGroup::define_mirror_panels(
 
         MeshGroup::MeshGroup(
                                             Mesh**  meshes_in,
-                                            int     meshes_np_in
+                                            int     meshes_np_in,
+                                            bool    is_wl_points
                             )
 {
     // Storage necessary input arguments into class
     // attributes
+    this->_is_wl_points = is_wl_points;
     this->meshes        = meshes_in;
     this->meshes_np     = meshes_np_in;
 
     // Allocate space for dimensions vectors
     this->panels_np         = new int[this->meshes_np];     clear_vector( this->meshes_np, this->panels_np );
     this->panels_cnp        = new int[this->meshes_np+1];   clear_vector( this->meshes_np+1, this->panels_cnp );
-    this->panels_wl_np      = new int[this->meshes_np];     clear_vector( this->meshes_np, this->panels_wl_np );
-    this->panels_wl_cnp     = new int[this->meshes_np+1];   clear_vector( this->meshes_np+1, this->panels_wl_cnp );
     this->source_nodes_np   = new int[this->meshes_np];     clear_vector( this->meshes_np, this->source_nodes_np );
     this->source_nodes_cnp  = new int[this->meshes_np+1];   clear_vector( this->meshes_np+1, this->source_nodes_cnp );
+
+    if ( this->_is_wl_points )
+    {
+        this->panels_wl_np      = new int[this->meshes_np];     clear_vector( this->meshes_np, this->panels_wl_np );
+        this->panels_wl_cnp     = new int[this->meshes_np+1];   clear_vector( this->meshes_np+1, this->panels_wl_cnp );
+    }
     
     // Loop over meshes to have their dimension
     this->panels_cnp[0]         = 0;
@@ -70,8 +76,11 @@ void    MeshGroup::define_mirror_panels(
         this->panels_cnp[i+1]       = this->panels_cnp[i] + this->panels_np[i];
 
         // Get mesh group panels wl list dimension
-        this->panels_wl_np[i]       = this->meshes[i]->panels_wl_np;
-        this->panels_wl_cnp[i+1]    = this->panels_wl_cnp[i] + this->panels_wl_np[i];
+        if ( this->_is_wl_points )
+        {
+            this->panels_wl_np[i]       = this->meshes[i]->panels_wl_np;
+            this->panels_wl_cnp[i+1]    = this->panels_wl_cnp[i] + this->panels_wl_np[i];
+        }
 
         // Get mesh group source nodes list dimensions
         this->source_nodes_np[i]    = this->meshes[i]->source_nodes_np;
@@ -79,8 +88,12 @@ void    MeshGroup::define_mirror_panels(
     }
 
     this->panels_tnp        = this->panels_cnp[this->meshes_np];
-    this->panels_wl_tnp     = this->panels_wl_cnp[this->meshes_np];
     this->source_nodes_tnp  = this->source_nodes_cnp[this->meshes_np];
+    
+    if ( this->_is_wl_points ) 
+    {
+        this->panels_wl_tnp     = this->panels_wl_cnp[this->meshes_np];
+    }
 
     // Allocate space to have a continium list of panels and
     // source nodes
@@ -100,10 +113,13 @@ void    MeshGroup::define_mirror_panels(
         }
 
         // Loop over panels wl to copy its reference
-        start_index = this->panels_wl_cnp[i];
-        for ( int j=0; j<this->meshes[i]->panels_wl_np; j++ )
+        if ( this->_is_wl_points )
         {
-            this->panels_wl[start_index+j] = this->meshes[i]->panels_wl[j];
+            start_index = this->panels_wl_cnp[i];
+            for ( int j=0; j<this->meshes[i]->panels_wl_np; j++ )
+            {
+                this->panels_wl[start_index+j] = this->meshes[i]->panels_wl[j];
+            }
         }
 
         // Loop over source nodes to copy its memory address
@@ -134,8 +150,6 @@ void    MeshGroup::define_mirror_panels(
     delete [] this->panels;
     delete [] this->panels_np;
     delete [] this->panels_cnp;
-    delete [] this->panels_wl;
-    delete [] this->panels_wl_np;
     delete [] this->panels_wl_cnp;
     delete [] this->source_nodes;
     delete [] this->source_nodes_np;
@@ -148,5 +162,11 @@ void    MeshGroup::define_mirror_panels(
             delete this->panels_mirror[i];
         }
         delete [] this->panels_mirror;
+    }
+
+    if ( this->_is_wl_points )
+    {
+        delete [] this->panels_wl;
+        delete [] this->panels_wl_np;
     }
 }

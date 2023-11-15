@@ -10,6 +10,9 @@
 
 struct MeshGroup
 {
+private:
+    bool            _is_wl_points       = false;
+    
 public:
     // Define class attributes
     int             diffrac_panels_np   = 0;
@@ -33,7 +36,8 @@ public:
     // Define class constructor and destructor
     MeshGroup(
                     Mesh**  meshes,
-                    int     mesh_np
+                    int     mesh_np,
+                    bool    is_wl_points
                 );
 
     ~MeshGroup(
