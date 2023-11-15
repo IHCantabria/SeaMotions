@@ -116,6 +116,7 @@ add_subdirectory(tests)
 set(
         seamotions_freq_src
         ${sm_freq_module_files}
+        "./src/config.hpp"
         ${containers_module_files}
         ${green_module_files}
         ${interfaces_module_files}

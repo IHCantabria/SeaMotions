@@ -6,205 +6,15 @@
 
 // Include local modules
 #include "freq_solver_tools.hpp"
-#include "../../green/source.hpp"
 #include "../../interfaces/grf_interface.hpp"
-#include "../../math/integration.hpp"
+#include "../../solvers/freq_domain/diffraction.hpp"
+#include "../../solvers/freq_domain/gf_intensities.hpp"
+#include "../../solvers/freq_domain/hydromechanics.hpp"
+#include "../../solvers/freq_domain/potential.hpp"
+#include "../../solvers/freq_domain/raos.hpp"
+#include "../../solvers/freq_domain/wave_exciting.hpp"
 #include "../../waves.hpp"
 
-
-void    calculate_diffraction_forces_lin(
-                                                Input*          input,
-                                                MpiConfig*      mpi_config,
-                                                MeshGroup*      mesh_gp,
-                                                cuscomplex*     panel_pot,
-                                                cusfloat        w,
-                                                cuscomplex*     wave_diffrac
-                                        )
-{
-    // Define local variables
-    int         dofs_np         = input->dofs_np;
-    int         elem_end_pos    = 0;
-    int         elem_start_pos  = 0;
-    int         index           = 0;
-    int         index_1         = 0;
-    cuscomplex  press_i         = cuscomplex( 0.0, 0.0 );
-    cusfloat    rho_w           = input->water_density;
-    
-    // Loop over headings to define the wave diffraction forces
-    for ( int ih=0; ih<input->heads_np; ih++ )
-    {
-        // Get hydromechanic coefficients for all the degrees of freedom
-        for ( int ib=0; ib<mesh_gp->meshes_np; ib++ )
-        {
-            // Calculate MPI data chunks
-            elem_end_pos    = 0;
-            elem_start_pos  = 0;
-            mpi_config->get_1d_bounds( 
-                                            mesh_gp->panels_np[ib], 
-                                            elem_start_pos, 
-                                            elem_end_pos 
-                                        );
-
-            for ( int id=0; id<dofs_np; id++ )
-            {
-                index = (
-                            ih * ( dofs_np * mesh_gp->meshes_np )
-                            +
-                            ib * dofs_np
-                            + 
-                            id
-                        );
-                wave_diffrac[index]   = 0.0;
-                for ( int ie=elem_start_pos; ie<elem_end_pos; ie++ )
-                {
-                    // Integrate pressure over panel
-                    index_1             = (
-                                                input->dofs_np * mesh_gp->panels_tnp 
-                                                +
-                                                ih * mesh_gp->panels_tnp
-                                                +
-                                                mesh_gp->panels_cnp[ib]
-                                                +
-                                                ie
-                                            );
-                    press_i             = (
-                                                panel_pot[index_1]
-                                                *
-                                                mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->normal_vec[id]
-                                                *
-                                                mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->area
-                                            );
-                    wave_diffrac[index] += cuscomplex( 0.0, -w * rho_w ) * press_i;
-                }
-            }
-        }
-    }
-}
-
-
-void    calculate_diffraction_forces_nlin(
-                                                Input*          input,
-                                                MpiConfig*      mpi_config,
-                                                MeshGroup*      mesh_gp,
-                                                HMFInterface*   hmf_interf,
-                                                cusfloat        w,
-                                                cuscomplex*     wave_diffrac
-                                        )
-{
-    // Define local variables
-    int         dofs_np = input->dofs_np;
-    cusfloat    rho_w   = input->water_density;
-
-    // Generate lambda function for the integration
-    auto target_fcn = [hmf_interf]
-                    (
-                        cusfloat xi, 
-                        cusfloat eta, 
-                        cusfloat x,
-                        cusfloat y,
-                        cusfloat z
-                    )
-                    {
-                        return (*hmf_interf)( xi, eta, x, y, z );
-                    };
-
-    // Allocate space for pressure vector
-    int max_panels  = 0;
-    for ( int i=0; i<mesh_gp->meshes_np; i++ )
-    {
-        // Get ith mesh panels
-        if ( mesh_gp->panels_np[i] > max_panels )
-        {
-            max_panels = mesh_gp->panels_np[i];
-        }
-    }
-    cuscomplex* pressure    = generate_empty_vector<cuscomplex>( mesh_gp->meshes_np * max_panels );
-
-    // Loop over first dimension of degrees of freedrom
-    int         elem_end_pos    = 0;
-    int         elem_start_pos  = 0;
-    int         index           = 0;
-    int         index_1         = 0;
-    cuscomplex  press_i         = 0.0;
-    // cuscomplex  pressure = 0.0;
-    for ( int ih=0; ih<input->heads_np; ih++ )
-    {
-        for ( int ib=0; ib<mesh_gp->meshes_np; ib++ )
-        {
-            // Calculate MPI data chunks
-            elem_end_pos    = 0;
-            elem_start_pos  = 0;
-            mpi_config->get_1d_bounds( 
-                                            mesh_gp->panels_np[ib], 
-                                            elem_start_pos, 
-                                            elem_end_pos 
-                                        );
-
-            // Set start index for the sources evaluation
-            hmf_interf->set_start_index_i( 
-                                                mesh_gp->source_nodes_tnp * ( dofs_np + ih ),
-                                                0,
-                                                mesh_gp->source_nodes_tnp
-                                            );
-
-            // Loop over panels to integrate the wave radiation
-            // pressure along the floating object external shape
-            for ( int ie=elem_start_pos; ie<elem_end_pos; ie++ )
-            {
-                // Set new panel
-                hmf_interf->set_panel( mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie] );
-
-                // Integrate pressure over panel
-                index           = max_panels * ib + ie;
-                if ( mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->type == DIFFRAC_PANEL_CODE )
-                {
-                    pressure[index] = adaptive_quadrature_panel(
-                                                                    mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie],
-                                                                    target_fcn,
-                                                                    input->press_abs_err,
-                                                                    input->press_rel_err,
-                                                                    input->is_block_adaption,
-                                                                    true,
-                                                                    input->gauss_order
-                                                                );
-                }
-            }
-        }
-
-        // Get hydromechanic coefficients for all the degrees of freedom
-        for ( int ib=0; ib<mesh_gp->meshes_np; ib++ )
-        {
-            // Calculate MPI data chunks
-            elem_end_pos    = 0;
-            elem_start_pos  = 0;
-            mpi_config->get_1d_bounds( 
-                                            mesh_gp->panels_np[ib], 
-                                            elem_start_pos, 
-                                            elem_end_pos 
-                                        );
-
-            for ( int id=0; id<dofs_np; id++ )
-            {
-                index = (
-                            ih * ( dofs_np * mesh_gp->meshes_np )
-                            +
-                            ib * dofs_np
-                            + 
-                            id
-                        );
-
-                wave_diffrac[index]   = 0.0;
-                for ( int ie=elem_start_pos; ie<elem_end_pos; ie++ )
-                {
-                    // Integrate pressure over panel
-                    index_1             = max_panels * ib + ie;
-                    press_i             = pressure[index_1] * mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->normal_vec[id];
-                    wave_diffrac[index] += cuscomplex( 0.0, -w * rho_w ) * press_i;
-                }
-            }
-        }
-    }
-}
 
 
 void    calculate_freq_domain_coeffs(
@@ -274,15 +84,20 @@ void    calculate_freq_domain_coeffs(
     cuscomplex* wave_exc_p0         = generate_empty_vector<cuscomplex>( wave_exc_np );
 
     // Define memory allocations for the constant source case ( Fast Mode )
-    cuscomplex* inf_pot_mat         = nullptr;
-    cuscomplex* inf_pot_steady_mat  = nullptr;
-    int         ipm_cols_np         = 0;
-    int         ipm_sc              = 0;
-    int         ipm_ed              = 0;
-    cuscomplex* panel_pot           = nullptr;
-    cuscomplex* panel_pot_p0        = nullptr;
-    cusfloat*   potential_fp        = nullptr;
-    int         potential_fp_np     = 0;
+    int         ipm_cols_np             = 0;
+    int         ipm_sc                  = 0;
+    int         ipm_ed                  = 0;
+    cuscomplex* mdwe_panel_pot          = nullptr;
+    cusfloat*   mdwe_pot_fp             = nullptr;
+    int         mdwe_pot_fp_np          = 0;
+    cuscomplex* panel_pot               = nullptr;
+    cuscomplex* panel_pot_p0            = nullptr;
+    cusfloat*   pot_fp                  = nullptr;
+    int         pot_fp_np               = 0;
+    cuscomplex* pot_smat                = nullptr;
+    cuscomplex* pot_steady_smat         = nullptr;
+    cuscomplex* pot_steady_mdwe_smat    = nullptr;
+    cuscomplex* pot_mdwe_smat           = nullptr;
 
     if ( input->is_fast_solver )
     {
@@ -292,15 +107,19 @@ void    calculate_freq_domain_coeffs(
                                             ipm_sc, 
                                             ipm_ed 
                                         );
-        ipm_cols_np         = ipm_ed - ipm_sc;
+        ipm_cols_np             = ipm_ed - ipm_sc;
 
-        // Allocate space for the influence potential matrix
-        inf_pot_mat         = generate_empty_vector<cuscomplex>( mesh_gp->panels_tnp * ipm_cols_np );
+        // Allocate space for the influence potential matrixes
+        pot_smat            = generate_empty_vector<cuscomplex>( mesh_gp->panels_tnp * ipm_cols_np );
         panel_pot           = generate_empty_vector<cuscomplex>( ( input->dofs_np + input->heads_np ) * mesh_gp->panels_tnp );
         panel_pot_p0        = generate_empty_vector<cuscomplex>( ( input->dofs_np + input->heads_np ) * mesh_gp->panels_tnp );
+        pot_steady_smat     = generate_empty_vector<cuscomplex>( mesh_gp->panels_tnp * ipm_cols_np );
 
-        // Calculate steady contribution of the influence potential matrix
-        inf_pot_steady_mat  = generate_empty_vector<cuscomplex>( mesh_gp->panels_tnp * ipm_cols_np );
+        if ( input->out_mdrift )
+        {
+            pot_steady_mdwe_smat    = generate_empty_vector<cuscomplex>( mesh_gp->panels_wl_tnp * ipm_cols_np );
+            pot_mdwe_smat           = generate_empty_vector<cuscomplex>( mesh_gp->panels_wl_tnp * ipm_cols_np );
+        }
         
     }
 
@@ -366,42 +185,60 @@ void    calculate_freq_domain_coeffs(
     {
         // Calculate steady part of the sources influence matrix
         double source_steady_t0 = MPI_Wtime( );
-        calculate_sources_sysmat_steady(
-                                            input,
-                                            &scl,
-                                            mesh_gp,
-                                            grf_dn_interf,
-                                            sysmat_steady
-                                        );
+        calculate_gf_intensity_steady_sysmat(
+                                                input,
+                                                &scl,
+                                                mesh_gp,
+                                                grf_dn_interf,
+                                                sysmat_steady
+                                            );
         double source_steady_t1 = MPI_Wtime( );
         std::cout << "Time integration sources steady: " << source_steady_t1 - source_steady_t0 << std::endl;
 
         // Define field points to calculate potential influence matrix
-        potential_fp_np     = mesh_gp->diffrac_panels_np;
-        potential_fp        = generate_empty_vector<cusfloat>( 3 * potential_fp_np );
+        pot_fp_np     = mesh_gp->diffrac_panels_np;
+        pot_fp        = generate_empty_vector<cusfloat>( 3 * pot_fp_np );
 
         int _count_pot_np   = 0;
         for ( int i=0; i<mesh_gp->panels_tnp; i++ )
         {
             if ( mesh_gp->panels[i]->type == DIFFRAC_PANEL_CODE )
             {
-                copy_vector( 3, mesh_gp->panels[i]->center, &(potential_fp[3*_count_pot_np]) );
+                copy_vector( 3, mesh_gp->panels[i]->center, &(pot_fp[3*_count_pot_np]) );
                 _count_pot_np++;
             }
         }
 
+        mdwe_pot_fp_np        = mesh_gp->panels_wl_tnp;
+        mdwe_pot_fp           = generate_empty_vector<cusfloat>( 3 * mdwe_pot_fp_np );
+        for ( int i=0; i<mesh_gp->panels_wl_tnp; i++ )
+        {
+            copy_vector( 3, mesh_gp->panels_wl[i]->center, &(mdwe_pot_fp[3*i]) );
+        }
+
         // Calculate steady part of the potential influence matrix matrix
         double pot_steady_t0 = MPI_Wtime( );
-        calculate_influence_potential_steady(
-                                                    input,
-                                                    mpi_config,
-                                                    mesh_gp,
-                                                    potential_fp,
-                                                    potential_fp_np,
-                                                    inf_pot_steady_mat
-                                            );
+        calculate_influence_potmat_steady(
+                                                input,
+                                                mpi_config,
+                                                mesh_gp,
+                                                pot_fp,
+                                                pot_fp_np,
+                                                pot_steady_smat
+                                        );
         double pot_steady_t1 = MPI_Wtime( );
         std::cout << "Time integration potential steady: " << pot_steady_t1 - pot_steady_t0 << std::endl;
+
+        // Calculate steady parto of the potential influence matrix to calculate
+        // the mean drift
+        calculate_influence_potmat_steady(
+                                                input,
+                                                mpi_config,
+                                                mesh_gp,
+                                                mdwe_pot_fp,
+                                                mdwe_pot_fp_np,
+                                                pot_steady_mdwe_smat
+                                            );
 
     }
 
@@ -419,16 +256,16 @@ void    calculate_freq_domain_coeffs(
 
         // Calculate sources intensity
         MPI_Barrier( MPI_COMM_WORLD );
-        calculate_sources_intensity(
-                                        input,
-                                        &scl,
-                                        mesh_gp,
-                                        gwf_dn_interf,
-                                        input->angfreqs[i],
-                                        sysmat_steady,
-                                        sysmat,
-                                        sources
-                                    );
+        calculate_gf_intensity_sysmat(
+                                            input,
+                                            &scl,
+                                            mesh_gp,
+                                            gwf_dn_interf,
+                                            input->angfreqs[i],
+                                            sysmat_steady,
+                                            sysmat,
+                                            sources
+                                        );
         
         // Gather source values from each processor
         MPI_Bcast(
@@ -456,21 +293,21 @@ void    calculate_freq_domain_coeffs(
         if ( input->is_fast_solver )
         {
             // Calculate potential influence coeffcients matrix
-            calculate_influence_potential_total(
-                                                    input,
-                                                    mpi_config,
-                                                    mesh_gp,
-                                                    input->angfreqs[i],
-                                                    inf_pot_steady_mat,
-                                                    potential_fp,
-                                                    potential_fp_np,
-                                                    inf_pot_mat
-                                                );
+            calculate_influence_potmat(
+                                            input,
+                                            mpi_config,
+                                            mesh_gp,
+                                            input->angfreqs[i],
+                                            pot_steady_smat,
+                                            pot_fp,
+                                            pot_fp_np,
+                                            pot_smat
+                                        );
 
             // Calculate panels potential
-            calculate_panel_potentials_lin(
+            calculate_potpanel_raddif_lin(
                                                     input,
-                                                    inf_pot_mat,
+                                                    pot_smat,
                                                     mesh_gp->panels_tnp,
                                                     ipm_cols_np,
                                                     ipm_sc,
@@ -517,7 +354,7 @@ void    calculate_freq_domain_coeffs(
         else
         {
             // Calculate panel potentials
-            calculate_panel_potentials_nlin(
+            calculate_potpanel_raddif_nlin(
                                                     input,
                                                     mpi_config,
                                                     mesh_gp,
@@ -625,6 +462,19 @@ void    calculate_freq_domain_coeffs(
                             );
         }
 
+        if ( input->out_mdrift )
+        {
+            // // Calculate relative wave elevation force
+            // calculate_relative_wave_elevation_lin(
+            //                                         input,
+            //                                         mpi_config,
+            //                                         mesh_gp,
+            //                                         mdwe_panel_pot
+            //                                     );
+
+            // Calculate 
+        }
+
         // Output values to disk
         if ( mpi_config->is_root( ) )
         {
@@ -715,11 +565,17 @@ void    calculate_freq_domain_coeffs(
 
     if ( input->is_fast_solver )
     {
-        mkl_free( inf_pot_mat );
-        mkl_free( inf_pot_steady_mat );
+        mkl_free( pot_smat );
+        mkl_free( pot_steady_smat );
         mkl_free( panel_pot_p0 );
         mkl_free( panel_pot );
-        mkl_free( potential_fp );
+        mkl_free( pot_fp );
+
+        if ( input->out_mdrift )
+        {
+            mkl_free( pot_mdwe_smat );
+            mkl_free( pot_steady_mdwe_smat );
+        }
     }
     
     delete mesh_gp;
@@ -727,143 +583,6 @@ void    calculate_freq_domain_coeffs(
 }
 
 
-void    calculate_froude_krylov(
-                                                Input*          input,
-                                                MpiConfig*      mpi_config,
-                                                MeshGroup*      mesh_gp,
-                                                cusfloat        ang_freq,
-                                                cuscomplex*     froude_krylov
-                                )
-{
-    // Calculate wave number
-    cusfloat k      = w2k( ang_freq, input->water_depth, input->grav_acc );
-    cusfloat rho_w  = input->water_density;
-
-    // Generate pressure vector to storage the pressures over the panels
-    int max_panels  = 0;
-    for ( int i=0; i<mesh_gp->meshes_np; i++ )
-    {
-        // Get ith mesh panels
-        if ( mesh_gp->panels_np[i] > max_panels )
-        {
-            max_panels = mesh_gp->panels_np[i];
-        }
-    }
-    cuscomplex* pressure = generate_empty_vector<cuscomplex>( max_panels * mesh_gp->meshes_np );
-
-    // Loop around headings to get the Froude-Krylov force
-    // for each of them
-    int         elem_end_pos    = 0;
-    int         elem_start_pos  = 0;
-    int         index           = 0;
-    int         index_1         = 0;
-    cuscomplex  press_i         = cuscomplex( 0.0, 0.0 );
-
-    for ( int ih=0; ih<input->heads_np; ih++ )
-    {
-        // Definition of the target function to integrate incident
-        // wave potential for the desised heading
-        auto    target_fcn  =   [ 
-                                    input,
-                                    ang_freq, 
-                                    k,
-                                    ih
-                                ]
-                                (
-                                    cusfloat ,
-                                    cusfloat ,
-                                    cusfloat x,
-                                    cusfloat y,
-                                    cusfloat z
-                                )
-                                {
-                                    return wave_potential_airy_space(
-                                                                        1.0,
-                                                                        ang_freq,
-                                                                        k,
-                                                                        input->water_depth,
-                                                                        input->grav_acc,
-                                                                        x,
-                                                                        y,
-                                                                        z,
-                                                                        input->heads[ih]
-                                                                    );
-                                };
-        
-        // Loop around bodies to calculate the pressure of the incident wave
-        // over each panel of the mesh
-        for ( int ib=0; ib<mesh_gp->meshes_np; ib++ )
-        {
-            // Calculate MPI data chunks
-            elem_end_pos    = 0;
-            elem_start_pos  = 0;
-            mpi_config->get_1d_bounds( 
-                                            mesh_gp->panels_np[ib], 
-                                            elem_start_pos, 
-                                            elem_end_pos 
-                                        );
-
-            // Loop over panels integrating incident wave pressure
-            for ( int ie=elem_start_pos; ie<elem_end_pos; ie++ )
-            {
-                // Integrate pressure over panel
-                index           = max_panels * ib + ie;
-                if ( mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->type == 0 )
-                {
-                    pressure[index] = adaptive_quadrature_panel(
-                                                                    mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie],
-                                                                    target_fcn,
-                                                                    input->press_abs_err,
-                                                                    input->press_rel_err,
-                                                                    input->is_block_adaption,
-                                                                    true,
-                                                                    input->gauss_order
-                                                                );
-                }
-            }
-        }
-
-        // Loop over bodies to calculate the projection of the Froude-Krylov force
-        // over each DOF
-        for ( int ib=0; ib<mesh_gp->meshes_np; ib++ )
-        {
-            // Calculate MPI data chunks
-            elem_end_pos    = 0;
-            elem_start_pos  = 0;
-            mpi_config->get_1d_bounds( 
-                                            mesh_gp->panels_np[ib], 
-                                            elem_start_pos, 
-                                            elem_end_pos 
-                                        );
-
-            for ( int id=0; id<input->dofs_np; id++ )
-            {
-                // Generate index for the current Froude-Krylov force and
-                // to clean the memory space
-                index                   = (
-                                                ih * ( mesh_gp->meshes_np * input->dofs_np )
-                                                +
-                                                ib * input->dofs_np
-                                                +
-                                                id
-                                            );
-                
-                froude_krylov[index]    = 0.0;
-                // Loop over panels to sum all the pressures
-                for ( int ie=elem_start_pos; ie<elem_end_pos; ie++ )
-                {
-                    // Integrate pressure over panel
-                    index_1                 = max_panels * ib + ie;
-                    press_i                 = pressure[index_1] * mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->normal_vec[id];
-                    froude_krylov[index]    += cuscomplex( 0.0, -ang_freq * rho_w ) * press_i;
-                }
-            }
-        }
-    }
-
-    // Deallocate local heap memory
-    mkl_free( pressure );
-}
 
 
 void    calculate_global_hydstiffness(
@@ -956,1182 +675,4 @@ void    calculate_global_structural_mass(
     // Deallocate heap memory space for variables in the
     // current function
     mkl_free( body_mass );
-}
-
-
-void    calculate_hydromechanic_coeffs_lin( 
-                                                Input*          input,
-                                                MpiConfig*      mpi_config,
-                                                MeshGroup*      mesh_gp,
-                                                cuscomplex*     panels_pot,
-                                                cusfloat        ang_freq,
-                                                cusfloat*       added_mass,
-                                                cusfloat*       damping_rad
-                                            )
-{
-    // Define local variables
-    int         dofs_np         = input->dofs_np;
-    int         elem_end_pos    = 0;
-    int         elem_start_pos  = 0;
-    int         index           = 0;
-    int         index_1         = 0;
-    cuscomplex  press_i         = cuscomplex( 0.0, 0.0 );
-    cusfloat    rho_w           = input->water_density;
-
-    // Get hydromechanic coefficients for all the degrees of freedom
-    for ( int ib=0; ib<mesh_gp->meshes_np; ib++ )
-    {
-         // Calculate MPI data chunks
-        elem_end_pos    = 0;
-        elem_start_pos  = 0;
-        mpi_config->get_1d_bounds( 
-                                        mesh_gp->panels_np[ib], 
-                                        elem_start_pos, 
-                                        elem_end_pos 
-                                    );
-        
-        for ( int id=0; id<input->dofs_np; id++ )
-        {
-            for ( int jd=0; jd<input->dofs_np; jd++ )
-            {
-                // Get current matrix index
-                for ( int jb=0; jb<mesh_gp->meshes_np; jb++ )
-                {
-                    index = (
-                                ib * ( dofs_np * dofs_np * mesh_gp->meshes_np )
-                                +
-                                id * ( dofs_np * mesh_gp->meshes_np )
-                                + 
-                                jb * dofs_np 
-                                + 
-                                jd
-                            );
-                    added_mass[index]   = 0.0;
-                    damping_rad[index]  = 0.0;
-                    for ( int ie=elem_start_pos; ie<elem_end_pos; ie++ )
-                    {
-                        // Integrate pressure over panel
-                        index_1             = mesh_gp->panels_cnp[jb] + ie + mesh_gp->panels_tnp * id;
-                        press_i             = ( 
-                                                    panels_pot[index_1] 
-                                                    * 
-                                                    mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->normal_vec[jd] 
-                                                    * 
-                                                    mesh_gp->panels[mesh_gp->panels_cnp[jb]+ie]->area
-                                                );
-                        added_mass[index]   -=  rho_w * press_i.imag( ) / ang_freq;
-                        damping_rad[index]  -=  rho_w * press_i.real( );
-                    }
-
-                }
-            }
-        }
-    }
-}
-
-
-void    calculate_hydromechanic_coeffs_nlin(
-                                                Input*          input,
-                                                MpiConfig*      mpi_config,
-                                                MeshGroup*      mesh_gp,
-                                                HMFInterface*   hmf_interf,
-                                                cusfloat        ang_freq,
-                                                cusfloat*       added_mass,
-                                                cusfloat*       damping_rad
-                                            )
-{
-    // Define local variables
-    int         dofs_np = input->dofs_np;
-    cusfloat    rho_w   = input->water_density;
-
-    // Generate lambda function for the integration
-    auto target_fcn = [hmf_interf]
-                    (
-                        cusfloat xi, 
-                        cusfloat eta, 
-                        cusfloat x,
-                        cusfloat y,
-                        cusfloat z
-                    )
-                    {
-                        return (*hmf_interf)( xi, eta, x, y, z );
-                    };
-
-    // Allocate space for pressure vector
-    int max_panels  = 0;
-    for ( int i=0; i<mesh_gp->meshes_np; i++ )
-    {
-        // Get ith mesh panels
-        if ( mesh_gp->panels_np[i] > max_panels )
-        {
-            max_panels = mesh_gp->panels_np[i];
-        }
-    }
-    cuscomplex* pressure    = generate_empty_vector<cuscomplex>( mesh_gp->meshes_np * dofs_np * max_panels );
-
-    // Loop over first dimension of degrees of freedrom
-    int         elem_end_pos    = 0;
-    int         elem_start_pos  = 0;
-    int         index           = 0;
-    int         index_1         = 0;
-    cuscomplex  press_i         = 0.0;
-
-    for ( int ib=0; ib<mesh_gp->meshes_np; ib++ )
-    {
-        // Calculate MPI data chunks
-        elem_end_pos    = 0;
-        elem_start_pos  = 0;
-        mpi_config->get_1d_bounds( 
-                                        mesh_gp->panels_np[ib], 
-                                        elem_start_pos, 
-                                        elem_end_pos 
-                                    );
-
-        for ( int id=0; id<dofs_np; id++ )
-        {
-            for ( int jb=0; jb<mesh_gp->meshes_np; jb++ )
-            {
-                // Set ith dof
-                hmf_interf->set_start_index_i( 
-                                                    mesh_gp->source_nodes_tnp*id,
-                                                    mesh_gp->source_nodes_cnp[jb],
-                                                    mesh_gp->source_nodes_cnp[jb+1]
-                                                );
-
-                // Loop over panels to integrate the wave radiation
-                // pressure along the floating object external shape
-                for ( int ie=elem_start_pos; ie<elem_end_pos; ie++ )
-                {
-                    // Set new panel
-                    hmf_interf->set_panel( mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie] );
-
-                    // Integrate pressure over panel
-                    index           = ( max_panels * mesh_gp->meshes_np ) * id + max_panels * jb + ie;
-                    if ( mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->type == DIFFRAC_PANEL_CODE )
-                    {
-                        pressure[index] = adaptive_quadrature_panel(
-                                                                        mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie],
-                                                                        target_fcn,
-                                                                        input->press_abs_err,
-                                                                        input->press_rel_err,
-                                                                        input->is_block_adaption,
-                                                                        true,
-                                                                        input->gauss_order
-                                                                    );
-                    }
-                }
-            }
-        }
-
-        // Get hydromechanic coefficients for all the degrees of freedom
-        for ( int id=0; id<dofs_np; id++ )
-        {
-            for ( int jd=0; jd<dofs_np; jd++ )
-            {
-                // Get current matrix index
-                for ( int jb=0; jb<mesh_gp->meshes_np; jb++ )
-                {
-                    index = (
-                                ib * ( dofs_np * dofs_np * mesh_gp->meshes_np )
-                                +
-                                id * ( dofs_np * mesh_gp->meshes_np )
-                                + 
-                                jb * dofs_np 
-                                + 
-                                jd
-                            );
-                    added_mass[index]   = 0.0;
-                    damping_rad[index]  = 0.0;
-                    for ( int ie=elem_start_pos; ie<elem_end_pos; ie++ )
-                    {
-                        // Integrate pressure over panel
-                        index_1             = ( max_panels * mesh_gp->meshes_np ) * id + max_panels * jb + ie;
-                        press_i             = pressure[index_1] * mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->normal_vec[jd];
-                        added_mass[index]   -=  rho_w * press_i.imag( ) / ang_freq;
-                        damping_rad[index]  -=  rho_w * press_i.real( );
-                    }
-
-                }
-            }
-        }
-    }
-
-    // Deallocate local allocated heap memory
-    mkl_free( pressure );
-}
-
-
-void    calculate_influence_potential_steady(
-                                                Input*          input,
-                                                MpiConfig*      mpi_config,
-                                                MeshGroup*      mesh_gp,
-                                                cusfloat*       field_points,
-                                                int             field_points_np,
-                                                cuscomplex*     inf_pot_mat
-                                            )
-{
-    // Configure MPI
-    int source_start_pos    = 0;
-    int source_end_pos      = 0;
-    mpi_config->get_1d_bounds( 
-                                mesh_gp->source_nodes_tnp, 
-                                source_start_pos, 
-                                source_end_pos 
-                            );
-    
-    // Generate potential matrix
-    int         count       = 0;
-
-    if ( input->is_log_sin_ana )
-    {
-        // Define local auxiliar variables
-        const int   ndim                = 3;
-        cusfloat    field_point_0[3];   clear_vector( ndim, field_point_0 );
-        cusfloat    field_point_1[3];   clear_vector( ndim, field_point_1 );
-        cusfloat    field_point_2[3];   clear_vector( ndim, field_point_2 );
-        cusfloat    field_point_3[3];   clear_vector( ndim, field_point_3 );
-        cusfloat    field_point_4[3];   clear_vector( ndim, field_point_4 );
-        cusfloat    field_point_5[3];   clear_vector( ndim, field_point_5 );
-        cusfloat    pot_0               = 0.0;
-        cusfloat    pot_1               = 0.0;
-        cusfloat    pot_2               = 0.0;
-        cusfloat    pot_3               = 0.0;
-        cusfloat    pot_4               = 0.0;
-        cusfloat    pot_5               = 0.0;
-        cuscomplex  pot_term            = 0.0;
-
-        for ( int i=0; i<field_points_np; i++ )
-        {
-            // Calculate field points for the different radius
-            copy_vector( ndim, &(field_points[3*i]), field_point_0 );
-
-            field_point_1[0]    = field_points[3*i];
-            field_point_1[1]    = field_points[3*i+1];
-            field_point_1[2]    = field_points[3*i+2] + 2.0 * input->water_depth;
-
-            copy_vector( ndim, &(field_points[3*i]), field_point_2 );
-
-            field_point_3[0]    = field_points[3*i];
-            field_point_3[1]    = field_points[3*i+1];
-            field_point_3[2]    = field_points[3*i+2] + 2.0 * input->water_depth;
-
-            field_point_4[0]    = field_points[3*i];
-            field_point_4[1]    = field_points[3*i+1];
-            field_point_4[2]    = -field_points[3*i+2] + 2.0 * input->water_depth;
-
-            field_point_5[0]    = field_points[3*i];
-            field_point_5[1]    = field_points[3*i+1];
-            field_point_5[2]    = field_points[3*i+2] + 4.0 * input->water_depth;
-
-            for ( int j=source_start_pos; j<source_end_pos; j++ )
-            {
-                // Compute steady and wave terms over the panel
-                if ( 
-                        mesh_gp->source_nodes[i]->panel->type == DIFFRAC_PANEL_CODE
-                        &&
-                        mesh_gp->source_nodes[j]->panel->type == DIFFRAC_PANEL_CODE
-                    )
-                {
-                    // Calculate potential contribution for r0
-                    calculate_source_potential_newman(
-                                                            mesh_gp->panels[j],
-                                                            field_point_0,
-                                                            0, 
-                                                            0,
-                                                            pot_0
-                                                        );
-
-                    // Calculate potential contribution for r1
-                    calculate_source_potential_newman(
-                                                            mesh_gp->panels_mirror[j], 
-                                                            field_point_1,
-                                                            0, 
-                                                            0, 
-                                                            pot_1
-                                                        );
-
-                    // Calculate potential contribution for r2
-                    calculate_source_potential_newman(
-                                                            mesh_gp->panels_mirror[j], 
-                                                            field_point_2,
-                                                            0, 
-                                                            0, 
-                                                            pot_2
-                                                        );
-
-                    // Calculate potential contribution for r3
-                    calculate_source_potential_newman(
-                                                            mesh_gp->panels[j], 
-                                                            field_point_3,
-                                                            0, 
-                                                            0, 
-                                                            pot_3
-                                                        );
-
-                    // Calculate potential contribution for r4
-                    calculate_source_potential_newman(
-                                                            mesh_gp->panels_mirror[j], 
-                                                            field_point_4,
-                                                            0, 
-                                                            0, 
-                                                            pot_4
-                                                        );
-
-                    // Calculate potential contribution for r5
-                    calculate_source_potential_newman(
-                                                            mesh_gp->panels_mirror[j], 
-                                                            field_point_5,
-                                                            0, 
-                                                            0, 
-                                                            pot_5
-                                                        );
-
-                    // Calculate total potential contribution
-                    pot_term = pot_0 + pot_1 + pot_2 + pot_3 + pot_4 + pot_5;
-
-                    inf_pot_mat[count]  =  -pot_term / 4.0 / PI;
-                }
-                count++;
-            }
-        }
-    }
-    else
-    {
-        // Define potential funcions objects interface
-        GRFInterface*   green_interf_steady = new   GRFInterface(
-                                                                    mesh_gp->source_nodes[0],
-                                                                    0.0,
-                                                                    mesh_gp->source_nodes[0]->panel->center,
-                                                                    input->water_depth
-                                                                );
-
-        auto            steady_fcn          =   [green_interf_steady]
-                                                (cusfloat xi, cusfloat eta, cusfloat x, cusfloat y, cusfloat z) -> cuscomplex
-                                                {
-                                                    return (*green_interf_steady)( xi, eta, x, y, z );
-                                                };
-
-        // Define local auxiliar variables
-        cuscomplex  pot_steady_term( 0.0, 0.0 );
-
-        // Loop over field points and panels to generate the potential steady mat
-        for ( int i=0; i<mesh_gp->source_nodes_tnp; i++ )
-        {
-            // Change field point
-            green_interf_steady->set_field_point( 
-                                                    mesh_gp->source_nodes[i]->panel->center
-                                                );
-
-            for ( int j=source_start_pos; j<source_end_pos; j++ )
-            {
-                // Change source point
-                green_interf_steady->set_source(
-                                                    mesh_gp->source_nodes[j],
-                                                    1.0
-                                                );
-                
-                // Compute steady and wave terms over the panel
-                if ( 
-                        mesh_gp->source_nodes[i]->panel->type == DIFFRAC_PANEL_CODE
-                        &&
-                        mesh_gp->source_nodes[j]->panel->type == DIFFRAC_PANEL_CODE
-                    )
-                {
-                    pot_steady_term = adaptive_quadrature_panel(
-                                                                    mesh_gp->source_nodes[j]->panel,
-                                                                    steady_fcn,
-                                                                    input->pot_abs_err,
-                                                                    input->pot_rel_err,
-                                                                    input->is_block_adaption,
-                                                                    false,
-                                                                    input->gauss_order
-                                                                );
-                    
-                    inf_pot_mat[count] = pot_steady_term / 4.0 / PI;
-
-                }
-                count++;
-            }
-        }
-    }
-}
-
-
-void    calculate_influence_potential_total(
-                                                Input*          input,
-                                                MpiConfig*      mpi_config,
-                                                MeshGroup*      mesh_gp,
-                                                cusfloat        ang_freq,
-                                                cuscomplex*     inf_pot_steady,
-                                                cusfloat*       field_points,
-                                                int             field_points_np,
-                                                cuscomplex*     inf_pot_total
-                                            )
-{
-    // Define potential funcions objects interface
-    GWFInterface*   green_interf_wave   = new   GWFInterface(
-                                                                mesh_gp->source_nodes[0],
-                                                                0.0,
-                                                                mesh_gp->source_nodes[0]->panel->center,
-                                                                ang_freq,
-                                                                input->water_depth,
-                                                                input->grav_acc
-                                                            );
-
-    auto            wave_fcn            =   [green_interf_wave]
-                                            (cusfloat xi, cusfloat eta, cusfloat x, cusfloat y, cusfloat z) -> cuscomplex
-                                            {
-                                                return (*green_interf_wave)( xi, eta, x, y, z );
-                                            };
-    
-    // Configure MPI
-    int source_start_pos    = 0;
-    int source_end_pos      = 0;
-    mpi_config->get_1d_bounds( 
-                                mesh_gp->source_nodes_tnp, 
-                                source_start_pos, 
-                                source_end_pos 
-                            );
-    
-    // Generate potential matrix
-    int         count = 0;
-    cuscomplex  pot_wave_term( 0.0, 0.0 );
-    for ( int i=0; i<field_points_np; i++ )
-    {
-        // Change field point
-        green_interf_wave->set_field_point(
-                                                &(field_points[3*i])
-                                            );
-
-        for ( int j=source_start_pos; j<source_end_pos; j++ )
-        {
-            // Change source point
-            green_interf_wave->set_source(
-                                                mesh_gp->source_nodes[j],
-                                                1.0
-                                        );
-            
-            // Compute steady and wave terms over the panel
-            if ( 
-                    mesh_gp->panels[i]->type == DIFFRAC_PANEL_CODE
-                    &&
-                    mesh_gp->panels[j]->type == DIFFRAC_PANEL_CODE
-                )
-            {
-                pot_wave_term           = adaptive_quadrature_panel(
-                                                                        mesh_gp->panels[j],
-                                                                        wave_fcn,
-                                                                        input->pot_abs_err,
-                                                                        input->pot_rel_err,
-                                                                        input->is_block_adaption,
-                                                                        false,
-                                                                        input->gauss_order
-                                                                    );
-                inf_pot_total[count]    = inf_pot_steady[count] + pot_wave_term / 4.0 / PI;
-
-            }
-            else
-            {
-                inf_pot_total[count]    = cuscomplex( 0.0, 0.0 );
-            }
-            
-            count++;
-        }
-    }
-
-}
-
-
-void    calculate_panel_potentials_lin(
-                                                Input*          input,
-                                                cuscomplex*     inf_pot_mat,
-                                                int             rows_np,
-                                                int             cols_np,
-                                                int             start_col,
-                                                cuscomplex*     sources,
-                                                cuscomplex*     panel_pot
-                                        )
-{
-    // Loop over RHS to compute all the panel potentials the panels potentials
-    cuscomplex  alpha( 1.0, 0.0 );
-    cuscomplex  beta( 0.0, 0.0 );
-    int         icnx = 1;
-    int         icny = 1;
-    for ( int i=0; i<( input->dofs_np + input->heads_np ); i++ )
-    {
-        cblas_gemv<cuscomplex>( 
-                                    CblasRowMajor,
-                                    CblasNoTrans,
-                                    rows_np,
-                                    cols_np,
-                                    &alpha,
-                                    inf_pot_mat,
-                                    cols_np,
-                                    &(sources[i*rows_np+start_col]),
-                                    icnx,
-                                    &beta,
-                                    &(panel_pot[i*rows_np]),
-                                    icny
-                                );
-    }
-}
-
-
-void    calculate_panel_potentials_nlin(
-                                                Input*          input,
-                                                MpiConfig*      mpi_config,
-                                                MeshGroup*      mesh_gp,
-                                                cuscomplex*     sources,
-                                                cusfloat        ang_freq
-                                        )
-{
-    // Calculate MPI data chunks
-    int elem_end_pos     = 0;
-    int elem_start_pos   = 0;
-    mpi_config->get_1d_bounds( 
-                                    mesh_gp->panels_tnp, 
-                                    elem_start_pos, 
-                                    elem_end_pos 
-                                );
-    
-    // Create Function to integrate potential value
-    GRFInterface*   green_interf_steady = new   GRFInterface(
-                                                                mesh_gp->source_nodes[0],
-                                                                sources[0],
-                                                                mesh_gp->panels[0]->center,
-                                                                input->water_depth
-                                                            );
-    GWFInterface*   green_interf_wave   = new   GWFInterface(
-                                                                mesh_gp->source_nodes[0],
-                                                                sources[0],
-                                                                mesh_gp->panels[0]->center,
-                                                                ang_freq,
-                                                                input->water_depth,
-                                                                input->grav_acc
-                                                            );
-
-    auto steady_fcn =   [green_interf_steady]
-                        ( 
-                            cusfloat    xi,
-                            cusfloat    eta,
-                            cusfloat    X,
-                            cusfloat    Y,
-                            cusfloat    Z
-                        ) -> cuscomplex
-                        {
-                            return (*green_interf_steady)( xi, eta, X, Y, Z );
-                        };
-
-    auto wave_fcn   =   [green_interf_wave]
-                        ( 
-                            cusfloat    xi,
-                            cusfloat    eta,
-                            cusfloat    X,
-                            cusfloat    Y,
-                            cusfloat    Z
-                        ) -> cuscomplex
-                        {
-                            return (*green_interf_wave)( xi, eta, X, Y, Z );
-                        };
-
-    // Loop over panel to get the radiation potential over them
-    cuscomplex panel_potential  = complex( 0.0, 0.0 );
-    cuscomplex pot_i_steady     = complex( 0.0, 0.0 );
-    cuscomplex pot_i_wave       = complex( 0.0, 0.0 );
-    for ( int i=0; i<mesh_gp->panels_tnp; i++ )
-    {
-        // Set new field point for the calculation of the potential
-        green_interf_steady->set_field_point( mesh_gp->panels[i]->center );
-        green_interf_wave->set_field_point( mesh_gp->panels[i]->center );
-
-        // Clean panel potential
-        panel_potential = complex( 0.0, 0.0 );
-
-        // Loop over source points to calculate potential
-        // over ith panel center
-        for ( int j=0; j<mesh_gp->source_nodes_tnp; j++ )
-        {
-            if ( 
-                    mesh_gp->panels[i]->type == DIFFRAC_PANEL_CODE
-                    &&
-                    mesh_gp->source_nodes[j]->panel->type == DIFFRAC_PANEL_CODE
-                )
-            {
-                // Set current source value
-                green_interf_steady->set_source(
-                                                mesh_gp->source_nodes[j],
-                                                sources[j]
-                                            );
-                green_interf_wave->set_source(
-                                                mesh_gp->source_nodes[j],
-                                                sources[j]
-                                            );
-                
-                pot_i_steady    = adaptive_quadrature_panel(
-                                                                mesh_gp->source_nodes[j]->panel,
-                                                                steady_fcn,
-                                                                input->pot_abs_err,
-                                                                input->pot_rel_err,
-                                                                input->is_block_adaption,
-                                                                false,
-                                                                input->gauss_order
-                                                            );
-                pot_i_wave      = adaptive_quadrature_panel(
-                                                                mesh_gp->source_nodes[j]->panel,
-                                                                wave_fcn,
-                                                                input->pot_abs_err,
-                                                                input->pot_rel_err,
-                                                                input->is_block_adaption,
-                                                                false,
-                                                                input->gauss_order
-                                                            );
-                panel_potential +=  ( pot_i_steady + pot_i_wave ) /4.0 / PI;
-
-            }
-        }
-    }
-
-    // Delete heap allocated memory
-    delete green_interf_steady;
-    delete green_interf_wave;
-}
-
-
-void    calculate_sources_intensity(
-                                                Input*          input,
-                                                SclCmpx*        scl,
-                                                MeshGroup*      mesh_gp,
-                                                GWFDnInterface* gwf_interf,
-                                                cusfloat        w,
-                                                cuscomplex*     sysmat_steady,
-                                                cuscomplex*     sysmat,
-                                                cuscomplex*     sources_int
-                                   )
-{
-    /***************************************/
-    /******** Fill system matrix  **********/
-    /***************************************/
-    // Create auxiliar lambda function
-    auto wave_fcn   =   [gwf_interf]
-                        ( 
-                            cusfloat xi, 
-                            cusfloat eta,
-                            cusfloat x, 
-                            cusfloat y, 
-                            cusfloat z 
-                        )
-                        {
-                            return (*gwf_interf)( xi, eta, x, y, z );
-                        };
-    
-    // Loop over panels to integrate value
-    int         col_count   = 0;
-    int         index       = 0;
-    cuscomplex  int_value( 0.0, 0.0 );
-    cuscomplex  wave_value( 0.0, 0.0 );
-    PanelGeom*  panel_j     = nullptr;
-    SourceNode* source_i    = nullptr;
-    int         row_count   = 0;
-
-    for ( int i=scl->start_col_0; i<scl->end_col_0; i++ )
-    {
-        // Get memory address of the ith panel
-        source_i = mesh_gp->source_nodes[i];
-        gwf_interf->set_source_i( source_i );
-
-        // Loop over rows to calcualte the influence of the panel
-        // over each collocation point
-        row_count = 0;
-        for ( int j=scl->start_row_0; j<scl->end_row_0; j++ )
-        {
-            // Get memory address of the panel jth
-            panel_j = mesh_gp->source_nodes[j]->panel;
-            gwf_interf->set_source_j( mesh_gp->source_nodes[j] );
-
-            // Integrate green function normal derivative along the current panel
-            if ( i == j )
-            {
-                if ( panel_j->type == DIFFRAC_PANEL_CODE )
-                {
-                    int_value   =   -cuscomplex( 0.5, 0.0 );
-                }
-                else if ( panel_j->type == LID_PANEL_CODE )
-                {
-                    int_value   =   -cuscomplex( 4.0 * PI, 0.0 );
-                }
-            }
-            else
-            {
-                wave_value      =   adaptive_quadrature_panel(
-                                                                source_i->panel,
-                                                                wave_fcn,
-                                                                input->gfdn_abs_err,
-                                                                input->gfdn_rel_err,
-                                                                input->is_block_adaption,
-                                                                true,
-                                                                input->gauss_order
-                                                            );
-                
-                int_value       =   wave_value / 4.0 / PI;
-                if ( 
-                        panel_j->type == LID_PANEL_CODE
-                        &&
-                        source_i->panel->type == LID_PANEL_CODE
-                    )
-                {
-                    int_value   = - int_value;
-                }
-            }
-            index           = col_count*scl->num_rows_local+row_count;
-            sysmat[index]   = sysmat_steady[index] + int_value;
-
-            // Advance row count
-            row_count++;
-        }
-
-        // Advance column count
-        col_count++;
-    }
-
-    /***************************************/
-    /***** Fill Hydromechanics RHS  ********/
-    /***************************************/
-
-    // Declare local variables to be used
-    int         count           = 0;
-
-    // Fill RHS vector
-    count       = 0;
-    for ( int i=0; i< 6; i++ )
-    {
-        for ( int j=scl->start_row_0; j<scl->end_row_0; j++ )
-        {
-            panel_j = mesh_gp->source_nodes[j]->panel;
-            if ( panel_j->type == DIFFRAC_PANEL_CODE )
-            {
-                sources_int[count] = cuscomplex( 0.0, w * mesh_gp->source_nodes[j]->normal_vec[i] );
-                            }
-            else if ( panel_j->type == LID_PANEL_CODE )
-            {
-                sources_int[count] = cuscomplex( 0.0, 0.0 );
-            }
-            count++;
-        }
-        }
-
-    /***************************************/
-    /****** Fill Wave Exciting RHS  ********/
-    /***************************************/
-    // Define local variables to manage array indexes
-                count       = input->dofs_np * mesh_gp->source_nodes_tnp;
-    cusfloat    k           = w2k( w, input->water_depth, input->grav_acc );
-    cuscomplex  wave_dx     = cuscomplex( 0.0, 0.0 );
-    cuscomplex  wave_dy     = cuscomplex( 0.0, 0.0 );
-    cuscomplex  wave_dz     = cuscomplex( 0.0, 0.0 );
-
-    for ( int i=0; i<input->heads_np; i++ )
-    {
-        for ( int j=scl->start_row_0; j<scl->end_row_0; j++ )
-        {
-            panel_j = mesh_gp->source_nodes[j]->panel;
-            if ( panel_j->type == DIFFRAC_PANEL_CODE )
-            {
-                // Get wave potential derivatives for the panel
-                wave_dx             =   wave_potential_airy_space_dx(
-                                                                        1.0,
-                                                                        w,
-                                                                        k,
-                                                                        input->water_depth,
-                                                                        input->grav_acc,
-                                                                        mesh_gp->source_nodes[j]->panel->center[0],
-                                                                        mesh_gp->source_nodes[j]->panel->center[1],
-                                                                        mesh_gp->source_nodes[j]->panel->center[2],
-                                                                        input->heads[i]
-                                                                    );
-
-                wave_dy             =   wave_potential_airy_space_dy(
-                                                                        1.0,
-                                                                        w,
-                                                                        k,
-                                                                        input->water_depth,
-                                                                        input->grav_acc,
-                                                                        mesh_gp->source_nodes[j]->panel->center[0],
-                                                                        mesh_gp->source_nodes[j]->panel->center[1],
-                                                                        mesh_gp->source_nodes[j]->panel->center[2],
-                                                                        input->heads[i]
-                                                                    );
-
-                wave_dz             =   wave_potential_airy_space_dz(
-                                                                        1.0,
-                                                                        w,
-                                                                        k,
-                                                                        input->water_depth,
-                                                                        input->grav_acc,
-                                                                        mesh_gp->source_nodes[j]->panel->center[0],
-                                                                        mesh_gp->source_nodes[j]->panel->center[1],
-                                                                        mesh_gp->source_nodes[j]->panel->center[2],
-                                                                        input->heads[i]
-                                                                    );
-                
-                // Calculate normal derivative of the wave flow velocities for the jth panel
-                sources_int[count]  = -(
-                                            wave_dx * mesh_gp->source_nodes[j]->normal_vec[0]
-                                            +
-                                            wave_dy * mesh_gp->source_nodes[j]->normal_vec[1]
-                                            +
-                                            wave_dz * mesh_gp->source_nodes[j]->normal_vec[2]
-                                        );
-            }
-            else if ( panel_j->type == LID_PANEL_CODE )
-            {
-                sources_int[count]  = cuscomplex( 0.0, 0.0 );
-            }
-            
-            count++;
-        }
-    }
-
-    // Solve system of equations
-    scl->Solve( sysmat, sources_int );
-}
-
-
-void    calculate_sources_sysmat_steady(
-                                                Input*          input,
-                                                SclCmpx*        scl,
-                                                MeshGroup*      mesh_gp,
-                                                GRFDnInterface* grf_interf,
-                                                cuscomplex*     sysmat
-                                        )
-{
-    /***************************************/
-    /******** Fill system matrix  **********/
-    /***************************************/
-    // Loop over panels to integrate value
-    int         col_count   = 0;
-    cuscomplex  int_value( 0.0, 0.0 );
-    int         row_count   = 0;
-
-    if ( input->is_log_sin_ana )
-    {
-        // Define local variables to work with the fast solver
-        const int   ndim                    = 3;
-        cusfloat    field_point_i[ndim];    clear_vector( ndim, field_point_i );
-        PanelGeom*  panel_i                 = nullptr;
-        cusfloat    vel_0[ndim];            clear_vector( ndim, vel_0 );
-        cusfloat    vel_1[ndim];            clear_vector( ndim, vel_1 );
-        cusfloat    vel_2[ndim];            clear_vector( ndim, vel_2 );
-        cusfloat    vel_3[ndim];            clear_vector( ndim, vel_3 );
-        cusfloat    vel_4[ndim];            clear_vector( ndim, vel_4 );
-        cusfloat    vel_5[ndim];            clear_vector( ndim, vel_5 );
-        cusfloat    vel_total[ndim];        clear_vector( ndim, vel_5 );
-
-        // Define field points to calculate the source influence matrix
-        int         field_points_np   = mesh_gp->panels_tnp;
-        cusfloat*   field_points      = generate_empty_vector<cusfloat>( 3 * field_points_np );
-
-        for ( int i=0; i<mesh_gp->panels_tnp; i++ )
-        {
-            copy_vector( 3, mesh_gp->panels[i]->center, &(field_points[3*i]) );
-        }
-
-        // Loop over panels and field points to create the steady source matrix
-        for ( int i=scl->start_col_0; i<scl->end_col_0; i++ )
-        {
-            // Get pointer to ith panel
-            panel_i = mesh_gp->panels[i];
-
-            // Loop over rows to calcualte the influence of the panel
-            // over each collocation point
-            row_count = 0;
-            for ( int j=0; j<field_points_np; j++ )
-            {
-                // Integrate green function normal derivative along the current panel
-                if ( i == j )
-                {
-                    int_value       = complex( 0.0, 0.0 );
-                }
-                else
-                {
-                    // Reset velocity values
-                    clear_vector( ndim, vel_0 );
-                    clear_vector( ndim, vel_1 );
-                    clear_vector( ndim, vel_2 );
-                    clear_vector( ndim, vel_3 );
-                    clear_vector( ndim, vel_4 );
-                    clear_vector( ndim, vel_5 );
-                    clear_vector( ndim, vel_total );
-                    
-                    // Calcualte velocity corresponding to the r0 source
-                    calculate_source_velocity_newman(
-                                                        mesh_gp->panels[i],
-                                                        &(field_points[3*j]), 
-                                                        0,
-                                                        0, 
-                                                        vel_0
-                                                    );
-
-                    // Calculate velocity corresponding to the r1 source
-                    field_point_i[0]    =   field_points[3*j];
-                    field_point_i[1]    =   field_points[3*j+1];
-                    field_point_i[2]    =   field_points[3*j+2] + 2 * input->water_depth;
-                    calculate_source_velocity_newman(
-                                                        mesh_gp->panels_mirror[i],
-                                                        field_point_i, 
-                                                        0,
-                                                        0, 
-                                                        vel_1
-                                                    );
-                    
-                    // Calculate velocity corresponding to the r2 source
-                    field_point_i[0]    =   field_points[3*j];
-                    field_point_i[1]    =   field_points[3*j+1];
-                    field_point_i[2]    =   field_points[3*j+2];
-                    calculate_source_velocity_newman(
-                                                        mesh_gp->panels_mirror[i],
-                                                        field_point_i, 
-                                                        0,
-                                                        0, 
-                                                        vel_2
-                                                    );
-
-                    // Calculate velocity corresponding to the r3 source
-                    field_point_i[0]    =   field_points[3*j];
-                    field_point_i[1]    =   field_points[3*j+1];
-                    field_point_i[2]    =   field_points[3*j+2] + 2.0 * input->water_depth;
-                    calculate_source_velocity_newman(
-                                                        mesh_gp->panels[i],
-                                                        field_point_i, 
-                                                        0,
-                                                        0, 
-                                                        vel_3
-                                                    );
-
-                    // Calculate velocity corresponding to the r4 source
-                    field_point_i[0]    =   field_points[3*j];
-                    field_point_i[1]    =   field_points[3*j+1];
-                    field_point_i[2]    =   -field_points[3*j+2] + 2.0 * input->water_depth;
-                    calculate_source_velocity_newman(
-                                                        mesh_gp->panels_mirror[i],
-                                                        field_point_i, 
-                                                        0,
-                                                        0, 
-                                                        vel_4
-                                                    );
-
-                    // Calculate velocity corresponding to the r5 source
-                    field_point_i[0]    =   field_points[3*j];
-                    field_point_i[1]    =   field_points[3*j+1];
-                    field_point_i[2]    =   field_points[3*j+2] + 4.0 * input->water_depth;
-                    calculate_source_velocity_newman(
-                                                        mesh_gp->panels_mirror[i],
-                                                        field_point_i, 
-                                                        0,
-                                                        0, 
-                                                        vel_5
-                                                    );
-                    
-                    // Compose total velocity vector
-                    vel_total[0]    = vel_0[0] + vel_1[0] + vel_2[0] + vel_3[0] + vel_4[0] + vel_5[0];
-                    vel_total[1]    = vel_0[1] + vel_1[1] + vel_2[1] + vel_3[1] + vel_4[1] + vel_5[1];
-                    vel_total[2]    = vel_0[2] + vel_1[2] + vel_2[2] + vel_3[2] + vel_4[2] + vel_5[2];
-                                            
-                    int_value = (
-                                    mesh_gp->source_nodes[j]->normal_vec[0] * vel_total[0]
-                                    +
-                                    mesh_gp->source_nodes[j]->normal_vec[1] * vel_total[1]
-                                    +
-                                    mesh_gp->source_nodes[j]->normal_vec[2] * vel_total[2]
-                                ) / 4.0 / PI;
-                }
-
-                if ( 
-                        mesh_gp->source_nodes[j]->panel->type == LID_PANEL_CODE
-                        &&
-                        panel_i->type == LID_PANEL_CODE
-                    )
-                {
-                    int_value       = - int_value;
-                }
-
-                sysmat[col_count*scl->num_rows_local+row_count] = int_value;
-
-                // Advance row count
-                row_count++;
-            }
-
-            // Advance column count
-            col_count++;
-        }
-
-        // Delete heap memory associated to this block of code
-        mkl_free( field_points );
-    }
-    else
-    {
-        // Create auxiliar lambda function
-        auto steady_fcn =   [grf_interf]
-                            ( 
-                                cusfloat xi, 
-                                cusfloat eta,
-                                cusfloat x, 
-                                cusfloat y, 
-                                cusfloat z 
-                            )
-                            {
-                                return (*grf_interf)( xi, eta, x, y, z );
-                            };
-
-        // Declare local variables to work with the adaptive
-        // integration scheme
-        SourceNode*     source_i    = nullptr;
-        
-        for ( int i=scl->start_col_0; i<scl->end_col_0; i++ )
-        {
-            // Get memory address of the ith panel
-            source_i = mesh_gp->source_nodes[i];
-            grf_interf->set_source_i( source_i );
-
-            // Loop over rows to calcualte the influence of the panel
-            // over each collocation point
-            row_count = 0;
-            for ( int j=scl->start_row_0; j<scl->end_row_0; j++ )
-            {
-                // Get memory address of the panel jth
-                grf_interf->set_source_j( mesh_gp->source_nodes[j] );
-
-                // Integrate green function normal derivative along the current panel
-                if ( i == j )
-                {
-                    int_value       = complex( 0.0, 0.0 );
-                }
-                else
-                {
-                    int_value       =   adaptive_quadrature_panel(
-                                                                    source_i->panel,
-                                                                    steady_fcn,
-                                                                    input->gfdn_abs_err,
-                                                                    input->gfdn_rel_err,
-                                                                    input->is_block_adaption,
-                                                                    false,
-                                                                    input->gauss_order
-                                                                );
-                    int_value       =   int_value / 4.0 / PI;
-                }
-
-                if ( 
-                        mesh_gp->source_nodes[j]->panel->type == LID_PANEL_CODE
-                        &&
-                        source_i->panel->type == LID_PANEL_CODE
-                    )
-                {
-                    int_value       = - int_value;
-                }
-
-                sysmat[col_count*scl->num_rows_local+row_count] = int_value;
-
-                // Advance row count
-                row_count++;
-            }
-
-            // Advance column count
-            col_count++;
-        }
-    }
-}
-
-
-void    calculate_raos(
-                                                Input*          input,
-                                                cusfloat*       structural_mass,
-                                                cusfloat*       added_mass,
-                                                cusfloat*       damping_rad,
-                                                cusfloat*       hydstiffness,
-                                                cuscomplex*     wave_diffrac,
-                                                cuscomplex*     froude_krylov,
-                                                cusfloat        ang_freq,
-                                                cuscomplex*     rao
-                        )
-{
-    // Allocate space to hold the system matrix
-    cuscomplex* sysmat  = generate_empty_vector<cuscomplex>( pow2s( input->bodies_np * input->dofs_np ) );
-
-    // Clear input rao vector to avoid problems with residual data
-    clear_vector( input->bodies_np * input->dofs_np * input->heads_np, rao );
-
-    // Fill in matrix system
-    int         index   = 0;
-    for ( int i=0; i<input->bodies_np; i++ )
-    {
-        for ( int j=0; j<input->bodies_np; j++ )
-        {
-            for ( int k=0; k<input->dofs_np; k++ )
-            {
-                for ( int m=0; m<input->dofs_np; m++ )
-                {
-                    // Get structural mass
-                    index = (
-                                i * input->bodies_np * pow2s( input->dofs_np )
-                                +
-                                j * input->dofs_np
-                                +
-                                k * input->bodies_np * input->dofs_np
-                                +
-                                m
-                            );
-                    sysmat[index] = cuscomplex( 
-                                                    -pow2s( ang_freq ) * ( structural_mass[index] + added_mass[index] ) + hydstiffness[index],
-                                                    ang_freq * damping_rad[index]
-                                                );
-                }
-            }
-        }
-    }
-
-    // Fill in right hand side vector
-    for ( int i=0; i<input->heads_np; i++ )
-    {
-        for ( int j=0; j<input->bodies_np; j++ )
-        {
-            for ( int k=0; k<input->dofs_np; k++ )
-            {
-                index = (
-                            i * input->bodies_np * input->dofs_np
-                            +
-                            j * input->dofs_np
-                            +
-                            k
-                        );
-                rao[index] = wave_diffrac[index] + froude_krylov[index];
-            }
-        }
-    }
-
-    // Solve system of equations
-    int     rows_np = input->bodies_np * input->dofs_np;
-    int     info    = 0;
-    int*    ipiv    = generate_empty_vector<int>( rows_np );
-    gesv<cuscomplex>( 
-                        &rows_np,
-                        &(input->heads_np),
-                        sysmat,
-                        &(rows_np),
-                        ipiv,
-                        rao,
-                        &(rows_np),
-                        &info
-                    );
-
-    mkl_free( ipiv );
-
-    if ( info != 0 )
-    {
-        std::cerr << "ERROR - Calculating RAO" << std::endl;
-        std::cerr << "Error solving system of equations - Info: " << info << std::endl;
-        throw std::runtime_error( "" );
-    }
-
-    // Deallocate local heap memory
-    mkl_free( sysmat );
-
 }

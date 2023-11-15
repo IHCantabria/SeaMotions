@@ -180,8 +180,22 @@ set(
 set(
         sm_freq_module_files
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/seamotions_freq.cpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/diffraction.hpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/diffraction.cpp
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/freq_solver_tools.hpp
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/freq_solver_tools.cpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/gf_intensities.hpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/gf_intensities.cpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/hydromechanics.hpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/hydromechanics.cpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/potential.hpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/potential.cpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/raos.hpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/raos.cpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/wave_elevation.hpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/wave_elevation.cpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/wave_exciting.hpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/wave_exciting.cpp
     )
 
 # Pack tools module files
