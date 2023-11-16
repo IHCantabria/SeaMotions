@@ -37,6 +37,21 @@ inline const auto& cblas_dot<float> = cblas_sdot;
 template<>
 inline const auto& cblas_dot<double> = cblas_ddot;
 
+// Interface for cblas_gemm - Matrix-Matrix product
+template<typename T>
+inline const auto& cblas_gemm = cblas_sgemm;
+
+template<>
+inline const auto& cblas_gemm<float> = cblas_sgemm;
+
+template<>
+inline const auto& cblas_gemm<double> = cblas_dgemm;
+
+template<>
+inline const auto& cblas_gemm<std::complex<float>> = cblas_cgemm;
+
+template<>
+inline const auto& cblas_gemm<std::complex<double>> = cblas_zgemm;
 
 // Interface for cblas_gemv - Matrix-vector product
 template<typename T>
