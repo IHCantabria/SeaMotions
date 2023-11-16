@@ -3,16 +3,16 @@
 #include <cmath>
 
 // Include local modules
-#include "euler_rotations.hpp"
+#include "euler_transforms.hpp"
 #include "math_interface.hpp"
 #include "math_tools.hpp"
 
 
 void    euler_local_to_global(
-                                cusfloat    alpha,
-                                cusfloat    beta,
-                                cusfloat    gamma,
-                                cusfloat*   rot_mat
+                                        cusfloat    alpha,
+                                        cusfloat    beta,
+                                        cusfloat    gamma,
+                                        cusfloat*   rot_mat
                             )
 {
 
@@ -66,9 +66,52 @@ void    euler_local_to_global(
 }
 
 
+void    euler_local_to_global_disp(
+                                        cusfloat*   dofs_trans,
+                                        cusfloat*   dofs_rot,
+                                        cusfloat*   radius,
+                                        cusfloat*   displacement
+                                    )
+{
+    // Get local to global transformation matrix
+    const int   rotm_np         = 9;
+    cusfloat    rot_mat[rotm_np]; clear_vector( rotm_np, rot_mat );
+
+    euler_local_to_global(
+                            dofs_rot[0],
+                            dofs_rot[1],
+                            dofs_rot[2],
+                            rot_mat
+                        );
+
+    // Get local radius value in global coorindates
+    cblas_gemv<cusfloat>(
+                            CblasRowMajor,
+                            CblasNoTrans,
+                            rotm_np,
+                            rotm_np,
+                            1.0,
+                            rot_mat,
+                            rotm_np,
+                            radius,
+                            1,
+                            1.0,
+                            displacement,
+                            1
+                        );
+
+    // Add translation displacements in order to get the 
+    // point displacement in global coorindates
+    for ( int i=0; i<3; i++ )
+    {
+        displacement[i] += dofs_trans[i];
+    }
+}
+
+
 void    _rot_x(
-                    cusfloat*   mat,
-                    cusfloat    alpha
+                                        cusfloat*   mat,
+                                        cusfloat    alpha
                 )
 {
     mat[0] = 1.0;
@@ -86,8 +129,8 @@ void    _rot_x(
 
 
 void    _rot_y(
-                    cusfloat*   mat,
-                    cusfloat    beta
+                                        cusfloat*   mat,
+                                        cusfloat    beta
                 )
 {
     mat[0] = std::cos( beta );
@@ -105,8 +148,8 @@ void    _rot_y(
 
 
 void    _rot_z(
-                    cusfloat*   mat,
-                    cusfloat    gamma
+                                        cusfloat*   mat,
+                                        cusfloat    gamma
                 )
 {
     mat[0] = std::cos( gamma );
