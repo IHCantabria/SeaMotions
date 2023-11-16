@@ -1,6 +1,6 @@
 
-#ifndef __euler_rotations_hpp
-#define __euler_rotations_hpp
+#ifndef __euler_transfomrs_hpp
+#define __euler_transfomrs_hpp
 
 // Include local modules
 #include "../config.hpp"

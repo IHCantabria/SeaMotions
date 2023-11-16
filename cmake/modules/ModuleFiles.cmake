@@ -139,8 +139,8 @@ set(
         math_module_files
         ${CMAKE_SOURCE_DIR}/src/math/chebyshev.hpp
         ${CMAKE_SOURCE_DIR}/src/math/chebyshev.cpp
-        ${CMAKE_SOURCE_DIR}/src/math/euler_rotations.hpp
-        ${CMAKE_SOURCE_DIR}/src/math/euler_rotations.cpp
+        ${CMAKE_SOURCE_DIR}/src/math/euler_transforms.hpp
+        ${CMAKE_SOURCE_DIR}/src/math/euler_transforms.cpp
         ${CMAKE_SOURCE_DIR}/src/math/gauss.hpp
         ${CMAKE_SOURCE_DIR}/src/math/gauss.cpp
         ${CMAKE_SOURCE_DIR}/src/math/integration.hpp
