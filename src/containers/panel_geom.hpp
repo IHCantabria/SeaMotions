@@ -23,6 +23,7 @@ public:
     cusfloat                center_wl[3]            = {0.0, 0.0, 0.0};
     cusfloat                global_to_local_mat[9];
     bool                    is_wl_boundary          = false;
+    cusfloat                len_wl                  = 0;
     cusfloat                length                  = 0.0;
     cusfloat                local_to_global_mat[9];
     static constexpr int    MAX_PANEL_NODES         = 4;

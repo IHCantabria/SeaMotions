@@ -236,6 +236,8 @@ void Mesh::detect_wl_points(
     }
 
     // Check for those elements that have two nodes on the water line
+    int         idx0    = 0;
+    int         idx1    = 0;
     int         count   = 0;
     PanelGeom*  panel_i;
     for ( int i=0; i<this->elems_np; i++ )
@@ -268,8 +270,16 @@ void Mesh::detect_wl_points(
                 panel_i->center_wl[0]   += this->x[node_j];
                 panel_i->center_wl[1]   += this->y[node_j];
             }
-            panel_i->center_wl[0] /= 2.0;
-            panel_i->center_wl[1] /= 2.0;
+            panel_i->center_wl[0]  /= 2.0;
+            panel_i->center_wl[1]  /= 2.0;
+
+            idx0                    = global_index+1;
+            idx1                    = global_index+2;
+            panel_i->len_wl         = std::sqrt(
+                                                    pow2s( this->x[elems_wl[idx1]] - this->x[elems_wl[idx0]] )
+                                                    +
+                                                    pow2s( this->y[elems_wl[idx1]] - this->y[elems_wl[idx0]] )
+                                                );
 
             count++;
         }
