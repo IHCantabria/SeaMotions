@@ -11,8 +11,8 @@
 
 struct GWFDnInterface
 {
-private:
-    // Define local attributes
+protected:
+    // Define protected attributes
     cusfloat            _grav_acc       = 0.0;
     SourceNode*         _source_i       = nullptr;
     SourceNode*         _source_j       = nullptr;
@@ -20,8 +20,19 @@ private:
     cusfloat            _water_depth    = 0.0;
     WaveDispersionData* _wave_data      = nullptr;
 
+    // Define protected methods
+    void    _clear_heap(
+                                void
+                        );
+
+    void    _initialize(
+                                cusfloat    ang_freq
+                        );
+
 public:
     // Define constructors and destructors
+    GWFDnInterface( )   = default;
+
     GWFDnInterface( 
                                 SourceNode* source_i,
                                 SourceNode* source_j,

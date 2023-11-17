@@ -4,6 +4,38 @@
 #include "../math/shape_functions.hpp"
 
 
+void    GWFDnInterface::_clear_heap(
+                                        void
+                                    )
+{
+    std::cerr << "Calling GWFDnInterface destructor..." << std::endl;
+    delete this->_integrals_db;
+    delete this->_wave_data;
+}
+
+
+void    GWFDnInterface::_initialize(
+                                        cusfloat    ang_freq
+                                    )
+{
+    // Calculate wave numbers
+    this->_wave_data    = new WaveDispersionData( 
+                                                    ang_freq,
+                                                    30,
+                                                    this->_water_depth,
+                                                    this->_grav_acc
+                                                );
+    this->_wave_data->calculate_john_terms( );
+
+    // Load integrals database
+    this->_integrals_db = new IntegralsDb( );
+    
+    // Fold for current frequency and water depth
+    cusfloat H = pow2s( ang_freq ) * this->_water_depth / this->_grav_acc;
+    this->_integrals_db->fold_h( H );
+}
+
+
 GWFDnInterface::GWFDnInterface( 
                                     SourceNode* source_i,
                                     SourceNode* source_j,
@@ -19,30 +51,14 @@ GWFDnInterface::GWFDnInterface(
     this->_source_j     = source_j;
     this->_water_depth  = water_depth;
 
-    // Calculate wave numbers
-    this->_wave_data    = new WaveDispersionData( 
-                                                    ang_freq,
-                                                    30,
-                                                    water_depth,
-                                                    grav_acc
-                                                );
-    this->_wave_data->calculate_john_terms( );
-
-    // Load integrals database
-    this->_integrals_db = new IntegralsDb( );
-    
-    // Fold for current frequency and water depth
-    cusfloat H = pow2s( ang_freq ) * water_depth / grav_acc;
-    this->_integrals_db->fold_h( H );
-
+    // Initialize object features
+    this->_initialize( ang_freq );
 }
 
 
 GWFDnInterface::~GWFDnInterface( void )
 {
-    std::cerr << "Calling GWFDnInterface destructor..." << std::endl;
-    delete this->_integrals_db;
-    delete this->_wave_data;
+    this->_clear_heap( );
 }
 
 
