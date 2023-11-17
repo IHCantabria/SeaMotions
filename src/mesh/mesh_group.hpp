@@ -15,12 +15,14 @@ private:
     
 public:
     // Define class attributes
-    int             diffrac_panels_np   = 0;
     bool            is_panels_mirror    = false;
     Mesh**          meshes              = nullptr;
     int             meshes_np           = 0;
     PanelGeom**     panels              = nullptr;
     PanelGeom**     panels_mirror       = nullptr;
+    int*            panels_raddif_np    = nullptr;
+    int*            panels_raddif_cnp   = nullptr;
+    int             panels_raddif_tnp   = 0;
     int*            panels_np           = nullptr;
     int*            panels_cnp          = nullptr;
     int             panels_tnp          = 0;

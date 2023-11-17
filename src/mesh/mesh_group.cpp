@@ -55,6 +55,8 @@ void    MeshGroup::define_mirror_panels(
     this->meshes_np     = meshes_np_in;
 
     // Allocate space for dimensions vectors
+    this->panels_raddif_np  = new int[this->meshes_np];     clear_vector( this->meshes_np, this->panels_raddif_np );
+    this->panels_raddif_cnp = new int[this->meshes_np+1];   clear_vector( this->meshes_np+1, this->panels_raddif_cnp );
     this->panels_np         = new int[this->meshes_np];     clear_vector( this->meshes_np, this->panels_np );
     this->panels_cnp        = new int[this->meshes_np+1];   clear_vector( this->meshes_np+1, this->panels_cnp );
     this->source_nodes_np   = new int[this->meshes_np];     clear_vector( this->meshes_np, this->source_nodes_np );
@@ -68,12 +70,23 @@ void    MeshGroup::define_mirror_panels(
     
     // Loop over meshes to have their dimension
     this->panels_cnp[0]         = 0;
+    this->panels_raddif_cnp[0]  = 0;
     this->source_nodes_cnp[0]   = 0;
     for ( int i=0; i<this->meshes_np; i++ )
     {
-        // Get mesh group panels list dimensionts
+        // Get mesh group panels list dimensions
         this->panels_np[i]          = this->meshes[i]->elems_np;
         this->panels_cnp[i+1]       = this->panels_cnp[i] + this->panels_np[i];
+
+        this->panels_raddif_np[i]   = 0;
+        for ( int j=0; j<this->meshes[i]->elems_np; j++ )
+        {
+            if ( this->meshes[i]->panels[j]->type == DIFFRAC_PANEL_CODE )
+            {
+                this->panels_raddif_np[i] += 1;
+            }
+        }
+        this->panels_raddif_cnp[i+1] = this->panels_raddif_cnp[i] + this->panels_raddif_np[i];
 
         // Get mesh group panels wl list dimension
         if ( this->_is_wl_points )
@@ -88,6 +101,7 @@ void    MeshGroup::define_mirror_panels(
     }
 
     this->panels_tnp        = this->panels_cnp[this->meshes_np];
+    this->panels_raddif_tnp = this->panels_raddif_cnp[this->meshes_np];
     this->source_nodes_tnp  = this->source_nodes_cnp[this->meshes_np];
     
     if ( this->_is_wl_points ) 
@@ -127,16 +141,6 @@ void    MeshGroup::define_mirror_panels(
         for ( int j=0; j<this->meshes[i]->source_nodes_np; j++ )
         {
             this->source_nodes[start_index+j] = this->meshes[i]->source_nodes[j];
-        }
-    }
-
-    // Calculate total number of diffracting panels
-    this->diffrac_panels_np = 0;
-    for ( int i=0; i<this->panels_tnp; i++ )
-    {
-        if ( this->panels[i]->type == DIFFRAC_PANEL_CODE )
-        {
-            this->diffrac_panels_np++;
         }
     }
 
