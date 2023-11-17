@@ -265,37 +265,6 @@ void    calculate_influence_potmat(
 }
 
 
-void    calculate_potpanel_raddif_lin(
-                                                Input*          input,
-                                                cuscomplex*     intensities,
-                                                MLGCmpx*        pot_gp
-                                )
-{
-    // Loop over RHS to compute all the panel potentials the panels potentials
-    cuscomplex  alpha( 1.0, 0.0 );
-    cuscomplex  beta( 0.0, 0.0 );
-    int         icnx = 1;
-    int         icny = 1;
-    for ( int i=0; i<( input->dofs_np + input->heads_np ); i++ )
-    {
-        cblas_gemv<cuscomplex>( 
-                                    CblasRowMajor,
-                                    CblasNoTrans,
-                                    pot_gp->sysmat_nrows,
-                                    pot_gp->sysmat_ncols,
-                                    &alpha,
-                                    pot_gp->sysmat,
-                                    pot_gp->sysmat_ncols,
-                                    &(intensities[i*pot_gp->sysmat_nrows+pot_gp->start_col]),
-                                    icnx,
-                                    &beta,
-                                    &(pot_gp->field_values[i*pot_gp->sysmat_nrows]),
-                                    icny
-                                );
-    }
-}
-
-
 void    calculate_potpanel_raddif_nlin(
                                                 Input*          input,
                                                 MpiConfig*      mpi_config,

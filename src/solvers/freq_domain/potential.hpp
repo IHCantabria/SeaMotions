@@ -24,13 +24,6 @@ void    calculate_influence_potmat(
                                     );
 
 
-void    calculate_potpanel_raddif_lin(
-                                                Input*          input,
-                                                cuscomplex*     intensities,
-                                                MLGCmpx*        pot_gp
-                                    );
-
-
 void    calculate_potpanel_raddif_nlin(
                                                 Input*          input,
                                                 MpiConfig*      mpi_config,
