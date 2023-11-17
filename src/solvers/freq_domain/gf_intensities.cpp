@@ -426,7 +426,7 @@ void    calculate_gf_intensity_steady_sysmat_nlin(
             // Integrate green function normal derivative along the current panel
             if ( i == j )
             {
-                int_value       = complex( 0.0, 0.0 );
+                int_value       = cuscomplex( 0.0, 0.0 );
             }
             else
             {
