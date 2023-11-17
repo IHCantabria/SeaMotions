@@ -13,9 +13,7 @@ void    calculate_influence_potmat_steady(
                                                 Input*          input,
                                                 MpiConfig*      mpi_config,
                                                 MeshGroup*      mesh_gp,
-                                                cusfloat*       field_points,
-                                                int             field_points_np,
-                                                cuscomplex*     inf_pot_mat
+                                                MLGCmpx*        pot_gp
                                             );
 
 
@@ -24,21 +22,14 @@ void    calculate_influence_potmat(
                                                 MpiConfig*      mpi_config,
                                                 MeshGroup*      mesh_gp,
                                                 cusfloat        ang_freq,
-                                                cuscomplex*     inf_pot_steady,
-                                                cusfloat*       field_points,
-                                                int             field_points_np,
-                                                cuscomplex*     inf_pot_total
+                                                MLGCmpx*        pot_gp
                                     );
 
 
 void    calculate_potpanel_raddif_lin(
                                                 Input*          input,
-                                                cuscomplex*     inf_pot_mat,
-                                                int             rows_np,
-                                                int             cols_np,
-                                                int             start_col,
-                                                cuscomplex*     sources,
-                                                cuscomplex*     panel_pot
+                                                cuscomplex*     intensities,
+                                                MLGCmpx*        pot_gp
                                     );
 
 
@@ -46,7 +37,7 @@ void    calculate_potpanel_raddif_nlin(
                                                 Input*          input,
                                                 MpiConfig*      mpi_config,
                                                 MeshGroup*      mesh_gp,
-                                                cuscomplex*     sources,
+                                                cuscomplex*     intensities,
                                                 cusfloat        ang_freq
                                         );
 
@@ -57,12 +48,8 @@ void    calculate_potpanel_total_lin(
                                                 MeshGroup*      mesh_gp,
                                                 cusfloat        ang_freq,
                                                 cuscomplex*     intensities,
-                                                cuscomplex*     pot_steady_sysmat,
-                                                cuscomplex*     pot_sysmat,
-                                                cusfloat*       pot_fp,
-                                                int*            pot_fp_cnp,
-                                                int             pot_fp_nb,
                                                 cuscomplex*     raos,
+                                                MLGCmpx*        pot_gp,
                                                 cuscomplex*     potpanel_total
                                     );
 
