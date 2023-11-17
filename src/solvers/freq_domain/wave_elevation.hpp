@@ -2,12 +2,15 @@
 #ifndef __fd_wave_elevation_hpp
 #define __fd_wave_elevation_hpp
 
+// Include local modules
+#include "../../config.hpp"
+#include "../../containers/matlin_group.hpp"
+
+
 void    calculate_relative_wave_elevation_lin(
                                                 Input*          input,
                                                 MpiConfig*      mpi_config,
-                                                cusfloat*       cog_to_fp,
-                                                int*            fp_cnp,
-                                                int             fp_nb,
+                                                MLGCmpx*        pot_gp,
                                                 cuscomplex*     potpanel_total,
                                                 cusfloat        ang_freq,
                                                 cuscomplex*     raos,

@@ -1,20 +1,18 @@
 
 // Include local modules
-#include "../../config.hpp"
-#include "../../inout/input.hpp"
+#include "wave_elevation.hpp"
+
 #include "../../containers/mpi_config.hpp"
+#include "../../inout/input.hpp"
 #include "../../math/euler_transforms.hpp"
 #include "../../mesh/mesh_group.hpp"
 #include "../../solvers/freq_domain/potential.hpp"
-#include "wave_elevation.hpp"
 
 
 void    calculate_relative_wave_elevation_lin(
                                                 Input*          input,
                                                 MpiConfig*      mpi_config,
-                                                cusfloat*       cog_to_fp,
-                                                int*            fp_cnp,
-                                                int             fp_nb,
+                                                MLGCmpx*        pot_gp,
                                                 cuscomplex*     potpanel_total,
                                                 cusfloat        ang_freq,
                                                 cuscomplex*     raos,
@@ -24,7 +22,7 @@ void    calculate_relative_wave_elevation_lin(
     // Calculate wave elevation
     calculate_wave_elevation_lin(
                                     potpanel_total,
-                                    fp_cnp[fp_nb],
+                                    pot_gp->field_points_np,
                                     ang_freq,
                                     input->grav_acc,
                                     rel_wave_elevation
@@ -32,7 +30,7 @@ void    calculate_relative_wave_elevation_lin(
 
     // Calculate relative wave elevation
     cusfloat    cog_to_point[3] = { 0.0, 0.0, 0.0 };
-    int         fp_np           = fp_cnp[fp_nb];
+    int         fp_np           = pot_gp->field_points_np;
     int         we_index        = 0;
     cusfloat    point_disp[3]   = { 0.0, 0.0, 0.0 };
     cusfloat    rao_trans[3]    = { 0.0, 0.0, 0.0 };
@@ -41,10 +39,10 @@ void    calculate_relative_wave_elevation_lin(
 
     for ( int i=0; i<input->heads_np; i++ )
     {
-        for ( int j=0; j<fp_nb; j++ )
+        for ( int j=0; j<pot_gp->field_points_nb; j++ )
         {
             rao_index       =  (
-                                    i * ( input->dofs_np * fp_nb )
+                                    i * ( input->dofs_np * pot_gp->field_points_nb )
                                     +
                                     j * input->dofs_np
                                 );
@@ -56,13 +54,13 @@ void    calculate_relative_wave_elevation_lin(
             rao_rot[1]      = std::abs( raos[rao_index+4] );
             rao_rot[2]      = std::abs( raos[rao_index+5] );
 
-            for ( int k=fp_cnp[j]; k<fp_cnp[j+1]; k++ )
+            for ( int k=pot_gp->field_points_cnp[j]; k<pot_gp->field_points_cnp[j+1]; k++ )
             {
                 // Calculate movement of the kth point at the WL
                 euler_local_to_global_disp( 
                                                 rao_trans,
                                                 rao_rot,
-                                                &(cog_to_fp[3*k]),
+                                                &(pot_gp->cog_to_field_points[3*k]),
                                                 point_disp
                                             );
 
