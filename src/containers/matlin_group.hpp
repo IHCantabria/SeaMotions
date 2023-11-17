@@ -29,7 +29,7 @@ public:
     MatLinGroup(
                     int sysmat_nrows_in,
                     int sysmat_ncols_in,
-                    int fp_nf_in
+                    int field_points_nf_in,
                     int start_row_in,
                     int end_row_in,
                     int start_col_in,
@@ -49,7 +49,7 @@ template <typename T>
 MatLinGroup<T>::MatLinGroup(
                                 int sysmat_nrows_in,
                                 int sysmat_ncols_in,
-                                int fp_nf_in,
+                                int field_points_nf_in,
                                 int start_row_in,
                                 int end_row_in,
                                 int start_col_in,
@@ -88,5 +88,10 @@ MatLinGroup<T>::~MatLinGroup(
     delete [] this->sysmat;
     delete [] this->sysmat_steady;
 }
+
+
+// Define short types to refer in a handly way to the MatLinGroup family members
+typedef     MatLinGroup<cusfloat>       MLGFloat;
+typedef     MatLinGroup<cuscomplex>     MLGCmpx;
 
 #endif
