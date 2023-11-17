@@ -940,13 +940,13 @@ void    linear_solver(
 
     // Calculate steady part of the sources influence matrix
     double source_steady_t0 = MPI_Wtime( );
-    calculate_gf_intensity_steady_sysmat(
-                                            input,
-                                            scl,
-                                            mesh_gp,
-                                            grf_dn_interf,
-                                            sysmat_steady
-                                        );
+    calculate_gf_intensity_steady_sysmat_lin(
+                                                input,
+                                                scl,
+                                                mesh_gp,
+                                                grf_dn_interf,
+                                                sysmat_steady
+                                            );
     double source_steady_t1 = MPI_Wtime( );
     std::cout << "Time integration sources steady: " << source_steady_t1 - source_steady_t0 << std::endl;
 
@@ -1268,6 +1268,7 @@ void    nonlinear_solver(
                             Input*          input,
                             MpiConfig*      mpi_config,
                             MeshGroup*      mesh_gp,
+                            SclCmpx*        scl,
                             Hydrostatics**  hydrostatics,
                             Output*         output
                         )
@@ -1276,80 +1277,20 @@ void    nonlinear_solver(
     /****** Allocate space for the simulation data ******/
     /****************************************************/
 
-    // Allocate space for the sources, hydromechanics and wave exciting forces
-    int         hydmech_np          = pow2s( input->dofs_np * mesh_gp->meshes_np );
-    int         wave_exc_np         = input->heads_np * mesh_gp->meshes_np * input->dofs_np;
-
-    cusfloat*   added_mass          = generate_empty_vector<cusfloat>( hydmech_np );
-    cusfloat*   damping_rad         = generate_empty_vector<cusfloat>( hydmech_np );
-    cuscomplex* froude_krylov       = generate_empty_vector<cuscomplex>( wave_exc_np );
-    cuscomplex* raos                = generate_empty_vector<cuscomplex>( wave_exc_np );
-    cuscomplex* sources             = generate_empty_vector<cuscomplex>( ( input->dofs_np + input->heads_np ) * scl.num_rows_local );
-    cuscomplex* sysmat              = generate_empty_vector<cuscomplex>( scl.num_rows_local * scl.num_cols_local );
-    cuscomplex* sysmat_steady       = generate_empty_vector<cuscomplex>( scl.num_rows_local * scl.num_cols_local );
-    cuscomplex* wave_diffrac        = generate_empty_vector<cuscomplex>( wave_exc_np );
-
-    cusfloat*   added_mass_p0       = generate_empty_vector<cusfloat>( hydmech_np );
-    cusfloat*   damping_rad_p0      = generate_empty_vector<cusfloat>( hydmech_np );
-    cuscomplex* froude_krylov_p0    = generate_empty_vector<cuscomplex>( wave_exc_np );
-    cusfloat*   hydrostiff_p0       = generate_empty_vector<cusfloat>( hydmech_np );
-    cusfloat*   structural_mass_p0  = generate_empty_vector<cusfloat>( hydmech_np );
-    cuscomplex* wave_diffrac_p0     = generate_empty_vector<cuscomplex>( wave_exc_np );
-    cuscomplex* wave_exc_p0         = generate_empty_vector<cuscomplex>( wave_exc_np );
-
-    // Define memory allocations for the constant source case ( Fast Mode )
-    int         ipm_cols_np             = 0;
-    int         ipm_sc                  = 0;
-    int         ipm_ed                  = 0;
-    cuscomplex* mdwe                    = nullptr;
-    cuscomplex* mdwe_panel_pot          = nullptr;
-    cusfloat*   mdwe_pot_fp             = nullptr;
-    cusfloat*   mdwe_cog_to_fp          = nullptr;
-    int         mdwe_pot_fp_np          = 0;
-    cuscomplex* mdwe_potpanel_total     = nullptr;
-    cuscomplex* panel_pot               = nullptr;
-    cuscomplex* panel_pot_p0            = nullptr;
-    cusfloat*   pot_fp                  = nullptr;
-    int         pot_fp_np               = 0;
-    cuscomplex* pot_smat                = nullptr;
-    cuscomplex* pot_steady_smat         = nullptr;
-    cuscomplex* pot_steady_mdwe_smat    = nullptr;
-    cuscomplex* pot_mdwe_smat           = nullptr;
-
-    MatLinGroup<cuscomplex>*    mdrift_we       = nullptr;
-    MatLinGroup<cuscomplex>*    potpanel_lin    = nullptr;
-    MatLinGroup<cuscomplex>*    vel_body        = nullptr;
-
-    if ( input->is_fast_solver )
-    {
-        // Define column ranges in function of the number of processors
-        mpi_config->get_1d_bounds( 
-                                            mesh_gp->source_nodes_tnp, 
-                                            ipm_sc, 
-                                            ipm_ed 
-                                        );
-        ipm_cols_np             = ipm_ed - ipm_sc;
-
-        // Allocate space for the influence potential matrixes
-        pot_smat            = generate_empty_vector<cuscomplex>( mesh_gp->panels_tnp * ipm_cols_np );
-        panel_pot           = generate_empty_vector<cuscomplex>( ( input->dofs_np + input->heads_np ) * mesh_gp->panels_tnp );
-        panel_pot_p0        = generate_empty_vector<cuscomplex>( ( input->dofs_np + input->heads_np ) * mesh_gp->panels_tnp );
-        pot_steady_smat     = generate_empty_vector<cuscomplex>( mesh_gp->panels_tnp * ipm_cols_np );
-
-        if ( input->out_mdrift )
-        {
-            mdwe_potpanel_total     = generate_empty_vector<cuscomplex>( mesh_gp->panels_wl_tnp );
-            pot_steady_mdwe_smat    = generate_empty_vector<cuscomplex>( mesh_gp->panels_wl_tnp * ipm_cols_np );
-            pot_mdwe_smat           = generate_empty_vector<cuscomplex>( mesh_gp->panels_wl_tnp * ipm_cols_np );
-
-            vel_body = new MatLinGroup<cuscomplex>(
-                                                        mesh_gp->panels_tnp,
-                                                        mesh_gp->panels_tnp,
-                                                        3
+    // Allocate space for the intensities, hydromechanics and wave exciting forces
+    SimulationData* sim_data    = new SimulationData(
+                                                        mesh_gp->meshes_np,
+                                                        input->dofs_np,
+                                                        input->heads_np,
+                                                        scl->num_rows_local,
+                                                        scl->num_cols_local,
+                                                        scl->num_rows,
+                                                        mpi_config
                                                     );
-        }
-        
-    }
+
+    // Allocate space for the intensities influence system matrix
+    cuscomplex* sysmat          = generate_empty_vector<cuscomplex>( scl->num_rows_local * scl->num_cols_local );
+    cuscomplex* sysmat_steady   = generate_empty_vector<cuscomplex>( scl->num_rows_local * scl->num_cols_local );
 
     /****************************************************/
     /********* Create Green function interface *********/
@@ -1370,7 +1311,7 @@ void    nonlinear_solver(
     
     HMFInterface*   hmf_interf      = new   HMFInterface(
                                                                 mesh_gp->source_nodes,
-                                                                sources,
+                                                                sim_data->intensities,
                                                                 mesh_gp->panels[0],
                                                                 0,
                                                                 0,
@@ -1387,7 +1328,7 @@ void    nonlinear_solver(
     {
         calculate_global_structural_mass(
                                             input,
-                                            structural_mass_p0
+                                            sim_data->structural_mass_p0
                                         );
     }
 
@@ -1400,7 +1341,7 @@ void    nonlinear_solver(
         calculate_global_hydstiffness(
                                             input,
                                             hydrostatics,
-                                            hydrostiff_p0
+                                            sim_data->hydrostiff_p0
                                         );
     }
 
@@ -1408,98 +1349,14 @@ void    nonlinear_solver(
     /******* Calculate hydrodynamic coefficients ********/
     /****************************************************/
 
-    // Calculate steady contribution to the sources intensity
-    // for the fast solver
-    if ( input->is_fast_solver )
-    {
-        // Calculate steady part of the sources influence matrix
-        double source_steady_t0 = MPI_Wtime( );
-        calculate_gf_intensity_steady_sysmat(
+    // Calculate intensities system matrix steady contribution
+    calculate_gf_intensity_steady_sysmat_lin(
                                                 input,
-                                                &scl,
+                                                scl,
                                                 mesh_gp,
                                                 grf_dn_interf,
                                                 sysmat_steady
                                             );
-        double source_steady_t1 = MPI_Wtime( );
-        std::cout << "Time integration sources steady: " << source_steady_t1 - source_steady_t0 << std::endl;
-
-        // Define field points to calculate potential influence matrix
-        pot_fp_np     = mesh_gp->diffrac_panels_np;
-        pot_fp        = generate_empty_vector<cusfloat>( 3 * pot_fp_np );
-
-        int _count_pot_np   = 0;
-        for ( int i=0; i<mesh_gp->panels_tnp; i++ )
-        {
-            if ( mesh_gp->panels[i]->type == DIFFRAC_PANEL_CODE )
-            {
-                copy_vector( 3, mesh_gp->panels[i]->center, &(pot_fp[3*_count_pot_np]) );
-                _count_pot_np++;
-            }
-        }
-
-        if ( 
-                input->out_mdrift
-                ||
-                input->out_qtf
-            )
-        {
-            // Allocate memory for the variables associated to the mean drift
-            // and QTFs for the fast solver
-            mdwe                = generate_empty_vector<cuscomplex>( mdwe_pot_fp_np );
-            mdwe_pot_fp_np      = mesh_gp->panels_wl_tnp;
-            mdwe_pot_fp         = generate_empty_vector<cusfloat>( 3 * mdwe_pot_fp_np );
-            mdwe_cog_to_fp      = generate_empty_vector<cusfloat>( 3 * mdwe_pot_fp_np );
-
-            // Get all WL line centers to be more accesible through a vector
-            for ( int i=0; i<mesh_gp->panels_wl_tnp; i++ )
-            {
-                copy_vector( 3, mesh_gp->panels_wl[i]->center_wl, &(mdwe_pot_fp[3*i]) );
-            }
-
-            // Get the radius from the WL line center to the body COG
-            for ( int i=0; i<mesh_gp->meshes_np; i++ )
-            {
-                for ( int j=mesh_gp->panels_wl_cnp[i]; j<mesh_gp->panels_wl_cnp[i+1]; j++ )
-                {
-                    sv_sub(
-                                3,
-                                &(mdwe_pot_fp[3*j]),
-                                input->bodies[i]->cog,
-                                &(mdwe_cog_to_fp[3*j])
-                            );
-                }
-            }
-
-        }
-
-        // Calculate steady part of the potential influence matrix matrix
-        double pot_steady_t0 = MPI_Wtime( );
-        calculate_influence_potmat_steady(
-                                                input,
-                                                mpi_config,
-                                                mesh_gp,
-                                                pot_fp,
-                                                pot_fp_np,
-                                                pot_steady_smat
-                                        );
-        double pot_steady_t1 = MPI_Wtime( );
-        std::cout << "Time integration potential steady: " << pot_steady_t1 - pot_steady_t0 << std::endl;
-
-        // Calculate steady parto of the potential influence matrix to calculate
-        // the mean drift
-        calculate_influence_potmat_steady(
-                                                input,
-                                                mpi_config,
-                                                mesh_gp,
-                                                mdwe_pot_fp,
-                                                mdwe_pot_fp_np,
-                                                pot_steady_mdwe_smat
-                                            );
-
-        // Calculate 
-
-    }
 
     // Loop over frequencies
     for ( int i=0; i<input->angfreqs_np; i++ )
@@ -1508,6 +1365,7 @@ void    nonlinear_solver(
         double freq_tstart = MPI_Wtime( );
 
         std::cout << "Calculating angular frequency: " << input->angfreqs[i] << std::endl;
+
         // Recalculate wave properties for the current 
         // angular frequency
         hmf_interf->set_ang_freq( input->angfreqs[i] );
@@ -1517,132 +1375,56 @@ void    nonlinear_solver(
         MPI_Barrier( MPI_COMM_WORLD );
         calculate_gf_intensity_sysmat(
                                             input,
-                                            &scl,
+                                            scl,
                                             mesh_gp,
                                             gwf_dn_interf,
                                             input->angfreqs[i],
                                             sysmat_steady,
                                             sysmat,
-                                            sources
+                                            sim_data->intensities
                                         );
         
         // Gather source values from each processor
         MPI_Bcast(
-                    sources,
-                    scl.num_rows * ( input->dofs_np + input->heads_np ),
+                    sim_data->intensities,
+                    scl->num_rows * ( input->dofs_np + input->heads_np ),
                     mpi_cuscomplex,
                     mpi_config->proc_root,
                     MPI_COMM_WORLD                
                 );
 
-        // int pshift = 10;
-        // if ( mpi_config->is_root( ) )
-        // {
-        //     std::cout << "Sources Intensity: " << std::endl;
-        //     for ( int i=0; i<5; i++ )
-        //     {
-        //         std::cout << "Source[" <<  i << "]: " << sources[pshift+i] << " - " << std::abs( sources[pshift+i] ) << " - " << std::arg( sources[pshift+i] ) << std::endl;
-        //     }
-        // }
-
         // Update sources values for the integration objects
-        hmf_interf->set_source_values( sources );
+        hmf_interf->set_source_values( sim_data->intensities );
 
-        // Calculate potential matrix if any
-        if ( input->is_fast_solver )
-        {
-            // Calculate potential influence coeffcients matrix
-            calculate_influence_potmat(
-                                            input,
-                                            mpi_config,
-                                            mesh_gp,
-                                            input->angfreqs[i],
-                                            pot_steady_smat,
-                                            pot_fp,
-                                            pot_fp_np,
-                                            pot_smat
+        // Calculate panel potentials
+        calculate_potpanel_raddif_nlin(
+                                                input,
+                                                mpi_config,
+                                                mesh_gp,
+                                                sim_data->intensities,
+                                                input->angfreqs[i]
                                         );
 
-            // Calculate panels potential
-            calculate_potpanel_raddif_lin(
-                                                    input,
-                                                    pot_smat,
-                                                    mesh_gp->panels_tnp,
-                                                    ipm_cols_np,
-                                                    ipm_sc,
-                                                    sources,
-                                                    panel_pot
+        // Calculate added mass and damping coefficients
+        calculate_hydromechanic_coeffs_nlin( 
+                                                input,
+                                                mpi_config,
+                                                mesh_gp,
+                                                hmf_interf,
+                                                input->angfreqs[i],
+                                                sim_data->added_mass,
+                                                sim_data->damping_rad
                                             );
-
-            MPI_Allreduce(
-                            panel_pot,
-                            panel_pot_p0,
-                            mesh_gp->panels_tnp * ( input->dofs_np + input->heads_np ),
-                            mpi_cuscomplex,
-                            MPI_SUM,
-                            MPI_COMM_WORLD
-                        );
-
-            // std::cout << "Panel Potential: " << std::endl;
-            // for ( int i=0; i<5; i++ )
-            // {
-            //     std::cout << "Potential[" <<  i << "]: " << panel_pot[pshift+i] << " - " << std::abs( panel_pot[pshift+i] ) << " - " << std::arg( panel_pot[pshift+i] ) << std::endl;
-            // }
-
-            // Calculate added mass and damping
-            calculate_hydromechanic_coeffs_lin( 
-                                                    input,
-                                                    mpi_config,
-                                                    mesh_gp,
-                                                    panel_pot_p0,
-                                                    input->angfreqs[i],
-                                                    added_mass,
-                                                    damping_rad
-                                                );
-
-            // Calculate diffraction forces
-            calculate_diffraction_forces_lin(
-                                                    input,
-                                                    mpi_config,
-                                                    mesh_gp,
-                                                    panel_pot_p0,
-                                                    input->angfreqs[i],
-                                                    wave_diffrac
-                                            );
-        }
-        else
-        {
-            // Calculate panel potentials
-            calculate_potpanel_raddif_nlin(
-                                                    input,
-                                                    mpi_config,
-                                                    mesh_gp,
-                                                    sources,
-                                                    input->angfreqs[i]
-                                            );
-
-            // Calculate added mass and damping coefficients
-            calculate_hydromechanic_coeffs_nlin( 
-                                                    input,
-                                                    mpi_config,
-                                                    mesh_gp,
-                                                    hmf_interf,
-                                                    input->angfreqs[i],
-                                                    added_mass,
-                                                    damping_rad
-                                                );
-            
-            // Calculate diffraction forces
-            calculate_diffraction_forces_nlin(
-                                                    input,
-                                                    mpi_config,
-                                                    mesh_gp,
-                                                    hmf_interf,
-                                                    input->angfreqs[i],
-                                                    wave_diffrac
-                                            );
-
-        }
+        
+        // Calculate diffraction forces
+        calculate_diffraction_forces_nlin(
+                                                input,
+                                                mpi_config,
+                                                mesh_gp,
+                                                hmf_interf,
+                                                input->angfreqs[i],
+                                                sim_data->wave_diffrac
+                                        );
 
         // Calculate Froude-Krylov forces
         calculate_froude_krylov(
@@ -1650,14 +1432,14 @@ void    nonlinear_solver(
                                     mpi_config,
                                     mesh_gp,
                                     input->angfreqs[i],
-                                    froude_krylov
+                                    sim_data->froude_krylov
                                 );
 
         // Join data from all processors
         MPI_Reduce(
-                            added_mass,
-                            added_mass_p0,
-                            hydmech_np,
+                            sim_data->added_mass,
+                            sim_data->added_mass_p0,
+                            sim_data->hydmech_np,
                             mpi_cusfloat,
                             MPI_SUM,
                             mpi_config->proc_root,
@@ -1665,9 +1447,9 @@ void    nonlinear_solver(
                         );
 
         MPI_Reduce(
-                            damping_rad,
-                            damping_rad_p0,
-                            hydmech_np,
+                            sim_data->damping_rad,
+                            sim_data->damping_rad_p0,
+                            sim_data->hydmech_np,
                             mpi_cusfloat,
                             MPI_SUM,
                             mpi_config->proc_root,
@@ -1675,9 +1457,9 @@ void    nonlinear_solver(
                     );
 
         MPI_Reduce(
-                            froude_krylov,
-                            froude_krylov_p0,
-                            wave_exc_np,
+                            sim_data->froude_krylov,
+                            sim_data->froude_krylov_p0,
+                            sim_data->wave_exc_np,
                             mpi_cuscomplex,
                             MPI_SUM,
                             mpi_config->proc_root,
@@ -1685,9 +1467,9 @@ void    nonlinear_solver(
                         );
 
         MPI_Reduce(
-                            wave_diffrac,
-                            wave_diffrac_p0,
-                            wave_exc_np,
+                            sim_data->wave_diffrac,
+                            sim_data->wave_diffrac_p0,
+                            sim_data->wave_exc_np,
                             mpi_cuscomplex,
                             MPI_SUM,
                             mpi_config->proc_root,
@@ -1698,10 +1480,10 @@ void    nonlinear_solver(
         if ( mpi_config->is_root( ) )
         {
             sv_add(
-                        wave_exc_np,
-                        wave_diffrac_p0,
-                        froude_krylov_p0,
-                        wave_exc_p0
+                        sim_data->wave_exc_np,
+                        sim_data->wave_diffrac_p0,
+                        sim_data->froude_krylov_p0,
+                        sim_data->wave_exc_p0
                     );
         }
 
@@ -1710,63 +1492,15 @@ void    nonlinear_solver(
         {
             calculate_raos(
                                 input,
-                                structural_mass_p0,
-                                added_mass_p0,
-                                damping_rad_p0,
-                                hydrostiff_p0,
-                                wave_diffrac_p0,
-                                froude_krylov_p0,
+                                sim_data->structural_mass_p0,
+                                sim_data->added_mass_p0,
+                                sim_data->damping_rad_p0,
+                                sim_data->hydrostiff_p0,
+                                sim_data->wave_diffrac_p0,
+                                sim_data->froude_krylov_p0,
                                 input->angfreqs[i],
-                                raos
+                                sim_data->raos
                             );
-        }
-
-        if ( input->out_mdrift )
-        {
-            // Broadcast RAOs values to be available in all the processes
-            MPI_Bcast(
-                        raos,
-                        wave_exc_np,
-                        mpi_cuscomplex,
-                        mpi_config->proc_root,
-                        MPI_COMM_WORLD    
-                    );
-            
-            if ( input->is_fast_solver )
-            {
-
-                // Calculate total potential at the target WL points
-                calculate_potpanel_total_lin(
-                                                input,
-                                                mpi_config,
-                                                mesh_gp,
-                                                input->angfreqs[i],
-                                                sources,
-                                                pot_steady_mdwe_smat,
-                                                pot_mdwe_smat,
-                                                mdwe_pot_fp,
-                                                mesh_gp->panels_wl_cnp,
-                                                mesh_gp->meshes_np,
-                                                raos,
-                                                mdwe_potpanel_total
-                                            );
-                
-                // Calculate relative wave elevation
-                calculate_relative_wave_elevation_lin(
-                                                            input,
-                                                            mpi_config,
-                                                            mdwe_cog_to_fp,
-                                                            mesh_gp->panels_wl_cnp,
-                                                            mesh_gp->meshes_np,
-                                                            mdwe_potpanel_total,
-                                                            input->angfreqs[i],
-                                                            raos,
-                                                            mdwe
-                                                        );
-
-                
-            }
-
         }
 
         // Output values to disk
@@ -1777,13 +1511,13 @@ void    nonlinear_solver(
                 output->save_hydromechanics_format(
                                                         i,
                                                         _DN_ADDED_MASS,
-                                                        added_mass_p0
+                                                        sim_data->added_mass_p0
                                                     );
 
                 output->save_hydromechanics_format(
                                                         i,
                                                         _DN_DAMPING_RAD,
-                                                        damping_rad_p0
+                                                        sim_data->damping_rad_p0
                                                     );
             }
 
@@ -1792,7 +1526,7 @@ void    nonlinear_solver(
                 output->save_wave_exciting_format(
                                                     i,
                                                     _DN_DIFFRAC,
-                                                    wave_diffrac_p0
+                                                    sim_data->wave_diffrac_p0
                                                 );
             }
 
@@ -1801,7 +1535,7 @@ void    nonlinear_solver(
                 output->save_wave_exciting_format(
                                                     i,
                                                     _DN_FK,
-                                                    froude_krylov_p0
+                                                   sim_data->froude_krylov_p0
                                                 );
             }
 
@@ -1810,7 +1544,7 @@ void    nonlinear_solver(
                 output->save_wave_exciting_format(
                                                     i,
                                                     _DN_WEX,
-                                                    wave_exc_p0
+                                                    sim_data->wave_exc_p0
                                                 );
             }
 
@@ -1819,7 +1553,7 @@ void    nonlinear_solver(
                 output->save_wave_exciting_format(
                                                     i,
                                                     _DN_RAO,
-                                                    raos
+                                                    sim_data->raos
                                                 );
             }
 
@@ -1834,28 +1568,20 @@ void    nonlinear_solver(
         }
     }
 
-    // Delete heap memory allocated data
+    /****************************************************/
+    /******** Delete heap memory allocated data *********/
+    /****************************************************/
     MPI_Barrier( MPI_COMM_WORLD );
+
+    // Delete integration interfaces
     delete grf_dn_interf;
     delete gwf_dn_interf;
     delete hmf_interf;
 
-    mkl_free( added_mass_p0 );
-    mkl_free( damping_rad_p0 );
-    mkl_free( froude_krylov_p0 );
-    mkl_free( hydrostiff_p0 );
-    mkl_free( structural_mass_p0 );
-    mkl_free( wave_diffrac_p0 );
-    mkl_free( wave_exc_p0 );
-    
-    mkl_free( added_mass );
-    mkl_free( damping_rad );
-    mkl_free( froude_krylov );
-    mkl_free( raos );
-    mkl_free( sources );
+    // Delete system matrix
     mkl_free( sysmat );
     mkl_free( sysmat_steady );
-    mkl_free( wave_diffrac );
     
+    // Delete mesh group object
     delete mesh_gp;
 }
