@@ -9,9 +9,9 @@
 void    calculate_raddif_velocity_mat_steady(
                                                 Input*      input,
                                                 MeshGroup*  mesh_gp,
-                                                MLGCmpx*    vel_x_mat,
-                                                MLGCmpx*    vel_y_mat,
-                                                MLGCmpx*    vel_z_mat
+                                                MLGCmpx*    vel_x_gp,
+                                                MLGCmpx*    vel_y_gp,
+                                                MLGCmpx*    vel_z_gp
                                             )
 {
     /***************************************/
@@ -19,9 +19,9 @@ void    calculate_raddif_velocity_mat_steady(
     /***************************************/
     // Loop over panels to integrate value
     int         col_count       = 0;
-    cusfloat*   field_points    = vel_x_mat->field_points;
+    cusfloat*   field_points    = vel_x_gp->field_points;
     int         row_count       = 0;
-    int         rows_np         = vel_x_mat->sysmat_nrows;
+    int         rows_np         = vel_x_gp->sysmat_nrows;
 
     // Define local variables to work with the fast solver
     const int   ndim                    = 3;
@@ -37,13 +37,13 @@ void    calculate_raddif_velocity_mat_steady(
     cusfloat    vel_total[ndim];        clear_vector( ndim, vel_total );
 
     // Loop over panels and field points to create the steady source matrix
-    for ( int i=vel_x_mat->start_row; i<vel_x_mat->end_row; i++ )
+    for ( int i=vel_x_gp->start_row; i<vel_x_gp->end_row; i++ )
     {
 
         // Loop over rows to calcualte the influence of the panel
         // over each collocation point
         row_count = 0;
-        for ( int j=vel_x_mat->start_col; j<vel_x_mat->end_col; j++ )
+        for ( int j=vel_x_gp->start_col; j<vel_x_gp->end_col; j++ )
         {
             // Get pointer to ith panel
             panel_j         = mesh_gp->panels[j];
@@ -139,9 +139,9 @@ void    calculate_raddif_velocity_mat_steady(
                 vel_total[2]    = vel_0[2] + vel_1[2] + vel_2[2] + vel_3[2] + vel_4[2] + vel_5[2];
                                         
                 
-                vel_x_mat->sysmat_steady[row_count*rows_np+col_count] = vel_total[0];
-                vel_y_mat->sysmat_steady[row_count*rows_np+col_count] = vel_total[1];
-                vel_z_mat->sysmat_steady[row_count*rows_np+col_count] = vel_total[2];
+                vel_x_gp->sysmat_steady[row_count*rows_np+col_count] = vel_total[0];
+                vel_y_gp->sysmat_steady[row_count*rows_np+col_count] = vel_total[1];
+                vel_z_gp->sysmat_steady[row_count*rows_np+col_count] = vel_total[2];
             }
 
             // Advance column count
@@ -161,9 +161,9 @@ void    calculate_raddif_velocity_mat(
                                                 GWFDxInterface* gwfdx_interf,
                                                 GWFDyInterface* gwfdy_interf,
                                                 GWFDzInterface* gwfdz_interf,
-                                                MLGCmpx*        vel_x_mat,
-                                                MLGCmpx*        vel_y_mat,
-                                                MLGCmpx*        vel_z_mat
+                                                MLGCmpx*        vel_x_gp,
+                                                MLGCmpx*        vel_y_gp,
+                                                MLGCmpx*        vel_z_gp
                                         )
 {
     /***************************************/
@@ -172,10 +172,10 @@ void    calculate_raddif_velocity_mat(
 
     // Define local variables to work with the fast solver
     int         col_count       = 0;
-    int         index                   = 0;
-    const int   ndim                    = 3;
+    int         index           = 0;
+    const int   ndim            = 3;
     int         row_count       = 0;
-    int         rows_np         = vel_x_mat->sysmat_nrows;
+    int         rows_np         = vel_x_gp->sysmat_nrows;
     cuscomplex  vel_total[ndim];
 
     // Define lambda function for the integrations interface
@@ -216,7 +216,7 @@ void    calculate_raddif_velocity_mat(
                         };
 
     // Loop over panels and field points to create the steady source matrix
-    for ( int i=vel_x_mat->start_row; i<vel_x_mat->end_row; i++ )
+    for ( int i=vel_x_gp->start_row; i<vel_x_gp->end_row; i++ )
     {
         // Get memory address of the ith panel
         gwfdx_interf->set_source_i( mesh_gp->source_nodes[i] );
@@ -226,7 +226,7 @@ void    calculate_raddif_velocity_mat(
         // Loop over rows to calcualte the influence of the panel
         // over each collocation point
         row_count = 0;
-        for ( int j=vel_x_mat->start_col; j<vel_x_mat->end_col; j++ )
+        for ( int j=vel_x_gp->start_col; j<vel_x_gp->end_col; j++ )
         {
             // Get memory address of the panel jth
             gwfdx_interf->set_source_j( mesh_gp->source_nodes[j] );
@@ -273,9 +273,9 @@ void    calculate_raddif_velocity_mat(
                                                             );
 
                 index   = row_count*rows_np+col_count;
-                vel_x_mat->sysmat[index] = vel_x_mat->sysmat_steady[index] + vel_total[0];
-                vel_y_mat->sysmat[index] = vel_y_mat->sysmat_steady[index] + vel_total[1];
-                vel_z_mat->sysmat[index] = vel_z_mat->sysmat_steady[index] + vel_total[2];
+                vel_x_gp->sysmat[index] = vel_x_gp->sysmat_steady[index] + vel_total[0];
+                vel_y_gp->sysmat[index] = vel_y_gp->sysmat_steady[index] + vel_total[1];
+                vel_z_gp->sysmat[index] = vel_z_gp->sysmat_steady[index] + vel_total[2];
             }
 
             // Advance column count
