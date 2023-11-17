@@ -66,25 +66,25 @@ void    calculate_freq_domain_coeffs(
     /****************************************************/
     if ( input->is_fast_solver )
     {
-        linear_solver(
-                            input,
-                            mpi_config,
-                            mesh_gp,
-                            &scl,
-                            hydrostatics,
-                            output
-                    );
+        freq_domain_linear_solver(
+                                        input,
+                                        mpi_config,
+                                        mesh_gp,
+                                        &scl,
+                                        hydrostatics,
+                                        output
+                                );
     }
     else
     {
-        nonlinear_solver(
-                            input,
-                            mpi_config,
-                            mesh_gp,
-                            &scl,
-                            hydrostatics,
-                            output
-                        );
+        freq_domain_nonlinear_solver(
+                                        input,
+                                        mpi_config,
+                                        mesh_gp,
+                                        &scl,
+                                        hydrostatics,
+                                        output
+                                    );
     }
     
 
@@ -187,14 +187,14 @@ void    calculate_global_structural_mass(
 }
 
 
-void    linear_solver(
-                            Input*          input,
-                            MpiConfig*      mpi_config,
-                            MeshGroup*      mesh_gp,
-                            SclCmpx*        scl,
-                            Hydrostatics**  hydrostatics,
-                            Output*         output
-                    )
+void    freq_domain_linear_solver(
+                                                Input*          input,
+                                                MpiConfig*      mpi_config,
+                                                MeshGroup*      mesh_gp,
+                                                SclCmpx*        scl,
+                                                Hydrostatics**  hydrostatics,
+                                                Output*         output
+                                )
 {
     /****************************************************************/
     /************ Allocate space for the simulation data ************/
@@ -376,7 +376,6 @@ void    linear_solver(
     double pot_steady_t0 = MPI_Wtime( );
     calculate_influence_potmat_steady(
                                             input,
-                                            mpi_config,
                                             mesh_gp,
                                             potpanel_lin_gp
                                     );
@@ -385,12 +384,14 @@ void    linear_solver(
 
     // Calculate steady parto of the potential influence matrix to calculate
     // the mean drift
-    calculate_influence_potmat_steady(
-                                            input,
-                                            mpi_config,
-                                            mesh_gp,
-                                            mdrift_we_gp
-                                        );
+    if ( input->out_mdrift )
+    {
+        calculate_influence_potmat_steady(
+                                                input,
+                                                mesh_gp,
+                                                mdrift_we_gp
+                                            );
+    }
 
     /****************************************************************/
     /******* Calculate wave contributions to system matrixes ********/
@@ -435,7 +436,6 @@ void    linear_solver(
         // Calculate potential influence coeffcients matrix
         calculate_influence_potmat(
                                         input,
-                                        mpi_config,
                                         mesh_gp,
                                         input->angfreqs[i],
                                         potpanel_lin_gp
@@ -581,7 +581,6 @@ void    linear_solver(
             // Calculate relative wave elevation
             calculate_relative_wave_elevation_lin(
                                                         input,
-                                                        mpi_config,
                                                         potpanel_lin_gp,
                                                         sim_data->mdrift_we_pot_total,
                                                         input->angfreqs[i],
@@ -684,14 +683,14 @@ void    linear_solver(
 }
 
 
-void    nonlinear_solver(
-                            Input*          input,
-                            MpiConfig*      mpi_config,
-                            MeshGroup*      mesh_gp,
-                            SclCmpx*        scl,
-                            Hydrostatics**  hydrostatics,
-                            Output*         output
-                        )
+void    freq_domain_nonlinear_solver(
+                                                Input*          input,
+                                                MpiConfig*      mpi_config,
+                                                MeshGroup*      mesh_gp,
+                                                SclCmpx*        scl,
+                                                Hydrostatics**  hydrostatics,
+                                                Output*         output
+                                    )
 {
     /****************************************************/
     /****** Allocate space for the simulation data ******/

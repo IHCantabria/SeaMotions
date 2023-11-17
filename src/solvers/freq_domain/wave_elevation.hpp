@@ -5,11 +5,12 @@
 // Include local modules
 #include "../../config.hpp"
 #include "../../containers/matlin_group.hpp"
+#include "../../inout/input.hpp"
+#include "../../containers/mpi_config.hpp"
 
 
 void    calculate_relative_wave_elevation_lin(
                                                 Input*          input,
-                                                MpiConfig*      mpi_config,
                                                 MLGCmpx*        pot_gp,
                                                 cuscomplex*     potpanel_total,
                                                 cusfloat        ang_freq,

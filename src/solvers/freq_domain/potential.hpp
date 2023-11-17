@@ -11,7 +11,6 @@
 
 void    calculate_influence_potmat_steady(
                                                 Input*          input,
-                                                MpiConfig*      mpi_config,
                                                 MeshGroup*      mesh_gp,
                                                 MLGCmpx*        pot_gp
                                             );
@@ -19,7 +18,6 @@ void    calculate_influence_potmat_steady(
 
 void    calculate_influence_potmat(
                                                 Input*          input,
-                                                MpiConfig*      mpi_config,
                                                 MeshGroup*      mesh_gp,
                                                 cusfloat        ang_freq,
                                                 MLGCmpx*        pot_gp

@@ -11,7 +11,6 @@
 
 void    calculate_relative_wave_elevation_lin(
                                                 Input*          input,
-                                                MpiConfig*      mpi_config,
                                                 MLGCmpx*        pot_gp,
                                                 cuscomplex*     potpanel_total,
                                                 cusfloat        ang_freq,
@@ -29,7 +28,6 @@ void    calculate_relative_wave_elevation_lin(
                                 );
 
     // Calculate relative wave elevation
-    cusfloat    cog_to_point[3] = { 0.0, 0.0, 0.0 };
     int         fp_np           = pot_gp->field_points_np;
     int         we_index        = 0;
     cusfloat    point_disp[3]   = { 0.0, 0.0, 0.0 };

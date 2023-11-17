@@ -28,10 +28,30 @@ void    calculate_global_hydstiffness(
                                                 cusfloat*       hydstiffness
                                     );
 
+
 void    calculate_global_structural_mass(
                                                 Input*          input,
                                                 cusfloat*       structural_mass_p0
                                         );
 
+
+void    freq_domain_linear_solver(
+                                                Input*          input,
+                                                MpiConfig*      mpi_config,
+                                                MeshGroup*      mesh_gp,
+                                                SclCmpx*        scl,
+                                                Hydrostatics**  hydrostatics,
+                                                Output*         output
+                                );
+
+
+void    freq_domain_nonlinear_solver(
+                                                Input*          input,
+                                                MpiConfig*      mpi_config,
+                                                MeshGroup*      mesh_gp,
+                                                SclCmpx*        scl,
+                                                Hydrostatics**  hydrostatics,
+                                                Output*         output
+                                    );
 
 #endif
