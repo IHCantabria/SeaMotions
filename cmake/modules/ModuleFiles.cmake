@@ -4,6 +4,7 @@ set(
         ${CMAKE_SOURCE_DIR}/src/containers/body_def.hpp
         ${CMAKE_SOURCE_DIR}/src/containers/body_def.cpp
         ${CMAKE_SOURCE_DIR}/src/containers/containers.hpp
+        ${CMAKE_SOURCE_DIR}/src/containers/matlin_group.hpp
         ${CMAKE_SOURCE_DIR}/src/containers/mpi_config.hpp
         ${CMAKE_SOURCE_DIR}/src/containers/mpi_config.cpp
         ${CMAKE_SOURCE_DIR}/src/containers/panel_geom.hpp
@@ -11,6 +12,8 @@ set(
         ${CMAKE_SOURCE_DIR}/src/containers/panel_geom_list.hpp
         ${CMAKE_SOURCE_DIR}/src/containers/performance_stats.hpp
         ${CMAKE_SOURCE_DIR}/src/containers/performance_stats.cpp
+        ${CMAKE_SOURCE_DIR}/src/containers/simulation_data.hpp
+        ${CMAKE_SOURCE_DIR}/src/containers/simulation_data.cpp
         ${CMAKE_SOURCE_DIR}/src/containers/source_node.hpp
         ${CMAKE_SOURCE_DIR}/src/containers/source_node.cpp
     )
@@ -117,8 +120,6 @@ set(
         ${CMAKE_SOURCE_DIR}/src/inout/reader.cpp
         ${CMAKE_SOURCE_DIR}/src/inout/reader.txx
 )
-
-
 # Pack Green function interfaces module files
 set(
         interfaces_module_files
@@ -130,6 +131,12 @@ set(
         ${CMAKE_SOURCE_DIR}/src/interfaces/gwf_interface.cpp
         ${CMAKE_SOURCE_DIR}/src/interfaces/gwfdn_interface.hpp
         ${CMAKE_SOURCE_DIR}/src/interfaces/gwfdn_interface.cpp
+        ${CMAKE_SOURCE_DIR}/src/interfaces/gwfdx_interface.hpp
+        ${CMAKE_SOURCE_DIR}/src/interfaces/gwfdx_interface.cpp
+        ${CMAKE_SOURCE_DIR}/src/interfaces/gwfdy_interface.hpp
+        ${CMAKE_SOURCE_DIR}/src/interfaces/gwfdy_interface.cpp
+        ${CMAKE_SOURCE_DIR}/src/interfaces/gwfdz_interface.hpp
+        ${CMAKE_SOURCE_DIR}/src/interfaces/gwfdz_interface.cpp
         ${CMAKE_SOURCE_DIR}/src/interfaces/hmf_interface.hpp
         ${CMAKE_SOURCE_DIR}/src/interfaces/hmf_interface.cpp
     )
@@ -186,6 +193,8 @@ set(
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/diffraction.cpp
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/freq_solver_tools.hpp
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/freq_solver_tools.cpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/froude_krylov.hpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/froude_krylov.cpp
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/gf_intensities.hpp
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/gf_intensities.cpp
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/hydromechanics.hpp
@@ -194,10 +203,10 @@ set(
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/potential.cpp
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/raos.hpp
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/raos.cpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/velocities.hpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/velocities.cpp
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/wave_elevation.hpp
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/wave_elevation.cpp
-        ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/froude_krylov.hpp
-        ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/froude_krylov.cpp
     )
 
 # Pack tools module files
