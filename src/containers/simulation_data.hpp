@@ -15,23 +15,24 @@ private:
 
 public:
     // Declare class attributes
-    cusfloat*   added_mass          = nullptr;
-    cusfloat*   added_mass_p0       = nullptr;
-    cusfloat*   damping_rad         = nullptr;
-    cusfloat*   damping_rad_p0      = nullptr;
-    cuscomplex* froude_krylov       = nullptr;
-    cuscomplex* froude_krylov_p0    = nullptr;
-    int         hydmech_np          = 0;
-    cusfloat*   hydrostiff_p0       = nullptr;
-    cuscomplex* intensities         = nullptr;
-    cuscomplex* raos                = nullptr;
-    cusfloat*   structural_mass_p0  = nullptr;
-    cuscomplex* sysmat              = nullptr;
-    cuscomplex* sysmat_steady       = nullptr;
-    cuscomplex* wave_diffrac        = nullptr;
-    cuscomplex* wave_diffrac_p0     = nullptr;
-    int         wave_exc_np         = 0;
-    cuscomplex* wave_exc_p0         = nullptr;
+    cusfloat*       added_mass          = nullptr;
+    cusfloat*       added_mass_p0       = nullptr;
+    cusfloat*       damping_rad         = nullptr;
+    cusfloat*       damping_rad_p0      = nullptr;
+    cuscomplex*     froude_krylov       = nullptr;
+    cuscomplex*     froude_krylov_p0    = nullptr;
+    int             hydmech_np          = 0;
+    cusfloat*       hydrostiff_p0       = nullptr;
+    cuscomplex*     intensities         = nullptr;
+    cuscomplex*     panels_potential    = nullptr;
+    cuscomplex*     raos                = nullptr;
+    cusfloat*       structural_mass_p0  = nullptr;
+    cuscomplex*     sysmat              = nullptr;
+    cuscomplex*     sysmat_steady       = nullptr;
+    cuscomplex*     wave_diffrac        = nullptr;
+    cuscomplex*     wave_diffrac_p0     = nullptr;
+    int             wave_exc_np         = 0;
+    cuscomplex*     wave_exc_p0         = nullptr;
 
     // Declare class constructors and destructor
     SimulationData( ) = default;
@@ -42,6 +43,7 @@ public:
                         int         heads_np,
                         int         rows_local_np,
                         int         cols_local_np,
+                        int         rows_np,
                         MpiConfig*  mpi_config_in
                     );
 

@@ -10,6 +10,7 @@ SimulationData::SimulationData(
                                     int         heads_np,
                                     int         rows_local_np,
                                     int         cols_local_np,
+                                    int         rows_np,
                                     MpiConfig*  mpi_config_in
                                 )
 {
@@ -24,6 +25,7 @@ SimulationData::SimulationData(
     this->froude_krylov     = generate_empty_vector<cuscomplex>( this->wave_exc_np );
     this->raos              = generate_empty_vector<cuscomplex>( this->wave_exc_np );
     this->intensities       = generate_empty_vector<cuscomplex>( ( dofs_np + heads_np ) * rows_local_np );
+    this->panels_potential  = generate_empty_vector<cuscomplex>( ( dofs_np + heads_np ) * rows_np );
     this->wave_diffrac      = generate_empty_vector<cuscomplex>( this->wave_exc_np );
 
     // Allocate space for variables used only on root processor
@@ -49,6 +51,7 @@ SimulationData::~SimulationData(
     mkl_free( this->froude_krylov );
     mkl_free( this->raos );
     mkl_free( this->intensities );
+    mkl_free( this->panels_potential );
     mkl_free( this->sysmat );
     mkl_free( this->sysmat_steady );
     mkl_free( this->wave_diffrac );
