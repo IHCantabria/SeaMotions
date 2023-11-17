@@ -818,10 +818,11 @@ void    linear_solver(
                                                                                 ipm_ed
                                                                             );
     MatLinGroup<cuscomplex>*    mdrift_we_gp        = nullptr;
-    cuscomplex*                 mdwe_potpanel_total = nullptr;
     MatLinGroup<cuscomplex>*    vel_body_gp         = nullptr;
     if ( input->out_mdrift )
     {
+        sim_data->add_mean_drift_data( mesh_gp->panels_wl_tnp );
+
         mdrift_we_gp            = new MatLinGroup<cuscomplex>(
                                                                 mesh_gp->panels_wl_tnp,
                                                                 ipm_cols_np,
@@ -832,7 +833,6 @@ void    linear_solver(
                                                                 ipm_sc,
                                                                 ipm_ed
                                                             );
-        mdwe_potpanel_total     =   generate_empty_vector<cuscomplex>( mesh_gp->panels_wl_tnp );
 
         vel_body_gp             = new MatLinGroup<cuscomplex>(
                                                                 mesh_gp->panels_tnp,
@@ -1155,20 +1155,18 @@ void    linear_solver(
                                             sim_data->intensities,
                                             sim_data->raos,
                                             mdrift_we_gp,
-                                            mdwe_potpanel_total
+                                            sim_data->mdrift_we_pot_total
                                         );
             
             // Calculate relative wave elevation
             calculate_relative_wave_elevation_lin(
                                                         input,
                                                         mpi_config,
-                                                        mdwe_cog_to_fp,
-                                                        mesh_gp->panels_wl_cnp,
-                                                        mesh_gp->meshes_np,
-                                                        mdwe_potpanel_total,
+                                                        potpanel_lin_gp,
+                                                        sim_data->mdrift_we_pot_total,
                                                         input->angfreqs[i],
                                                         sim_data->raos,
-                                                        mdwe
+                                                        sim_data->mdrift_rel_we
                                                     );
         }
 
@@ -1258,7 +1256,6 @@ void    linear_solver(
     if ( input->out_mdrift )
     {
         delete      mdrift_we_gp;
-        delete []   mdwe_potpanel_total;
         delete      vel_body_gp;
     }
     
@@ -1859,28 +1856,6 @@ void    nonlinear_solver(
     mkl_free( sysmat );
     mkl_free( sysmat_steady );
     mkl_free( wave_diffrac );
-
-    if ( input->is_fast_solver )
-    {
-        mkl_free( pot_smat );
-        mkl_free( pot_steady_smat );
-        mkl_free( panel_pot_p0 );
-        mkl_free( panel_pot );
-        mkl_free( pot_fp );
-
-        if ( input->out_mdrift )
-        {
-            mkl_free( mdwe );
-            mkl_free( mdwe_cog_to_fp );
-            mkl_free( mdwe_pot_fp );
-            mkl_free( mdwe_potpanel_total );
-            mkl_free( pot_mdwe_smat );
-            mkl_free( pot_steady_mdwe_smat );
-
-            delete vel_body_gp;
-        }
-    }
     
     delete mesh_gp;
-    delete [] all_meshes;
 }
