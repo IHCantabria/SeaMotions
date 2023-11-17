@@ -80,8 +80,8 @@ MatLinGroup<T>::MatLinGroup(
     this->sysmat_steady     = generate_empty_vector<T>( this->sysmat_nrows * this->sysmat_ncols );
 
     // Allocate space for the field points and the field values
-    this->cog_to_field_points   = generate_empty_vector<T>( this->_dims_np * this->sysmat_nrows );
-    this->field_points          = generate_empty_vector<T>( this->_dims_np * this->sysmat_nrows );
+    this->cog_to_field_points   = generate_empty_vector<cusfloat>( this->_dims_np * this->sysmat_nrows );
+    this->field_points          = generate_empty_vector<cusfloat>( this->_dims_np * this->sysmat_nrows );
     this->field_points_cnp      = generate_empty_vector<int>( this->field_points_nb+1 );
     this->field_values          = generate_empty_vector<T>( this->fields_np * this->sysmat_nrows );
 }
@@ -92,12 +92,12 @@ MatLinGroup<T>::~MatLinGroup(
                             void
                         )
 {
-    delete [] this->cog_to_field_points;
-    delete [] this->field_points;
-    delete [] this->field_points_cnp;
-    delete [] this->field_values;
-    delete [] this->sysmat;
-    delete [] this->sysmat_steady;
+    mkl_free( this->cog_to_field_points );
+    mkl_free( this->field_points );
+    mkl_free( this->field_points_cnp );
+    mkl_free( this->field_values );
+    mkl_free( this->sysmat );
+    mkl_free( this->sysmat_steady );
 }
 
 
