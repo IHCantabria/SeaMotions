@@ -4,6 +4,17 @@
 #include "simulation_data.hpp"
 
 
+void    SimulationData::add_mean_drift_data(
+                                                int mdrift_np
+                                            )
+{
+    this->mdrift_rel_we         =   generate_empty_vector<cuscomplex>( mdrift_np );
+    this->mdrift_we             =   generate_empty_vector<cuscomplex>( mdrift_np );
+    this->mdrift_we_pot_total   =   generate_empty_vector<cuscomplex>( mdrift_np );
+    this->_is_mdrift            = true;
+}
+
+
 SimulationData::SimulationData(
                                     int         bodies_np,
                                     int         dofs_np,
@@ -65,5 +76,12 @@ SimulationData::~SimulationData(
         mkl_free( this->structural_mass_p0 );
         mkl_free( this->wave_diffrac_p0 );
         mkl_free( this->wave_exc_p0 );
+    }
+
+    if ( this->_is_mdrift )
+    {
+        mkl_free( this->mdrift_rel_we );
+        mkl_free( this->mdrift_we );
+        mkl_free( this->mdrift_we_pot_total );
     }
 }

@@ -11,7 +11,8 @@ struct SimulationData
 {
 private:
     // Declare private class attributes
-    MpiConfig*  _mpi_config         = nullptr;
+    bool            _is_mdrift          = false;
+    MpiConfig*      _mpi_config         = nullptr;
 
 public:
     // Declare class attributes
@@ -24,6 +25,9 @@ public:
     int             hydmech_np          = 0;
     cusfloat*       hydrostiff_p0       = nullptr;
     cuscomplex*     intensities         = nullptr;
+    cuscomplex*     mdrift_rel_we       = nullptr;
+    cuscomplex*     mdrift_we           = nullptr;
+    cuscomplex*     mdrift_we_pot_total = nullptr;
     cuscomplex*     panels_potential    = nullptr;
     cuscomplex*     raos                = nullptr;
     cusfloat*       structural_mass_p0  = nullptr;
@@ -50,6 +54,12 @@ public:
     ~SimulationData( 
                         void
                     );
+
+    // Declare public class methods
+    void    add_mean_drift_data(
+                                    int mdrift_np
+                                );
+    
 };
 
 #endif
