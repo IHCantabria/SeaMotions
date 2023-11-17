@@ -230,7 +230,7 @@ void    calculate_gf_intensity_steady_sysmat_lin(
     cusfloat    vel_3[ndim];            clear_vector( ndim, vel_3 );
     cusfloat    vel_4[ndim];            clear_vector( ndim, vel_4 );
     cusfloat    vel_5[ndim];            clear_vector( ndim, vel_5 );
-    cusfloat    vel_total[ndim];        clear_vector( ndim, vel_5 );
+    cusfloat    vel_total[ndim];        clear_vector( ndim, vel_total );
 
     // Define field points to calculate the source influence matrix
     int         field_points_np   = mesh_gp->panels_tnp;
