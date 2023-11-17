@@ -11,23 +11,32 @@
 
 
 void    calculate_gf_intensity_sysmat(
-                                                Input*          input,
-                                                SclCmpx*        scl,
-                                                MeshGroup*      mesh_gp,
-                                                GWFDnInterface* gwf_interf,
-                                                cusfloat        w,
-                                                cuscomplex*     sysmat_steady,
-                                                cuscomplex*     sysmat,
-                                                cuscomplex*     sources_int
+                                                    Input*          input,
+                                                    SclCmpx*        scl,
+                                                    MeshGroup*      mesh_gp,
+                                                    GWFDnInterface* gwf_interf,
+                                                    cusfloat        w,
+                                                    cuscomplex*     sysmat_steady,
+                                                    cuscomplex*     sysmat,
+                                                    cuscomplex*     sources_int
                                         );
 
 
-void    calculate_gf_intensity_steady_sysmat(
-                                                Input*          input,
-                                                SclCmpx*        scl,
-                                                MeshGroup*      mesh_gp,
-                                                GRFDnInterface* grf_interf,
-                                                cuscomplex*     sysmat
-                                            );
+void    calculate_gf_intensity_steady_sysmat_lin(
+                                                    Input*          input,
+                                                    SclCmpx*        scl,
+                                                    MeshGroup*      mesh_gp,
+                                                    GRFDnInterface* grf_interf,
+                                                    cuscomplex*     sysmat
+                                                );
+
+
+void    calculate_gf_intensity_steady_sysmat_nlin(
+                                                    Input*          input,
+                                                    SclCmpx*        scl,
+                                                    MeshGroup*      mesh_gp,
+                                                    GRFDnInterface* grf_interf,
+                                                    cuscomplex*     sysmat
+                                                );
 
 #endif
