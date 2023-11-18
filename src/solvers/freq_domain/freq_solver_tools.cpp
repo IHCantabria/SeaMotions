@@ -6,15 +6,21 @@
 
 // Include local modules
 #include "freq_solver_tools.hpp"
+
 #include "../../containers/matlin_group.hpp"
 #include "../../containers/simulation_data.hpp"
 #include "../../interfaces/grf_interface.hpp"
+#include "../../interfaces/gwfdx_interface.hpp"
+#include "../../interfaces/gwfdy_interface.hpp"
+#include "../../interfaces/gwfdz_interface.hpp"
 #include "../../solvers/freq_domain/diffraction.hpp"
 #include "../../solvers/freq_domain/gf_intensities.hpp"
+#include "../../solvers/freq_domain/froude_krylov.hpp"
 #include "../../solvers/freq_domain/hydromechanics.hpp"
 #include "../../solvers/freq_domain/potential.hpp"
 #include "../../solvers/freq_domain/raos.hpp"
-#include "../../solvers/freq_domain/froude_krylov.hpp"
+#include "../../solvers/freq_domain/tools.hpp"
+#include "../../solvers/freq_domain/velocities.hpp"
 #include "../../solvers/freq_domain/wave_elevation.hpp"
 #include "../../waves.hpp"
 
@@ -238,7 +244,9 @@ void    freq_domain_linear_solver(
                                                                                 ipm_ed
                                                                             );
     MatLinGroup<cuscomplex>*    mdrift_we_gp        = nullptr;
-    MatLinGroup<cuscomplex>*    vel_body_gp         = nullptr;
+    MatLinGroup<cuscomplex>*    vel_x_body_gp         = nullptr;
+    MatLinGroup<cuscomplex>*    vel_y_body_gp         = nullptr;
+    MatLinGroup<cuscomplex>*    vel_z_body_gp         = nullptr;
     if ( input->out_mdrift )
     {
         sim_data->add_mean_drift_data( mesh_gp->panels_wl_tnp );
@@ -254,7 +262,29 @@ void    freq_domain_linear_solver(
                                                                 ipm_ed
                                                             );
 
-        vel_body_gp             = new MatLinGroup<cuscomplex>(
+        vel_x_body_gp           = new MatLinGroup<cuscomplex>(
+                                                                mesh_gp->panels_tnp,
+                                                                ipm_cols_np,
+                                                                mesh_gp->meshes_np,
+                                                                ( input->dofs_np + input->heads_np ),
+                                                                0,
+                                                                mesh_gp->panels_tnp-1,
+                                                                ipm_sc,
+                                                                ipm_ed
+                                                            );
+        
+        vel_y_body_gp           = new MatLinGroup<cuscomplex>(
+                                                                mesh_gp->panels_tnp,
+                                                                ipm_cols_np,
+                                                                mesh_gp->meshes_np,
+                                                                ( input->dofs_np + input->heads_np ),
+                                                                0,
+                                                                mesh_gp->panels_tnp-1,
+                                                                ipm_sc,
+                                                                ipm_ed
+                                                            );
+
+        vel_z_body_gp           = new MatLinGroup<cuscomplex>(
                                                                 mesh_gp->panels_tnp,
                                                                 ipm_cols_np,
                                                                 mesh_gp->meshes_np,
@@ -311,6 +341,22 @@ void    freq_domain_linear_solver(
             }
         }
 
+        // Define field points for the evaluation of the velocities field
+        int _count_pot_np   = 0;
+        for ( int i=0; i<mesh_gp->panels_tnp; i++ )
+        {
+            if ( mesh_gp->panels[i]->type == DIFFRAC_PANEL_CODE )
+            {
+                copy_vector( 3, mesh_gp->panels[i]->center, &(vel_x_body_gp->field_points[3*_count_pot_np]) );
+                copy_vector( 3, mesh_gp->panels[i]->center, &(vel_y_body_gp->field_points[3*_count_pot_np]) );
+                copy_vector( 3, mesh_gp->panels[i]->center, &(vel_z_body_gp->field_points[3*_count_pot_np]) );
+                _count_pot_np++;
+            }
+        }
+        copy_vector( mesh_gp->meshes_np, mesh_gp->panels_raddif_cnp, vel_x_body_gp->field_points_cnp );
+        copy_vector( mesh_gp->meshes_np, mesh_gp->panels_raddif_cnp, vel_y_body_gp->field_points_cnp );
+        copy_vector( mesh_gp->meshes_np, mesh_gp->panels_raddif_cnp, vel_z_body_gp->field_points_cnp );
+
     }
 
     /****************************************************************/
@@ -329,6 +375,41 @@ void    freq_domain_linear_solver(
                                                                 input->water_depth,
                                                                 input->grav_acc
                                                             );
+
+    GWFDxInterface* gwf_dx_interf   = nullptr;
+    GWFDyInterface* gwf_dy_interf   = nullptr;
+    GWFDzInterface* gwf_dz_interf   = nullptr;
+    if ( 
+            input->out_mdrift
+            ||
+            input->out_qtf
+        )
+    {
+        gwf_dx_interf   = new   GWFDxInterface(
+                                                    mesh_gp->source_nodes[0],
+                                                    mesh_gp->source_nodes[0],
+                                                    input->angfreqs[0],
+                                                    input->water_depth,
+                                                    input->grav_acc
+                                                );
+
+        gwf_dy_interf   = new   GWFDyInterface(
+                                                    mesh_gp->source_nodes[0],
+                                                    mesh_gp->source_nodes[0],
+                                                    input->angfreqs[0],
+                                                    input->water_depth,
+                                                    input->grav_acc
+                                                );
+
+        gwf_dz_interf   = new   GWFDzInterface(
+                                                    mesh_gp->source_nodes[0],
+                                                    mesh_gp->source_nodes[0],
+                                                    input->angfreqs[0],
+                                                    input->water_depth,
+                                                    input->grav_acc
+                                                );
+
+    }
 
     /****************************************************************/
     /************ Calculate global structural mass matrix ***********/
@@ -391,6 +472,14 @@ void    freq_domain_linear_solver(
                                                 mesh_gp,
                                                 mdrift_we_gp
                                             );
+
+        calculate_raddif_velocity_mat_steady(
+                                                input,
+                                                mesh_gp,
+                                                vel_x_body_gp,
+                                                vel_y_body_gp,
+                                                vel_z_body_gp
+                                            );
     }
 
     /****************************************************************/
@@ -442,11 +531,11 @@ void    freq_domain_linear_solver(
                                     );
 
         // Calculate panels potential
-        calculate_potpanel_raddif_lin(
-                                                input,
-                                                sim_data->intensities,
-                                                potpanel_lin_gp
-                                        );
+        calculate_fields_raddif_lin(
+                                        input,
+                                        sim_data->intensities,
+                                        potpanel_lin_gp
+                                    );
 
         MPI_Allreduce(
                         potpanel_lin_gp->field_values,
@@ -557,6 +646,11 @@ void    freq_domain_linear_solver(
 
         if ( input->out_mdrift )
         {
+            // Update integration interfaces status to the current angular frequency
+            gwf_dx_interf->set_ang_freq( input->angfreqs[i] );
+            gwf_dy_interf->set_ang_freq( input->angfreqs[i] );
+            gwf_dz_interf->set_ang_freq( input->angfreqs[i] );
+
             // Broadcast RAOs values to be available in all the processes
             MPI_Bcast(
                         sim_data->raos,
@@ -587,6 +681,23 @@ void    freq_domain_linear_solver(
                                                         sim_data->raos,
                                                         sim_data->mdrift_rel_we
                                                     );
+
+            // Calculate velocities over panels
+            calculate_velocities_total(
+                                        input,
+                                        mpi_config,
+                                        input->angfreqs[i],
+                                        sim_data->intensities,
+                                        sim_data->raos,
+                                        vel_x_body_gp,
+                                        vel_y_body_gp,
+                                        vel_z_body_gp,
+                                        sim_data->mdrift_press_vel_x,
+                                        sim_data->mdrift_press_vel_y,
+                                        sim_data->mdrift_press_vel_z
+                                    );
+
+            // Calculate mean drift forces
         }
 
         // Output values to disk
@@ -662,6 +773,9 @@ void    freq_domain_linear_solver(
     MPI_Barrier( MPI_COMM_WORLD );
     delete grf_dn_interf;
     delete gwf_dn_interf;
+    delete gwf_dx_interf;
+    delete gwf_dy_interf;
+    delete gwf_dz_interf;
 
     // Delete simulation data
     delete sim_data;
@@ -675,7 +789,9 @@ void    freq_domain_linear_solver(
     if ( input->out_mdrift )
     {
         delete      mdrift_we_gp;
-        delete      vel_body_gp;
+        delete      vel_x_body_gp;
+        delete      vel_y_body_gp;
+        delete      vel_z_body_gp;
     }
     
     // Delete mesh group data
