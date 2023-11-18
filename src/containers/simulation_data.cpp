@@ -8,10 +8,15 @@ void    SimulationData::add_mean_drift_data(
                                                 int mdrift_np
                                             )
 {
-    this->mdrift_rel_we         =   generate_empty_vector<cuscomplex>( mdrift_np );
-    this->mdrift_we             =   generate_empty_vector<cuscomplex>( mdrift_np );
-    this->mdrift_we_pot_total   =   generate_empty_vector<cuscomplex>( mdrift_np );
-    this->_is_mdrift            = true;
+    if ( this->_mpi_config->is_root( ) )
+    {
+        this->mdrift_press_vel_x    =   generate_empty_vector<cuscomplex>( mdrift_np );
+        this->mdrift_press_vel_y    =   generate_empty_vector<cuscomplex>( mdrift_np );
+        this->mdrift_press_vel_z    =   generate_empty_vector<cuscomplex>( mdrift_np );
+        this->mdrift_rel_we         =   generate_empty_vector<cuscomplex>( mdrift_np );
+        this->mdrift_we_pot_total   =   generate_empty_vector<cuscomplex>( mdrift_np );
+    }
+    this->_is_mdrift            =   true;
 }
 
 
@@ -80,8 +85,13 @@ SimulationData::~SimulationData(
 
     if ( this->_is_mdrift )
     {
-        mkl_free( this->mdrift_rel_we );
-        mkl_free( this->mdrift_we );
-        mkl_free( this->mdrift_we_pot_total );
+        if ( this->_mpi_config->is_root( ) )
+        {
+            mkl_free( this->mdrift_press_vel_x );
+            mkl_free( this->mdrift_press_vel_y );
+            mkl_free( this->mdrift_press_vel_z );
+            mkl_free( this->mdrift_we_pot_total );
+            mkl_free( this->mdrift_rel_we );
+        }
     }
 }
