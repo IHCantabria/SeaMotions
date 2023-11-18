@@ -12,15 +12,6 @@
 #include "../../mesh/mesh_group.hpp"
 
 
-void    calculate_raddif_velocity_mat_steady(
-                                                Input*      input,
-                                                MeshGroup*  mesh_gp,
-                                                MLGCmpx*    vel_x_gp,
-                                                MLGCmpx*    vel_y_gp,
-                                                MLGCmpx*    vel_z_gp
-                                            );
-
-
 void    calculate_raddif_velocity_mat(
                                                 Input*          input,
                                                 MeshGroup*      mesh_gp,
@@ -31,5 +22,29 @@ void    calculate_raddif_velocity_mat(
                                                 MLGCmpx*        vel_y_gp,
                                                 MLGCmpx*        vel_z_gp
                                         );
+
+
+void    calculate_raddif_velocity_mat_steady(
+                                                Input*          input,
+                                                MeshGroup*      mesh_gp,
+                                                MLGCmpx*        vel_x_gp,
+                                                MLGCmpx*        vel_y_gp,
+                                                MLGCmpx*        vel_z_gp
+                                            );
+
+
+void    calculate_velocities_total(
+                                                Input*          input,
+                                                MpiConfig*      mpi_config,
+                                                cusfloat        ang_freq,
+                                                cuscomplex*     intensities,
+                                                cuscomplex*     raos,
+                                                MLGCmpx*        vel_x_gp,
+                                                MLGCmpx*        vel_y_gp,
+                                                MLGCmpx*        vel_z_gp,
+                                                cuscomplex*     vel_x_total,
+                                                cuscomplex*     vel_y_total,
+                                                cuscomplex*     vel_z_total
+                                    );
 
 #endif
