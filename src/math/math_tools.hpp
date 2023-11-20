@@ -80,7 +80,7 @@ template<typename T>    inline  int         assert_vector_equality(
                                                                         int &info
                                                         );
 
-                                cusfloat check_zero_eps( 
+                                cusfloat    check_zero_eps( 
                                                                         cusfloat value,
                                                                         cusfloat eps
                                                         );
