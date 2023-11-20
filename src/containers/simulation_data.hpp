@@ -25,6 +25,7 @@ public:
     int             hydmech_np          = 0;
     cusfloat*       hydrostiff_p0       = nullptr;
     cuscomplex*     intensities         = nullptr;
+    cuscomplex*     mdrift              = nullptr;
     cuscomplex*     mdrift_press_vel_x  = nullptr;
     cuscomplex*     mdrift_press_vel_y  = nullptr;
     cuscomplex*     mdrift_press_vel_z  = nullptr;
