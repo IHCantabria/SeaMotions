@@ -445,7 +445,6 @@ void    freq_domain_linear_solver(
                                                 input,
                                                 scl,
                                                 mesh_gp,
-                                                grf_dn_interf,
                                                 sysmat_steady
                                             );
     double source_steady_t1 = MPI_Wtime( );
@@ -889,7 +888,6 @@ void    freq_domain_nonlinear_solver(
                                                 input,
                                                 scl,
                                                 mesh_gp,
-                                                grf_dn_interf,
                                                 sysmat_steady
                                             );
 

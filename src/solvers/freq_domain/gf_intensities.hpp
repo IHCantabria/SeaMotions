@@ -26,7 +26,6 @@ void    calculate_gf_intensity_steady_sysmat_lin(
                                                     Input*          input,
                                                     SclCmpx*        scl,
                                                     MeshGroup*      mesh_gp,
-                                                    GRFDnInterface* grf_interf,
                                                     cuscomplex*     sysmat
                                                 );
 
