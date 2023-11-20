@@ -41,9 +41,9 @@ public:
                                 cusfloat    grav_acc
                 );
 
-    ~GWFDnInterface(  
+    virtual ~GWFDnInterface(  
                                 void 
-                );
+                            );
 
     // Define class methods
     cuscomplex  operator()( 
