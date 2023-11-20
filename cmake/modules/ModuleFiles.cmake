@@ -203,6 +203,8 @@ set(
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/potential.cpp
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/raos.hpp
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/raos.cpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/tools.hpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/tools.cpp
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/velocities.hpp
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/velocities.cpp
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/wave_elevation.hpp
