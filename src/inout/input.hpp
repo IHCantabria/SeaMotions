@@ -22,7 +22,7 @@ public:
     std::vector<std::string>    bodies_finame       ;
     int                         bodies_np           = 0;
     std::string                 case_fopath         = "";
-    int                         dofs_np             = 6;
+    const int                   dofs_np             = 6;
     std::string                 folder_path         = "";
     int                         gauss_order         = 0;
     cusfloat                    gfdn_abs_err        = 0.0;
