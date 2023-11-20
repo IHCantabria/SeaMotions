@@ -4,6 +4,7 @@
 
 // Include local modules
 #include "../../config.hpp"
+#include "../../containers/matlin_group.hpp"
 #include "../../containers/mpi_config.hpp"
 #include "../../inout/input.hpp"
 #include "../../mesh/mesh_group.hpp"
