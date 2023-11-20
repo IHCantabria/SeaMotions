@@ -884,12 +884,13 @@ void    freq_domain_nonlinear_solver(
     /****************************************************/
 
     // Calculate intensities system matrix steady contribution
-    calculate_gf_intensity_steady_sysmat_lin(
-                                                input,
-                                                scl,
-                                                mesh_gp,
-                                                sysmat_steady
-                                            );
+    calculate_gf_intensity_steady_sysmat_nlin(
+                                                    input,
+                                                    scl,
+                                                    mesh_gp,
+                                                    grf_dn_interf,
+                                                    sysmat
+                                                );
 
     // Loop over frequencies
     for ( int i=0; i<input->angfreqs_np; i++ )
