@@ -311,7 +311,7 @@ void    freq_domain_linear_solver(
             _count_pot_np++;
         }
     }
-    copy_vector( mesh_gp->meshes_np, mesh_gp->panels_raddif_cnp, potpanel_lin_gp->field_points_cnp );
+    copy_vector( mesh_gp->meshes_np+1, mesh_gp->panels_raddif_cnp, potpanel_lin_gp->field_points_cnp );
 
     // Define field points to calculate the potential on the WL to evaluate
     // second order forces
@@ -326,7 +326,7 @@ void    freq_domain_linear_solver(
         {
             copy_vector( 3, mesh_gp->panels_wl[i]->center_wl, &(mdrift_we_gp->field_points[3*i]) );
         }
-        copy_vector( mesh_gp->meshes_np, mesh_gp->panels_wl_cnp, mdrift_we_gp->field_points_cnp );
+        copy_vector( mesh_gp->meshes_np+1, mesh_gp->panels_wl_cnp, mdrift_we_gp->field_points_cnp );
 
         // Get the radius from the WL line center to the body COG
         for ( int i=0; i<mesh_gp->meshes_np; i++ )
@@ -354,9 +354,9 @@ void    freq_domain_linear_solver(
                 _count_pot_np++;
             }
         }
-        copy_vector( mesh_gp->meshes_np, mesh_gp->panels_raddif_cnp, vel_x_body_gp->field_points_cnp );
-        copy_vector( mesh_gp->meshes_np, mesh_gp->panels_raddif_cnp, vel_y_body_gp->field_points_cnp );
-        copy_vector( mesh_gp->meshes_np, mesh_gp->panels_raddif_cnp, vel_z_body_gp->field_points_cnp );
+        copy_vector( mesh_gp->meshes_np+1, mesh_gp->panels_raddif_cnp, vel_x_body_gp->field_points_cnp );
+        copy_vector( mesh_gp->meshes_np+1, mesh_gp->panels_raddif_cnp, vel_y_body_gp->field_points_cnp );
+        copy_vector( mesh_gp->meshes_np+1, mesh_gp->panels_raddif_cnp, vel_z_body_gp->field_points_cnp );
 
     }
 
@@ -676,7 +676,7 @@ void    freq_domain_linear_solver(
             // Calculate relative wave elevation
             calculate_relative_wave_elevation_lin(
                                                         input,
-                                                        potpanel_lin_gp,
+                                                        mdrift_we_gp,
                                                         sim_data->mdrift_we_pot_total,
                                                         input->angfreqs[i],
                                                         sim_data->raos,
