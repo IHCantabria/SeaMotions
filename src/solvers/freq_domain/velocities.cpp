@@ -291,9 +291,140 @@ void    calculate_raddif_velocity_mat_steady(
 }
 
 
+void    calculate_raddif_velocity_mat_wave(
+                                                Input*          input,
+                                                MeshGroup*      mesh_gp,
+                                                cusfloat        ang_freq,
+                                                MLGCmpx*        vel_x_gp,
+                                                MLGCmpx*        vel_y_gp,
+                                                MLGCmpx*        vel_z_gp
+                                            )
+{
+    // Define potential funcions objects interface
+    GWFDxInterface* green_wave_dx   = new   GWFDxInterface( 
+                                                                mesh_gp->source_nodes[0],
+                                                                mesh_gp->source_nodes[0],
+                                                                ang_freq,
+                                                                input->water_depth,
+                                                                input->grav_acc
+                                                            );
+    
+    GWFDyInterface* green_wave_dy   = new   GWFDyInterface( 
+                                                                mesh_gp->source_nodes[0],
+                                                                mesh_gp->source_nodes[0],
+                                                                ang_freq,
+                                                                input->water_depth,
+                                                                input->grav_acc
+                                                            );
+
+    GWFDzInterface* green_wave_dz   = new   GWFDzInterface( 
+                                                                mesh_gp->source_nodes[0],
+                                                                mesh_gp->source_nodes[0],
+                                                                ang_freq,
+                                                                input->water_depth,
+                                                                input->grav_acc
+                                                            );
+
+    auto            wave_dx_fcn     =   [green_wave_dx]
+                                        (cusfloat xi, cusfloat eta, cusfloat x, cusfloat y, cusfloat z) -> cuscomplex
+                                        {
+                                            return (*green_wave_dx)( xi, eta, x, y, z );
+                                        };
+    
+    auto            wave_dy_fcn     =   [green_wave_dy]
+                                        (cusfloat xi, cusfloat eta, cusfloat x, cusfloat y, cusfloat z) -> cuscomplex
+                                        {
+                                            return (*green_wave_dy)( xi, eta, x, y, z );
+                                        };
+
+    auto            wave_dz_fcn     =   [green_wave_dz]
+                                        (cusfloat xi, cusfloat eta, cusfloat x, cusfloat y, cusfloat z) -> cuscomplex
+                                        {
+                                            return (*green_wave_dz)( xi, eta, x, y, z );
+                                        };
+
+    // Generate potential matrix
+    int         count = 0;
+    cuscomplex  vel_x_wave_term( 0.0, 0.0 );
+    cuscomplex  vel_y_wave_term( 0.0, 0.0 );
+    cuscomplex  vel_z_wave_term( 0.0, 0.0 );
+    for ( int i=0; i<vel_x_gp->field_points_np; i++ )
+    {
+        // Change field point
+        green_wave_dx->set_field_point_j(
+                                                &(vel_x_gp->field_points[3*i])
+                                            );
+        green_wave_dy->set_field_point_j(
+                                                &(vel_y_gp->field_points[3*i])
+                                            );
+        green_wave_dz->set_field_point_j(
+                                                &(vel_z_gp->field_points[3*i])
+                                            );
+
+        for ( int j=vel_x_gp->start_col; j<vel_x_gp->end_col; j++ )
+        {
+            // Compute steady and wave terms over the panel
+            if ( 
+                    mesh_gp->panels[i]->type == DIFFRAC_PANEL_CODE
+                    &&
+                    mesh_gp->panels[j]->type == DIFFRAC_PANEL_CODE
+                )
+            {
+                vel_x_wave_term         = adaptive_quadrature_panel(
+                                                                        mesh_gp->panels[j],
+                                                                        wave_dx_fcn,
+                                                                        input->pot_abs_err,
+                                                                        input->pot_rel_err,
+                                                                        input->is_block_adaption,
+                                                                        false,
+                                                                        input->gauss_order
+                                                                    );
+                vel_y_wave_term         = adaptive_quadrature_panel(
+                                                                        mesh_gp->panels[j],
+                                                                        wave_dy_fcn,
+                                                                        input->pot_abs_err,
+                                                                        input->pot_rel_err,
+                                                                        input->is_block_adaption,
+                                                                        false,
+                                                                        input->gauss_order
+                                                                    );
+                vel_z_wave_term         = adaptive_quadrature_panel(
+                                                                        mesh_gp->panels[j],
+                                                                        wave_dz_fcn,
+                                                                        input->pot_abs_err,
+                                                                        input->pot_rel_err,
+                                                                        input->is_block_adaption,
+                                                                        false,
+                                                                        input->gauss_order
+                                                                    );
+                vel_x_gp->sysmat[count] = vel_x_gp->sysmat_steady[count] + vel_x_wave_term / 4.0 / PI;
+                vel_y_gp->sysmat[count] = vel_y_gp->sysmat_steady[count] + vel_y_wave_term / 4.0 / PI;
+                vel_z_gp->sysmat[count] = vel_z_gp->sysmat_steady[count] + vel_z_wave_term / 4.0 / PI;
+
+            }
+            else
+            {
+                vel_x_gp->sysmat[count]   = cuscomplex( 0.0, 0.0 );
+                vel_y_gp->sysmat[count]   = cuscomplex( 0.0, 0.0 );
+                vel_z_gp->sysmat[count]   = cuscomplex( 0.0, 0.0 );
+            }
+            
+            count++;
+        }
+    }
+
+    // Delete heap memory allocated in the current function
+    delete green_wave_dx;
+    delete green_wave_dy;
+    delete green_wave_dz;
+
+}
+
+
 void    calculate_velocities_total(
                                         Input*          input,
                                         MpiConfig*      mpi_config,
+                                        MeshGroup*      mesh_gp,
                                         cusfloat        ang_freq,
                                         cuscomplex*     intensities,
                                         cuscomplex*     raos,
@@ -309,6 +440,18 @@ void    calculate_velocities_total(
     int index       =   0;
     int index_2     =   0;
     int index_3     =   0;
+    
+    /*******************************************************/
+    /*********  Calculate total velocity matrixes **********/
+    /*******************************************************/
+    calculate_raddif_velocity_mat_wave(
+                                            input,
+                                            mesh_gp,
+                                            ang_freq,
+                                            vel_x_gp,
+                                            vel_y_gp,
+                                            vel_z_gp
+                                        );
 
     /*******************************************************/
     /***  Calculate radiation and diffraction velocities ***/

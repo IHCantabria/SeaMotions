@@ -687,6 +687,7 @@ void    freq_domain_linear_solver(
             calculate_velocities_total(
                                         input,
                                         mpi_config,
+                                        mesh_gp,
                                         input->angfreqs[i],
                                         sim_data->intensities,
                                         sim_data->raos,
