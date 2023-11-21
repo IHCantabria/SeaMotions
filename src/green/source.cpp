@@ -219,7 +219,7 @@ void    calculate_source_velocity_newman(
         r_sum = node_fieldp_mod[i]+node_fieldp_mod[i1];
         b0 = r_sum + sides_len[i];
         b1 = r_sum - sides_len[i];
-        b = std::log(b0/b1);
+        b = std::log(b0/b1); b1 = check_zero_eps( b1, ZEROTH_EPS );
 
 
         // Calculate X derivative coefficients
@@ -317,7 +317,7 @@ void    calculate_source_potential_hess(
 
     // Calcualte potential value
     int j;
-    cusfloat a, b, si, sj, r;
+    cusfloat a, b, d, si, sj, r;
     cusfloat cx, cy, r_sum;
     for (int i=0; i<panel->num_nodes; i++)
     {
@@ -332,7 +332,8 @@ void    calculate_source_potential_hess(
         r = node_fieldp_dx[i]*b - node_fieldp_dy[i]*a;
 
         r_sum = node_fieldp_mod[i]+node_fieldp_mod[j];
-        phi += r*std::log((r_sum+sides_len[i])/(r_sum-sides_len[i]));
+        d = r_sum-sides_len[i]; d = check_zero_eps( d, ZEROTH_EPS );
+        phi += r*std::log((r_sum+sides_len[i])/d);
 
         // Calculate potential
         cy = r*std::abs(node_fieldp_dz[i])*(node_fieldp_mod[i]*sj-node_fieldp_mod[j]*si);
