@@ -8,6 +8,12 @@
 
 
 // Declare module functions
+cusfloat    k2w( 
+                                            cusfloat k, 
+                                            cusfloat h, 
+                                            cusfloat g 
+                );
+
 cusfloat    w2k(
                                             cusfloat w, 
                                             cusfloat h, 

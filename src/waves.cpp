@@ -29,6 +29,12 @@ cusfloat dispersion_real_zero_dk(cusfloat h, cusfloat k)
 }
 
 
+cusfloat k2w( cusfloat k, cusfloat h, cusfloat g )
+{
+    return std::sqrt( g * k * std::tanh( k * h ) );
+}
+
+
 cusfloat w2k(cusfloat w, cusfloat h, cusfloat g)
 {
     /**
