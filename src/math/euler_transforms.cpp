@@ -106,7 +106,7 @@ void    euler_local_to_global_disp(
     // point displacement in global coorindates
     for ( int i=0; i<3; i++ )
     {
-        displacement[i] += dofs_trans[i];
+        displacement[i] += dofs_trans[i] - radius[i];
     }
 
     // Delete local heap memory
