@@ -13,6 +13,7 @@
 #include "../../interfaces/gwfdx_interface.hpp"
 #include "../../interfaces/gwfdy_interface.hpp"
 #include "../../interfaces/gwfdz_interface.hpp"
+#include "qtf.hpp"
 #include "../../solvers/freq_domain/diffraction.hpp"
 #include "../../solvers/freq_domain/gf_intensities.hpp"
 #include "../../solvers/freq_domain/froude_krylov.hpp"
@@ -643,6 +644,7 @@ void    freq_domain_linear_solver(
                             );
         }
 
+        // Calculate mean drift
         if ( input->out_mdrift )
         {
             // Update integration interfaces status to the current angular frequency
@@ -697,6 +699,28 @@ void    freq_domain_linear_solver(
                                     );
 
             // Calculate mean drift forces
+            if ( mpi_config->is_root( ) )
+            {
+                calculate_second_order_force(
+                                                input,
+                                                mpi_config,
+                                                mesh_gp,
+                                                sim_data->mdrift_rel_we,
+                                                sim_data->mdrift_rel_we,
+                                                sim_data->raos,
+                                                sim_data->raos,
+                                                sim_data->mdrift_press_vel_x,
+                                                sim_data->mdrift_press_vel_y,
+                                                sim_data->mdrift_press_vel_z,
+                                                sim_data->mdrift_press_vel_x,
+                                                sim_data->mdrift_press_vel_y,
+                                                sim_data->mdrift_press_vel_z,
+                                                input->angfreqs[i],
+                                                input->angfreqs[i],
+                                                sim_data->mdrift
+                                            );
+
+            }
         }
 
         // Output values to disk
@@ -750,6 +774,15 @@ void    freq_domain_linear_solver(
                                                     i,
                                                     _DN_RAO,
                                                     sim_data->raos
+                                                );
+            }
+
+            if ( input->out_mdrift )
+            {
+                output->save_wave_exciting_format(
+                                                    i,
+                                                    _DN_MDRIFT,
+                                                    sim_data->mdrift
                                                 );
             }
 
