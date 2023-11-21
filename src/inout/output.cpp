@@ -164,7 +164,15 @@ Output::Output(
     {
         CREATE_DATASET( 
                             fid,
-                            _DN_MDRIFT,
+                            _DN_MDRIFT_MAG,
+                            _DS_WX_NP,
+                            this->_ds_wx,
+                            cusfloat_h5
+                        );
+        
+        CREATE_DATASET( 
+                            fid,
+                            _DN_MDRIFT_PHA,
                             _DS_WX_NP,
                             this->_ds_wx,
                             cusfloat_h5

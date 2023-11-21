@@ -23,6 +23,8 @@
 #define  _DN_HEADS        "headings"
 #define  _DN_HYDSTIFF     "hydstiffness"
 #define  _DN_MDRIFT       "mean_drift"
+#define  _DN_MDRIFT_MAG   "mean_drift_mag"
+#define  _DN_MDRIFT_PHA   "mean_drift_pha"
 #define  _DN_QTF_DIFF     "qtf_diff"
 #define  _DN_QTF_SUM      "qtf_sum"
 #define  _DN_RAO          "rao"
