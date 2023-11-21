@@ -56,7 +56,7 @@ public:
     cusfloat                    press_rel_err       = 0.0;
     cusfloat                    water_density       = 0.0;
     cusfloat                    water_depth         = 0.0;
-    cusfloat                    wave_amplitude      = 0.0;
+    cusfloat                    wave_amplitude      = 1.0;
     cusfloat                    wl_det_prec         = 0.0;
 
     // Define class constructors and destructors
