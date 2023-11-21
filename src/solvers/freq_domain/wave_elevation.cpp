@@ -54,6 +54,8 @@ void    calculate_relative_wave_elevation_lin(
 
             for ( int k=pot_gp->field_points_cnp[j]; k<pot_gp->field_points_cnp[j+1]; k++ )
             {
+                clear_vector( 3, point_disp );
+                
                 // Calculate movement of the kth point at the WL
                 euler_local_to_global_disp( 
                                                 rao_trans,
@@ -83,7 +85,7 @@ void    calculate_wave_elevation_lin(
 {
     for ( int i=0; i<pot_total_np; i++ )
     {
-        wave_elevation[i] = pot_total[i].imag( ) * ang_freq / grav_acc;
+        wave_elevation[i] =  - pot_total[i].imag( ) * ang_freq / grav_acc;
     }
 
 }
