@@ -101,9 +101,9 @@ template<typename T>    inline  void        copy_vector(
                                                         );
         
 template<typename T>    inline  void        cross(
-                                                                        T (&u)[3], 
-                                                                        T (&v)[3], 
-                                                                        T (&w)[3]
+                                                                        T* u, 
+                                                                        T* v, 
+                                                                        T* w
                                                 );
 
                                 cusfloat    deg_to_rad(    
