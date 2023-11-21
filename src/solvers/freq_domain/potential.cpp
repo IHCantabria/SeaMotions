@@ -264,6 +264,10 @@ void    calculate_influence_potmat(
         }
     }
 
+    // Delete allocated heap memory data for the
+    // current function
+    delete green_interf_wave;
+
 }
 
 
