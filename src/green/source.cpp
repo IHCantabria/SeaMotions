@@ -114,7 +114,7 @@ void    calculate_source_potential_newman(
     // Calculate velocity potential
     int i1 = 0;
     cusfloat r_sum = 0.0;
-    cusfloat a, b;
+    cusfloat a, b, d;
     for (int i=0; i<panel->num_nodes; i++)
     {
         // Calculate next index
@@ -123,7 +123,8 @@ void    calculate_source_potential_newman(
         // Calculate potential
         r_sum = node_fieldp_mod[i]+node_fieldp_mod[i1];
         a = node_fieldp_dx[i]*std::sin(polar_angles[i])-node_fieldp_dy[i]*std::cos(polar_angles[i]);
-        b = std::log((r_sum+sides_len[i])/(r_sum-sides_len[i]));
+        d = r_sum-sides_len[i]; d = check_zero_eps( d, ZEROTH_EPS );
+        b = std::log((r_sum+sides_len[i])/d);
         phi += a*b;
     }
     
