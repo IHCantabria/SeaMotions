@@ -5,7 +5,7 @@
 
 
 void    GWFDnInterface::_clear_heap(
-                                        void
+                                            void
                                     )
 {
     std::cerr << "Calling GWFDnInterface destructor..." << std::endl;
@@ -15,7 +15,7 @@ void    GWFDnInterface::_clear_heap(
 
 
 void    GWFDnInterface::_initialize(
-                                        cusfloat    ang_freq
+                                            cusfloat    ang_freq
                                     )
 {
     // Calculate wave numbers
@@ -37,11 +37,11 @@ void    GWFDnInterface::_initialize(
 
 
 GWFDnInterface::GWFDnInterface( 
-                                    SourceNode* source_i,
-                                    SourceNode* source_j,
-                                    cusfloat    ang_freq,
-                                    cusfloat    water_depth,
-                                    cusfloat    grav_acc
+                                            SourceNode* source_i,
+                                            SourceNode* source_j,
+                                            cusfloat    ang_freq,
+                                            cusfloat    water_depth,
+                                            cusfloat    grav_acc
                             )
 {
     // Storage panels memory address, water depth and 
@@ -63,11 +63,11 @@ GWFDnInterface::~GWFDnInterface( void )
 
 
 cuscomplex  GWFDnInterface::operator()( 
-                                        cusfloat xi,
-                                        cusfloat eta,
-                                        cusfloat x,
-                                        cusfloat y,
-                                        cusfloat z
+                                            cusfloat xi,
+                                            cusfloat eta,
+                                            cusfloat x,
+                                            cusfloat y,
+                                            cusfloat z
                                     )
 {
     // Calculate horizontal radius
@@ -128,7 +128,7 @@ cuscomplex  GWFDnInterface::operator()(
 
 
 void    GWFDnInterface::set_ang_freq(
-                                        cusfloat ang_freq
+                                            cusfloat    ang_freq
                                     )
 {
     // Delete previous wave data instance
@@ -150,8 +150,18 @@ void    GWFDnInterface::set_ang_freq(
 }
 
 
+void    GWFDnInterface::set_field_point_j(
+                                            cusfloat*   fp
+                                        )
+{
+    this->_field_point_j[0] = fp[0];
+    this->_field_point_j[1] = fp[1];
+    this->_field_point_j[2] = fp[2];
+}
+
+
 void    GWFDnInterface::set_source_i(
-                                        SourceNode* source_node
+                                            SourceNode* source_node
                                     )
 {
     this->_source_i = source_node;
@@ -159,7 +169,7 @@ void    GWFDnInterface::set_source_i(
 
 
 void    GWFDnInterface::set_source_j(
-                                        SourceNode* source_node
+                                            SourceNode* source_node
                                     )
 {
     this->_source_j = source_node;

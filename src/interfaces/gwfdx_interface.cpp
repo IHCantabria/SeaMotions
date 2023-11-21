@@ -24,12 +24,6 @@ GWFDxInterface::GWFDxInterface(
 }
 
 
-GWFDxInterface::~GWFDxInterface( void )
-{
-    this->_clear_heap( );
-}
-
-
 cuscomplex  GWFDxInterface::operator()(
                                             cusfloat    xi,
                                             cusfloat    eta,
@@ -40,9 +34,9 @@ cuscomplex  GWFDxInterface::operator()(
 {
     // Calculate horizontal radius
     cusfloat    R       = std::sqrt(
-                                        pow2s( this->_source_j->position[0] - x )
+                                        pow2s( this->_field_point_j[0] - x )
                                         +
-                                        pow2s( this->_source_j->position[1] - y )
+                                        pow2s( this->_field_point_j[1] - y )
                                     );
     
     if ( R < ZEROTH_EPS )
@@ -53,7 +47,7 @@ cuscomplex  GWFDxInterface::operator()(
     // Calculate Green function derivatives
     cuscomplex  dG_dR   = G_integral_wave_dr(
                                                 R,
-                                                this->_source_j->position[2],
+                                                this->_field_point_j[2],
                                                 z,
                                                 this->_water_depth,
                                                 *(this->_wave_data),
@@ -61,7 +55,7 @@ cuscomplex  GWFDxInterface::operator()(
                                             );
 
     // Calculate X and Y cartesian coordinates derivatives
-    cusfloat    dX      = this->_source_j->position[0] - x;
+    cusfloat    dX      = this->_field_point_j[0] - x;
     cuscomplex  dG_dX   = dG_dR * dX / R;
 
     // Get local shape function value
@@ -72,5 +66,5 @@ cuscomplex  GWFDxInterface::operator()(
                                             eta 
                                         );
 
-    return shp_val * dG_dX * this->_source_j->normal_vec[0];
+    return shp_val * dG_dX;
 }

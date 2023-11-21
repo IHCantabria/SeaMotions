@@ -22,10 +22,6 @@ public:
                                 cusfloat    grav_acc
                 );
 
-    ~GWFDzInterface(  
-                                void 
-                );
-
     // Define class methods
     virtual cuscomplex  operator()( 
                                         cusfloat    xi,

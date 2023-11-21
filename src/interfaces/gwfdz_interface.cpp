@@ -24,12 +24,6 @@ GWFDzInterface::GWFDzInterface(
 }
 
 
-GWFDzInterface::~GWFDzInterface( void )
-{
-    this->_clear_heap( );
-}
-
-
 cuscomplex  GWFDzInterface::operator()(
                                             cusfloat    xi,
                                             cusfloat    eta,
@@ -40,9 +34,9 @@ cuscomplex  GWFDzInterface::operator()(
 {
     // Calculate horizontal radius
     cusfloat    R       = std::sqrt(
-                                        pow2s( this->_source_j->position[0] - x )
+                                        pow2s( this->_field_point_j[0] - x )
                                         +
-                                        pow2s( this->_source_j->position[1] - y )
+                                        pow2s( this->_field_point_j[1] - y )
                                     );
     
     if ( R < ZEROTH_EPS )
@@ -53,7 +47,7 @@ cuscomplex  GWFDzInterface::operator()(
     // Calculate Green function derivatives
     cuscomplex  dG_dZ   = G_integral_wave_dz(
                                                 R,
-                                                this->_source_j->position[2],
+                                                this->_field_point_j[2],
                                                 z,
                                                 this->_water_depth,
                                                 *(this->_wave_data),
@@ -68,5 +62,5 @@ cuscomplex  GWFDzInterface::operator()(
                                             eta 
                                         );
 
-    return shp_val * dG_dZ * this->_source_j->normal_vec[2];
+    return shp_val * dG_dZ;
 }

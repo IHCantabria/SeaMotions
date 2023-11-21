@@ -13,20 +13,21 @@ struct GWFDnInterface
 {
 protected:
     // Define protected attributes
-    cusfloat            _grav_acc       = 0.0;
-    SourceNode*         _source_i       = nullptr;
-    SourceNode*         _source_j       = nullptr;
-    IntegralsDb*        _integrals_db   = nullptr;
-    cusfloat            _water_depth    = 0.0;
-    WaveDispersionData* _wave_data      = nullptr;
+    cusfloat            _grav_acc           = 0.0;
+    cusfloat            _field_point_j[3]   = { 0.0, 0.0, 0.0 };
+    SourceNode*         _source_i           = nullptr;
+    SourceNode*         _source_j           = nullptr;
+    IntegralsDb*        _integrals_db       = nullptr;
+    cusfloat            _water_depth        = 0.0;
+    WaveDispersionData* _wave_data          = nullptr;
 
     // Define protected methods
     void    _clear_heap(
-                                void
+                                    void
                         );
 
     void    _initialize(
-                                cusfloat    ang_freq
+                                    cusfloat    ang_freq
                         );
 
 public:
@@ -34,36 +35,40 @@ public:
     GWFDnInterface( )   = default;
 
     GWFDnInterface( 
-                                SourceNode* source_i,
-                                SourceNode* source_j,
-                                cusfloat    ang_freq,
-                                cusfloat    water_depth,
-                                cusfloat    grav_acc
+                                    SourceNode* source_i,
+                                    SourceNode* source_j,
+                                    cusfloat    ang_freq,
+                                    cusfloat    water_depth,
+                                    cusfloat    grav_acc
                 );
 
     virtual ~GWFDnInterface(  
-                                void 
+                                    void 
                             );
 
     // Define class methods
     cuscomplex  operator()( 
-                                cusfloat    xi,
-                                cusfloat    eta,
-                                cusfloat    x,
-                                cusfloat    y,
-                                cusfloat    z
+                                    cusfloat    xi,
+                                    cusfloat    eta,
+                                    cusfloat    x,
+                                    cusfloat    y,
+                                    cusfloat    z
                            );
 
     void        set_ang_freq(
-                                cusfloat    ang_freq
+                                    cusfloat    ang_freq
                             );
 
+    void        set_field_point_j(
+                                    cusfloat*   fp
+                                );
+
     void        set_source_i(
-                                SourceNode* source_node
+                                    SourceNode* source_node
                             );
 
     void        set_source_j(
-                                SourceNode* source_node
+                                    SourceNode* source_node
                             );
 
 };

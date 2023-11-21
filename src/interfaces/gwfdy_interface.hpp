@@ -21,11 +21,7 @@ public:
                                 cusfloat    water_depth,
                                 cusfloat    grav_acc
                 );
-
-    ~GWFDyInterface(  
-                                void 
-                );
-
+    
     // Define class methods
     virtual cuscomplex  operator()( 
                                         cusfloat    xi,
