@@ -201,6 +201,8 @@ set(
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/hydromechanics.cpp
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/potential.hpp
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/potential.cpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/qtf.hpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/qtf.cpp
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/raos.hpp
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/raos.cpp
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/tools.hpp
