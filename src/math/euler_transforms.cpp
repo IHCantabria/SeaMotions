@@ -17,32 +17,33 @@ void    euler_local_to_global(
 {
 
     // Get rotation matrixes for X, Y, Z axes
-    const int   rotm_np = 9;
+    const int   rows_np = 3;
+    const int   rotm_np = pow2s( rows_np );
     cusfloat    rotm_a[rotm_np]; clear_vector( rotm_np, rotm_a );
     cusfloat    rotm_x[rotm_np]; clear_vector( rotm_np, rotm_x );
     cusfloat    rotm_y[rotm_np]; clear_vector( rotm_np, rotm_y );
     cusfloat    rotm_z[rotm_np]; clear_vector( rotm_np, rotm_z );
 
     _rot_x( rotm_x, alpha );
-    _rot_y( rotm_y, alpha );
-    _rot_z( rotm_z, alpha );
+    _rot_y( rotm_y, beta );
+    _rot_z( rotm_z, gamma );
 
     // Calculate Ry · Rx
     cblas_gemm<cusfloat>(
                             CblasRowMajor, 
                             CblasNoTrans, 
                             CblasNoTrans, 
-                            rotm_np, 
-                            rotm_np, 
-                            rotm_np, 
+                            rows_np, 
+                            rows_np, 
+                            rows_np, 
                             1.0, 
                             rotm_y, 
-                            rotm_np, 
+                            rows_np, 
                             rotm_x, 
-                            rotm_np, 
+                            rows_np, 
                             1.0, 
                             rotm_a, 
-                            rotm_np
+                            rows_np
                         );
 
     // Calcualte Rz · ( Ry · Rx )
@@ -50,17 +51,17 @@ void    euler_local_to_global(
                             CblasRowMajor, 
                             CblasNoTrans, 
                             CblasNoTrans, 
-                            rotm_np, 
-                            rotm_np, 
-                            rotm_np, 
+                            rows_np, 
+                            rows_np, 
+                            rows_np, 
                             1.0, 
                             rotm_z, 
-                            rotm_np, 
+                            rows_np, 
                             rotm_a, 
-                            rotm_np, 
+                            rows_np, 
                             1.0, 
                             rot_mat, 
-                            rotm_np
+                            rows_np
                         );
 
 }
@@ -74,8 +75,9 @@ void    euler_local_to_global_disp(
                                     )
 {
     // Get local to global transformation matrix
-    const int   rotm_np         = 9;
-    cusfloat    rot_mat[rotm_np]; clear_vector( rotm_np, rot_mat );
+    const int   rows_np = 3;
+    const int   rotm_np = pow2s( rows_np );
+    cusfloat*   rot_mat = generate_empty_vector<cusfloat>( rotm_np );
 
     euler_local_to_global(
                             dofs_rot[0],
@@ -88,11 +90,11 @@ void    euler_local_to_global_disp(
     cblas_gemv<cusfloat>(
                             CblasRowMajor,
                             CblasNoTrans,
-                            rotm_np,
-                            rotm_np,
+                            rows_np,
+                            rows_np,
                             1.0,
                             rot_mat,
-                            rotm_np,
+                            rows_np,
                             radius,
                             1,
                             1.0,
@@ -106,6 +108,9 @@ void    euler_local_to_global_disp(
     {
         displacement[i] += dofs_trans[i];
     }
+
+    // Delete local heap memory
+    mkl_free( rot_mat );
 }
 
 
