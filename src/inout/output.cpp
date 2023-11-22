@@ -521,7 +521,7 @@ void    Output::save_wave_exciting_format(
                                     k
                                 );
                 data_mag[k] = std::abs( forces[index] );
-                data_pha[k] = std::atan2( forces[index].real( ), forces[index].imag( ) );
+                data_pha[k] = std::atan2( forces[index].imag( ), forces[index].real( ) );
             }
 
             // Storage data
