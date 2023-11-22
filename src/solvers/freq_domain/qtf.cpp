@@ -40,8 +40,8 @@ void    calculate_second_order_force(
     {
         for ( int j=0; j<mesh_gp->meshes_np; j++ )
         {
-            idx0 = i * ( input->dofs_np * input->bodies_np ) + j * input->bodies_np;
-            for ( int k=mesh_gp->panels_wl_cnp[j]; k<mesh_gp->panels_wl_cnp[j+1]; j++ )
+            idx0 = i * ( input->dofs_np * input->bodies_np ) + j * input->dofs_np;
+            for ( int k=mesh_gp->panels_wl_cnp[j]; k<mesh_gp->panels_wl_cnp[j+1]; k++ )
             {
                 panel_k             = mesh_gp->panels_wl[k];
                 idx1                = i * mesh_gp->panels_wl_tnp + k;
@@ -50,6 +50,14 @@ void    calculate_second_order_force(
                 for ( int r=0; r<input->dofs_np; r++ )
                 {
                     qtf_values[idx0+r] += - 0.5 * input->grav_acc * input->water_density * int_mod * panel_k->normal_vec[r];
+                    if ( 
+                            std::isnan( qtf_values[idx0+r].real( ) )
+                            ||
+                            std::isnan( qtf_values[idx0+r].imag( ) )
+                        )
+                    {
+                        double a = 0;
+                    }
                 }
             }
         }
@@ -60,8 +68,8 @@ void    calculate_second_order_force(
     {
         for ( int j=0; j<mesh_gp->meshes_np; j++ )
         {
-            idx0 = i * ( input->dofs_np * input->bodies_np ) + j * input->bodies_np;
-            for ( int k=mesh_gp->panels_cnp[j]; k<mesh_gp->panels_cnp[j+1]; j++ )
+            idx0 = i * ( input->dofs_np * input->bodies_np ) + j * input->dofs_np;
+            for ( int k=mesh_gp->panels_cnp[j]; k<mesh_gp->panels_cnp[j+1]; k++ )
             {
                 panel_k             = mesh_gp->panels[k];
                 idx1                = i * mesh_gp->panels_tnp + k;
@@ -73,9 +81,20 @@ void    calculate_second_order_force(
                                             vel_z_i[idx1] * vel_z_j[idx1]
                                         ) * panel_k->area;
 
+                double b = 0.0;
+
                 for ( int r=0; r<input->dofs_np; r++ )
                 {
                     qtf_values[idx0+r] += input->water_density * int_mod * panel_k->normal_vec[r];
+
+                    if ( 
+                            std::isnan( qtf_values[idx0+r].real( ) )
+                            ||
+                            std::isnan( qtf_values[idx0+r].imag( ) )
+                        )
+                    {
+                        double a = 0;
+                    }
                 }
             }
         }
@@ -91,7 +110,7 @@ void    calculate_second_order_force(
     {
         for ( int j=0; j<mesh_gp->meshes_np; j++ )
         {
-            idx0 = i * ( input->dofs_np * input->bodies_np ) + j * input->bodies_np;
+            idx0 = i * ( input->dofs_np * input->bodies_np ) + j * input->dofs_np;
 
             rao_trans[0]    = std::abs( raos_i[idx0] );
             rao_trans[1]    = std::abs( raos_i[idx0+1] );
@@ -101,7 +120,7 @@ void    calculate_second_order_force(
             rao_rot[1]      = std::abs( raos_i[idx0+4] );
             rao_rot[2]      = std::abs( raos_i[idx0+5] );
 
-            for ( int k=mesh_gp->panels_cnp[j]; k<mesh_gp->panels_cnp[j+1]; j++ )
+            for ( int k=mesh_gp->panels_cnp[j]; k<mesh_gp->panels_cnp[j+1]; k++ )
             {
                 // Get handle to the current panel for calculations
                 panel_k             = mesh_gp->panels[k];
@@ -130,6 +149,15 @@ void    calculate_second_order_force(
                 for ( int r=0; r<input->dofs_np; r++ )
                 {
                     qtf_values[idx0+r] += input->water_density * int_mod * panel_k->normal_vec[r];
+
+                    if ( 
+                            std::isnan( qtf_values[idx0+r].real( ) )
+                            ||
+                            std::isnan( qtf_values[idx0+r].imag( ) )
+                        )
+                    {
+                        double a = 0;
+                    }
                 }
             }
         }
@@ -145,7 +173,7 @@ void    calculate_second_order_force(
         for ( int j=0; j<mesh_gp->meshes_np; j++ )
         {
             // Define chunk index
-            idx0 = i * ( input->dofs_np * input->bodies_np ) + j * input->bodies_np;
+            idx0 = i * ( input->dofs_np * input->bodies_np ) + j * input->dofs_np;
 
             // Calculate total hydrodynamic force
             hydro_force[0] = - input->bodies[j]->mass * raos_j[idx0] * ang_2;
@@ -201,6 +229,18 @@ void    calculate_second_order_force(
                         &(qtf_values[idx0+3])
                     );
             
+            for ( int r=0; r<input->dofs_np; r++ )
+            {
+
+                if ( 
+                        std::isnan( qtf_values[idx0+r].real( ) )
+                        ||
+                        std::isnan( qtf_values[idx0+r].imag( ) )
+                    )
+                {
+                    double a = 0;
+                }
+            }
         }
     }
 
@@ -228,7 +268,7 @@ void    calculate_second_order_force(
             for ( int j=0; j<mesh_gp->meshes_np; j++ )
             {
                  // Define chunk index
-                idx0 = i * ( input->dofs_np * input->bodies_np ) + j * input->bodies_np;
+                idx0 = i * ( input->dofs_np * input->bodies_np ) + j * input->dofs_np;
 
                 // Calculate ith, jth wave numbers
                 ki = w2k( ang_freq_i, input->water_depth, input->grav_acc );
