@@ -658,7 +658,7 @@ cuscomplex  john_series(
                         + exp(-k0*v6)
                     );
     cusfloat c_real = -wave_data.k0nu*expsum;
-    cuscomplex sol = c_real*(bessely0(k0r)+besselj0(k0r)*1i);
+    cuscomplex sol = c_real*(bessely0(k0r)-besselj0(k0r)*1i);
 
     // Calculate imag root series part
     cusfloat c_imag = 0.0;
@@ -831,7 +831,7 @@ cuscomplex  john_series_dr(
                         + exp(-k0*v6)
                     );
     cusfloat c_real = -wave_data.k0nu*expsum;
-    cuscomplex sol = -c_real*k0*(bessely1(k0r)+besselj1(k0r)*1i);
+    cuscomplex sol = -c_real*k0*(bessely1(k0r)-besselj1(k0r)*1i);
 
     // Calculate imag root series part
     cusfloat c_imag = 0.0;
@@ -1008,7 +1008,7 @@ cuscomplex  john_series_dz(
                         + exp(-k0*v6)
                     );
     cusfloat c_real = -wave_data.k0nu*expsum;
-    cuscomplex sol = c_real*(bessely0(k0r)+besselj0(k0r)*1i);
+    cuscomplex sol = c_real*(bessely0(k0r)-besselj0(k0r)*1i);
 
     // Calculate imag root series part
     cusfloat c_imag = 0.0;
@@ -1201,7 +1201,7 @@ cuscomplex  wave_term_fin_depth_integral(
                         +exp(-k0*v4)
                         +exp(-k0*v5)
                         );
-    cusfloat G_imag = -wave_data.k0nu*expsum*besselj0(k0*R);
+    cusfloat G_imag = wave_data.k0nu*expsum*besselj0(k0*R);
 
     // Define G integral as a complex number
     cuscomplex G = G_real + G_imag*1i;
@@ -1282,7 +1282,7 @@ cuscomplex  wave_term_fin_depth_integral_dr(
                         +exp(-k0*v4)
                         +exp(-k0*v5)
                         );
-    cusfloat G_imag = wave_data.k0nu*expsum*besselj1(k0*R)*k0;
+    cusfloat G_imag = -wave_data.k0nu*expsum*besselj1(k0*R)*k0;
 
     // Define G integral as a complex number
     cuscomplex G = G_real + G_imag*1i;
@@ -1363,7 +1363,7 @@ cuscomplex  wave_term_fin_depth_integral_dz(
                         -exp(-k0*v4)
                         +exp(-k0*v5)
                         );
-    cusfloat G_imag = k0*wave_data.k0nu*expsum*besselj0(k0*R);
+    cusfloat G_imag = -k0*wave_data.k0nu*expsum*besselj0(k0*R);
 
     // Define G integral as a complex number
     cuscomplex G = G_real + G_imag*1i;

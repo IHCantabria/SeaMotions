@@ -117,7 +117,7 @@ void    calculate_gf_intensity_sysmat(
             panel_j = mesh_gp->source_nodes[j]->panel;
             if ( panel_j->type == DIFFRAC_PANEL_CODE )
             {
-                sources_int[count] = cuscomplex( 0.0, w * mesh_gp->source_nodes[j]->normal_vec[i] );
+                sources_int[count] = cuscomplex( 0.0, -w * mesh_gp->source_nodes[j]->normal_vec[i] );
             }
             else if ( panel_j->type == LID_PANEL_CODE )
             {

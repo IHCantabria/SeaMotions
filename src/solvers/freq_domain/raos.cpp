@@ -45,7 +45,7 @@ void    calculate_raos(
                             );
                     sysmat[index] = cuscomplex( 
                                                     -pow2s( ang_freq ) * ( structural_mass[index] + added_mass[index] ) + hydstiffness[index],
-                                                    ang_freq * damping_rad[index]
+                                                    - ang_freq * damping_rad[index]
                                                 );
                 }
             }
