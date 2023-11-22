@@ -74,6 +74,9 @@ void    euler_local_to_global_disp(
                                         cusfloat*   displacement
                                     )
 {
+    // Clear displacement vector just in clase
+    clear_vector( 3, displacement );
+    
     // Get local to global transformation matrix
     const int   rows_np = 3;
     const int   rotm_np = pow2s( rows_np );
