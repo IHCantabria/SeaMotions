@@ -18,7 +18,8 @@ void    calculate_raos(
                         )
 {
     // Allocate space to hold the system matrix
-    cuscomplex* sysmat  = generate_empty_vector<cuscomplex>( pow2s( input->bodies_np * input->dofs_np ) );
+    cuscomplex* sysmat      = generate_empty_vector<cuscomplex>( pow2s( input->bodies_np * input->dofs_np ) );
+    cuscomplex* sysmat_t    = generate_empty_vector<cuscomplex>( pow2s( input->bodies_np * input->dofs_np ) );
 
     // Clear input rao vector to avoid problems with residual data
     clear_vector( input->bodies_np * input->dofs_np * input->heads_np, rao );
@@ -52,6 +53,19 @@ void    calculate_raos(
         }
     }
 
+    // Transpose system matrix to be in column major ordering
+    int index_t = 0;
+    for ( int i=0; i<input->bodies_np * input->dofs_np; i++ )
+    {
+        for ( int j=0; j<input->bodies_np * input->dofs_np; j++ )
+        {
+            index   = i * ( input->bodies_np * input->dofs_np ) + j;
+            index_t = j * ( input->bodies_np * input->dofs_np ) + i;
+            
+            sysmat_t[index_t] = sysmat[index];
+        }
+    }
+
     // Fill in right hand side vector
     for ( int i=0; i<input->heads_np; i++ )
     {
@@ -78,7 +92,7 @@ void    calculate_raos(
     gesv<cuscomplex>( 
                         &rows_np,
                         &(input->heads_np),
-                        sysmat,
+                        sysmat_t,
                         &(rows_np),
                         ipiv,
                         rao,
@@ -97,5 +111,6 @@ void    calculate_raos(
 
     // Deallocate local heap memory
     mkl_free( sysmat );
+    mkl_free( sysmat_t );
 
 }
