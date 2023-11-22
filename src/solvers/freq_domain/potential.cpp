@@ -506,14 +506,15 @@ void    calculate_potpanel_total_lin(
         {
             for ( int j=0; j<pot_gp->field_points_nb; j++ )
             {
-                for ( int k=0; k<input->dofs_np; k++ )
+                for ( int r=pot_gp->field_points_cnp[j]; r<pot_gp->field_points_cnp[j+1]; r++ )
                 {
-                    for ( int r=pot_gp->field_points_cnp[j]; r<pot_gp->field_points_cnp[j+1]; r++ )
+                    for ( int k=0; k<input->dofs_np; k++ )
                     {
                         index                   = i * pot_gp->field_points_np + r;
                         index_2                 = k * pot_gp->field_points_np + r;
                         index_3                 = i * ( input->dofs_np * pot_gp->field_points_nb ) + j * input->dofs_np + k;
-                        potpanel_total[index]   += raos[index_3] * pot_raddif_p0[index_2];
+                        potpanel_total[index]   += cuscomplex(0.0, -1.0) * raos[index_3] * pot_raddif_p0[index_2];
+                        std::cout << "index: " << index << " - index_2: " << index_2 << " - index_3: " << index_3 << std::endl;
                     }
                 }
             }
