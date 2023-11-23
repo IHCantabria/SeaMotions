@@ -11,39 +11,46 @@
 
 struct GRFDnInterface
 {
-private:
+protected:
     // Define local attributes
-    SourceNode*         _source_i       = nullptr;
-    SourceNode*         _source_j       = nullptr;
-    cusfloat            _water_depth    = 0.0;
+    cusfloat            _field_point_j[3]   = { 0.0, 0.0, 0.0 };
+    SourceNode*         _source_i           = nullptr;
+    SourceNode*         _source_j           = nullptr;
+    cusfloat            _water_depth        = 0.0;
 
 public:
     // Define constructors and destructors
+    GRFDnInterface( )   = default;
+
     GRFDnInterface( 
-                                SourceNode* source_i,
-                                SourceNode* source_j,
-                                cusfloat    water_depth
+                                    SourceNode* source_i,
+                                    SourceNode* source_j,
+                                    cusfloat    water_depth
                 );
 
-    ~GRFDnInterface(  
-                                void 
+    virtual ~GRFDnInterface(  
+                                    void 
                 );
 
     // Define class methods
     cuscomplex  operator()( 
-                                cusfloat    xi,
-                                cusfloat    eta,
-                                cusfloat    x,
-                                cusfloat    y,
-                                cusfloat    z
+                                    cusfloat    xi,
+                                    cusfloat    eta,
+                                    cusfloat    x,
+                                    cusfloat    y,
+                                    cusfloat    z
                            );
 
+    void        set_field_point_j(
+                                    cusfloat* fp
+                                );
+
     void        set_source_i(
-                                SourceNode* source_node
+                                    SourceNode* source_node
                             );
 
     void        set_source_j(
-                                SourceNode* source_node
+                                    SourceNode* source_node
                             );
 
 };

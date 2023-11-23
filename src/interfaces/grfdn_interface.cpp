@@ -5,9 +5,9 @@
 
 
 GRFDnInterface::GRFDnInterface( 
-                                    SourceNode* source_i,
-                                    SourceNode* source_j,
-                                    cusfloat    water_depth
+                                            SourceNode* source_i,
+                                            SourceNode* source_j,
+                                            cusfloat    water_depth
                                 )
 {
     // Storage panels memory address, water depth and 
@@ -26,11 +26,11 @@ GRFDnInterface::~GRFDnInterface( void )
 
 
 cuscomplex  GRFDnInterface::operator()( 
-                                        cusfloat xi,
-                                        cusfloat eta,
-                                        cusfloat x,
-                                        cusfloat y,
-                                        cusfloat z
+                                            cusfloat xi,
+                                            cusfloat eta,
+                                            cusfloat x,
+                                            cusfloat y,
+                                            cusfloat z
                                     )
 {
     // Calculate horizontal radius
@@ -86,8 +86,18 @@ cuscomplex  GRFDnInterface::operator()(
 }
 
 
+void    GRFDnInterface::set_field_point_j(
+                                            cusfloat*   fp
+                                        )
+{
+    this->_field_point_j[0] = fp[0];
+    this->_field_point_j[1] = fp[1];
+    this->_field_point_j[2] = fp[2];
+}
+
+
 void    GRFDnInterface::set_source_i(
-                                        SourceNode* source_node
+                                            SourceNode* source_node
                                     )
 {
     this->_source_i = source_node;
@@ -95,7 +105,7 @@ void    GRFDnInterface::set_source_i(
 
 
 void    GRFDnInterface::set_source_j(
-                                        SourceNode* source_node
+                                            SourceNode* source_node
                                     )
 {
     this->_source_j = source_node;
