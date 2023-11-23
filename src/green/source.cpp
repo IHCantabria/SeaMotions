@@ -218,8 +218,8 @@ void    calculate_source_velocity_newman(
         // Calculate potential-like coefficients
         r_sum = node_fieldp_mod[i]+node_fieldp_mod[i1];
         b0 = r_sum + sides_len[i];
-        b1 = r_sum - sides_len[i];
-        b = std::log(b0/b1); b1 = check_zero_eps( b1, ZEROTH_EPS );
+        b1 = r_sum - sides_len[i]; b1 = check_zero_eps( b1, ZEROTH_EPS );
+        b = std::log(b0/b1); 
 
 
         // Calculate X derivative coefficients
