@@ -26,7 +26,7 @@ void    calculate_fields_raddif_lin(
                                     &alpha,
                                     field_gp->sysmat,
                                     field_gp->sysmat_ncols,
-                                    &(intensities[i*field_gp->sysmat_nrows+field_gp->start_col]),
+                                    &(intensities[i*field_gp->sysmat_ncols+field_gp->start_col]),
                                     icnx,
                                     &beta,
                                     &(field_gp->field_values[i*field_gp->sysmat_nrows]),
