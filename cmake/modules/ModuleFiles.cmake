@@ -127,6 +127,12 @@ set(
         ${CMAKE_SOURCE_DIR}/src/interfaces/grf_interface.cpp
         ${CMAKE_SOURCE_DIR}/src/interfaces/grfdn_interface.hpp
         ${CMAKE_SOURCE_DIR}/src/interfaces/grfdn_interface.cpp
+        ${CMAKE_SOURCE_DIR}/src/interfaces/grfdx_interface.hpp
+        ${CMAKE_SOURCE_DIR}/src/interfaces/grfdx_interface.cpp
+        ${CMAKE_SOURCE_DIR}/src/interfaces/grfdy_interface.hpp
+        ${CMAKE_SOURCE_DIR}/src/interfaces/grfdy_interface.cpp
+        ${CMAKE_SOURCE_DIR}/src/interfaces/grfdz_interface.hpp
+        ${CMAKE_SOURCE_DIR}/src/interfaces/grfdz_interface.cpp
         ${CMAKE_SOURCE_DIR}/src/interfaces/gwf_interface.hpp
         ${CMAKE_SOURCE_DIR}/src/interfaces/gwf_interface.cpp
         ${CMAKE_SOURCE_DIR}/src/interfaces/gwfdn_interface.hpp
