@@ -8,58 +8,61 @@
 #include "math_tools.hpp"
 
 
+template<typename T>
 void    euler_local_to_global(
-                                        cusfloat    alpha,
-                                        cusfloat    beta,
-                                        cusfloat    gamma,
-                                        cusfloat*   rot_mat
+                                        T           alpha,
+                                        T           beta,
+                                        T           gamma,
+                                        T*          rot_mat
                             )
 {
 
     // Get rotation matrixes for X, Y, Z axes
+    cusfloat    alpha_f = 1.0;
+    cusfloat    beta_f  = 1.0;
     const int   rows_np = 3;
     const int   rotm_np = pow2s( rows_np );
-    cusfloat    rotm_a[rotm_np]; clear_vector( rotm_np, rotm_a );
-    cusfloat    rotm_x[rotm_np]; clear_vector( rotm_np, rotm_x );
-    cusfloat    rotm_y[rotm_np]; clear_vector( rotm_np, rotm_y );
-    cusfloat    rotm_z[rotm_np]; clear_vector( rotm_np, rotm_z );
+    T           rotm_a[rotm_np]; clear_vector( rotm_np, rotm_a );
+    T           rotm_x[rotm_np]; clear_vector( rotm_np, rotm_x );
+    T           rotm_y[rotm_np]; clear_vector( rotm_np, rotm_y );
+    T           rotm_z[rotm_np]; clear_vector( rotm_np, rotm_z );
 
     _rot_x( rotm_x, alpha );
     _rot_y( rotm_y, beta );
     _rot_z( rotm_z, gamma );
 
     // Calculate Ry · Rx
-    cblas_gemm<cusfloat>(
+    cblas_gemm<T>(
                             CblasRowMajor, 
                             CblasNoTrans, 
                             CblasNoTrans, 
                             rows_np, 
                             rows_np, 
                             rows_np, 
-                            1.0, 
+                            &alpha_f, 
                             rotm_y, 
                             rows_np, 
                             rotm_x, 
                             rows_np, 
-                            1.0, 
+                            &beta_f, 
                             rotm_a, 
                             rows_np
                         );
 
     // Calcualte Rz · ( Ry · Rx )
-    cblas_gemm<cusfloat>(
+    cblas_gemm<T>(
                             CblasRowMajor, 
                             CblasNoTrans, 
                             CblasNoTrans, 
                             rows_np, 
                             rows_np, 
                             rows_np, 
-                            1.0, 
+                            &alpha_f, 
                             rotm_z, 
                             rows_np, 
                             rotm_a, 
                             rows_np, 
-                            1.0, 
+                            &beta_f, 
                             rot_mat, 
                             rows_np
                         );
@@ -67,20 +70,25 @@ void    euler_local_to_global(
 }
 
 
+template<typename T>
 void    euler_local_to_global_disp(
-                                        cusfloat*   dofs_trans,
-                                        cusfloat*   dofs_rot,
+                                        T*          dofs_trans,
+                                        T*          dofs_rot,
                                         cusfloat*   radius,
-                                        cusfloat*   displacement
+                                        T*          displacement
                                     )
 {
     // Clear displacement vector just in clase
     clear_vector( 3, displacement );
     
     // Get local to global transformation matrix
+    cusfloat    alpha   = 1.0;
+    cusfloat    beta    = 1.0;
+    int         icnx    = 1;
+    int         icny    = 1;
     const int   rows_np = 3;
     const int   rotm_np = pow2s( rows_np );
-    cusfloat*   rot_mat = generate_empty_vector<cusfloat>( rotm_np );
+    T*          rot_mat = generate_empty_vector<T>( rotm_np );
 
     euler_local_to_global(
                             dofs_rot[0],
@@ -90,19 +98,19 @@ void    euler_local_to_global_disp(
                         );
 
     // Get local radius value in global coorindates
-    cblas_gemv<cusfloat>(
+    cblas_gemv<T>(
                             CblasRowMajor,
                             CblasNoTrans,
                             rows_np,
                             rows_np,
-                            1.0,
+                            &alpha,
                             rot_mat,
                             rows_np,
                             radius,
-                            1,
-                            1.0,
+                            icnx,
+                            &beta,
                             displacement,
-                            1
+                            icny
                         );
 
     // Add translation displacements in order to get the 
@@ -117,9 +125,10 @@ void    euler_local_to_global_disp(
 }
 
 
+template<typename T>
 void    _rot_x(
-                                        cusfloat*   mat,
-                                        cusfloat    alpha
+                                        T*          mat,
+                                        T           alpha
                 )
 {
     mat[0] = 1.0;
@@ -136,9 +145,10 @@ void    _rot_x(
 }
 
 
+template<typename T>
 void    _rot_y(
-                                        cusfloat*   mat,
-                                        cusfloat    beta
+                                        T*          mat,
+                                        T           beta
                 )
 {
     mat[0] = std::cos( beta );
@@ -155,9 +165,10 @@ void    _rot_y(
 }
 
 
+template<typename T>
 void    _rot_z(
-                                        cusfloat*   mat,
-                                        cusfloat    gamma
+                                        T*          mat,
+                                        T           gamma
                 )
 {
     mat[0] = std::cos( gamma );

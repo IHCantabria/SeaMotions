@@ -6,37 +6,41 @@
 #include "../config.hpp"
 
 
-void    euler_local_to_global(
-                                        cusfloat    alpha,
-                                        cusfloat    beta,
-                                        cusfloat    gamma,
-                                        cusfloat*   rot_mat
-                            );
+
+template<typename T>    void    euler_local_to_global(
+                                                                T           alpha,
+                                                                T           beta,
+                                                                T           gamma,
+                                                                T*          rot_mat
+                                                    );
 
 
-void    euler_local_to_global_disp(
-                                        cusfloat*   dofs_trans,
-                                        cusfloat*   dofs_rot,
-                                        cusfloat*   radius,
-                                        cusfloat*   displacement
-                                    );
+template<typename T>    void    euler_local_to_global_disp(
+                                                                T*          dofs_trans,
+                                                                T*          dofs_rot,
+                                                                cusfloat*   radius,
+                                                                T*          displacement
+                                                            );
 
 
-void    _rot_x(
-                                        cusfloat*   mat,
-                                        cusfloat    alpha
-                );
+template<typename T>    void    _rot_x(
+                                                                T*          mat,
+                                                                T           alpha
+                                        );
 
 
-void    _rot_y(
-                                        cusfloat*   mat,
-                                        cusfloat    beta
-                );
+template<typename T>    void    _rot_y(
+                                                                T*          mat,
+                                                                T           beta
+                                        );
 
 
-void    _rot_z(
-                                        cusfloat*   mat,
-                                        cusfloat    gamma
-                );
+template<typename T>    void    _rot_z(
+                                                                T*          mat,
+                                                                T           gamma
+                                        );
+
+
+#include "euler_transforms.txx"
 
 #endif
