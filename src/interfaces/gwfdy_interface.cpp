@@ -44,19 +44,55 @@ cuscomplex  GWFDyInterface::operator()(
         R = ZEROTH_EPS;
     }
 
-    // Calculate Green function derivatives
-    cuscomplex  dG_dR   = G_integral_wave_dr(
-                                                R,
-                                                this->_field_point_j[2],
-                                                z,
-                                                this->_water_depth,
-                                                *(this->_wave_data),
-                                                *(this->_integrals_db)
-                                            );
+    cuscomplex  dG_dY( 0.0, 0.0 );
+    if ( R < 1e-4 )
+    {
+        cusfloat    eps     =   1e-6;
+        cusfloat    y0      =   y - eps / 2.0;
+        cusfloat    y1      =   y + eps / 2.0;
+        
+        cuscomplex  G0      = G_integral_wave(
+                                                    this->_field_point_j[0],
+                                                    this->_field_point_j[1],
+                                                    this->_field_point_j[2],
+                                                    x,
+                                                    y0,
+                                                    0.0,
+                                                    this->_water_depth,
+                                                    *(this->_wave_data),
+                                                    *(this->_integrals_db)
+                                                );
 
-    // Calculate X and Y cartesian coordinates derivatives
-    cusfloat    dY      = this->_field_point_j[1] - y;
-    cuscomplex  dG_dY   = dG_dR * dY / R;
+        cuscomplex  G1      = G_integral_wave(
+                                                    this->_field_point_j[0],
+                                                    this->_field_point_j[1],
+                                                    this->_field_point_j[2],
+                                                    x,
+                                                    y1,
+                                                    0.0,
+                                                    this->_water_depth,
+                                                    *(this->_wave_data),
+                                                    *(this->_integrals_db)
+                                                );
+
+                    dG_dY   = ( G1 - G0 ) / eps;
+    }
+    else
+    {
+        // Calculate Green function derivatives
+        cuscomplex  dG_dR   = G_integral_wave_dr(
+                                                    R,
+                                                    this->_field_point_j[2],
+                                                    z,
+                                                    this->_water_depth,
+                                                    *(this->_wave_data),
+                                                    *(this->_integrals_db)
+                                                );
+
+        // Calculate X and Y cartesian coordinates derivatives
+        cusfloat    dY      = this->_field_point_j[1] - y;
+                    dG_dY   = dG_dR * dY / R;
+    }
     
     // Get local shape function value
     cusfloat    shp_val = shape_functions( 
