@@ -153,7 +153,7 @@ set(
         ${CMAKE_SOURCE_DIR}/src/math/chebyshev.hpp
         ${CMAKE_SOURCE_DIR}/src/math/chebyshev.cpp
         ${CMAKE_SOURCE_DIR}/src/math/euler_transforms.hpp
-        ${CMAKE_SOURCE_DIR}/src/math/euler_transforms.cpp
+        ${CMAKE_SOURCE_DIR}/src/math/euler_transforms.txx
         ${CMAKE_SOURCE_DIR}/src/math/gauss.hpp
         ${CMAKE_SOURCE_DIR}/src/math/gauss.cpp
         ${CMAKE_SOURCE_DIR}/src/math/integration.hpp
