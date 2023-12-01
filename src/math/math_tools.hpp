@@ -85,10 +85,6 @@ template<typename T>    inline  int         assert_vector_equality(
                                                                         cusfloat eps
                                                         );
         
-template<typename T>    inline  T*          generate_empty_vector(          
-                                                                        int size
-                                                                );
-        
 template<typename T>    inline  void        clear_vector(                    
                                                                         int n, 
                                                                         T* vec 
@@ -98,6 +94,12 @@ template<typename T>    inline  void        copy_vector(
                                                                         int n, 
                                                                         T* reference_vector, 
                                                                         T* target_vector
+                                                        );
+
+                                void        conj_vector(
+                                                                        int             n,
+                                                                        cuscomplex*     u,
+                                                                        cuscomplex*     v
                                                         );
         
 template<typename T>    inline  void        cross(
@@ -117,6 +119,10 @@ template<typename T>    inline  void        cross(
                                 cusfloat    freq_to_angfreq( 
                                                                         cusfloat freq 
                                                             );
+
+template<typename T>            inline  T*  generate_empty_vector(          
+                                                                        int size
+                                                                );
 
                                 void        newton_raphson(
                                                                         std::function<cusfloat(cusfloat)> f_def, 

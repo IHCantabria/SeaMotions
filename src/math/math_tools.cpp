@@ -151,6 +151,19 @@ cusfloat check_zero_eps(
 }
 
 
+void    conj_vector(
+                            int         n,
+                            cuscomplex* u,
+                            cuscomplex* v
+                        )
+{
+    for ( int i=0; i<n; i++ )
+    {
+        v[i] = std::conj( u[i] );
+    }
+}
+
+
 cusfloat deg_to_rad(  cusfloat deg )
 {
     return deg*PI/180.0;
