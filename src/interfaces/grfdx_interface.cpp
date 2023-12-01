@@ -40,16 +40,49 @@ cuscomplex  GRFDxInterface::operator()(
     }
 
     // Calculate Green function derivatives
-    cuscomplex  dG_dR   = G_integral_steady_dr(
-                                                    R,
+    cuscomplex  dG_dX( 0.0, 0.0 );
+
+    if ( R < 1e-4 )
+    {
+        cusfloat    eps     = 1e-6;
+        cusfloat    x0      = x - eps / 2.0;
+        cusfloat    x1      = x + eps / 2.0;
+
+        cuscomplex  G0      = G_integral_steady(
+                                                    this->_source_j->position[0],
+                                                    this->_source_j->position[1],
                                                     this->_source_j->position[2],
+                                                    x0,
+                                                    y,
                                                     z,
                                                     this->_water_depth
                                                 );
 
-    // Calculate X and Y cartesian coordinates derivatives
-    cusfloat    dX      = this->_source_j->position[0] - x;
-    cuscomplex  dG_dX   = dG_dR * dX / R;
+        cuscomplex  G1      = G_integral_steady(
+                                                    this->_source_j->position[0],
+                                                    this->_source_j->position[1],
+                                                    this->_source_j->position[2],
+                                                    x1,
+                                                    y,
+                                                    z,
+                                                    this->_water_depth
+                                                );
+
+                    dG_dX   = ( G1 - G0 ) / eps;
+    }
+    else
+    {
+        cuscomplex  dG_dR   = G_integral_steady_dr(
+                                                        R,
+                                                        this->_source_j->position[2],
+                                                        z,
+                                                        this->_water_depth
+                                                    );
+
+        // Calculate X and Y cartesian coordinates derivatives
+        cusfloat    dX      = this->_source_j->position[0] - x;
+        cuscomplex  dG_dX   = dG_dR * dX / R;
+    }
     
     // Get local shape function value
     cusfloat    shp_val = shape_functions( 
