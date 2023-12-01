@@ -26,6 +26,10 @@ public:
     cusfloat*       hydrostiff_p0       = nullptr;
     cuscomplex*     intensities         = nullptr;
     cuscomplex*     mdrift              = nullptr;
+    cuscomplex*     mdrift_wl           = nullptr;
+    cuscomplex*     mdrift_bern         = nullptr;
+    cuscomplex*     mdrift_acc          = nullptr;
+    cuscomplex*     mdrift_mom          = nullptr;
     cuscomplex*     mdrift_press_vel_x  = nullptr;
     cuscomplex*     mdrift_press_vel_y  = nullptr;
     cuscomplex*     mdrift_press_vel_z  = nullptr;
@@ -61,6 +65,7 @@ public:
 
     // Declare public class methods
     void    add_mean_drift_data(
+                                    int mdrift_wl_np,
                                     int mdrift_np
                                 );
     
