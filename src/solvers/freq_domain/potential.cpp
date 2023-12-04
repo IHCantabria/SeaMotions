@@ -426,6 +426,34 @@ void    calculate_potpanel_total_lin(
                                     pot_gp
                                 );
 
+    cuscomplex value( 0.0, 0.0 );
+    int ngpf    = input->gauss_np_factor_1d( );
+    int _idx0   = 0;
+    int _idx1   = 0;
+    // for ( int i=0; i<pot_gp->field_points_np/ngpf; i++ )
+    // {
+    //     for ( int j=0; j<ngpf; j++ )
+    //     {
+    //         for ( int k=0; k<pot_gp->sysmat_ncols; k++ )
+    //         {
+    //             _idx0 = i * ngpf * pot_gp->sysmat_ncols + k;
+    //             _idx1 = i * ngpf * pot_gp->sysmat_ncols + j * pot_gp->sysmat_ncols + k;
+    //             value = pot_gp->sysmat[_idx0] - pot_gp->sysmat[_idx1];
+
+    //             if ( i == 6 && j == 3 )
+    //             {
+    //                 double ccc = 0.0;
+    //             }
+
+    //             if ( !assert_complex_equality( value, cuscomplex( 0.0, 0.0 ), 1e-3 ) )
+    //             {
+    //                 std::cout << "pot_gp.sysmat not equal at - i: " << i << " - j: " << j << " - k: " << k << " - idx0: " << _idx0 << " - idx1: " << _idx1 << " - Value: " << value << std::endl;
+    //                 throw std::runtime_error( "" );
+    //             }
+    //         }
+    //     }
+    // }
+
     /***************************************************************/
     /******** Sum panel potentials from all processes **************/
     /***************************************************************/
@@ -475,6 +503,11 @@ void    calculate_potpanel_total_lin(
                                                                         pot_gp->field_points[3*j+2],
                                                                         input->heads[i]
                                                                     );
+                
+                if ( index == 19 )
+                {
+                    double ab = 0.0;
+                }
             }
         }
     }
@@ -492,6 +525,11 @@ void    calculate_potpanel_total_lin(
                 index                   = pot_gp->field_points_np * i + j;
                 index_2                 = ( input->dofs_np + i ) * pot_gp->field_points_np + j;
                 potpanel_total[index]   += pot_raddif_p0[index_2];
+
+                if ( index == 19 )
+                {
+                    double a = 0.0;
+                }
             }
         }
     }
@@ -502,29 +540,103 @@ void    calculate_potpanel_total_lin(
 
     if ( mpi_config->is_root( ) )
     {
+        int idx = 0;
+        // for ( int i=0; i<input->dofs_np; i++ )
+        // {
+        //     for ( int j=0; j<pot_gp->field_points_np; j++ )
+        //     {
+        //         idx = i*pot_gp->sysmat_nrows+j;
+        //         std::cout << "Raddiation Dof: " << i;
+        //         std::cout << " - Panel Centre: " << pot_gp->field_points[3*j] << " " << pot_gp->field_points[3*j+1] << " " << pot_gp->field_points[3*j+2];
+        //         std::cout << " - Panel Potential: " << pot_raddif_p0[idx];
+        //         std::cout << " - Mag: " << std::abs( pot_raddif_p0[idx] );
+        //         std::cout << " - Arg: " << 57.3 * std::atan2( pot_raddif_p0[idx].imag( ), pot_raddif_p0[idx].real( ) );
+        //         std::cout << " - Index: " << idx;
+        //         std::cout << std::endl;
+        //     }
+        // }
+
+        // for ( int i=0; i<input->heads_np; i++ )
+        // {
+        //     for ( int j=0; j<pot_gp->field_points_np; j++ )
+        //     {
+        //         idx = (input->dofs_np+i)*pot_gp->sysmat_nrows+j;
+        //         std::cout << "Diffraction Heading: " << i;
+        //         std::cout << " - Panel Centre: " << pot_gp->field_points[3*j] << " " << pot_gp->field_points[3*j+1] << " " << pot_gp->field_points[3*j+2];
+        //         std::cout << " - Panel Potential: " << pot_raddif_p0[idx];
+        //         std::cout << " - Mag: " << std::abs( pot_raddif_p0[idx] );
+        //         std::cout << " - Arg: " << 57.3 * std::atan2( pot_raddif_p0[idx].imag( ), pot_raddif_p0[idx].real( ) );
+        //         std::cout << " - Index: " << idx;
+        //         std::cout << std::endl;
+        //     }
+        // }
+
         for ( int i=0; i<input->heads_np; i++ )
         {
             for ( int j=0; j<pot_gp->field_points_nb; j++ )
             {
-                for ( int r=pot_gp->field_points_cnp[j]; r<pot_gp->field_points_cnp[j+1]; r++ )
+                for ( int k=0; k<input->dofs_np; k++ )
                 {
-                    for ( int k=0; k<input->dofs_np; k++ )
+                    for ( int r=pot_gp->field_points_cnp[j]; r<pot_gp->field_points_cnp[j+1]; r++ )
                     {
                         index                   = i * pot_gp->field_points_np + r;
                         index_2                 = k * pot_gp->field_points_np + r;
                         index_3                 = i * ( input->dofs_np * pot_gp->field_points_nb ) + j * input->dofs_np + k;
-                        potpanel_total[index]   += cuscomplex(0.0, -1.0) * raos[index_3] * pot_raddif_p0[index_2];
-                        std::cout << "index: " << index << " - index_2: " << index_2 << " - index_3: " << index_3 << std::endl;
+                        cuscomplex raos_mult    = raos[index_3] * pot_raddif_p0[index_2];
+                        potpanel_total[index]   += raos_mult;
+                        std::cout << "index: " << index << " - index_2: " << index_2 << " - index_3: " << index_3;
+                        std::cout << " - Raos " << raos[index_3] << " - PotRadiff: " << pot_raddif_p0[index_2];
+                        std::cout << " - RaosMultp: " << raos_mult << std::endl;
+                    }
+
+                    if ( index == 19 )
+                    {
+                        double ab = 0.0;
                     }
                 }
             }
         }
+        // for ( int i=0; i<input->heads_np; i++ )
+        // {
+        //     for ( int j=0; j<pot_gp->field_points_np; j++ )
+        //     {
+        //         idx = i*pot_gp->sysmat_nrows+j;
+        //         std::cout << "Potpanel total: " << i;
+        //         std::cout << " - Panel Centre: " << pot_gp->field_points[3*j] << " " << pot_gp->field_points[3*j+1] << " " << pot_gp->field_points[3*j+2];
+        //         std::cout << " - Panel Potential: " << potpanel_total[idx];
+        //         std::cout << " - Mag: " << std::abs( potpanel_total[idx] );
+        //         std::cout << " - Arg: " << 57.3 * std::atan2( potpanel_total[idx].imag( ), potpanel_total[idx].real( ) );
+        //         std::cout << " - Index: " << idx;
+        //         std::cout << std::endl;
+        //     }
+        // }
+
+        // Write results to files
+        std::string pot_wl_fipath( "E:/sergio/0050_OASIS_SM/pot_wl_data.dat" );
+
+        std::ofstream of_pot_wl( pot_wl_fipath );
+
+        std::string space4( "    " );
+        for ( int i=0; i<pot_gp->sysmat_nrows; i++ )
+        {
+            of_pot_wl << i+1 << space4;
+            for ( int j=0; j<3; j++ )
+            {
+                of_pot_wl << pot_gp->field_points[3*i+j] << space4;
+            }
+            of_pot_wl << potpanel_total[i].real( ) << space4 << potpanel_total[i].imag( ) << space4;
+            of_pot_wl << std::abs( potpanel_total[i] ) << space4 << 57.3 * std::atan2( potpanel_total[i].imag( ), potpanel_total[i].real( ) ) << std::endl;
+
+        }
+
+        of_pot_wl.close( );
     }
+
 
     /*******************************************************/
     /**************  Deallocate heap memory ****************/
     /*******************************************************/
- 
+    
     if ( mpi_config->is_root( ) )
     {
         mkl_free( pot_raddif_p0 );

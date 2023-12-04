@@ -6,6 +6,7 @@
 #include "../../config.hpp"
 #include "../../containers/matlin_group.hpp"
 #include "../../containers/mpi_config.hpp"
+#include "../../containers/simulation_data.hpp"
 #include "../../inout/input.hpp"
 #include "../../mesh/mesh_group.hpp"
 
@@ -50,7 +51,8 @@ void    calculate_velocities_total(
                                                     MLGCmpx*        vel_z_gp,
                                                     cuscomplex*     vel_x_total,
                                                     cuscomplex*     vel_y_total,
-                                                    cuscomplex*     vel_z_total
+                                                    cuscomplex*     vel_z_total,
+                                                    SimulationData* sim_data
                                     );
 
 #endif

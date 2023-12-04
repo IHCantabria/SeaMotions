@@ -5,6 +5,7 @@
 // Include local modules
 #include "../../config.hpp"
 #include "../../containers/simulation_data.hpp"
+#include "../../containers/matlin_group.hpp"
 #include "../../inout/input.hpp"
 #include "../../mesh/mesh_group.hpp"
 
@@ -25,7 +26,14 @@ void    calculate_second_order_force(
                                         cuscomplex*     vel_z_j,
                                         cusfloat        ang_freq_i,
                                         cusfloat        ang_freq_j,
-                                        cuscomplex*     qtf_values
+                                        cuscomplex*     qtf_values,
+                                        cuscomplex*     qtf_wl,
+                                        cuscomplex*     qtf_bern,
+                                        cuscomplex*     qtf_acc,
+                                        cuscomplex*     qtf_mom,
+                                        MLGCmpx*        pot_gp,
+                                        MLGCmpx*        vel_gp
+
                                     );
 
 

@@ -1,4 +1,7 @@
 
+// Include general usage libraries
+#include <fstream>
+
 // Include local modules
 #include "velocities.hpp"
 
@@ -33,6 +36,7 @@ void    calculate_raddif_velocity_mat_steady(
 
     // Define local variables to work with the fast solver
     const int   ndim                    = 3;
+    cusfloat    dist_fp_cp              = 0.0;
     cusfloat    field_point_i[ndim];    clear_vector( ndim, field_point_i );
     PanelGeom*  panel_j                 = nullptr;
     PanelGeom*  panel_mirror_j          = nullptr;
@@ -44,8 +48,12 @@ void    calculate_raddif_velocity_mat_steady(
     cusfloat    vel_5[ndim];            clear_vector( ndim, vel_5 );
     cusfloat    vel_total[ndim];        clear_vector( ndim, vel_total );
 
+    // Get correction factor for the number of field points if the
+    // non adaptive quadrature is being used
+    int fc = input->gauss_np_factor_2d( );
+
     // Loop over panels and field points to create the steady source matrix
-    for ( int i=vel_x_gp->start_row; i<vel_x_gp->end_row; i++ )
+    for ( int i=vel_x_gp->start_row; i<vel_x_gp->end_row+1; i++ )
     {
 
         // Loop over rows to calcualte the influence of the panel
@@ -58,98 +66,115 @@ void    calculate_raddif_velocity_mat_steady(
             panel_mirror_j  = mesh_gp->panels_mirror[j];
 
             if ( 
-                    mesh_gp->panels[i]->type == DIFFRAC_PANEL_CODE
+                    mesh_gp->panels[i/fc]->type == DIFFRAC_PANEL_CODE
                     &&
                     mesh_gp->panels[j]->type == DIFFRAC_PANEL_CODE
                 )
             {
-                // Reset velocity values
-                clear_vector( ndim, vel_0 );
-                clear_vector( ndim, vel_1 );
-                clear_vector( ndim, vel_2 );
-                clear_vector( ndim, vel_3 );
-                clear_vector( ndim, vel_4 );
-                clear_vector( ndim, vel_5 );
-                clear_vector( ndim, vel_total );
-                
-                // Calcualte velocity corresponding to the r0 source
-                calculate_source_velocity_newman(
-                                                    panel_j,
-                                                    &(field_points[3*i]), 
-                                                    0,
-                                                    0, 
-                                                    vel_0
-                                                );
+                dist_fp_cp = eucledian_dist(
+                                                3,
+                                                panel_j->center,
+                                                &(field_points[3*i])
+                                            );
 
-                // Calculate velocity corresponding to the r1 source
-                field_point_i[0]    =   field_points[3*i];
-                field_point_i[1]    =   field_points[3*i+1];
-                field_point_i[2]    =   field_points[3*i+2] + 2 * input->water_depth;
-                calculate_source_velocity_newman(
-                                                    panel_mirror_j,
-                                                    field_point_i, 
-                                                    0,
-                                                    0, 
-                                                    vel_1
-                                                );
+                dist_fp_cp = 5.0;
                 
-                // Calculate velocity corresponding to the r2 source
-                field_point_i[0]    =   field_points[3*i];
-                field_point_i[1]    =   field_points[3*i+1];
-                field_point_i[2]    =   field_points[3*i+2];
-                calculate_source_velocity_newman(
-                                                    panel_mirror_j,
-                                                    field_point_i, 
-                                                    0,
-                                                    0, 
-                                                    vel_2
-                                                );
+                if ( dist_fp_cp > 1e-6 )
+                {
+                    // Reset velocity values
+                    clear_vector( ndim, vel_0 );
+                    clear_vector( ndim, vel_1 );
+                    clear_vector( ndim, vel_2 );
+                    clear_vector( ndim, vel_3 );
+                    clear_vector( ndim, vel_4 );
+                    clear_vector( ndim, vel_5 );
+                    clear_vector( ndim, vel_total );
+                    
+                    // Calcualte velocity corresponding to the r0 source
+                    calculate_source_velocity_newman(
+                                                        panel_j,
+                                                        &(field_points[3*i]), 
+                                                        0,
+                                                        0, 
+                                                        vel_0
+                                                    );
 
-                // Calculate velocity corresponding to the r3 source
-                field_point_i[0]    =   field_points[3*i];
-                field_point_i[1]    =   field_points[3*i+1];
-                field_point_i[2]    =   field_points[3*i+2] + 2.0 * input->water_depth;
-                calculate_source_velocity_newman(
-                                                    panel_j,
-                                                    field_point_i, 
-                                                    0,
-                                                    0, 
-                                                    vel_3
-                                                );
+                    // Calculate velocity corresponding to the r1 source
+                    field_point_i[0]    =   field_points[3*i];
+                    field_point_i[1]    =   field_points[3*i+1];
+                    field_point_i[2]    =   field_points[3*i+2] + 2 * input->water_depth;
+                    calculate_source_velocity_newman(
+                                                        panel_mirror_j,
+                                                        field_point_i, 
+                                                        0,
+                                                        0, 
+                                                        vel_1
+                                                    );
+                    
+                    // Calculate velocity corresponding to the r2 source
+                    field_point_i[0]    =   field_points[3*i];
+                    field_point_i[1]    =   field_points[3*i+1];
+                    field_point_i[2]    =   field_points[3*i+2];
+                    calculate_source_velocity_newman(
+                                                        panel_mirror_j,
+                                                        field_point_i, 
+                                                        0,
+                                                        0, 
+                                                        vel_2
+                                                    );
 
-                // Calculate velocity corresponding to the r4 source
-                field_point_i[0]    =   field_points[3*i];
-                field_point_i[1]    =   field_points[3*i+1];
-                field_point_i[2]    =   -field_points[3*i+2] + 2.0 * input->water_depth;
-                calculate_source_velocity_newman(
-                                                    panel_mirror_j,
-                                                    field_point_i, 
-                                                    0,
-                                                    0, 
-                                                    vel_4
-                                                );
+                    // Calculate velocity corresponding to the r3 source
+                    field_point_i[0]    =   field_points[3*i];
+                    field_point_i[1]    =   field_points[3*i+1];
+                    field_point_i[2]    =   field_points[3*i+2] + 2.0 * input->water_depth;
+                    calculate_source_velocity_newman(
+                                                        panel_j,
+                                                        field_point_i, 
+                                                        0,
+                                                        0, 
+                                                        vel_3
+                                                    );
 
-                // Calculate velocity corresponding to the r5 source
-                field_point_i[0]    =   field_points[3*i];
-                field_point_i[1]    =   field_points[3*i+1];
-                field_point_i[2]    =   field_points[3*i+2] + 4.0 * input->water_depth;
-                calculate_source_velocity_newman(
-                                                    panel_mirror_j,
-                                                    field_point_i, 
-                                                    0,
-                                                    0, 
-                                                    vel_5
-                                                );
-                
-                // Compose total velocity vector
-                vel_total[0]    = vel_0[0] + vel_1[0] + vel_2[0] + vel_3[0] + vel_4[0] + vel_5[0];
-                vel_total[1]    = vel_0[1] + vel_1[1] + vel_2[1] + vel_3[1] + vel_4[1] + vel_5[1];
-                vel_total[2]    = vel_0[2] + vel_1[2] + vel_2[2] + vel_3[2] + vel_4[2] + vel_5[2];
-                                        
-                
-                vel_x_gp->sysmat_steady[row_count*cols_np+col_count] = vel_total[0] / 4.0 / PI;
-                vel_y_gp->sysmat_steady[row_count*cols_np+col_count] = vel_total[1] / 4.0 / PI;
-                vel_z_gp->sysmat_steady[row_count*cols_np+col_count] = vel_total[2] / 4.0 / PI;
+                    // Calculate velocity corresponding to the r4 source
+                    field_point_i[0]    =   field_points[3*i];
+                    field_point_i[1]    =   field_points[3*i+1];
+                    field_point_i[2]    =   -field_points[3*i+2] + 2.0 * input->water_depth;
+                    calculate_source_velocity_newman(
+                                                        panel_mirror_j,
+                                                        field_point_i, 
+                                                        0,
+                                                        0, 
+                                                        vel_4
+                                                    );
+
+                    // Calculate velocity corresponding to the r5 source
+                    field_point_i[0]    =   field_points[3*i];
+                    field_point_i[1]    =   field_points[3*i+1];
+                    field_point_i[2]    =   field_points[3*i+2] + 4.0 * input->water_depth;
+                    calculate_source_velocity_newman(
+                                                        panel_mirror_j,
+                                                        field_point_i, 
+                                                        0,
+                                                        0, 
+                                                        vel_5
+                                                    );
+                    
+                    // Compose total velocity vector
+                    vel_total[0]    = vel_0[0] + vel_1[0] + vel_2[0] + vel_3[0] + vel_4[0] + vel_5[0];
+                    vel_total[1]    = vel_0[1] + vel_1[1] + vel_2[1] + vel_3[1] + vel_4[1] + vel_5[1];
+                    vel_total[2]    = vel_0[2] + vel_1[2] + vel_2[2] + vel_3[2] + vel_4[2] + vel_5[2];
+                                            
+                    
+                    vel_x_gp->sysmat_steady[row_count*cols_np+col_count] = vel_total[0] / 4.0 / PI;
+                    vel_y_gp->sysmat_steady[row_count*cols_np+col_count] = vel_total[1] / 4.0 / PI;
+                    vel_z_gp->sysmat_steady[row_count*cols_np+col_count] = vel_total[2] / 4.0 / PI;
+                }
+                else
+                {
+                    vel_x_gp->sysmat_steady[row_count*cols_np+col_count] = 0.5 * panel_j->normal_vec[0];
+                    vel_y_gp->sysmat_steady[row_count*cols_np+col_count] = 0.5 * panel_j->normal_vec[1];
+                    vel_z_gp->sysmat_steady[row_count*cols_np+col_count] = 0.5 * panel_j->normal_vec[2];
+                }
             }
 
             // Advance column count
@@ -339,11 +364,17 @@ void    calculate_raddif_velocity_mat_wave(
                                         };
 
     // Generate potential matrix
-    int         count = 0;
+    int         count       = 0;
+    cusfloat    dist_fp_cp  = 0.0;
     cuscomplex  vel_x_wave_term( 0.0, 0.0 );
     cuscomplex  vel_y_wave_term( 0.0, 0.0 );
     cuscomplex  vel_z_wave_term( 0.0, 0.0 );
-    for ( int i=0; i<vel_x_gp->field_points_np; i++ )
+
+    // Get correction factor for the number of field points if the
+    // non adaptive quadrature is being used
+    int fc = input->gauss_np_factor_2d( );
+
+    for ( int i=vel_x_gp->start_row; i<vel_x_gp->end_row+1; i++ )
     {
         // Change field point
         green_wave_dx->set_field_point_j(
@@ -360,42 +391,56 @@ void    calculate_raddif_velocity_mat_wave(
         {
             // Compute steady and wave terms over the panel
             if ( 
-                    mesh_gp->panels[i]->type == DIFFRAC_PANEL_CODE
+                    mesh_gp->panels[i/fc]->type == DIFFRAC_PANEL_CODE
                     &&
                     mesh_gp->panels[j]->type == DIFFRAC_PANEL_CODE
                 )
             {
-                vel_x_wave_term         = adaptive_quadrature_panel(
-                                                                        mesh_gp->panels[j],
-                                                                        wave_dx_fcn,
-                                                                        input->pot_abs_err,
-                                                                        input->pot_rel_err,
-                                                                        input->is_block_adaption,
-                                                                        false,
-                                                                        input->gauss_order
-                                                                    );
-                vel_y_wave_term         = adaptive_quadrature_panel(
-                                                                        mesh_gp->panels[j],
-                                                                        wave_dy_fcn,
-                                                                        input->pot_abs_err,
-                                                                        input->pot_rel_err,
-                                                                        input->is_block_adaption,
-                                                                        false,
-                                                                        input->gauss_order
-                                                                    );
-                vel_z_wave_term         = adaptive_quadrature_panel(
-                                                                        mesh_gp->panels[j],
-                                                                        wave_dz_fcn,
-                                                                        input->pot_abs_err,
-                                                                        input->pot_rel_err,
-                                                                        input->is_block_adaption,
-                                                                        false,
-                                                                        input->gauss_order
-                                                                    );
-                vel_x_gp->sysmat[count] = vel_x_gp->sysmat_steady[count] + vel_x_wave_term / 4.0 / PI;
-                vel_y_gp->sysmat[count] = vel_y_gp->sysmat_steady[count] + vel_y_wave_term / 4.0 / PI;
-                vel_z_gp->sysmat[count] = vel_z_gp->sysmat_steady[count] + vel_z_wave_term / 4.0 / PI;
-
+                dist_fp_cp = eucledian_dist(
+                                                3,
+                                                mesh_gp->panels[j]->center,
+                                                &(vel_x_gp->field_points[3*i])
+                                            );
+                dist_fp_cp = 5.0;
+                if ( dist_fp_cp > 1e-6 )
+                {
+                    vel_x_wave_term         = adaptive_quadrature_panel(
+                                                                            mesh_gp->panels[j],
+                                                                            wave_dx_fcn,
+                                                                            input->gfdn_abs_err,
+                                                                            input->gfdn_rel_err,
+                                                                            input->is_block_adaption,
+                                                                            false,
+                                                                            input->gauss_order
+                                                                        );
+                    vel_y_wave_term         = adaptive_quadrature_panel(
+                                                                            mesh_gp->panels[j],
+                                                                            wave_dy_fcn,
+                                                                            input->gfdn_abs_err,
+                                                                            input->gfdn_rel_err,
+                                                                            input->is_block_adaption,
+                                                                            false,
+                                                                            input->gauss_order
+                                                                        );
+                    vel_z_wave_term         = adaptive_quadrature_panel(
+                                                                            mesh_gp->panels[j],
+                                                                            wave_dz_fcn,
+                                                                            input->gfdn_abs_err,
+                                                                            input->gfdn_rel_err,
+                                                                            input->is_block_adaption,
+                                                                            false,
+                                                                            input->gauss_order
+                                                                        );
+                    vel_x_gp->sysmat[count] = vel_x_gp->sysmat_steady[count] + vel_x_wave_term / 4.0 / PI;
+                    vel_y_gp->sysmat[count] = vel_y_gp->sysmat_steady[count] + vel_y_wave_term / 4.0 / PI;
+                    vel_z_gp->sysmat[count] = vel_z_gp->sysmat_steady[count] + vel_z_wave_term / 4.0 / PI;
+                }
+                else
+                {
+                    vel_x_gp->sysmat[count] = vel_x_gp->sysmat_steady[count];
+                    vel_y_gp->sysmat[count] = vel_y_gp->sysmat_steady[count];
+                    vel_z_gp->sysmat[count] = vel_z_gp->sysmat_steady[count];
+                }
             }
             else
             {
@@ -428,7 +473,8 @@ void    calculate_velocities_total(
                                                     MLGCmpx*        vel_z_gp,
                                                     cuscomplex*     vel_x_total,
                                                     cuscomplex*     vel_y_total,
-                                                    cuscomplex*     vel_z_total
+                                                    cuscomplex*     vel_z_total,
+                                                    SimulationData* sim_data
                                     )
 {
     // Declare auxiliar variables to use in the function
@@ -447,6 +493,48 @@ void    calculate_velocities_total(
                                             vel_y_gp,
                                             vel_z_gp
                                         );
+
+    cuscomplex value( 0.0, 0.0 );
+    int ngpf    = input->gauss_np_factor_2d( );
+    int _idx0   = 0;
+    int _idx1   = 0;
+    // for ( int i=0; i<vel_x_gp->field_points_np/ngpf; i++ )
+    // {
+    //     for ( int j=0; j<ngpf; j++ )
+    //     {
+    //         for ( int k=0; k<vel_x_gp->sysmat_ncols; k++ )
+    //         {
+    //             _idx0 = i * ngpf * vel_x_gp->sysmat_ncols + k;
+    //             _idx1 = i * ngpf * vel_x_gp->sysmat_ncols + j * vel_x_gp->sysmat_ncols + k;
+    //             value = vel_x_gp->sysmat[_idx0] - vel_x_gp->sysmat[_idx1];
+
+    //             if ( i == 6 && j == 3 )
+    //             {
+    //                 double ccc = 0.0;
+    //             }
+
+    //             if ( !assert_complex_equality( value, cuscomplex( 0.0, 0.0 ), 1e-3 ) )
+    //             {
+    //                 std::cout << "vel_x_gp.sysmat not equal at - i: " << i << " - j: " << j << " - k: " << k << " - idx0: " << _idx0 << " - idx1: " << _idx1 << " - Value: " << value << std::endl;
+    //                 throw std::runtime_error( "" );
+    //             }
+
+    //             value = vel_y_gp->sysmat[_idx0] - vel_y_gp->sysmat[_idx1];
+    //             if ( !assert_complex_equality( value, cuscomplex( 0.0, 0.0 ), 1e-3 ) )
+    //             {
+    //                 std::cout << "vel_y_gp.sysmat not equal at - i: " << i << " - j: " << j << " - k: " << k << " - idx0: " << _idx0 << " - idx1: " << _idx1 << " - Value: " << value << std::endl;
+    //                 throw std::runtime_error( "" );
+    //             }
+
+    //             value = vel_z_gp->sysmat[_idx0] - vel_z_gp->sysmat[_idx1];
+    //             if ( !assert_complex_equality( value, cuscomplex( 0.0, 0.0 ), 1e-3 ) )
+    //             {
+    //                 std::cout << "vel_z_gp.sysmat not equal at - i: " << i << " - j: " << j << " - k: " << k << " - idx0: " << _idx0 << " - idx1: " << _idx1 << " - Value: " << value << std::endl;
+    //                 throw std::runtime_error( "" );
+    //             }
+    //         }
+    //     }
+    // }
 
     /*******************************************************/
     /***  Calculate radiation and diffraction velocities ***/
@@ -532,6 +620,7 @@ void    calculate_velocities_total(
             for ( int j=0; j<vel_x_gp->field_points_np; j++ )
             {
                 index                   =   vel_x_gp->field_points_np * i + j;
+                
                 vel_x_total[index]      =   wave_potential_airy_space_dx(
                                                                             input->wave_amplitude,
                                                                             ang_freq,
@@ -567,6 +656,18 @@ void    calculate_velocities_total(
                                                                             vel_x_gp->field_points[3*j+2],
                                                                             input->heads[i]
                                                                         );
+                if ( index == 49 || index == 196 )
+                {
+                    double abc = 0;
+                }
+
+                // if ( index == 49 )
+                // {
+                //     std::cout << std::endl;
+                //     std::cout << "vel_x_total[" << index << "]: " << vel_x_total[index] << " - " << vel_x_total << std::endl;
+                //     std::cout << "vel_y_total[" << index << "]: " << vel_y_total[index] << " - " << vel_y_total << std::endl;
+                //     std::cout << "vel_z_total[" << index << "]: " << vel_z_total[index] << " - " << vel_z_total << std::endl;
+                // }
             }
         }
     }
@@ -577,15 +678,56 @@ void    calculate_velocities_total(
 
     if ( mpi_config->is_root( ) )
     {
+        int idtest =0 ;
+        cuscomplex a, b, c;
         for ( int i=0; i<input->heads_np; i++ )
         {
             for ( int j=0; j<vel_x_gp->field_points_np; j++ )
             {
-                index                   = vel_x_gp->field_points_np * i + j;
+                // index                   = vel_x_gp->sysmat_nrows * i + j;
+                // index_2                 = ( input->dofs_np + i ) * vel_x_gp->field_points_np + j;
+                // idtest                  = index_2;
+                // a                       = vel_x_raddif_p0[index_2];
+                // b                       = vel_y_raddif_p0[index_2];
+                // c                       = vel_z_raddif_p0[index_2];
+                // vel_x_total[index]      += a;
+                // vel_y_total[index]      += b;
+                // vel_z_total[index]      += b;
+                index                   = vel_x_gp->sysmat_nrows * i + j;
                 index_2                 = ( input->dofs_np + i ) * vel_x_gp->field_points_np + j;
-                vel_x_total[index]      += vel_x_raddif_p0[index_2];
-                vel_y_total[index]      += vel_y_raddif_p0[index_2];
-                vel_z_total[index]      += vel_z_raddif_p0[index_2];
+                idtest                  = index_2;
+
+                if ( index == 49 )
+                {
+                    a                       = vel_x_raddif_p0[index_2];
+                    b                       = vel_y_raddif_p0[index_2];
+                    c                       = vel_z_raddif_p0[index_2];
+                    vel_x_total[index]      += a;
+                    vel_y_total[index]      += b;
+                    vel_z_total[index]      += c;
+
+                    // std::cout << std::endl;
+                    // std::cout << "vel_x_raddif_p0[" << idtest << "]: " << a << std::endl;
+                    // std::cout << "vel_y_raddif_p0[" << idtest << "]: " << b << std::endl;
+                    // std::cout << "vel_z_raddif_p0[" << idtest << "]: " << c << std::endl;
+                    // std::cout << "vel_x_total[" << index << "]: " << vel_x_total[index] << " - " << vel_x_total << std::endl;
+                    // std::cout << "vel_y_total[" << index << "]: " << vel_y_total[index] << " - " << vel_y_total << std::endl;
+                    // std::cout << "vel_z_total[" << index << "]: " << vel_z_total[index] << " - " << vel_z_total << std::endl;
+                }
+                else
+                {
+                    a                       = vel_x_raddif_p0[index_2];
+                    b                       = vel_y_raddif_p0[index_2];
+                    c                       = vel_z_raddif_p0[index_2];
+                    vel_x_total[index]      += a;
+                    vel_y_total[index]      += b;
+                    vel_z_total[index]      += c;
+                }
+
+                if ( index == 49 || index == 196 )
+                {
+                    double abc = 0;
+                }
             }
         }
     }
@@ -604,17 +746,123 @@ void    calculate_velocities_total(
                 {
                     for ( int k=0; k<input->dofs_np; k++ )
                     {
-                        index                   = i * vel_x_gp->field_points_np + r;
-                        index_2                 = k * vel_x_gp->field_points_np + r;
+                        index                   = i * vel_x_gp->sysmat_nrows + r;
+                        index_2                 = k * vel_x_gp->sysmat_nrows + r;
                         index_3                 = i * ( input->dofs_np * vel_x_gp->field_points_nb ) + j * input->dofs_np + k;
                         vel_x_total[index]      += raos[index_3] * vel_x_raddif_p0[index_2];
                         vel_y_total[index]      += raos[index_3] * vel_y_raddif_p0[index_2];
                         vel_z_total[index]      += raos[index_3] * vel_z_raddif_p0[index_2];
+
+                        
+                        // if ( index == 49 )
+                        // {
+                        //     std::cout << std::endl;
+                        //     std::cout << "raos[" << index_3 << "]: " << raos[index_3] << std::endl;
+                        //     std::cout << "vel_x_raddif_p0[" << index_2 << "]: " << vel_x_raddif_p0[index_2] << std::endl;
+                        //     std::cout << "vel_y_raddif_p0[" << index_2 << "]: " << vel_y_raddif_p0[index_2] << std::endl;
+                        //     std::cout << "vel_z_raddif_p0[" << index_2 << "]: " << vel_z_raddif_p0[index_2] << std::endl;
+                        //     std::cout << "vel_x_total[" << index << "]: " << vel_x_total[index] << std::endl;
+                        //     std::cout << "vel_y_total[" << index << "]: " << vel_y_total[index] << std::endl;
+                        //     std::cout << "vel_z_total[" << index << "]: " << vel_z_total[index] << std::endl;
+                        // }
+                    }
+
+                    if ( index == 49 || index == 196 )
+                    {
+                        double abc = 0;
                     }
                 }
             }
         }
+
+        // for ( int i=0; i<input->heads_np; i++ )
+        // {
+        //     for ( int j=0; j<vel_x_gp->field_points_nb; j++ )
+        //     {
+        //         for ( int r=vel_x_gp->field_points_cnp[j]; r<vel_x_gp->field_points_cnp[j+1]; r++ )
+        //         {
+        //             index                   = i * vel_x_gp->sysmat_nrows + r;
+        //             std::cout << endl;
+        //             std::cout << "Field Point: " << index << " - " << vel_x_gp->field_points[3*r] << " " << vel_x_gp->field_points[3*r+1] << " " << vel_x_gp->field_points[3*r+2] << std::endl;
+        //             std::cout << "Vel_x: " << vel_x_total[index];
+        //             std::cout << " - Mag: " << std::abs( vel_x_total[index] );
+        //             std::cout << " - Pha: " << 57.3 * std::atan2( vel_x_total[index].imag(), vel_x_total[index].real( ) );
+        //             std::cout << std::endl;
+        //             std::cout << "Vel_y: " << vel_y_total[index];
+        //             std::cout << " - Mag: " << std::abs( vel_y_total[index] );
+        //             std::cout << " - Pha: " << 57.3 * std::atan2( vel_y_total[index].imag(), vel_y_total[index].real( ) );
+        //             std::cout << std::endl;
+        //             std::cout << "Vel_z: " << vel_z_total[index];
+        //             std::cout << " - Mag: " << std::abs( vel_z_total[index] );
+        //             std::cout << " - Pha: " << 57.3 * std::atan2( vel_z_total[index].imag(), vel_z_total[index].real( ) );
+        //             std::cout << std::endl;
+        //         }
+        //     }
+        // }
+
+        // // Write system matrixes to files
+        // std::string vel_x_sysmat_fipath( "E:/sergio/0050_OASIS_SM/vel_x_sysmat.dat" );
+        // std::string vel_x_sysmat_steady_fipath( "E:/sergio/0050_OASIS_SM/vel_x_sysmat_steady.dat" );
+
+        // std::ofstream of_vel_x_sysmat( vel_x_sysmat_fipath );
+        // std::ofstream of_vel_x_sysmat_steady( vel_x_sysmat_steady_fipath );
+
+        // of_vel_x_sysmat << vel_x_gp->sysmat_nrows << " " << vel_x_gp->sysmat_ncols << std::endl;
+        // of_vel_x_sysmat_steady << vel_x_gp->sysmat_nrows << " " << vel_x_gp->sysmat_ncols << std::endl;
+        // for ( int i=0; i<vel_x_gp->sysmat_nrows; i++ )
+        // {
+        //     for ( int j=0; j<vel_x_gp->sysmat_ncols; j++ )
+        //     {
+        //         of_vel_x_sysmat << vel_x_gp->sysmat[i*vel_x_gp->sysmat_ncols+j].real( ) << " " << vel_x_gp->sysmat[i*vel_x_gp->sysmat_ncols+j].imag( ) << std::endl;
+        //         of_vel_x_sysmat_steady << vel_x_gp->sysmat_steady[i*vel_x_gp->sysmat_ncols+j].real( ) << " " << vel_x_gp->sysmat_steady[i*vel_x_gp->sysmat_ncols+j].imag( ) << std::endl;
+        //     }
+        // }
+
+        // of_vel_x_sysmat.close( );
+        // of_vel_x_sysmat_steady.close( );
+
+        // Write results to files
+        std::string vel_x_fipath( "E:/sergio/0050_OASIS_SM/vel_x_data.dat" );
+        std::string vel_y_fipath( "E:/sergio/0050_OASIS_SM/vel_y_data.dat" );
+        std::string vel_z_fipath( "E:/sergio/0050_OASIS_SM/vel_z_data.dat" );
+
+        std::ofstream of_vel_x( vel_x_fipath );
+        std::ofstream of_vel_y( vel_y_fipath );
+        std::ofstream of_vel_z( vel_z_fipath );
+
+        std::string space4( "    " );
+        for ( int i=0; i<vel_x_gp->sysmat_nrows; i++ )
+        {
+            of_vel_x << i+1 << space4;
+            for ( int j=0; j<3; j++ )
+            {
+                of_vel_x << vel_x_gp->field_points[3*i+j] << space4;
+            }
+            of_vel_x << vel_x_total[i].real( ) << space4 << vel_x_total[i].imag( ) << space4;
+            of_vel_x << std::abs( vel_x_total[i] ) << space4 << 57.3 * std::atan2( vel_x_total[i].imag( ), vel_x_total[i].real( ) ) << std::endl;
+
+            of_vel_y << i+1 << space4;
+            for ( int j=0; j<3; j++ )
+            {
+                of_vel_y << vel_y_gp->field_points[3*i+j] << space4;
+            }
+            of_vel_y << vel_y_total[i].real( ) << space4 << vel_y_total[i].imag( ) << space4;
+            of_vel_y << std::abs( vel_y_total[i] ) << space4 << 57.3 * std::atan2( vel_y_total[i].imag( ), vel_y_total[i].real( ) ) << std::endl;
+
+            of_vel_z << i+1 << space4;
+            for ( int j=0; j<3; j++ )
+            {
+                of_vel_z << vel_z_gp->field_points[3*i+j] << space4;
+            }
+            of_vel_z << vel_z_total[i].real( ) << space4 << vel_z_total[i].imag( ) << space4;
+            of_vel_z << std::abs( vel_z_total[i] ) << space4 << 57.3 * std::atan2( vel_z_total[i].imag( ), vel_z_total[i].real( ) ) << std::endl;
+        }
+
+        of_vel_x.close( );
+        of_vel_y.close( );
+        of_vel_z.close( );
     }
+
 
     /*******************************************************/
     /**************  Deallocate heap memory ****************/
