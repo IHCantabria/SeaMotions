@@ -118,6 +118,29 @@ void Input::configure( void )
 }
 
 
+int  Input::gauss_np_factor_1d( void )
+{
+    int gf = this->gauss_order;
+    if ( !this->is_block_adaption )
+    {
+        gf = 1;
+    }
+
+    return gf;
+}
+
+
+int  Input::gauss_np_factor_2d( void )
+{
+    int gf = pow2s( this->gauss_order );
+    if ( !this->is_block_adaption )
+    {
+        gf = 1;
+    }
+
+    return gf;
+}
+
 Input::~Input( void )
 {
     if ( this->is_bodies )

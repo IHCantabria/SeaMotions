@@ -64,11 +64,19 @@ public:
 
     // Define class methods
     void    configure( 
-                        void
+                                    void
                     );
 
+    int     gauss_np_factor_1d( 
+                                    void
+                                );
+
+    int     gauss_np_factor_2d( 
+                                    void
+                                );
+
     void    print(     
-                        void 
+                                    void 
                 );
 
 };
