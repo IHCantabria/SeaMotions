@@ -23,4 +23,11 @@ void    define_gauss_points_diffrac_panels(
                                             );
 
 
+void    define_gauss_points_wl(
+                                                Input*      input,
+                                                MeshGroup*  mesh_gp,
+                                                MLGCmpx*    mat_gp
+                                );
+
+
 #endif

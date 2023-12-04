@@ -73,3 +73,53 @@ void    define_gauss_points_diffrac_panels(
         mat_gp->field_points_cnp[i] = pow2s( input->gauss_order ) * mesh_gp->panels_raddif_cnp[i];
     }
 }
+
+
+void    define_gauss_points_wl(
+                                                Input*      input,
+                                                MeshGroup*  mesh_gp,
+                                                MLGCmpx*    mat_gp
+                                )
+{
+    // Get all WL line centers to be more accesible through a vector
+    int         count_lines = 0;
+    cusfloat    tv[3];      clear_vector( 3, tv );
+    GaussPoints gp( input->gauss_order );
+
+    for ( int i=0; i<mesh_gp->panels_wl_tnp; i++ )
+    {
+        // Create direction vector
+        tv[0]   = ( mesh_gp->panels_wl[i]->x_wl[1] - mesh_gp->panels_wl[i]->x_wl[0] ) / mesh_gp->panels_wl[i]->len_wl;
+        tv[1]   = ( mesh_gp->panels_wl[i]->y_wl[1] - mesh_gp->panels_wl[i]->y_wl[0] ) / mesh_gp->panels_wl[i]->len_wl;
+
+        for ( int j=0; j<input->gauss_order; j++ )
+        {
+            mat_gp->field_points[3*count_lines]     = tv[0] * ( gp.roots[j] + 1.0 ) / 2.0 * mesh_gp->panels_wl[i]->len_wl + mesh_gp->panels_wl[i]->x_wl[0];
+            mat_gp->field_points[3*count_lines+1]   = tv[1] * ( gp.roots[j] + 1.0 ) / 2.0 * mesh_gp->panels_wl[i]->len_wl + mesh_gp->panels_wl[i]->y_wl[0];
+            mat_gp->field_points[3*count_lines+2]   = 0.0;
+
+            count_lines++;
+        }
+    }
+
+    for ( int i=0; i<mesh_gp->meshes_np+1; i++ )
+    {
+        mat_gp->field_points_cnp[i] = input->gauss_np_factor_1d( ) * mesh_gp->panels_wl_cnp[i];
+    }
+
+    // Get the radius from the WL line center to the body COG
+    int ngpf  = input->gauss_np_factor_1d( );
+    int index = 0;
+    for ( int i=0; i<mesh_gp->meshes_np; i++ )
+    {
+        for ( int j=mat_gp->field_points_cnp[i]; j<mat_gp->field_points_cnp[i+1]; j++ )
+        {
+            sv_sub(
+                        3,
+                        &(mat_gp->field_points[3*j]),
+                        input->bodies[i]->cog,
+                        &(mat_gp->cog_to_field_points[3*j])
+                    );
+        }
+    }
+}
