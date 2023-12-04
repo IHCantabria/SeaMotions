@@ -2,6 +2,9 @@
 // Include local modules
 #include "tools.hpp"
 
+#include "../../containers/matlin_group.hpp"
+#include "../../inout/input.hpp"
+#include "../../math/gauss.hpp"
 #include "../../math/math_interface.hpp"
 
 
@@ -32,5 +35,41 @@ void    calculate_fields_raddif_lin(
                                     &(field_gp->field_values[i*field_gp->sysmat_nrows]),
                                     icny
                                 );
+    }
+}
+
+
+void    define_gauss_points_diffrac_panels(
+                                                Input*      input,
+                                                MeshGroup*  mesh_gp,
+                                                MLGCmpx*    mat_gp
+                                            )
+{
+    int         _count_pot_np       = 0;
+    cusfloat    field_point_i[3]    = { 0.0, 0.0, 0.0 };
+    GaussPoints gp( input->gauss_order );
+    for ( int i=0; i<mesh_gp->panels_tnp; i++ )
+    {
+        if ( mesh_gp->panels[i]->type == DIFFRAC_PANEL_CODE )
+        {
+            for ( int j=0; j<input->gauss_order; j++ )
+            {
+                for ( int k=0; k<input->gauss_order; k++ )
+                {
+                    mesh_gp->panels[i]->local_to_global(
+                                                            gp.roots[j],
+                                                            gp.roots[k],
+                                                            field_point_i
+                                                        );
+                    copy_vector( 3, field_point_i, &(mat_gp->field_points[3*_count_pot_np]) );
+                    _count_pot_np++;
+                }
+            }
+        }
+    }
+
+    for ( int i=0; i<mesh_gp->meshes_np+1; i++ )
+    {
+        mat_gp->field_points_cnp[i] = pow2s( input->gauss_order ) * mesh_gp->panels_raddif_cnp[i];
     }
 }
