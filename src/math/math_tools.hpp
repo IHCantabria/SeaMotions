@@ -111,6 +111,12 @@ template<typename T>    inline  void        cross(
                                 cusfloat    deg_to_rad(    
                                                                         cusfloat deg 
                                                         );
+
+template<typename T>    inline  T           eucledian_dist(
+                                                                        int     np,
+                                                                        T*      v0,
+                                                                        T*      v1
+                                                            );
         
                                 sll_type    factorial(
                                                                         int n

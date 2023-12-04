@@ -115,6 +115,20 @@ inline void cross( T* u, T* v, T* w )
 
 
 template<typename T>
+inline T eucledian_dist( int np, T* v0, T* v1 )
+{
+    T dist = 0.0;
+    for ( int i=0; i<np; i++ )
+    {
+        dist += pow2s( v1[i] - v0[i] );
+    }
+    dist = std::sqrt( dist );
+
+    return dist;
+}
+
+
+template<typename T>
 T* generate_empty_vector(int size)
 {
     return (T*)mkl_calloc( size, sizeof(T), FLOATING_PRECISION );
