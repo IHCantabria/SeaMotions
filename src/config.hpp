@@ -51,6 +51,6 @@ constexpr cusfloat EPS_PRECISION = 1e-14;
 constexpr cusfloat EPS_PRECISION_ORDER = -14;
 #endif
 
-constexpr cusfloat ZEROTH_EPS = 1e-302;
+constexpr cusfloat ZEROTH_EPS = 1e-14;
 
 #endif
