@@ -152,6 +152,13 @@ void read_body(
     read_signal     = _read_channel_value( infile, body->rad_inertia[2] );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
+    if ( body->interia_by_rad )
+    {
+        body->inertia[0] = body->mass * pow2s( body->rad_inertia[0] );
+        body->inertia[3] = body->mass * pow2s( body->rad_inertia[1] );
+        body->inertia[5] = body->mass * pow2s( body->rad_inertia[2] );
+    }
+
     //////////////////////////////////////////////
     /************* Mesh Description *************/
     //////////////////////////////////////////////
