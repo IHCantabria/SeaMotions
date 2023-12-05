@@ -84,7 +84,7 @@ void    calculate_second_order_force(
 
                 for ( int gpi=0; gpi<input->gauss_order; gpi++ )
                 {
-                    idx1                = i * mesh_gp->panels_wl_tnp + k * ngp + gpi;
+                    idx1                = i *  pot_gp->field_points_np + k * ngp + gpi;
                     int_mod             += mdrift_rel_we_i[idx1] * std::conj( mdrift_rel_we_j[idx1] ) * gp.weights[gpi] * panel_k->len_wl / 2.0;
                     wl_x                -= 0.25 * input->grav_acc * input->water_density * int_mod * panel_k->normal_vec[0];
 
@@ -95,14 +95,6 @@ void    calculate_second_order_force(
                 {
                     qtf_values[idx0+r] += - 0.25 * input->grav_acc * input->water_density * int_mod * panel_k->normal_vec[r];
                     qtf_wl[idx0+r]     += - 0.25 * input->grav_acc * input->water_density * int_mod * panel_k->normal_vec[r];
-                    if ( 
-                            std::isnan( qtf_values[idx0+r].real( ) )
-                            ||
-                            std::isnan( qtf_values[idx0+r].imag( ) )
-                        )
-                    {
-                        double a = 0;
-                    }
                 }
 
                 for ( int r=0; r<3; r++ ) std::cout << panel_k->center_wl[r] << " - ";
@@ -122,15 +114,11 @@ void    calculate_second_order_force(
                 int_mod             = cuscomplex( 0.0, 0.0 );
                 panel_k             = mesh_gp->panels[k];
 
-                if ( k== 49 )
-                {
-                    double ab = 0.0;
-                }
                 for ( int gpi=0; gpi<ngp; gpi++ )
                 {
                     for ( int gpj=0; gpj<ngp; gpj++ )
                     {
-                        idx1        = i * mesh_gp->panels_raddif_tnp + k * pow2s( ngp ) + gpi * ngp + gpj;
+                        idx1        = i * vel_gp->field_points_np + k * pow2s( ngp ) + gpi * ngp + gpj;
                         int_mod     += (
                                             vel_x_i[idx1] * std::conj( vel_x_j[idx1] )
                                             +
@@ -182,79 +170,100 @@ void    calculate_second_order_force(
     {
         for ( int j=0; j<mesh_gp->meshes_np; j++ )
         {
+            // Get index to locate RAO data
             idx0 = i * ( input->dofs_np * input->bodies_np ) + j * input->dofs_np;
 
-            for ( int k=mesh_gp->panels_cnp[j]; k<mesh_gp->panels_cnp[j+1]; k++ )
+            // Get RAO values for the current body
+            for ( int r=0; r<3; r++ )
+            {
+                rao_trans[r]    = raos_i[idx0+r] * input->wave_amplitude;
+                rao_rot[r]      = raos_i[idx0+3+r] * input->wave_amplitude;
+            }
+
+            for ( int k= vel_gp->field_points_cnp[j]/ngpf; k<vel_gp->field_points_cnp[j+1]/ngpf; k++ )
             {
                 // Get handle to the current panel for calculations
-                panel_k             = mesh_gp->panels[k];
+                panel_k = mesh_gp->panels[k];
+                int_mod = cuscomplex( 0.0, 0.0 );
 
-                // Define vector from cog to field point
-                sv_sub( 3, panel_k->center, panel_k->body_cog, cog_to_fp );
-
-                // Calculate first order displacement of the panel centre
-                // euler_local_to_global_disp( 
-                //                                 &(raos_i[idx0]),
-                //                                 &(raos_i[idx0+3]),
-                //                                 cog_to_fp,
-                //                                 point_disp
-                //                             );
-
-                clear_vector( 3, point_disp );
-
-                for ( int r=0; r<3; r++ )
+                for ( int gpi=0; gpi<input->gauss_order; gpi++ )
                 {
-                    cog_to_fp_c[r]  = cuscomplex( cog_to_fp[r], 0.0 );
-                    rao_trans[r]    = raos_i[idx0+r] * input->wave_amplitude;
-                    rao_rot[r]      = raos_i[idx0+3+r] * input->wave_amplitude;
+                    for ( int gpj=0; gpj<input->gauss_order; gpj++ )
+                    {
+                        // Define field points index
+                        idx1 = i * vel_gp->field_points_np + k * pow2s( ngp ) + gpi * ngp + gpj;
+
+                        // Define vector from cog to field point
+                        sv_sub( 3, &(vel_gp->field_points[3*idx1]), panel_k->body_cog, cog_to_fp );
+                        for ( int r=0; r<3; r++ )
+                        {
+                            cog_to_fp_c[r]  = cuscomplex( cog_to_fp[r], 0.0 );
+                        }
+
+                        // Calculate first order displacement of the panel centre
+                        clear_vector( 3, point_disp );
+
+                        cross(
+                                    rao_rot,
+                                    cog_to_fp_c,
+                                    point_disp
+                            );
+                        sv_add(
+                                    3,
+                                    point_disp,
+                                    rao_trans,
+                                    point_disp
+                                );
+
+                        // Get velocity pressure term
+                        vel_x_acc   = input->water_density * cuscomplex( 0.0, -ang_freq_j ) * vel_x_j[idx1];
+                        vel_y_acc   = input->water_density * cuscomplex( 0.0, -ang_freq_j ) * vel_y_j[idx1];
+                        vel_z_acc   = input->water_density * cuscomplex( 0.0, -ang_freq_j ) * vel_z_j[idx1];
+
+                        // Calculate point displacement
+                        
+                        int_mod             += 0.5 * (
+                                                        point_disp[0] * std::conj( vel_x_acc )
+                                                        +
+                                                        point_disp[1] * std::conj( vel_y_acc )
+                                                        +
+                                                        point_disp[2] * std::conj( vel_z_acc )
+                                                        +
+                                                        std::conj( point_disp[0] ) * vel_x_acc
+                                                        +
+                                                        std::conj( point_disp[1] ) * vel_y_acc
+                                                        +
+                                                        std::conj( point_disp[2] ) * vel_z_acc
+                                                    ) * gp.weights[gpi] * gp.weights[gpj] * jacobi_det_2d( 
+                                                                                                            panel_k->num_nodes,
+                                                                                                            panel_k->xl,
+                                                                                                            panel_k->yl,
+                                                                                                            gp.roots[gpi],
+                                                                                                            gp.roots[gpj]
+                                                                                                        );
+                    }
                 }
 
-                cross(
-                            rao_rot,
-                            cog_to_fp_c,
-                            point_disp
-                    );
-                sv_add(
-                            3,
-                            point_disp,
-                            rao_trans,
-                            point_disp
-                        );
+                cuscomplex int_mod_2        = 0.5 * (
+                                                        point_disp[0] * std::conj( vel_x_acc )
+                                                        +
+                                                        point_disp[1] * std::conj( vel_y_acc )
+                                                        +
+                                                        point_disp[2] * std::conj( vel_z_acc )
+                                                        +
+                                                        std::conj( point_disp[0] ) * vel_x_acc
+                                                        +
+                                                        std::conj( point_disp[1] ) * vel_y_acc
+                                                        +
+                                                        std::conj( point_disp[2] ) * vel_z_acc
+                                                    ) * panel_k->area;
 
-                // Get velocity pressure term
-                vel_x_acc   = input->water_density * cuscomplex( 0.0, -ang_freq_j ) * vel_x_j[idx1];
-                vel_y_acc   = input->water_density * cuscomplex( 0.0, -ang_freq_j ) * vel_y_j[idx1];
-                vel_z_acc   = input->water_density * cuscomplex( 0.0, -ang_freq_j ) * vel_z_j[idx1];
-
-                // Calculate point displacement
-                idx1                = i * mesh_gp->panels_tnp + k;
-                int_mod             = 0.5 * (
-                                                point_disp[0] * std::conj( vel_x_j[idx1] )
-                                                +
-                                                point_disp[1] * std::conj( vel_y_j[idx1] )
-                                                +
-                                                point_disp[2] * std::conj( vel_z_j[idx1] )
-                                                +
-                                                std::conj( point_disp[0] ) * vel_x_j[idx1]
-                                                +
-                                                std::conj( point_disp[1] ) * vel_y_j[idx1]
-                                                +
-                                                std::conj( point_disp[2] ) * vel_z_j[idx1]
-                                            ) * panel_k->area;
+                std::cout << "IntMod: " << int_mod << " - IntMod2: " << int_mod_2 << std::endl;
 
                 for ( int r=0; r<input->dofs_np; r++ )
                 {
                     qtf_values[idx0+r] += int_mod * panel_k->normal_vec[r];
                     qtf_acc[idx0+r]    += int_mod * panel_k->normal_vec[r];
-
-                    if ( 
-                            std::isnan( qtf_values[idx0+r].real( ) )
-                            ||
-                            std::isnan( qtf_values[idx0+r].imag( ) )
-                        )
-                    {
-                        double a = 0;
-                    }
                 }
             }
         }
@@ -302,19 +311,19 @@ void    calculate_second_order_force(
             // Add moment due to translational forces
             cuscomplex      scale_f( 0.5, 0.0 );
 
-            clear_vector(   3,                  mom_i                                                   );
-            conj_vector(    3,                  &(raos_i[idx0+3]),      conj_vec                        );
-            cross(          conj_vec,           hydro_force,            mom_i                           );
-            svs_mult(       3,                  mom_i,                  scale_f,    mom_i               );
-            sv_add(         3,                  &(qtf_values[idx0]),    mom_i,      &(qtf_values[idx0]) );
-            sv_add(         3,                  &(qtf_mom[idx0]),       mom_i,      &(qtf_mom[idx0]) );
+            clear_vector(   3,                  mom_i                                                       );
+            conj_vector(    3,                  &(raos_i[idx0+3]),      conj_vec                            );
+            cross(          conj_vec,           hydro_force,            mom_i                               );
+            svs_mult(       3,                  mom_i,                  scale_f,    mom_i                   );
+            sv_add(         3,                  &(qtf_values[idx0]),    mom_i,      &(qtf_values[idx0])     );
+            sv_add(         3,                  &(qtf_mom[idx0]),       mom_i,      &(qtf_mom[idx0])        );
 
-            clear_vector(   3,                  mom_i                                                   );
-            conj_vector(    3,                  hydro_force,            conj_vec                        );
-            cross(          &(raos_i[idx0+3]),  conj_vec,               mom_i                           );
-            svs_mult(       3,                  mom_i,                  scale_f,    mom_i               );
-            sv_add(         3,                  &(qtf_values[idx0]),    mom_i,      &(qtf_values[idx0]) );
-            sv_add(         3,                  &(qtf_mom[idx0]),       mom_i,      &(qtf_mom[idx0]) );
+            clear_vector(   3,                  mom_i                                                       );
+            conj_vector(    3,                  hydro_force,            conj_vec                            );
+            cross(          &(raos_i[idx0+3]),  conj_vec,               mom_i                               );
+            svs_mult(       3,                  mom_i,                  scale_f,    mom_i                   );
+            sv_add(         3,                  &(qtf_values[idx0]),    mom_i,      &(qtf_values[idx0])     );
+            sv_add(         3,                  &(qtf_mom[idx0]),       mom_i,      &(qtf_mom[idx0])        );
 
             // Add moment due to rotational force
             clear_vector(   3,                  mom_i                                                       );
@@ -322,7 +331,7 @@ void    calculate_second_order_force(
             cross(          conj_vec,           &(hydro_force[3]),      mom_i                               );
             svs_mult(       3,                  mom_i,                  scale_f,    mom_i                   );
             sv_add(         3,                  &(qtf_values[idx0+3]),  mom_i,      &(qtf_values[idx0+3])   );
-            sv_add(         3,                  &(qtf_mom[idx0+3]),  mom_i,         &(qtf_values[idx0+3])   );
+            sv_add(         3,                  &(qtf_mom[idx0+3]),     mom_i,      &(qtf_mom[idx0+3])      );
 
             clear_vector(   3,                  mom_i                                                       );
             conj_vector(    3,                  &(hydro_force[3]),      conj_vec                            );
@@ -330,19 +339,6 @@ void    calculate_second_order_force(
             svs_mult(       3,                  mom_i,                  scale_f,    mom_i                   );
             sv_add(         3,                  &(qtf_values[idx0+3]),  mom_i,      &(qtf_values[idx0+3])   );
             sv_add(         3,                  &(qtf_mom[idx0+3]),     mom_i,      &(qtf_mom[idx0+3])      );
-            
-            for ( int r=0; r<input->dofs_np; r++ )
-            {
-
-                if ( 
-                        std::isnan( qtf_values[idx0+r].real( ) )
-                        ||
-                        std::isnan( qtf_values[idx0+r].imag( ) )
-                    )
-                {
-                    double a = 0;
-                }
-            }
         }
     }
 
