@@ -2,8 +2,13 @@
 #ifndef __matlin_group_hpp
 #define __matlin_group_hpp
 
+// Include general usage libraries
+#include <fstream>
+#include <string>
+
 // Include local modules
 #include "../config.hpp"
+#include "../tools.hpp"
 
 
 template <typename T>
@@ -11,7 +16,13 @@ struct MatLinGroup
 {
 private:
     // Define class private attributes
+    cusfloat    _cog[3]             = { 0.0, 0.0, 0.0 };
     int         _dims_np            = 3;
+
+    // Define class private methods
+    void    _load_field_points(
+                                    std::string fipath
+                                );
 
 public:
     // Define class public attributes
@@ -33,14 +44,23 @@ public:
 
     // Define class constructors and destructor
     MatLinGroup(
-                    int sysmat_nrows_in,
-                    int sysmat_ncols_in,
-                    int field_points_nb_in,
-                    int fields_np_in,
-                    int start_row_in,
-                    int end_row_in,
-                    int start_col_in,
-                    int end_col_in
+                    int         sysmat_nrows_in,
+                    int         sysmat_ncols_in,
+                    int         field_points_nb_in,
+                    int         fields_np_in,
+                    int         start_row_in,
+                    int         end_row_in,
+                    int         start_col_in,
+                    int         end_col_in
+                );
+
+    MatLinGroup(
+                    std::string fp_path_in,
+                    cusfloat*   cog,
+                    int         sysmat_ncols_in,
+                    int         fields_np_in,
+                    int         start_col_in,
+                    int         end_col_in
                 );
 
     ~MatLinGroup(
@@ -50,6 +70,55 @@ public:
     // Define class methods
 
 };
+
+
+template<typename T>
+void MatLinGroup<T>::_load_field_points(
+                                            std::string fipath
+                                        )
+{
+    // Open file unit
+    std::ifstream infile( fipath );
+    CHECK_FILE_UNIT_STATUS( infile, fipath );
+
+    // Loop over lines to count the number of points
+    int         count_lines = 0;
+    std::string line( "" );
+    while getline( infile, line )
+    {
+        count_lines++;
+    }
+
+    this->field_points_np = count_lines;
+
+    // Rewind file
+    infile.clear( );
+    infile.seekg( 0 );
+
+    // Allocate space to storage field points
+    this->cog_to_field_points   = generate_empty_vector<cusfloat>( this->_dims_np * this->field_points_np );
+    this->field_points          = generate_empty_vector<cusfloat>( this->_dims_np * this->field_points_np );
+
+    // Loop over lines to get the field points position
+    for ( int i=0; i<this->field_points_np; i++ )
+    {
+        // Get field points position
+        infile >> this->field_points[3*i];
+        infile >> this->field_points[3*i+1];
+        infile >> this->field_points[3*i+2];
+
+        // Calculate distance from the cog the ith field point
+        sv_sub( 
+                    3,
+                    &(this->field_points[3*i]),
+                    this->_cog,
+                    &(this->cog_to_field_points[3*i])
+                );
+    }
+
+    // Close file unit
+    infile.close( );
+}
 
 
 template <typename T>
@@ -82,6 +151,43 @@ MatLinGroup<T>::MatLinGroup(
     // Allocate space for the field points and the field values
     this->cog_to_field_points   = generate_empty_vector<cusfloat>( this->_dims_np * this->sysmat_nrows );
     this->field_points          = generate_empty_vector<cusfloat>( this->_dims_np * this->sysmat_nrows );
+    this->field_points_cnp      = generate_empty_vector<int>( this->field_points_nb+1 );
+    this->field_values          = generate_empty_vector<T>( this->fields_np * this->sysmat_nrows );
+}
+
+
+template<typename T>
+MatLinGroup<T>::MatLinGroup(
+                                std::string fp_path_in,
+                                cusfloat*   cog_in,
+                                int         sysmat_ncols_in,
+                                int         fields_np_in,
+                                int         start_col_in,
+                                int         end_col_in
+                            )
+{
+    // Storage input arguments
+    this->end_col           = end_col_in;
+    this->fields_np         = fields_np_in;
+    this->start_col         = start_col_in;
+    this->sysmat_ncols      = sysmat_ncols_in;
+
+    copy_vector( 3, cog_in, this->_cog );
+
+    // Read data from file
+    this->_load_field_points( fp_path_in );
+
+    // Define the remaining of the matrix dimensions
+    this->end_row           = this->field_points_np;
+    this->field_points_nb   = 1;
+    this->start_row         = 0;
+    this->sysmat_nrows      = this->field_points_np;
+
+    // Allocate space for the system matrixes
+    this->sysmat            = generate_empty_vector<T>( this->sysmat_nrows * this->sysmat_ncols );
+    this->sysmat_steady     = generate_empty_vector<T>( this->sysmat_nrows * this->sysmat_ncols );
+
+    // Allocate space for the field points and the field values
     this->field_points_cnp      = generate_empty_vector<int>( this->field_points_nb+1 );
     this->field_values          = generate_empty_vector<T>( this->fields_np * this->sysmat_nrows );
 }
