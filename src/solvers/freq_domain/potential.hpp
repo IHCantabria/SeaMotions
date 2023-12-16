@@ -39,6 +39,8 @@ void    calculate_potpanel_total_lin(
                                                 MpiConfig*      mpi_config,
                                                 MeshGroup*      mesh_gp,
                                                 cusfloat        ang_freq,
+                                                int             ang_freq_num,
+                                                std::string     pot_surname,
                                                 cuscomplex*     intensities,
                                                 cuscomplex*     raos,
                                                 MLGCmpx*        pot_gp,

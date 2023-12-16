@@ -14,6 +14,7 @@ void    calculate_relative_wave_elevation_lin(
                                                 MLGCmpx*        pot_gp,
                                                 cuscomplex*     potpanel_total,
                                                 cusfloat        ang_freq,
+                                                int             ang_freq_num,
                                                 cuscomplex*     raos,
                                                 cuscomplex*     rel_wave_elevation
                                             );

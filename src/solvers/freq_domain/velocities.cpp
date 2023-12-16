@@ -171,9 +171,9 @@ void    calculate_raddif_velocity_mat_steady(
                 }
                 else
                 {
-                    vel_x_gp->sysmat_steady[row_count*cols_np+col_count] = 0.5 * panel_j->normal_vec[0];
-                    vel_y_gp->sysmat_steady[row_count*cols_np+col_count] = 0.5 * panel_j->normal_vec[1];
-                    vel_z_gp->sysmat_steady[row_count*cols_np+col_count] = 0.5 * panel_j->normal_vec[2];
+                    vel_x_gp->sysmat_steady[row_count*cols_np+col_count] = - 0.5 * panel_j->normal_vec[0];
+                    vel_y_gp->sysmat_steady[row_count*cols_np+col_count] = - 0.5 * panel_j->normal_vec[1];
+                    vel_z_gp->sysmat_steady[row_count*cols_np+col_count] = - 0.5 * panel_j->normal_vec[2];
                 }
             }
 
@@ -466,6 +466,7 @@ void    calculate_velocities_total(
                                                     MpiConfig*      mpi_config,
                                                     MeshGroup*      mesh_gp,
                                                     cusfloat        ang_freq,
+                                                    int             ang_freq_num,
                                                     cuscomplex*     intensities,
                                                     cuscomplex*     raos,
                                                     MLGCmpx*        vel_x_gp,
@@ -672,6 +673,56 @@ void    calculate_velocities_total(
         }
     }
 
+    std::string     base_path( "E:/sergio/0050_OASIS_SM/_check_potentials/sm_freqs/velocity_total/" );
+    std::stringstream ss0; ss0 << "vel_x_ang_freq_" << ang_freq_num << ".dat";
+    std::stringstream ss1; ss1 << "vel_y_ang_freq_" << ang_freq_num << ".dat";
+    std::stringstream ss2; ss2 << "vel_z_ang_freq_" << ang_freq_num << ".dat";
+    std::string     vel_x_fipath = base_path + ss0.str( );
+    std::string     vel_y_fipath = base_path + ss1.str( );
+    std::string     vel_z_fipath = base_path + ss2.str( );
+    std::ofstream   vel_x_outf( vel_x_fipath );
+    std::ofstream   vel_y_outf( vel_y_fipath );
+    std::ofstream   vel_z_outf( vel_z_fipath );
+    CHECK_FILE_UNIT_STATUS( vel_x_outf, vel_x_fipath );
+    CHECK_FILE_UNIT_STATUS( vel_y_outf, vel_y_fipath );
+    CHECK_FILE_UNIT_STATUS( vel_z_outf, vel_z_fipath );
+
+    vel_x_outf << mesh_gp->panels_tnp << "  " << input->dofs_np + input->heads_np + 2 << std::endl;
+    vel_y_outf << mesh_gp->panels_tnp << "  " << input->dofs_np + input->heads_np + 2 << std::endl;
+    vel_z_outf << mesh_gp->panels_tnp << "  " << input->dofs_np + input->heads_np + 2 << std::endl;
+
+    int        idx      = 0;
+    PanelGeom* panel_i  = nullptr;
+    for ( int i=0; i<input->dofs_np+input->heads_np; i++ )
+    {
+        for ( int j=0; j<vel_x_gp->field_points_np; j++ )
+        {
+            idx = i * vel_x_gp->field_points_np + j;
+            vel_x_outf << vel_x_raddif_p0[idx].real( ) << "  ";
+            vel_x_outf << vel_x_raddif_p0[idx].imag( ) << std::endl;
+
+            vel_y_outf << vel_y_raddif_p0[idx].real( ) << "  ";
+            vel_y_outf << vel_y_raddif_p0[idx].imag( ) << std::endl;
+
+            vel_z_outf << vel_z_raddif_p0[idx].real( ) << "  ";
+            vel_z_outf << vel_z_raddif_p0[idx].imag( ) << std::endl;
+        }
+    }
+
+    for ( int i=0; i<vel_x_gp->field_points_np; i++ )
+    {
+        vel_x_outf << vel_x_total[i].real( ) << "  ";
+        vel_x_outf << vel_x_total[i].imag( ) << std::endl;
+
+        vel_y_outf << vel_y_total[i].real( ) << "  ";
+        vel_y_outf << vel_y_total[i].imag( ) << std::endl;
+
+        vel_z_outf << vel_z_total[i].real( ) << "  ";
+        vel_z_outf << vel_z_total[i].imag( ) << std::endl;
+    }
+
+    
+
     /*******************************************************/
     /************  Add  diffraction velocities *************/
     /*******************************************************/
@@ -775,6 +826,22 @@ void    calculate_velocities_total(
             }
         }
 
+        for ( int i=0; i<vel_x_gp->field_points_np; i++ )
+        {
+            vel_x_outf << vel_x_total[i].real( ) << "  ";
+            vel_x_outf << vel_x_total[i].imag( ) << std::endl;
+
+            vel_y_outf << vel_y_total[i].real( ) << "  ";
+            vel_y_outf << vel_y_total[i].imag( ) << std::endl;
+
+            vel_z_outf << vel_z_total[i].real( ) << "  ";
+            vel_z_outf << vel_z_total[i].imag( ) << std::endl;
+        }
+
+        vel_x_outf.close( );
+        vel_y_outf.close( );
+        vel_z_outf.close( );
+
         // for ( int i=0; i<input->heads_np; i++ )
         // {
         //     for ( int j=0; j<vel_x_gp->field_points_nb; j++ )
@@ -821,46 +888,46 @@ void    calculate_velocities_total(
         // of_vel_x_sysmat.close( );
         // of_vel_x_sysmat_steady.close( );
 
-        // Write results to files
-        std::string vel_x_fipath( "E:/sergio/0050_OASIS_SM/vel_x_data.dat" );
-        std::string vel_y_fipath( "E:/sergio/0050_OASIS_SM/vel_y_data.dat" );
-        std::string vel_z_fipath( "E:/sergio/0050_OASIS_SM/vel_z_data.dat" );
+        // // Write results to files
+        // std::string vel_x_fipath( "E:/sergio/0050_OASIS_SM/vel_x_data.dat" );
+        // std::string vel_y_fipath( "E:/sergio/0050_OASIS_SM/vel_y_data.dat" );
+        // std::string vel_z_fipath( "E:/sergio/0050_OASIS_SM/vel_z_data.dat" );
 
-        std::ofstream of_vel_x( vel_x_fipath );
-        std::ofstream of_vel_y( vel_y_fipath );
-        std::ofstream of_vel_z( vel_z_fipath );
+        // std::ofstream of_vel_x( vel_x_fipath );
+        // std::ofstream of_vel_y( vel_y_fipath );
+        // std::ofstream of_vel_z( vel_z_fipath );
 
-        std::string space4( "    " );
-        for ( int i=0; i<vel_x_gp->sysmat_nrows; i++ )
-        {
-            of_vel_x << i+1 << space4;
-            for ( int j=0; j<3; j++ )
-            {
-                of_vel_x << vel_x_gp->field_points[3*i+j] << space4;
-            }
-            of_vel_x << vel_x_total[i].real( ) << space4 << vel_x_total[i].imag( ) << space4;
-            of_vel_x << std::abs( vel_x_total[i] ) << space4 << 57.3 * std::atan2( vel_x_total[i].imag( ), vel_x_total[i].real( ) ) << std::endl;
+        // std::string space4( "    " );
+        // for ( int i=0; i<vel_x_gp->sysmat_nrows; i++ )
+        // {
+        //     of_vel_x << i+1 << space4;
+        //     for ( int j=0; j<3; j++ )
+        //     {
+        //         of_vel_x << vel_x_gp->field_points[3*i+j] << space4;
+        //     }
+        //     of_vel_x << vel_x_total[i].real( ) << space4 << vel_x_total[i].imag( ) << space4;
+        //     of_vel_x << std::abs( vel_x_total[i] ) << space4 << 57.3 * std::atan2( vel_x_total[i].imag( ), vel_x_total[i].real( ) ) << std::endl;
 
-            of_vel_y << i+1 << space4;
-            for ( int j=0; j<3; j++ )
-            {
-                of_vel_y << vel_y_gp->field_points[3*i+j] << space4;
-            }
-            of_vel_y << vel_y_total[i].real( ) << space4 << vel_y_total[i].imag( ) << space4;
-            of_vel_y << std::abs( vel_y_total[i] ) << space4 << 57.3 * std::atan2( vel_y_total[i].imag( ), vel_y_total[i].real( ) ) << std::endl;
+        //     of_vel_y << i+1 << space4;
+        //     for ( int j=0; j<3; j++ )
+        //     {
+        //         of_vel_y << vel_y_gp->field_points[3*i+j] << space4;
+        //     }
+        //     of_vel_y << vel_y_total[i].real( ) << space4 << vel_y_total[i].imag( ) << space4;
+        //     of_vel_y << std::abs( vel_y_total[i] ) << space4 << 57.3 * std::atan2( vel_y_total[i].imag( ), vel_y_total[i].real( ) ) << std::endl;
 
-            of_vel_z << i+1 << space4;
-            for ( int j=0; j<3; j++ )
-            {
-                of_vel_z << vel_z_gp->field_points[3*i+j] << space4;
-            }
-            of_vel_z << vel_z_total[i].real( ) << space4 << vel_z_total[i].imag( ) << space4;
-            of_vel_z << std::abs( vel_z_total[i] ) << space4 << 57.3 * std::atan2( vel_z_total[i].imag( ), vel_z_total[i].real( ) ) << std::endl;
-        }
+        //     of_vel_z << i+1 << space4;
+        //     for ( int j=0; j<3; j++ )
+        //     {
+        //         of_vel_z << vel_z_gp->field_points[3*i+j] << space4;
+        //     }
+        //     of_vel_z << vel_z_total[i].real( ) << space4 << vel_z_total[i].imag( ) << space4;
+        //     of_vel_z << std::abs( vel_z_total[i] ) << space4 << 57.3 * std::atan2( vel_z_total[i].imag( ), vel_z_total[i].real( ) ) << std::endl;
+        // }
 
-        of_vel_x.close( );
-        of_vel_y.close( );
-        of_vel_z.close( );
+        // of_vel_x.close( );
+        // of_vel_y.close( );
+        // of_vel_z.close( );
     }
 
 

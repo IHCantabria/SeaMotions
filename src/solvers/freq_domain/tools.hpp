@@ -16,6 +16,13 @@ void    calculate_fields_raddif_lin(
                                     );
 
 
+std::string compose_dof_path( 
+                                std::string base_path,
+                                int         dofs_num,
+                                int         ang_freq_num
+                            );
+
+
 void    define_gauss_points_diffrac_panels(
                                                 Input*          input,
                                                 MeshGroup*      mesh_gp,
@@ -27,6 +34,13 @@ void    define_gauss_points_wl(
                                                 Input*      input,
                                                 MeshGroup*  mesh_gp,
                                                 MLGCmpx*    mat_gp
+                                );
+
+
+void storage_radiation_potential( 
+                                    std::string dof_base_path,
+                                    int         field_points_np,
+                                    cuscomplex* rad_potential
                                 );
 
 

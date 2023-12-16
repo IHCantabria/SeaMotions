@@ -222,7 +222,7 @@ void    calculate_second_order_force(
 
                         // Calculate point displacement
                         
-                        int_mod             += 0.5 * (
+                        int_mod             += 0.25 * (
                                                         point_disp[0] * std::conj( vel_x_acc )
                                                         +
                                                         point_disp[1] * std::conj( vel_y_acc )
@@ -244,7 +244,7 @@ void    calculate_second_order_force(
                     }
                 }
 
-                cuscomplex int_mod_2        = 0.5 * (
+                cuscomplex int_mod_2        = 0.25 * (
                                                         point_disp[0] * std::conj( vel_x_acc )
                                                         +
                                                         point_disp[1] * std::conj( vel_y_acc )
@@ -309,7 +309,7 @@ void    calculate_second_order_force(
                                 ) * ang_2;
 
             // Add moment due to translational forces
-            cuscomplex      scale_f( 0.5, 0.0 );
+            cuscomplex      scale_f( 0.25, 0.0 );
 
             clear_vector(   3,                  mom_i                                                       );
             conj_vector(    3,                  &(raos_i[idx0+3]),      conj_vec                            );

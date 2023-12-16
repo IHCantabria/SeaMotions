@@ -1,4 +1,7 @@
 
+// Include general usage libraries
+#include <fstream>
+
 // Include local modules
 #include "tools.hpp"
 
@@ -36,6 +39,20 @@ void    calculate_fields_raddif_lin(
                                     icny
                                 );
     }
+}
+
+
+std::string compose_dof_path( 
+                                std::string base_path,
+                                int         dofs_num,
+                                int         ang_freq_num
+                            )
+{
+    std::stringstream ss0;
+    ss0 << base_path << "dof_" << dofs_num << "/";
+    ss0 << "dof_" << dofs_num << "_ang_freq_" << ang_freq_num << ".dat";
+
+    return ss0.str( );
 }
 
 
@@ -122,4 +139,24 @@ void    define_gauss_points_wl(
                     );
         }
     }
+}
+
+
+void    storage_radiation_potential( 
+                                        std::string dof_base_path,
+                                        int         field_points_np,
+                                        cuscomplex* rad_potential
+                                    )
+{
+    std::ofstream outfile( dof_base_path );
+    CHECK_FILE_UNIT_STATUS( outfile, dof_base_path );
+
+    outfile << field_points_np << " " << 1 << std::endl;
+    for ( int i=0; i<field_points_np; i++ )
+    {
+        outfile << rad_potential[i].real( ) << " ";
+        outfile << rad_potential[i].imag( ) << std::endl;
+    }
+
+    outfile.close( );
 }

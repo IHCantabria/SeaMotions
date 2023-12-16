@@ -70,6 +70,10 @@ void    calculate_influence_potmat_steady(
                         mesh_gp->source_nodes[j]->panel->type == DIFFRAC_PANEL_CODE
                     )
                 {
+                    if ( i==5 && j==21 )
+                    {
+                        double c = 0.0;
+                    }
                     // Calculate potential contribution for r0
                     calculate_source_potential_newman(
                                                             mesh_gp->panels[j],
@@ -126,6 +130,15 @@ void    calculate_influence_potmat_steady(
 
                     // Calculate total potential contribution
                     pot_term = pot_0 + pot_1 + pot_2 + pot_3 + pot_4 + pot_5;
+
+                    if ( 
+                            std::isnan( pot_term.real( ) )
+                            ||
+                            std::isnan( pot_term.imag( ) )
+                        )
+                    {
+                        double a = 0.0;
+                    }
 
                     pot_gp->sysmat_steady[count]  =  -pot_term / 4.0 / PI;
                 }
@@ -252,6 +265,16 @@ void    calculate_influence_potmat(
                                                                         false,
                                                                         input->gauss_order
                                                                     );
+
+                if ( 
+                        std::isnan( pot_wave_term.real( ) )
+                        ||
+                        std::isnan( pot_wave_term.imag( ) )
+                    )
+                {
+                    double a = 0.0;
+                }
+
                 pot_gp->sysmat[count]   = pot_gp->sysmat_steady[count] + pot_wave_term / 4.0 / PI;
 
             }
@@ -396,6 +419,8 @@ void    calculate_potpanel_total_lin(
                                                 MpiConfig*      mpi_config,
                                                 MeshGroup*      mesh_gp,
                                                 cusfloat        ang_freq,
+                                                int             ang_freq_num,
+                                                std::string     pot_surname,
                                                 cuscomplex*     intensities,
                                                 cuscomplex*     raos,
                                                 MLGCmpx*        pot_gp,
@@ -430,6 +455,42 @@ void    calculate_potpanel_total_lin(
     int ngpf    = input->gauss_np_factor_1d( );
     int _idx0   = 0;
     int _idx1   = 0;
+
+    std::string     pot_base_name( "potential" );
+    std::string     pot_name = pot_base_name + pot_surname + std::string( "/" );
+    std::string     _pot_base_path( "E:/sergio/0050_OASIS_SM/_check_potentials/sm_freqs/" );
+    std::string     pot_base_path = _pot_base_path + pot_name;
+    std::stringstream ss1; ss1 << "potential" << pot_surname << "_ang_freq_" << ang_freq_num << ".dat";
+    std::string     potential_fipath = pot_base_path + ss1.str( );
+    std::ofstream   potential_outf( potential_fipath );
+    CHECK_FILE_UNIT_STATUS( potential_outf, potential_fipath );
+
+
+    int panels_size = 0;
+    if ( pot_surname.compare( std::string("_wl") ) == 0 )
+    {
+        panels_size = mesh_gp->panels_wl_tnp;
+    }
+    else
+    {
+        panels_size = mesh_gp->panels_tnp;
+    }
+
+    potential_outf << panels_size << "  " << input->dofs_np + input->heads_np << std::endl;
+
+    int idx = 0;
+    for ( int i=0; i<input->dofs_np+input->heads_np; i++ )
+    {
+        for ( int j=0; j<panels_size; j++ )
+        {
+            idx = i * panels_size + j;
+            potential_outf << pot_gp->field_values[idx].real( ) << "  ";
+            potential_outf << pot_gp->field_values[idx].imag( ) << std::endl;
+        }
+    }
+
+    potential_outf.close( );
+
     // for ( int i=0; i<pot_gp->field_points_np/ngpf; i++ )
     // {
     //     for ( int j=0; j<ngpf; j++ )
@@ -486,6 +547,7 @@ void    calculate_potpanel_total_lin(
                                     input->water_depth,
                                     input->grav_acc
                                 );
+        // cuscomplex  fk_surge    = cuscomplex( 0.0, 0.0 );
         
         for ( int i=0; i<input->heads_np; i++ )
         {
@@ -503,6 +565,7 @@ void    calculate_potpanel_total_lin(
                                                                         pot_gp->field_points[3*j+2],
                                                                         input->heads[i]
                                                                     );
+                // fk_surge                +=  cuscomplex( 0, -1.0 ) * ang_freq * 1026.02 * potpanel_total[index] * ; 
                 
                 if ( index == 19 )
                 {
@@ -511,6 +574,34 @@ void    calculate_potpanel_total_lin(
             }
         }
     }
+
+    std::string     pot_total_base_name( "potential_total" );
+    std::string     pot_total_name = pot_total_base_name + pot_surname + std::string( "/" );
+    std::string     _base_path( "E:/sergio/0050_OASIS_SM/_check_potentials/sm_freqs/" );
+    std::string     base_path = _base_path + pot_total_name;
+    std::stringstream ss0; ss0 << "potential_total" << pot_surname << "_ang_freq_" << ang_freq_num << ".dat";
+    std::string     potential_total_fipath = base_path + ss0.str( );
+    std::ofstream   potential_total_outf( potential_total_fipath );
+    CHECK_FILE_UNIT_STATUS( potential_total_outf, potential_total_fipath );
+
+    potential_total_outf << panels_size << "  " << input->dofs_np + input->heads_np + 2 << std::endl;
+
+    for ( int i=0; i<input->dofs_np+input->heads_np; i++ )
+    {
+        for ( int j=0; j<pot_gp->field_points_np; j++ )
+        {
+            idx = i * pot_gp->field_points_np + j;
+            potential_total_outf << pot_raddif_p0[idx].real( ) << "  ";
+            potential_total_outf << pot_raddif_p0[idx].imag( ) << std::endl;
+        }
+    }
+
+    for ( int i=0; i<pot_gp->field_points_np; i++ )
+    {
+        potential_total_outf << potpanel_total[i].real( ) << "  ";
+        potential_total_outf << potpanel_total[i].imag( ) << std::endl;
+    }
+
 
     /***************************************************************/
     /************** Add Diffraction Wave Potential *****************/
@@ -571,6 +662,8 @@ void    calculate_potpanel_total_lin(
         //     }
         // }
 
+        std::string  dof_base_path( "" );
+        cuscomplex*  rad_potential  = generate_empty_vector<cuscomplex>( pot_gp->field_points_np );
         for ( int i=0; i<input->heads_np; i++ )
         {
             for ( int j=0; j<pot_gp->field_points_nb; j++ )
@@ -583,19 +676,24 @@ void    calculate_potpanel_total_lin(
                         index_2                 = k * pot_gp->field_points_np + r;
                         index_3                 = i * ( input->dofs_np * pot_gp->field_points_nb ) + j * input->dofs_np + k;
                         cuscomplex raos_mult    = raos[index_3] * pot_raddif_p0[index_2];
+                        rad_potential[index]    = raos_mult;
                         potpanel_total[index]   += raos_mult;
                         std::cout << "index: " << index << " - index_2: " << index_2 << " - index_3: " << index_3;
                         std::cout << " - Raos " << raos[index_3] << " - PotRadiff: " << pot_raddif_p0[index_2];
                         std::cout << " - RaosMultp: " << raos_mult << std::endl;
                     }
 
-                    if ( index == 19 )
-                    {
-                        double ab = 0.0;
-                    }
+                    dof_base_path = compose_dof_path( base_path, k, ang_freq_num );
+                    storage_radiation_potential( 
+                                                    dof_base_path,
+                                                    pot_gp->field_points_np,
+                                                    rad_potential
+                                                );
                 }
             }
         }
+
+        mkl_free( rad_potential );
         // for ( int i=0; i<input->heads_np; i++ )
         // {
         //     for ( int j=0; j<pot_gp->field_points_np; j++ )
@@ -610,6 +708,15 @@ void    calculate_potpanel_total_lin(
         //         std::cout << std::endl;
         //     }
         // }
+
+        for ( int i=0; i<pot_gp->field_points_np; i++ )
+        {
+            potential_total_outf << potpanel_total[i].real( ) << "  ";
+            potential_total_outf << potpanel_total[i].imag( ) << std::endl;
+        }
+
+        potential_total_outf.close( );
+
 
         // Write results to files
         std::string pot_wl_fipath( "E:/sergio/0050_OASIS_SM/pot_wl_data.dat" );

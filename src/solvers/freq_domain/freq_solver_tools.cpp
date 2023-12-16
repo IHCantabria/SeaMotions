@@ -206,7 +206,7 @@ void    freq_domain_linear_solver(
     /****************************************************************/
     /************ Allocate space for the simulation data ************/
     /****************************************************************/
-
+    std::cout << "Staring Linear solver..." << std::endl;
     // Allocate space for the intensities, hydromechanics and wave exciting forces
     SimulationData* sim_data    = new SimulationData(
                                                         mesh_gp->meshes_np,
@@ -233,7 +233,7 @@ void    freq_domain_linear_solver(
                                 ipm_ed 
                             );
     ipm_cols_np = ipm_ed - ipm_sc;
-
+    std::cout << "Staring MatLinGroup..." << std::endl;
     MatLinGroup<cuscomplex>*    potpanel_lin_gp = new MatLinGroup<cuscomplex>(
                                                                                 mesh_gp->panels_raddif_tnp,
                                                                                 ipm_cols_np,
@@ -244,20 +244,28 @@ void    freq_domain_linear_solver(
                                                                                 ipm_sc,
                                                                                 ipm_ed
                                                                             );
+    MatLinGroup<cuscomplex>*    _potpanel_gp    = new MatLinGroup<cuscomplex>(
+                                                                                mesh_gp->panels_raddif_tnp,
+                                                                                ipm_cols_np,
+                                                                                mesh_gp->meshes_np,
+                                                                                ( input->dofs_np + input->heads_np ),
+                                                                                0,
+                                                                                mesh_gp->panels_raddif_tnp-1,
+                                                                                ipm_sc,
+                                                                                ipm_ed
+                                                                            );
     MatLinGroup<cuscomplex>*    mdrift_we_gp        = nullptr;
-    MatLinGroup<cuscomplex>*    mdrift_vel_x_gp     = nullptr;
-    MatLinGroup<cuscomplex>*    mdrift_vel_y_gp     = nullptr;
-    MatLinGroup<cuscomplex>*    mdrift_vel_z_gp     = nullptr;
     MatLinGroup<cuscomplex>*    vel_x_body_gp       = nullptr;
     MatLinGroup<cuscomplex>*    vel_y_body_gp       = nullptr;
     MatLinGroup<cuscomplex>*    vel_z_body_gp       = nullptr;
     if ( input->out_mdrift )
     {
+        std::cout << "Added mean drift data..." << std::endl;
         sim_data->add_mean_drift_data( 
                                             mesh_gp->panels_wl_tnp * input->gauss_np_factor_1d( ),
                                             mesh_gp->panels_raddif_tnp * input->gauss_np_factor_2d( )
                                         );
-
+        std::cout << "Added Wave Elevation MatLinGroup..." << std::endl;
         mdrift_we_gp            = new MatLinGroup<cuscomplex>(
                                                                 mesh_gp->panels_wl_tnp * input->gauss_np_factor_1d( ),
                                                                 ipm_cols_np,
@@ -268,40 +276,7 @@ void    freq_domain_linear_solver(
                                                                 ipm_sc,
                                                                 ipm_ed
                                                             );
-
-        mdrift_vel_x_gp         = new MatLinGroup<cuscomplex>(
-                                                                mesh_gp->panels_wl_tnp,
-                                                                ipm_cols_np,
-                                                                mesh_gp->meshes_np,
-                                                                ( input->dofs_np + input->heads_np ),
-                                                                0,
-                                                                mesh_gp->panels_wl_tnp,
-                                                                ipm_sc,
-                                                                ipm_ed
-                                                            );
-
-        mdrift_vel_y_gp         = new MatLinGroup<cuscomplex>(
-                                                                mesh_gp->panels_wl_tnp,
-                                                                ipm_cols_np,
-                                                                mesh_gp->meshes_np,
-                                                                ( input->dofs_np + input->heads_np ),
-                                                                0,
-                                                                mesh_gp->panels_wl_tnp,
-                                                                ipm_sc,
-                                                                ipm_ed
-                                                            );
-
-        mdrift_vel_z_gp         = new MatLinGroup<cuscomplex>(
-                                                                mesh_gp->panels_wl_tnp,
-                                                                ipm_cols_np,
-                                                                mesh_gp->meshes_np,
-                                                                ( input->dofs_np + input->heads_np ),
-                                                                0,
-                                                                mesh_gp->panels_wl_tnp,
-                                                                ipm_sc,
-                                                                ipm_ed
-                                                            );
-
+        std::cout << "Added Velocity X MatLinGroup..." << std::endl;
         vel_x_body_gp           = new MatLinGroup<cuscomplex>(
                                                                 mesh_gp->panels_raddif_tnp * input->gauss_np_factor_2d( ),
                                                                 ipm_cols_np,
@@ -312,7 +287,7 @@ void    freq_domain_linear_solver(
                                                                 ipm_sc,
                                                                 ipm_ed
                                                             );
-        
+        std::cout << "Added Velocity Y MatLinGroup..." << std::endl; 
         vel_y_body_gp           = new MatLinGroup<cuscomplex>(
                                                                 mesh_gp->panels_raddif_tnp * input->gauss_np_factor_2d( ),
                                                                 ipm_cols_np,
@@ -323,7 +298,7 @@ void    freq_domain_linear_solver(
                                                                 ipm_sc,
                                                                 ipm_ed
                                                             );
-
+        std::cout << "Added Velocity Z MatLinGroup..." << std::endl; 
         vel_z_body_gp           = new MatLinGroup<cuscomplex>(
                                                                 mesh_gp->panels_raddif_tnp * input->gauss_np_factor_2d( ),
                                                                 ipm_cols_np,
@@ -341,16 +316,19 @@ void    freq_domain_linear_solver(
     /****************************************************************/
 
     // Define field points to calculate potential influence matrix
+    std::cout << "Potential Field Points MatLinGroup..." << std::endl; 
     int _count_pot_np   = 0;
     for ( int i=0; i<mesh_gp->panels_tnp; i++ )
     {
         if ( mesh_gp->panels[i]->type == DIFFRAC_PANEL_CODE )
         {
             copy_vector( 3, mesh_gp->panels[i]->center, &(potpanel_lin_gp->field_points[3*_count_pot_np]) );
+            copy_vector( 3, mesh_gp->panels[i]->center, &(_potpanel_gp->field_points[3*_count_pot_np]) );
             _count_pot_np++;
         }
     }
     copy_vector( mesh_gp->meshes_np+1, mesh_gp->panels_raddif_cnp, potpanel_lin_gp->field_points_cnp );
+    copy_vector( mesh_gp->meshes_np+1, mesh_gp->panels_raddif_cnp, _potpanel_gp->field_points_cnp );
 
     // Define field points to calculate the potential on the WL to evaluate
     // second order forces
@@ -360,6 +338,7 @@ void    freq_domain_linear_solver(
             input->out_qtf
         )
     {
+        std::cout << "WL Gauss Points MatLinGroup..." << std::endl;
         define_gauss_points_wl(
                                     input,
                                     mesh_gp,
@@ -423,179 +402,6 @@ void    freq_domain_linear_solver(
         //     }
         // }
 
-
-        /************************************************************/
-        /************************************************************/
-        /************************************************************/
-        /************************************************************/
-
-        // Get all WL line centers to be more accesible through a vector
-        for ( int i=0; i<mesh_gp->panels_wl_tnp; i++ )
-        {
-            copy_vector( 3, mesh_gp->panels_wl[i]->center_wl, &(mdrift_vel_x_gp->field_points[3*i]) );
-            copy_vector( 3, mesh_gp->panels_wl[i]->center_wl, &(mdrift_vel_y_gp->field_points[3*i]) );
-            copy_vector( 3, mesh_gp->panels_wl[i]->center_wl, &(mdrift_vel_z_gp->field_points[3*i]) );
-            mdrift_vel_x_gp->field_points[3*i+2] -= 0.0;
-            mdrift_vel_y_gp->field_points[3*i+2] -= 0.0;
-            mdrift_vel_z_gp->field_points[3*i+2] -= 0.0;
-        }
-        copy_vector( mesh_gp->meshes_np+1, mesh_gp->panels_wl_cnp, mdrift_vel_x_gp->field_points_cnp );
-        copy_vector( mesh_gp->meshes_np+1, mesh_gp->panels_wl_cnp, mdrift_vel_y_gp->field_points_cnp );
-        copy_vector( mesh_gp->meshes_np+1, mesh_gp->panels_wl_cnp, mdrift_vel_z_gp->field_points_cnp );
-
-        mdrift_vel_x_gp->field_points[0] = 3.5;
-        mdrift_vel_x_gp->field_points[1] = 1.5;
-        mdrift_vel_x_gp->field_points[2] = -10.0;
-
-        mdrift_vel_x_gp->field_points[3] = 3.5;
-        mdrift_vel_x_gp->field_points[4] = 5.0;
-        mdrift_vel_x_gp->field_points[5] = -3.5;
-
-        mdrift_vel_x_gp->field_points[6] = 5.0;
-        mdrift_vel_x_gp->field_points[7] = 3.5;
-        mdrift_vel_x_gp->field_points[8] = -6.5;
-
-        mdrift_vel_x_gp->field_points[9]  = -5.0;
-        mdrift_vel_x_gp->field_points[10] = -1.5;
-        mdrift_vel_x_gp->field_points[11] = -1.5;
-
-        mdrift_vel_x_gp->field_points_cnp[1] = 4;
-        mdrift_vel_x_gp->field_points_np = 4;
-        mdrift_vel_x_gp->sysmat_nrows = 4;
-
-        mdrift_vel_y_gp->field_points[0] = 3.5;
-        mdrift_vel_y_gp->field_points[1] = 1.5;
-        mdrift_vel_y_gp->field_points[2] = -10.0;
-
-        mdrift_vel_y_gp->field_points[3] = 3.5;
-        mdrift_vel_y_gp->field_points[4] = 5.0;
-        mdrift_vel_y_gp->field_points[5] = -3.5;
-
-        mdrift_vel_y_gp->field_points[6] = 5.0;
-        mdrift_vel_y_gp->field_points[7] = 3.5;
-        mdrift_vel_y_gp->field_points[8] = -6.5;
-
-        mdrift_vel_y_gp->field_points[9]  = -5.0;
-        mdrift_vel_y_gp->field_points[10] = -1.5;
-        mdrift_vel_y_gp->field_points[11] = -1.5;
-
-        mdrift_vel_y_gp->field_points_cnp[1] = 4;
-        mdrift_vel_y_gp->field_points_np = 4;
-        mdrift_vel_y_gp->sysmat_nrows = 4;
-
-        mdrift_vel_z_gp->field_points[0] = 3.5;
-        mdrift_vel_z_gp->field_points[1] = 1.5;
-        mdrift_vel_z_gp->field_points[2] = -10.0;
-
-        mdrift_vel_z_gp->field_points[3] = 3.5;
-        mdrift_vel_z_gp->field_points[4] = 5.0;
-        mdrift_vel_z_gp->field_points[5] = -3.5;
-
-        mdrift_vel_z_gp->field_points[6] = 5.0;
-        mdrift_vel_z_gp->field_points[7] = 3.5;
-        mdrift_vel_z_gp->field_points[8] = -6.5;
-
-        mdrift_vel_z_gp->field_points[9]  = -5.0;
-        mdrift_vel_z_gp->field_points[10] = -1.5;
-        mdrift_vel_z_gp->field_points[11] = -1.5;
-
-        mdrift_vel_z_gp->field_points_cnp[1] = 4;
-        mdrift_vel_z_gp->field_points_np = 4;
-        mdrift_vel_z_gp->sysmat_nrows = 4;
-
-        // mdrift_vel_x_gp->field_points[0] = 3.5;
-        // mdrift_vel_x_gp->field_points[1] = 1.5;
-        // mdrift_vel_x_gp->field_points[2] = -11.0;
-
-        // mdrift_vel_x_gp->field_points[3] = 3.5;
-        // mdrift_vel_x_gp->field_points[4] = 6.0;
-        // mdrift_vel_x_gp->field_points[5] = -3.5;
-
-        // mdrift_vel_x_gp->field_points[6] = 6.0;
-        // mdrift_vel_x_gp->field_points[7] = 3.5;
-        // mdrift_vel_x_gp->field_points[8] = -6.5;
-
-        // mdrift_vel_x_gp->field_points[9]  = -6.0;
-        // mdrift_vel_x_gp->field_points[10] = -1.5;
-        // mdrift_vel_x_gp->field_points[11] = -1.5;
-
-        // mdrift_vel_x_gp->field_points_cnp[1] = 4;
-        // mdrift_vel_x_gp->field_points_np = 4;
-        // mdrift_vel_x_gp->sysmat_nrows = 4;
-
-        // mdrift_vel_y_gp->field_points[0] = 3.5;
-        // mdrift_vel_y_gp->field_points[1] = 1.5;
-        // mdrift_vel_y_gp->field_points[2] = -11.0;
-
-        // mdrift_vel_y_gp->field_points[3] = 3.5;
-        // mdrift_vel_y_gp->field_points[4] = 6.0;
-        // mdrift_vel_y_gp->field_points[5] = -3.5;
-
-        // mdrift_vel_y_gp->field_points[6] = 6.0;
-        // mdrift_vel_y_gp->field_points[7] = 3.5;
-        // mdrift_vel_y_gp->field_points[8] = -6.5;
-
-        // mdrift_vel_y_gp->field_points[9]  = -6.0;
-        // mdrift_vel_y_gp->field_points[10] = -1.5;
-        // mdrift_vel_y_gp->field_points[11] = -1.5;
-
-        // mdrift_vel_y_gp->field_points_cnp[1] = 4;
-        // mdrift_vel_y_gp->field_points_np = 4;
-        // mdrift_vel_y_gp->sysmat_nrows = 4;
-
-        // mdrift_vel_z_gp->field_points[0] = 3.5;
-        // mdrift_vel_z_gp->field_points[1] = 1.5;
-        // mdrift_vel_z_gp->field_points[2] = -11.0;
-
-        // mdrift_vel_z_gp->field_points[3] = 3.5;
-        // mdrift_vel_z_gp->field_points[4] = 6.0;
-        // mdrift_vel_z_gp->field_points[5] = -3.5;
-
-        // mdrift_vel_z_gp->field_points[6] = 6.0;
-        // mdrift_vel_z_gp->field_points[7] = 3.5;
-        // mdrift_vel_z_gp->field_points[8] = -6.5;
-
-        // mdrift_vel_z_gp->field_points[9]  = -6.0;
-        // mdrift_vel_z_gp->field_points[10] = -1.5;
-        // mdrift_vel_z_gp->field_points[11] = -1.5;
-
-        // mdrift_vel_z_gp->field_points_cnp[1] = 4;
-        // mdrift_vel_z_gp->field_points_np = 4;
-        // mdrift_vel_z_gp->sysmat_nrows = 4;
-
-        // Get the radius from the WL line center to the body COG
-        for ( int i=0; i<mesh_gp->meshes_np; i++ )
-        {
-            for ( int j=mesh_gp->panels_wl_cnp[i]; j<mesh_gp->panels_wl_cnp[i+1]; j++ )
-            {
-                sv_sub(
-                            3,
-                            &(mdrift_vel_x_gp->field_points[3*j]),
-                            input->bodies[i]->cog,
-                            &(mdrift_vel_x_gp->cog_to_field_points[3*j])
-                        );
-                
-                sv_sub(
-                            3,
-                            &(mdrift_vel_y_gp->field_points[3*j]),
-                            input->bodies[i]->cog,
-                            &(mdrift_vel_y_gp->cog_to_field_points[3*j])
-                        );
-
-                sv_sub(
-                            3,
-                            &(mdrift_vel_z_gp->field_points[3*j]),
-                            input->bodies[i]->cog,
-                            &(mdrift_vel_z_gp->cog_to_field_points[3*j])
-                        );
-            }
-        }
-
-        /*****************************************************************/
-        /*****************************************************************/
-        /*****************************************************************/
-        /*****************************************************************/
-
         // Define field points for the evaluation of the velocities field
         define_gauss_points_diffrac_panels( input, mesh_gp, vel_x_body_gp );
         define_gauss_points_diffrac_panels( input, mesh_gp, vel_y_body_gp );
@@ -603,9 +409,63 @@ void    freq_domain_linear_solver(
 
     }
 
+    // // Storage WL points
+    // std::string wl_fipath( "E:/sergio/0050_OASIS_SM/_analysis_125/sm_wl_points.dat" );
+    // std::string wlc_fipath( "E:/sergio/0050_OASIS_SM/_analysis_125/ANALYSIS.COR.wl" );
+    // std::ofstream wl_outfile( wl_fipath );
+    // std::ofstream wlc_outfile( wlc_fipath );
+
+    // for ( int i=0; i<mdrift_we_gp->field_points_np; i++ )
+    // {
+    //     wl_outfile << i+1 << "   ";
+    //     wl_outfile << mdrift_we_gp->field_points[3*i] << "    ";
+    //     wl_outfile << mdrift_we_gp->field_points[3*i+1] << "    ";
+    //     wl_outfile << mdrift_we_gp->field_points[3*i+2] << "    ";
+    //     wl_outfile << mesh_gp->panels_wl[i]->normal_vec[0] << "    ";
+    //     wl_outfile << mesh_gp->panels_wl[i]->normal_vec[1] << "    ";
+    //     wl_outfile << mesh_gp->panels_wl[i]->normal_vec[2] << "    ";
+    //     wl_outfile << mesh_gp->panels_wl[i]->len_wl << std::endl;
+
+    //     wlc_outfile << i+1 << "   ";
+    //     wlc_outfile << mdrift_we_gp->field_points[3*i] << "    ";
+    //     wlc_outfile << mdrift_we_gp->field_points[3*i+1] << "    ";
+    //     wlc_outfile << mdrift_we_gp->field_points[3*i+2] << "    ";
+    //     wlc_outfile << std::endl;
+    // }
+
+    // wl_outfile.close( );
+    // wlc_outfile.close( );
+
+    // std::string vel_fipath( "E:/sergio/0050_OASIS_SM/_analysis_125/sm_vel_points.dat" );
+    // std::string velc_fipath( "E:/sergio/0050_OASIS_SM/_analysis_125/ANALYSIS.COR.vel" );
+    // std::ofstream vel_outfile( vel_fipath );
+    // std::ofstream velc_outfile( velc_fipath );
+
+    // for ( int i=0; i<vel_x_body_gp->field_points_np; i++ )
+    // {
+    //     vel_outfile << i+1 << "   ";
+    //     vel_outfile << vel_x_body_gp->field_points[3*i] << "    ";
+    //     vel_outfile << vel_x_body_gp->field_points[3*i+1] << "    ";
+    //     vel_outfile << vel_x_body_gp->field_points[3*i+2] << "    ";
+    //     vel_outfile << mesh_gp->panels[i]->normal_vec[0] << "    ";
+    //     vel_outfile << mesh_gp->panels[i]->normal_vec[1] << "    ";
+    //     vel_outfile << mesh_gp->panels[i]->normal_vec[2] << "    ";
+    //     vel_outfile << mesh_gp->panels[i]->area << std::endl;
+
+    //     velc_outfile << i+1 << "   ";
+    //     velc_outfile << vel_x_body_gp->field_points[3*i] << "    ";
+    //     velc_outfile << vel_x_body_gp->field_points[3*i+1] << "    ";
+    //     velc_outfile << vel_x_body_gp->field_points[3*i+2] << "    ";
+    //     velc_outfile << std::endl;
+    // }
+
+    // vel_outfile.close( );
+    // velc_outfile.close( );
+
     /****************************************************************/
     /*************** Create Green function interface ****************/
     /****************************************************************/
+    std::cout << "Allocating GF interfaces ..." << std::endl;
     GRFDnInterface* grf_dn_interf   = new   GRFDnInterface(
                                                                 mesh_gp->source_nodes[0],
                                                                 mesh_gp->source_nodes[0],
@@ -703,6 +563,11 @@ void    freq_domain_linear_solver(
                                             mesh_gp,
                                             potpanel_lin_gp
                                     );
+    calculate_influence_potmat_steady(
+                                            input,
+                                            mesh_gp,
+                                            _potpanel_gp
+                                    );
     double pot_steady_t1 = MPI_Wtime( );
     std::cout << "Time integration potential steady: " << pot_steady_t1 - pot_steady_t0 << std::endl;
 
@@ -714,14 +579,6 @@ void    freq_domain_linear_solver(
                                                     input,
                                                     mesh_gp,
                                                     mdrift_we_gp
-                                            );
-
-        calculate_raddif_velocity_mat_steady(
-                                                input,
-                                                mesh_gp,
-                                                mdrift_vel_x_gp,
-                                                mdrift_vel_y_gp,
-                                                mdrift_vel_z_gp
                                             );
 
         // calculate_raddif_velocity_mat_steady_nlin(
@@ -740,6 +597,59 @@ void    freq_domain_linear_solver(
                                                     vel_z_body_gp
                                             );
     }
+
+    // Write mesh points
+    std::string     points_fipath( "E:/sergio/0050_OASIS_SM/_check_potentials/sm_freqs/mesh_points.dat" );
+    std::ofstream   points_outf( points_fipath );
+    CHECK_FILE_UNIT_STATUS( points_outf, points_fipath );
+
+    points_outf << mesh_gp->panels_tnp << "  1" << std::endl;
+
+    PanelGeom* panel_i = nullptr;
+    for ( int i=0; i<mesh_gp->panels_tnp; i++ )
+    {
+        panel_i = mesh_gp->panels[i];
+        points_outf << panel_i->center[0];
+        for ( int j=1; j<3; j++ )
+        {
+            points_outf << "  " << panel_i->center[j];
+        }
+
+        points_outf << "  " << panel_i->normal_vec[0];
+        for ( int j=1; j<3; j++ )
+        {
+            points_outf << "  " << panel_i->normal_vec[j];
+        }
+        points_outf << std::endl;
+    }
+
+    points_outf.close( );
+
+    std::string     fp_fipath( "E:/sergio/0050_OASIS_SM/_check_potentials/sm_freqs/field_points_wl.dat" );
+    std::ofstream   fp_outf( fp_fipath );
+    CHECK_FILE_UNIT_STATUS( fp_outf, fp_fipath );
+
+    fp_outf << mesh_gp->panels_wl_tnp << "  1" << std::endl;
+
+    for ( int i=0; i<mesh_gp->panels_wl_tnp; i++ )
+    {
+        panel_i = mesh_gp->panels_wl[i];
+        fp_outf << panel_i->center_wl[0];
+        for ( int j=1; j<3; j++ )
+        {
+            fp_outf << "  " << panel_i->center_wl[j];
+        }
+
+        fp_outf << "  " << panel_i->normal_vec[0];
+        for ( int j=1; j<3; j++ )
+        {
+            fp_outf << "  " << panel_i->normal_vec[j];
+        }
+        fp_outf << "  " << panel_i->len_wl;
+        fp_outf << std::endl;
+    }
+
+    fp_outf.close( );
 
     /****************************************************************/
     /******* Calculate wave contributions to system matrixes ********/
@@ -780,6 +690,28 @@ void    freq_domain_linear_solver(
                     MPI_COMM_WORLD                
                 );
 
+        std::string     vel_base_path( "E:/sergio/0050_OASIS_SM/_check_potentials/sm_freqs/intensity/" );
+        std::stringstream ss0; ss0 << "intensity_ang_freq_" << i << ".dat";
+        std::string     intensity_fipath = vel_base_path + ss0.str( );
+        std::ofstream   intensity_outf( intensity_fipath );
+        CHECK_FILE_UNIT_STATUS( intensity_outf, intensity_fipath );
+
+        intensity_outf << mesh_gp->panels_tnp << "  " << input->dofs_np + input->heads_np << std::endl;
+
+        int         idx     = 0;
+        PanelGeom*  panel_i = nullptr;
+        for ( int i=0; i<input->dofs_np+input->heads_np; i++ )
+        {
+            for ( int j=0; j<mesh_gp->panels_tnp; j++ )
+            {
+                idx = i * mesh_gp->panels_tnp + j;
+                intensity_outf << sim_data->intensities[idx].real( ) << "  ";
+                intensity_outf << sim_data->intensities[idx].imag( ) << std::endl;
+            }
+        }
+
+        intensity_outf.close( );
+
 
         // Calculate potential influence coeffcients matrix
         calculate_influence_potmat(
@@ -795,6 +727,11 @@ void    freq_domain_linear_solver(
                                         sim_data->intensities,
                                         potpanel_lin_gp
                                     );
+
+        clear_vector( 
+                        mesh_gp->panels_tnp * ( input->dofs_np + input->heads_np ),
+                        sim_data->panels_potential
+                    );
 
         MPI_Allreduce(
                         potpanel_lin_gp->field_values,
@@ -926,6 +863,21 @@ void    freq_domain_linear_solver(
                                             mpi_config,
                                             mesh_gp,
                                             input->angfreqs[i],
+                                            i,
+                                            std::string( "" ),
+                                            sim_data->intensities,
+                                            sim_data->raos,
+                                            _potpanel_gp,
+                                            sim_data->panels_potential
+                                        );
+                                        
+            calculate_potpanel_total_lin(
+                                            input,
+                                            mpi_config,
+                                            mesh_gp,
+                                            input->angfreqs[i],
+                                            i,
+                                            std::string( "_wl" ),
                                             sim_data->intensities,
                                             sim_data->raos,
                                             mdrift_we_gp,
@@ -938,6 +890,7 @@ void    freq_domain_linear_solver(
                                                         mdrift_we_gp,
                                                         sim_data->mdrift_we_pot_total,
                                                         input->angfreqs[i],
+                                                        i,
                                                         sim_data->raos,
                                                         sim_data->mdrift_rel_we
                                                     );
@@ -963,6 +916,7 @@ void    freq_domain_linear_solver(
                                         mpi_config,
                                         mesh_gp,
                                         input->angfreqs[i],
+                                        i,
                                         sim_data->intensities,
                                         sim_data->raos,
                                         vel_x_body_gp,
@@ -977,6 +931,31 @@ void    freq_domain_linear_solver(
             // Calculate mean drift forces
             if ( mpi_config->is_root( ) )
             {
+                // if ( i == 8 )
+                // {
+                //     for ( int k=0; k<mdrift_we_gp->field_points_np; k++ )
+                //     {
+                //         std::cout << "Potential[" << k << "]: " << std::abs( sim_data->mdrift_we_pot_total[k] ) << " - " << 57.3 * std::atan2( sim_data->mdrift_we_pot_total[k].imag( ), sim_data->mdrift_we_pot_total[k].real( ) ) << std::endl;
+                //     }
+
+                //     for ( int k=0; k<vel_x_body_gp->field_points_np; k++ )
+                //     {
+                //         std::cout << "VelocityX[" << k << "]: " << std::abs( sim_data->mdrift_press_vel_x[k] ) << " - " << 57.3 * std::atan2( sim_data->mdrift_press_vel_x[k].imag( ), sim_data->mdrift_press_vel_x[k].real( ) ) << std::endl;
+                //     }
+
+                //     for ( int k=0; k<vel_y_body_gp->field_points_np; k++ )
+                //     {
+                //         std::cout << "VelocityY[" << k << "]: " << std::abs( sim_data->mdrift_press_vel_y[k] ) << " - " << 57.3 * std::atan2( sim_data->mdrift_press_vel_y[k].imag( ), sim_data->mdrift_press_vel_y[k].real( ) ) << std::endl;
+                //     }
+
+                //     for ( int k=0; k<vel_z_body_gp->field_points_np; k++ )
+                //     {
+                //         std::cout << "VelocityZ[" << k << "]: " << std::abs( sim_data->mdrift_press_vel_z[k] ) << " - " << 57.3 * std::atan2( sim_data->mdrift_press_vel_z[k].imag( ), sim_data->mdrift_press_vel_z[k].real( ) ) << std::endl;
+                //     }
+
+                //     double abc = 0.0;
+                // }
+
                 calculate_second_order_force(
                                                 input,
                                                 mpi_config,
@@ -1123,13 +1102,11 @@ void    freq_domain_linear_solver(
     mkl_free( sysmat_steady );
     
     delete potpanel_lin_gp;
+    delete _potpanel_gp;
 
     if ( input->out_mdrift )
     {
         delete      mdrift_we_gp;
-        delete      mdrift_vel_x_gp;
-        delete      mdrift_vel_y_gp;
-        delete      mdrift_vel_z_gp;
         delete      vel_x_body_gp;
         delete      vel_y_body_gp;
         delete      vel_z_body_gp;

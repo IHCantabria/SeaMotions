@@ -44,6 +44,7 @@ void    calculate_velocities_total(
                                                     MpiConfig*      mpi_config,
                                                     MeshGroup*      mesh_gp,
                                                     cusfloat        ang_freq,
+                                                    int             ang_freq_num,
                                                     cuscomplex*     intensities,
                                                     cuscomplex*     raos,
                                                     MLGCmpx*        vel_x_gp,
