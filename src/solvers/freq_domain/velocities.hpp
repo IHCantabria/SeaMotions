@@ -44,7 +44,6 @@ void    calculate_velocities_total(
                                                     MpiConfig*      mpi_config,
                                                     MeshGroup*      mesh_gp,
                                                     cusfloat        ang_freq,
-                                                    int             ang_freq_num,
                                                     cuscomplex*     intensities,
                                                     cuscomplex*     raos,
                                                     MLGCmpx*        vel_x_gp,
@@ -52,8 +51,7 @@ void    calculate_velocities_total(
                                                     MLGCmpx*        vel_z_gp,
                                                     cuscomplex*     vel_x_total,
                                                     cuscomplex*     vel_y_total,
-                                                    cuscomplex*     vel_z_total,
-                                                    SimulationData* sim_data
+                                                    cuscomplex*     vel_z_total
                                     );
 
 #endif

@@ -466,7 +466,6 @@ void    calculate_velocities_total(
                                                     MpiConfig*      mpi_config,
                                                     MeshGroup*      mesh_gp,
                                                     cusfloat        ang_freq,
-                                                    int             ang_freq_num,
                                                     cuscomplex*     intensities,
                                                     cuscomplex*     raos,
                                                     MLGCmpx*        vel_x_gp,
@@ -474,8 +473,7 @@ void    calculate_velocities_total(
                                                     MLGCmpx*        vel_z_gp,
                                                     cuscomplex*     vel_x_total,
                                                     cuscomplex*     vel_y_total,
-                                                    cuscomplex*     vel_z_total,
-                                                    SimulationData* sim_data
+                                                    cuscomplex*     vel_z_total
                                     )
 {
     // Declare auxiliar variables to use in the function
@@ -494,48 +492,6 @@ void    calculate_velocities_total(
                                             vel_y_gp,
                                             vel_z_gp
                                         );
-
-    cuscomplex value( 0.0, 0.0 );
-    int ngpf    = input->gauss_np_factor_2d( );
-    int _idx0   = 0;
-    int _idx1   = 0;
-    // for ( int i=0; i<vel_x_gp->field_points_np/ngpf; i++ )
-    // {
-    //     for ( int j=0; j<ngpf; j++ )
-    //     {
-    //         for ( int k=0; k<vel_x_gp->sysmat_ncols; k++ )
-    //         {
-    //             _idx0 = i * ngpf * vel_x_gp->sysmat_ncols + k;
-    //             _idx1 = i * ngpf * vel_x_gp->sysmat_ncols + j * vel_x_gp->sysmat_ncols + k;
-    //             value = vel_x_gp->sysmat[_idx0] - vel_x_gp->sysmat[_idx1];
-
-    //             if ( i == 6 && j == 3 )
-    //             {
-    //                 double ccc = 0.0;
-    //             }
-
-    //             if ( !assert_complex_equality( value, cuscomplex( 0.0, 0.0 ), 1e-3 ) )
-    //             {
-    //                 std::cout << "vel_x_gp.sysmat not equal at - i: " << i << " - j: " << j << " - k: " << k << " - idx0: " << _idx0 << " - idx1: " << _idx1 << " - Value: " << value << std::endl;
-    //                 throw std::runtime_error( "" );
-    //             }
-
-    //             value = vel_y_gp->sysmat[_idx0] - vel_y_gp->sysmat[_idx1];
-    //             if ( !assert_complex_equality( value, cuscomplex( 0.0, 0.0 ), 1e-3 ) )
-    //             {
-    //                 std::cout << "vel_y_gp.sysmat not equal at - i: " << i << " - j: " << j << " - k: " << k << " - idx0: " << _idx0 << " - idx1: " << _idx1 << " - Value: " << value << std::endl;
-    //                 throw std::runtime_error( "" );
-    //             }
-
-    //             value = vel_z_gp->sysmat[_idx0] - vel_z_gp->sysmat[_idx1];
-    //             if ( !assert_complex_equality( value, cuscomplex( 0.0, 0.0 ), 1e-3 ) )
-    //             {
-    //                 std::cout << "vel_z_gp.sysmat not equal at - i: " << i << " - j: " << j << " - k: " << k << " - idx0: " << _idx0 << " - idx1: " << _idx1 << " - Value: " << value << std::endl;
-    //                 throw std::runtime_error( "" );
-    //             }
-    //         }
-    //     }
-    // }
 
     /*******************************************************/
     /***  Calculate radiation and diffraction velocities ***/
@@ -657,71 +613,9 @@ void    calculate_velocities_total(
                                                                             vel_x_gp->field_points[3*j+2],
                                                                             input->heads[i]
                                                                         );
-                if ( index == 49 || index == 196 )
-                {
-                    double abc = 0;
-                }
-
-                // if ( index == 49 )
-                // {
-                //     std::cout << std::endl;
-                //     std::cout << "vel_x_total[" << index << "]: " << vel_x_total[index] << " - " << vel_x_total << std::endl;
-                //     std::cout << "vel_y_total[" << index << "]: " << vel_y_total[index] << " - " << vel_y_total << std::endl;
-                //     std::cout << "vel_z_total[" << index << "]: " << vel_z_total[index] << " - " << vel_z_total << std::endl;
-                // }
             }
         }
     }
-
-    std::string     base_path( "E:/sergio/0050_OASIS_SM/_check_potentials/sm_freqs/velocity_total/" );
-    std::stringstream ss0; ss0 << "vel_x_ang_freq_" << ang_freq_num << ".dat";
-    std::stringstream ss1; ss1 << "vel_y_ang_freq_" << ang_freq_num << ".dat";
-    std::stringstream ss2; ss2 << "vel_z_ang_freq_" << ang_freq_num << ".dat";
-    std::string     vel_x_fipath = base_path + ss0.str( );
-    std::string     vel_y_fipath = base_path + ss1.str( );
-    std::string     vel_z_fipath = base_path + ss2.str( );
-    std::ofstream   vel_x_outf( vel_x_fipath );
-    std::ofstream   vel_y_outf( vel_y_fipath );
-    std::ofstream   vel_z_outf( vel_z_fipath );
-    CHECK_FILE_UNIT_STATUS( vel_x_outf, vel_x_fipath );
-    CHECK_FILE_UNIT_STATUS( vel_y_outf, vel_y_fipath );
-    CHECK_FILE_UNIT_STATUS( vel_z_outf, vel_z_fipath );
-
-    vel_x_outf << mesh_gp->panels_tnp << "  " << input->dofs_np + input->heads_np + 2 << std::endl;
-    vel_y_outf << mesh_gp->panels_tnp << "  " << input->dofs_np + input->heads_np + 2 << std::endl;
-    vel_z_outf << mesh_gp->panels_tnp << "  " << input->dofs_np + input->heads_np + 2 << std::endl;
-
-    int        idx      = 0;
-    PanelGeom* panel_i  = nullptr;
-    for ( int i=0; i<input->dofs_np+input->heads_np; i++ )
-    {
-        for ( int j=0; j<vel_x_gp->field_points_np; j++ )
-        {
-            idx = i * vel_x_gp->field_points_np + j;
-            vel_x_outf << vel_x_raddif_p0[idx].real( ) << "  ";
-            vel_x_outf << vel_x_raddif_p0[idx].imag( ) << std::endl;
-
-            vel_y_outf << vel_y_raddif_p0[idx].real( ) << "  ";
-            vel_y_outf << vel_y_raddif_p0[idx].imag( ) << std::endl;
-
-            vel_z_outf << vel_z_raddif_p0[idx].real( ) << "  ";
-            vel_z_outf << vel_z_raddif_p0[idx].imag( ) << std::endl;
-        }
-    }
-
-    for ( int i=0; i<vel_x_gp->field_points_np; i++ )
-    {
-        vel_x_outf << vel_x_total[i].real( ) << "  ";
-        vel_x_outf << vel_x_total[i].imag( ) << std::endl;
-
-        vel_y_outf << vel_y_total[i].real( ) << "  ";
-        vel_y_outf << vel_y_total[i].imag( ) << std::endl;
-
-        vel_z_outf << vel_z_total[i].real( ) << "  ";
-        vel_z_outf << vel_z_total[i].imag( ) << std::endl;
-    }
-
-    
 
     /*******************************************************/
     /************  Add  diffraction velocities *************/
@@ -729,56 +623,16 @@ void    calculate_velocities_total(
 
     if ( mpi_config->is_root( ) )
     {
-        int idtest =0 ;
-        cuscomplex a, b, c;
         for ( int i=0; i<input->heads_np; i++ )
         {
             for ( int j=0; j<vel_x_gp->field_points_np; j++ )
             {
-                // index                   = vel_x_gp->sysmat_nrows * i + j;
-                // index_2                 = ( input->dofs_np + i ) * vel_x_gp->field_points_np + j;
-                // idtest                  = index_2;
-                // a                       = vel_x_raddif_p0[index_2];
-                // b                       = vel_y_raddif_p0[index_2];
-                // c                       = vel_z_raddif_p0[index_2];
-                // vel_x_total[index]      += a;
-                // vel_y_total[index]      += b;
-                // vel_z_total[index]      += b;
                 index                   = vel_x_gp->sysmat_nrows * i + j;
                 index_2                 = ( input->dofs_np + i ) * vel_x_gp->field_points_np + j;
-                idtest                  = index_2;
 
-                if ( index == 49 )
-                {
-                    a                       = vel_x_raddif_p0[index_2];
-                    b                       = vel_y_raddif_p0[index_2];
-                    c                       = vel_z_raddif_p0[index_2];
-                    vel_x_total[index]      += a;
-                    vel_y_total[index]      += b;
-                    vel_z_total[index]      += c;
-
-                    // std::cout << std::endl;
-                    // std::cout << "vel_x_raddif_p0[" << idtest << "]: " << a << std::endl;
-                    // std::cout << "vel_y_raddif_p0[" << idtest << "]: " << b << std::endl;
-                    // std::cout << "vel_z_raddif_p0[" << idtest << "]: " << c << std::endl;
-                    // std::cout << "vel_x_total[" << index << "]: " << vel_x_total[index] << " - " << vel_x_total << std::endl;
-                    // std::cout << "vel_y_total[" << index << "]: " << vel_y_total[index] << " - " << vel_y_total << std::endl;
-                    // std::cout << "vel_z_total[" << index << "]: " << vel_z_total[index] << " - " << vel_z_total << std::endl;
-                }
-                else
-                {
-                    a                       = vel_x_raddif_p0[index_2];
-                    b                       = vel_y_raddif_p0[index_2];
-                    c                       = vel_z_raddif_p0[index_2];
-                    vel_x_total[index]      += a;
-                    vel_y_total[index]      += b;
-                    vel_z_total[index]      += c;
-                }
-
-                if ( index == 49 || index == 196 )
-                {
-                    double abc = 0;
-                }
+                vel_x_total[index]      += vel_x_raddif_p0[index_2];
+                vel_y_total[index]      += vel_y_raddif_p0[index_2];
+                vel_z_total[index]      += vel_z_raddif_p0[index_2];
             }
         }
     }
@@ -803,133 +657,11 @@ void    calculate_velocities_total(
                         vel_x_total[index]      += raos[index_3] * vel_x_raddif_p0[index_2];
                         vel_y_total[index]      += raos[index_3] * vel_y_raddif_p0[index_2];
                         vel_z_total[index]      += raos[index_3] * vel_z_raddif_p0[index_2];
-
-                        
-                        // if ( index == 49 )
-                        // {
-                        //     std::cout << std::endl;
-                        //     std::cout << "raos[" << index_3 << "]: " << raos[index_3] << std::endl;
-                        //     std::cout << "vel_x_raddif_p0[" << index_2 << "]: " << vel_x_raddif_p0[index_2] << std::endl;
-                        //     std::cout << "vel_y_raddif_p0[" << index_2 << "]: " << vel_y_raddif_p0[index_2] << std::endl;
-                        //     std::cout << "vel_z_raddif_p0[" << index_2 << "]: " << vel_z_raddif_p0[index_2] << std::endl;
-                        //     std::cout << "vel_x_total[" << index << "]: " << vel_x_total[index] << std::endl;
-                        //     std::cout << "vel_y_total[" << index << "]: " << vel_y_total[index] << std::endl;
-                        //     std::cout << "vel_z_total[" << index << "]: " << vel_z_total[index] << std::endl;
-                        // }
-                    }
-
-                    if ( index == 49 || index == 196 )
-                    {
-                        double abc = 0;
                     }
                 }
             }
         }
-
-        for ( int i=0; i<vel_x_gp->field_points_np; i++ )
-        {
-            vel_x_outf << vel_x_total[i].real( ) << "  ";
-            vel_x_outf << vel_x_total[i].imag( ) << std::endl;
-
-            vel_y_outf << vel_y_total[i].real( ) << "  ";
-            vel_y_outf << vel_y_total[i].imag( ) << std::endl;
-
-            vel_z_outf << vel_z_total[i].real( ) << "  ";
-            vel_z_outf << vel_z_total[i].imag( ) << std::endl;
-        }
-
-        vel_x_outf.close( );
-        vel_y_outf.close( );
-        vel_z_outf.close( );
-
-        // for ( int i=0; i<input->heads_np; i++ )
-        // {
-        //     for ( int j=0; j<vel_x_gp->field_points_nb; j++ )
-        //     {
-        //         for ( int r=vel_x_gp->field_points_cnp[j]; r<vel_x_gp->field_points_cnp[j+1]; r++ )
-        //         {
-        //             index                   = i * vel_x_gp->sysmat_nrows + r;
-        //             std::cout << endl;
-        //             std::cout << "Field Point: " << index << " - " << vel_x_gp->field_points[3*r] << " " << vel_x_gp->field_points[3*r+1] << " " << vel_x_gp->field_points[3*r+2] << std::endl;
-        //             std::cout << "Vel_x: " << vel_x_total[index];
-        //             std::cout << " - Mag: " << std::abs( vel_x_total[index] );
-        //             std::cout << " - Pha: " << 57.3 * std::atan2( vel_x_total[index].imag(), vel_x_total[index].real( ) );
-        //             std::cout << std::endl;
-        //             std::cout << "Vel_y: " << vel_y_total[index];
-        //             std::cout << " - Mag: " << std::abs( vel_y_total[index] );
-        //             std::cout << " - Pha: " << 57.3 * std::atan2( vel_y_total[index].imag(), vel_y_total[index].real( ) );
-        //             std::cout << std::endl;
-        //             std::cout << "Vel_z: " << vel_z_total[index];
-        //             std::cout << " - Mag: " << std::abs( vel_z_total[index] );
-        //             std::cout << " - Pha: " << 57.3 * std::atan2( vel_z_total[index].imag(), vel_z_total[index].real( ) );
-        //             std::cout << std::endl;
-        //         }
-        //     }
-        // }
-
-        // // Write system matrixes to files
-        // std::string vel_x_sysmat_fipath( "E:/sergio/0050_OASIS_SM/vel_x_sysmat.dat" );
-        // std::string vel_x_sysmat_steady_fipath( "E:/sergio/0050_OASIS_SM/vel_x_sysmat_steady.dat" );
-
-        // std::ofstream of_vel_x_sysmat( vel_x_sysmat_fipath );
-        // std::ofstream of_vel_x_sysmat_steady( vel_x_sysmat_steady_fipath );
-
-        // of_vel_x_sysmat << vel_x_gp->sysmat_nrows << " " << vel_x_gp->sysmat_ncols << std::endl;
-        // of_vel_x_sysmat_steady << vel_x_gp->sysmat_nrows << " " << vel_x_gp->sysmat_ncols << std::endl;
-        // for ( int i=0; i<vel_x_gp->sysmat_nrows; i++ )
-        // {
-        //     for ( int j=0; j<vel_x_gp->sysmat_ncols; j++ )
-        //     {
-        //         of_vel_x_sysmat << vel_x_gp->sysmat[i*vel_x_gp->sysmat_ncols+j].real( ) << " " << vel_x_gp->sysmat[i*vel_x_gp->sysmat_ncols+j].imag( ) << std::endl;
-        //         of_vel_x_sysmat_steady << vel_x_gp->sysmat_steady[i*vel_x_gp->sysmat_ncols+j].real( ) << " " << vel_x_gp->sysmat_steady[i*vel_x_gp->sysmat_ncols+j].imag( ) << std::endl;
-        //     }
-        // }
-
-        // of_vel_x_sysmat.close( );
-        // of_vel_x_sysmat_steady.close( );
-
-        // // Write results to files
-        // std::string vel_x_fipath( "E:/sergio/0050_OASIS_SM/vel_x_data.dat" );
-        // std::string vel_y_fipath( "E:/sergio/0050_OASIS_SM/vel_y_data.dat" );
-        // std::string vel_z_fipath( "E:/sergio/0050_OASIS_SM/vel_z_data.dat" );
-
-        // std::ofstream of_vel_x( vel_x_fipath );
-        // std::ofstream of_vel_y( vel_y_fipath );
-        // std::ofstream of_vel_z( vel_z_fipath );
-
-        // std::string space4( "    " );
-        // for ( int i=0; i<vel_x_gp->sysmat_nrows; i++ )
-        // {
-        //     of_vel_x << i+1 << space4;
-        //     for ( int j=0; j<3; j++ )
-        //     {
-        //         of_vel_x << vel_x_gp->field_points[3*i+j] << space4;
-        //     }
-        //     of_vel_x << vel_x_total[i].real( ) << space4 << vel_x_total[i].imag( ) << space4;
-        //     of_vel_x << std::abs( vel_x_total[i] ) << space4 << 57.3 * std::atan2( vel_x_total[i].imag( ), vel_x_total[i].real( ) ) << std::endl;
-
-        //     of_vel_y << i+1 << space4;
-        //     for ( int j=0; j<3; j++ )
-        //     {
-        //         of_vel_y << vel_y_gp->field_points[3*i+j] << space4;
-        //     }
-        //     of_vel_y << vel_y_total[i].real( ) << space4 << vel_y_total[i].imag( ) << space4;
-        //     of_vel_y << std::abs( vel_y_total[i] ) << space4 << 57.3 * std::atan2( vel_y_total[i].imag( ), vel_y_total[i].real( ) ) << std::endl;
-
-        //     of_vel_z << i+1 << space4;
-        //     for ( int j=0; j<3; j++ )
-        //     {
-        //         of_vel_z << vel_z_gp->field_points[3*i+j] << space4;
-        //     }
-        //     of_vel_z << vel_z_total[i].real( ) << space4 << vel_z_total[i].imag( ) << space4;
-        //     of_vel_z << std::abs( vel_z_total[i] ) << space4 << 57.3 * std::atan2( vel_z_total[i].imag( ), vel_z_total[i].real( ) ) << std::endl;
-        // }
-
-        // of_vel_x.close( );
-        // of_vel_y.close( );
-        // of_vel_z.close( );
     }
-
 
     /*******************************************************/
     /**************  Deallocate heap memory ****************/
