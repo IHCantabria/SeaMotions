@@ -39,19 +39,12 @@ cuscomplex  GWFDxInterface::operator()(
                                         pow2s( this->_field_point_j[1] - y )
                                     );
     
-    if ( R < ZEROTH_EPS )
-    {
-        R = ZEROTH_EPS;
-    }
-
-    
     cuscomplex  dG_dX( 0.0, 0.0 );
-    if ( R < 1e-4 )
+    if ( R < GREEN_ZEROTH_DR )
     {
         // Define
-        cusfloat    eps     =   1e-6;
-        cusfloat    x0      =   x - eps/2.0;
-        cusfloat    x1      =   x + eps/2.0;
+        cusfloat    x0      =   x - GREEN_DR_EPS / 2.0;
+        cusfloat    x1      =   x + GREEN_DR_EPS / 2.0;
 
         cuscomplex  G0      =   G_integral_wave(
                                                     this->_field_point_j[0],
@@ -77,7 +70,7 @@ cuscomplex  GWFDxInterface::operator()(
                                                     *(this->_integrals_db)
                                                 );
         
-        dG_dX   =   ( G1 - G0 ) / eps;
+        dG_dX   =   ( G1 - G0 ) / GREEN_DR_EPS;
     }
     else
     {

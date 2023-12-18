@@ -34,19 +34,13 @@ cuscomplex  GRFDxInterface::operator()(
                                         pow2s( this->_source_j->position[1] - y )
                                     );
 
-    if ( R < ZEROTH_EPS )
-    {
-        R = ZEROTH_EPS;
-    }
-
     // Calculate Green function derivatives
     cuscomplex  dG_dX( 0.0, 0.0 );
 
-    if ( R < 1e-4 )
+    if ( R < GREEN_ZEROTH_DR )
     {
-        cusfloat    eps     = 1e-6;
-        cusfloat    x0      = x - eps / 2.0;
-        cusfloat    x1      = x + eps / 2.0;
+        cusfloat    x0      = x - GREEN_DR_EPS / 2.0;
+        cusfloat    x1      = x + GREEN_DR_EPS / 2.0;
 
         cuscomplex  G0      = G_integral_steady(
                                                     this->_source_j->position[0],
@@ -68,7 +62,7 @@ cuscomplex  GRFDxInterface::operator()(
                                                     this->_water_depth
                                                 );
 
-                    dG_dX   = ( G1 - G0 ) / eps;
+                    dG_dX   = ( G1 - G0 ) / GREEN_DR_EPS;
     }
     else
     {
@@ -81,7 +75,7 @@ cuscomplex  GRFDxInterface::operator()(
 
         // Calculate X and Y cartesian coordinates derivatives
         cusfloat    dX      = this->_source_j->position[0] - x;
-        cuscomplex  dG_dX   = dG_dR * dX / R;
+                    dG_dX   = dG_dR * dX / R;
     }
     
     // Get local shape function value

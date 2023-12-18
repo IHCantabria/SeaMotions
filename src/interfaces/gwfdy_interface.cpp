@@ -45,11 +45,10 @@ cuscomplex  GWFDyInterface::operator()(
     }
 
     cuscomplex  dG_dY( 0.0, 0.0 );
-    if ( R < 1e-4 )
+    if ( R < GREEN_ZEROTH_DR )
     {
-        cusfloat    eps     =   1e-6;
-        cusfloat    y0      =   y - eps / 2.0;
-        cusfloat    y1      =   y + eps / 2.0;
+        cusfloat    y0      =   y - GREEN_DR_EPS / 2.0;
+        cusfloat    y1      =   y + GREEN_DR_EPS / 2.0;
         
         cuscomplex  G0      = G_integral_wave(
                                                     this->_field_point_j[0],
@@ -75,7 +74,7 @@ cuscomplex  GWFDyInterface::operator()(
                                                     *(this->_integrals_db)
                                                 );
 
-                    dG_dY   = ( G1 - G0 ) / eps;
+                    dG_dY   = ( G1 - G0 ) / GREEN_DR_EPS;
     }
     else
     {
