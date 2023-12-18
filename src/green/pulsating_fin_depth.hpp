@@ -16,7 +16,11 @@ using namespace std;
 // Define type alias
 using tuplecc = tuple<cuscomplex,cuscomplex>;
 
+// Define module constants
+#define     GREEN_ZEROTH_DR     1e-4
+#define     GREEN_DR_EPS        1e-6
 
+// Declare module functions
 cuscomplex  G_integral(
                                                 cusfloat R,
                                                 cusfloat z,
