@@ -138,15 +138,6 @@ void    calculate_second_order_force(
                 {
                     qtf_values[idx0+r] += 0.25 * input->water_density * int_mod * panel_k->normal_vec[r];
                     qtf_bern[idx0+r]   += 0.25 * input->water_density * int_mod * panel_k->normal_vec[r];
-
-                    if ( 
-                            std::isnan( qtf_values[idx0+r].real( ) )
-                            ||
-                            std::isnan( qtf_values[idx0+r].imag( ) )
-                        )
-                    {
-                        double a = 0;
-                    }
                 }
             }
         }
