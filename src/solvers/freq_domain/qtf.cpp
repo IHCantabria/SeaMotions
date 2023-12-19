@@ -231,20 +231,6 @@ void    calculate_second_order_force(
                     }
                 }
 
-                cuscomplex int_mod_2        = 0.25 * (
-                                                        point_disp[0] * std::conj( vel_x_acc )
-                                                        +
-                                                        point_disp[1] * std::conj( vel_y_acc )
-                                                        +
-                                                        point_disp[2] * std::conj( vel_z_acc )
-                                                        +
-                                                        std::conj( point_disp[0] ) * vel_x_acc
-                                                        +
-                                                        std::conj( point_disp[1] ) * vel_y_acc
-                                                        +
-                                                        std::conj( point_disp[2] ) * vel_z_acc
-                                                    ) * panel_k->area;
-
                 for ( int r=0; r<input->dofs_np; r++ )
                 {
                     qtf_values[idx0+r] += int_mod * panel_k->normal_vec[r];
