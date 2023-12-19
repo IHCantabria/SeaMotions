@@ -643,16 +643,6 @@ void    freq_domain_linear_solver(
                                             sim_data->mdrift_we_pot_total
                                         );
             
-            // Calculate relative wave elevation
-            calculate_relative_wave_elevation_lin(
-                                                        input,
-                                                        mdrift_we_gp,
-                                                        sim_data->mdrift_we_pot_total,
-                                                        input->angfreqs[i],
-                                                        sim_data->raos,
-                                                        sim_data->mdrift_rel_we
-                                                    );
-
             // Calculate velocities over panels
             calculate_velocities_total(
                                         input,
@@ -668,10 +658,20 @@ void    freq_domain_linear_solver(
                                         sim_data->mdrift_press_vel_y,
                                         sim_data->mdrift_press_vel_z
                                     );
-
-            // Calculate mean drift forces
+            
             if ( mpi_config->is_root( ) )
             {
+                // Calculate relative wave elevation
+                calculate_relative_wave_elevation_lin(
+                                                            input,
+                                                            mdrift_we_gp,
+                                                            sim_data->mdrift_we_pot_total,
+                                                            input->angfreqs[i],
+                                                            sim_data->raos,
+                                                            sim_data->mdrift_rel_we
+                                                        );
+
+                // Calculate mean drift forces
                 calculate_second_order_force(
                                                 input,
                                                 mpi_config,
