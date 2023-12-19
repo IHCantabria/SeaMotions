@@ -252,8 +252,8 @@ void    freq_domain_linear_solver(
     if ( input->out_mdrift )
     {
         sim_data->add_mean_drift_data( 
-                                            mesh_gp->panels_wl_tnp * input->gauss_np_factor_1d( ),
-                                            mesh_gp->panels_raddif_tnp * input->gauss_np_factor_2d( )
+                                            input->heads_np * mesh_gp->panels_wl_tnp * input->gauss_np_factor_1d( ),
+                                            input->heads_np * mesh_gp->panels_raddif_tnp * input->gauss_np_factor_2d( )
                                         );
         mdrift_we_gp            = new MatLinGroup<cuscomplex>(
                                                                 mesh_gp->panels_wl_tnp * input->gauss_np_factor_1d( ),

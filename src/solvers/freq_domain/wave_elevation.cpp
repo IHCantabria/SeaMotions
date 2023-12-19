@@ -21,7 +21,7 @@ void    calculate_relative_wave_elevation_lin(
     // Calculate wave elevation
     calculate_wave_elevation_lin(
                                     potpanel_total,
-                                    pot_gp->field_points_np,
+                                    input->heads_np * pot_gp->field_points_np,
                                     ang_freq,
                                     input->grav_acc,
                                     rel_wave_elevation

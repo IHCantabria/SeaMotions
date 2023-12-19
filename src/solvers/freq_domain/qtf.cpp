@@ -40,6 +40,7 @@ void    calculate_second_order_force(
     GaussPoints gp( input->gauss_order );
     int         idx0    = 0;
     int         idx1    = 0;
+    int         idx2    = 0;
     cuscomplex  int_mod = 0.0;
     PanelGeom*  panel_k = nullptr;
     int         ngp     = input->gauss_order;
@@ -179,9 +180,10 @@ void    calculate_second_order_force(
                     {
                         // Define field points index
                         idx1 = i * vel_gp->field_points_np + k * pow2s( ngp ) + gpi * ngp + gpj;
+                        idx2 = k * pow2s( ngp ) + gpi * ngp + gpj;
 
                         // Define vector from cog to field point
-                        sv_sub( 3, &(vel_gp->field_points[3*idx1]), panel_k->body_cog, cog_to_fp );
+                        sv_sub( 3, &(vel_gp->field_points[3*idx2]), panel_k->body_cog, cog_to_fp );
                         for ( int r=0; r<3; r++ )
                         {
                             cog_to_fp_c[r]  = cuscomplex( cog_to_fp[r], 0.0 );
