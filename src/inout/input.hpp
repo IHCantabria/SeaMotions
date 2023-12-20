@@ -45,6 +45,7 @@ public:
     bool                        out_pressure        = false;
     bool                        out_mdrift          = false;
     bool                        out_qtf             = false;
+    bool                        out_qtf_comp        = false;
     bool                        out_raos            = false;
     bool                        out_sources         = false;
     bool                        out_struct_mass     = false;

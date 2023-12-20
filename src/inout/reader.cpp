@@ -390,6 +390,11 @@ void    read_case(
     read_signal     = _read_channel_value( infile, input->out_qtf );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
+    // Read output flag for quadratic transfer functions components
+    target_signal   = "OutQTFComp";
+    read_signal     = _read_channel_value( infile, input->out_qtf_comp );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
     // Read output flag for response amplitude operator
     target_signal   = "OutRAOs";
     read_signal     = _read_channel_value( infile, input->out_raos );

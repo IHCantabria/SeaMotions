@@ -178,69 +178,72 @@ Output::Output(
                             cusfloat_h5
                         );
 
-        CREATE_DATASET( 
-                            fid,
-                            _DN_MDRIFT_WL_MAG,
-                            _DS_WX_NP,
-                            this->_ds_wx,
-                            cusfloat_h5
-                        );
-        
-        CREATE_DATASET( 
-                            fid,
-                            _DN_MDRIFT_WL_PHA,
-                            _DS_WX_NP,
-                            this->_ds_wx,
-                            cusfloat_h5
-                        );
+        if ( this->_input->out_qtf_comp )
+        {
+            CREATE_DATASET( 
+                                fid,
+                                _DN_MDRIFT_WL_MAG,
+                                _DS_WX_NP,
+                                this->_ds_wx,
+                                cusfloat_h5
+                            );
+            
+            CREATE_DATASET( 
+                                fid,
+                                _DN_MDRIFT_WL_PHA,
+                                _DS_WX_NP,
+                                this->_ds_wx,
+                                cusfloat_h5
+                            );
 
-        CREATE_DATASET( 
-                            fid,
-                            _DN_MDRIFT_BERN_MAG,
-                            _DS_WX_NP,
-                            this->_ds_wx,
-                            cusfloat_h5
-                        );
-        
-        CREATE_DATASET( 
-                            fid,
-                            _DN_MDRIFT_BERN_PHA,
-                            _DS_WX_NP,
-                            this->_ds_wx,
-                            cusfloat_h5
-                        );
+            CREATE_DATASET( 
+                                fid,
+                                _DN_MDRIFT_BERN_MAG,
+                                _DS_WX_NP,
+                                this->_ds_wx,
+                                cusfloat_h5
+                            );
+            
+            CREATE_DATASET( 
+                                fid,
+                                _DN_MDRIFT_BERN_PHA,
+                                _DS_WX_NP,
+                                this->_ds_wx,
+                                cusfloat_h5
+                            );
 
-        CREATE_DATASET( 
-                            fid,
-                            _DN_MDRIFT_ACC_MAG,
-                            _DS_WX_NP,
-                            this->_ds_wx,
-                            cusfloat_h5
-                        );
-        
-        CREATE_DATASET( 
-                            fid,
-                            _DN_MDRIFT_ACC_PHA,
-                            _DS_WX_NP,
-                            this->_ds_wx,
-                            cusfloat_h5
-                        );
+            CREATE_DATASET( 
+                                fid,
+                                _DN_MDRIFT_ACC_MAG,
+                                _DS_WX_NP,
+                                this->_ds_wx,
+                                cusfloat_h5
+                            );
+            
+            CREATE_DATASET( 
+                                fid,
+                                _DN_MDRIFT_ACC_PHA,
+                                _DS_WX_NP,
+                                this->_ds_wx,
+                                cusfloat_h5
+                            );
 
-        CREATE_DATASET( 
-                            fid,
-                            _DN_MDRIFT_MOM_MAG,
-                            _DS_WX_NP,
-                            this->_ds_wx,
-                            cusfloat_h5
-                        );
-        
-        CREATE_DATASET( 
-                            fid,
-                            _DN_MDRIFT_MOM_PHA,
-                            _DS_WX_NP,
-                            this->_ds_wx,
-                            cusfloat_h5
-                        );
+            CREATE_DATASET( 
+                                fid,
+                                _DN_MDRIFT_MOM_MAG,
+                                _DS_WX_NP,
+                                this->_ds_wx,
+                                cusfloat_h5
+                            );
+            
+            CREATE_DATASET( 
+                                fid,
+                                _DN_MDRIFT_MOM_PHA,
+                                _DS_WX_NP,
+                                this->_ds_wx,
+                                cusfloat_h5
+                            );
+        }
     }
     
     // Create dataset for QTF frequency difference

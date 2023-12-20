@@ -763,29 +763,32 @@ void    freq_domain_linear_solver(
                                                     sim_data->mdrift
                                                 );
 
-                output->save_wave_exciting_format(
-                                                    i,
-                                                    _DN_MDRIFT_WL,
-                                                    sim_data->mdrift_wl
-                                                );
-                
-                output->save_wave_exciting_format(
-                                                    i,
-                                                    _DN_MDRIFT_BERN,
-                                                    sim_data->mdrift_bern
-                                                );
+                if ( input->out_qtf_comp )
+                {
+                    output->save_wave_exciting_format(
+                                                        i,
+                                                        _DN_MDRIFT_WL,
+                                                        sim_data->mdrift_wl
+                                                    );
+                    
+                    output->save_wave_exciting_format(
+                                                        i,
+                                                        _DN_MDRIFT_BERN,
+                                                        sim_data->mdrift_bern
+                                                    );
 
-                output->save_wave_exciting_format(
-                                                    i,
-                                                    _DN_MDRIFT_ACC,
-                                                    sim_data->mdrift_acc
-                                                );
-                
-                output->save_wave_exciting_format(
-                                                    i,
-                                                    _DN_MDRIFT_MOM,
-                                                    sim_data->mdrift_mom
-                                                );
+                    output->save_wave_exciting_format(
+                                                        i,
+                                                        _DN_MDRIFT_ACC,
+                                                        sim_data->mdrift_acc
+                                                    );
+                    
+                    output->save_wave_exciting_format(
+                                                        i,
+                                                        _DN_MDRIFT_MOM,
+                                                        sim_data->mdrift_mom
+                                                    );
+                }
             }
 
         }
