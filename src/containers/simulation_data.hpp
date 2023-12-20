@@ -11,40 +11,41 @@ struct SimulationData
 {
 private:
     // Declare private class attributes
-    bool            _is_mdrift          = false;
-    MpiConfig*      _mpi_config         = nullptr;
+    bool            _is_mdrift              = false;
+    MpiConfig*      _mpi_config             = nullptr;
 
 public:
     // Declare class attributes
-    cusfloat*       added_mass          = nullptr;
-    cusfloat*       added_mass_p0       = nullptr;
-    cusfloat*       damping_rad         = nullptr;
-    cusfloat*       damping_rad_p0      = nullptr;
-    cuscomplex*     froude_krylov       = nullptr;
-    cuscomplex*     froude_krylov_p0    = nullptr;
-    int             hydmech_np          = 0;
-    cusfloat*       hydrostiff_p0       = nullptr;
-    cuscomplex*     intensities         = nullptr;
-    cuscomplex*     mdrift              = nullptr;
-    cuscomplex*     mdrift_wl           = nullptr;
-    cuscomplex*     mdrift_bern         = nullptr;
-    cuscomplex*     mdrift_acc          = nullptr;
-    cuscomplex*     mdrift_mom          = nullptr;
-    cuscomplex*     mdrift_press_vel_x  = nullptr;
-    cuscomplex*     mdrift_press_vel_y  = nullptr;
-    cuscomplex*     mdrift_press_vel_z  = nullptr;
-    cuscomplex*     mdrift_rel_we       = nullptr;
-    cuscomplex*     mdrift_we           = nullptr;
-    cuscomplex*     mdrift_we_pot_total = nullptr;
-    cuscomplex*     panels_potential    = nullptr;
-    cuscomplex*     raos                = nullptr;
-    cusfloat*       structural_mass_p0  = nullptr;
-    cuscomplex*     sysmat              = nullptr;
-    cuscomplex*     sysmat_steady       = nullptr;
-    cuscomplex*     wave_diffrac        = nullptr;
-    cuscomplex*     wave_diffrac_p0     = nullptr;
-    int             wave_exc_np         = 0;
-    cuscomplex*     wave_exc_p0         = nullptr;
+    cusfloat*       added_mass              = nullptr;
+    cusfloat*       added_mass_p0           = nullptr;
+    cusfloat*       damping_rad             = nullptr;
+    cusfloat*       damping_rad_p0          = nullptr;
+    cuscomplex*     froude_krylov           = nullptr;
+    cuscomplex*     froude_krylov_p0        = nullptr;
+    int             hydmech_np              = 0;
+    cusfloat*       hydrostiff_p0           = nullptr;
+    cuscomplex*     intensities             = nullptr;
+    cuscomplex*     mdrift                  = nullptr;
+    cuscomplex*     mdrift_wl               = nullptr;
+    cuscomplex*     mdrift_bern             = nullptr;
+    cuscomplex*     mdrift_acc              = nullptr;
+    cuscomplex*     mdrift_mom              = nullptr;
+    cuscomplex*     mdrift_press_vel_x      = nullptr;
+    cuscomplex*     mdrift_press_vel_y      = nullptr;
+    cuscomplex*     mdrift_press_vel_z      = nullptr;
+    cuscomplex*     mdrift_rel_we           = nullptr;
+    cuscomplex*     mdrift_we               = nullptr;
+    cuscomplex*     mdrift_we_pot_total     = nullptr;
+    cuscomplex*     panels_potential        = nullptr;
+    cuscomplex*     potential_secord_force  = nullptr;
+    cuscomplex*     raos                    = nullptr;
+    cusfloat*       structural_mass_p0      = nullptr;
+    cuscomplex*     sysmat                  = nullptr;
+    cuscomplex*     sysmat_steady           = nullptr;
+    cuscomplex*     wave_diffrac            = nullptr;
+    cuscomplex*     wave_diffrac_p0         = nullptr;
+    int             wave_exc_np             = 0;
+    cuscomplex*     wave_exc_p0             = nullptr;
 
     // Declare class constructors and destructor
     SimulationData( ) = default;
