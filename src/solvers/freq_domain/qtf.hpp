@@ -9,11 +9,16 @@
 #include "../../inout/input.hpp"
 #include "../../mesh/mesh_group.hpp"
 
+// Set module definitions
+#define QTF_DIFF_CODE   0
+#define QTF_SUM_CODE    1
 
+
+// Declare module functions
 void    calculate_second_order_force(
                                         Input*          input,
-                                        MpiConfig*      mpi_config,
                                         MeshGroup*      mesh_gp,
+                                        int             qtf_type,
                                         cuscomplex*     mdrift_rel_we_i,
                                         cuscomplex*     mdrift_rel_we_j,
                                         cuscomplex*     raos_i,
@@ -24,6 +29,7 @@ void    calculate_second_order_force(
                                         cuscomplex*     vel_x_j,
                                         cuscomplex*     vel_y_j,
                                         cuscomplex*     vel_z_j,
+                                        cuscomplex*     phi_2_force,
                                         cusfloat        ang_freq_i,
                                         cusfloat        ang_freq_j,
                                         cuscomplex*     qtf_values,
@@ -33,7 +39,6 @@ void    calculate_second_order_force(
                                         cuscomplex*     qtf_mom,
                                         MLGCmpx*        pot_gp,
                                         MLGCmpx*        vel_gp
-
                                     );
 
 

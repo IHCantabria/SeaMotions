@@ -1,4 +1,7 @@
 
+// Include general usage libraries
+#include <cassert>
+
 // Include local modules
 #include "qtf.hpp"
 
@@ -13,8 +16,8 @@
 
 void    calculate_second_order_force(
                                             Input*          input,
-                                            MpiConfig*      mpi_config,
                                             MeshGroup*      mesh_gp,
+                                            int             qtf_type,
                                             cuscomplex*     mdrift_rel_we_i,
                                             cuscomplex*     mdrift_rel_we_j,
                                             cuscomplex*     raos_i,
@@ -25,6 +28,7 @@ void    calculate_second_order_force(
                                             cuscomplex*     vel_x_j,
                                             cuscomplex*     vel_y_j,
                                             cuscomplex*     vel_z_j,
+                                            cuscomplex*     phi_2_force,
                                             cusfloat        ang_freq_i,
                                             cusfloat        ang_freq_j,
                                             cuscomplex*     qtf_values,
@@ -36,6 +40,10 @@ void    calculate_second_order_force(
                                             MLGCmpx*        vel_gp
                                     )
 {
+    // Asssert if qtf_type is on the range
+    bool    assert_test = ( qtf_type == 0 ) | ( qtf_type == 1 );
+    assert( assert_test && "qtf_type variable with values differnt to 0 and 1" );
+
     // Define aux variables to be used along the function
     GaussPoints gp( input->gauss_order );
     int         idx0    = 0;
@@ -46,6 +54,7 @@ void    calculate_second_order_force(
     int         ngp     = input->gauss_order;
     int         ngpf_1d = input->gauss_np_factor_1d( );
     int         ngpf    = input->gauss_np_factor_2d( );
+    cuscomplex  val_mod = cuscomplex( 0.0, 0.0 );
 
     // Clear QTF input vector to ensure that previous data will not be storaged
     // erroneously
@@ -72,7 +81,6 @@ void    calculate_second_order_force(
 
     // Calculate second order force due to relative wave
     // elevation at the WL
-    cuscomplex wl_x( 0.0, 0.0 );
     for ( int i=0; i<input->heads_np; i++ )
     {
         for ( int j=0; j<mesh_gp->meshes_np; j++ )
@@ -80,15 +88,21 @@ void    calculate_second_order_force(
             idx0 = i * ( input->dofs_np * input->bodies_np ) + j * input->dofs_np;
             for ( int k=pot_gp->field_points_cnp[j]/ngpf_1d; k<pot_gp->field_points_cnp[j+1]/ngpf_1d; k++ )
             {
-                panel_k             = mesh_gp->panels_wl[k];
-                int_mod             = cuscomplex( 0.0, 0.0 );
+                panel_k = mesh_gp->panels_wl[k];
+                int_mod = cuscomplex( 0.0, 0.0 );
 
                 for ( int gpi=0; gpi<input->gauss_order; gpi++ )
                 {
-                    idx1                = i *  pot_gp->field_points_np + k * ngp + gpi;
-                    int_mod             += mdrift_rel_we_i[idx1] * std::conj( mdrift_rel_we_j[idx1] ) * gp.weights[gpi] * panel_k->len_wl / 2.0;
-                    wl_x                -= 0.25 * input->grav_acc * input->water_density * int_mod * panel_k->normal_vec[0];
-
+                    idx1 = i *  pot_gp->field_points_np + k * ngp + gpi;
+                    if ( qtf_type == 0 )
+                    {
+                        val_mod = mdrift_rel_we_i[idx1] * std::conj( mdrift_rel_we_j[idx1] );
+                    }
+                    else
+                    {
+                        val_mod  = mdrift_rel_we_i[idx1] * mdrift_rel_we_j[idx1];
+                    }
+                    int_mod += val_mod * gp.weights[gpi] * panel_k->len_wl / 2.0;
                 }
 
 
@@ -117,20 +131,35 @@ void    calculate_second_order_force(
                 {
                     for ( int gpj=0; gpj<ngp; gpj++ )
                     {
-                        idx1        = i * vel_gp->field_points_np + k * pow2s( ngp ) + gpi * ngp + gpj;
-                        int_mod     += (
-                                            vel_x_i[idx1] * std::conj( vel_x_j[idx1] )
-                                            +
-                                            vel_y_i[idx1] * std::conj( vel_y_j[idx1] )
-                                            +
-                                            vel_z_i[idx1] * std::conj( vel_z_j[idx1] )
-                                        ) * gp.weights[gpi] * gp.weights[gpj] * jacobi_det_2d( 
-                                                                                                    panel_k->num_nodes,
-                                                                                                    panel_k->xl,
-                                                                                                    panel_k->yl,
-                                                                                                    gp.roots[gpi],
-                                                                                                    gp.roots[gpj]
-                                                                                                );
+                        idx1    = i * vel_gp->field_points_np + k * pow2s( ngp ) + gpi * ngp + gpj;
+
+                        if ( qtf_type == 0 )
+                        {
+                            val_mod     = (
+                                                vel_x_i[idx1] * std::conj( vel_x_j[idx1] )
+                                                +
+                                                vel_y_i[idx1] * std::conj( vel_y_j[idx1] )
+                                                +
+                                                vel_z_i[idx1] * std::conj( vel_z_j[idx1] )
+                                            );
+                        }
+                        else
+                        {
+                            val_mod     = (
+                                                vel_x_i[idx1] * vel_x_j[idx1]
+                                                +
+                                                vel_y_i[idx1] * vel_y_j[idx1]
+                                                +
+                                                vel_z_i[idx1] * vel_z_j[idx1]
+                                            );
+                        }
+                        int_mod     +=  val_mod * gp.weights[gpi] * gp.weights[gpj] * jacobi_det_2d( 
+                                                                                                        panel_k->num_nodes,
+                                                                                                        panel_k->xl,
+                                                                                                        panel_k->yl,
+                                                                                                        gp.roots[gpi],
+                                                                                                        gp.roots[gpj]
+                                                                                                    );
                     }
 
                 }
@@ -210,26 +239,39 @@ void    calculate_second_order_force(
                         vel_z_acc   = input->water_density * cuscomplex( 0.0, -ang_freq_j ) * vel_z_j[idx1];
 
                         // Calculate point displacement
-                        
-                        int_mod             += 0.25 * (
-                                                        point_disp[0] * std::conj( vel_x_acc )
-                                                        +
-                                                        point_disp[1] * std::conj( vel_y_acc )
-                                                        +
-                                                        point_disp[2] * std::conj( vel_z_acc )
-                                                        +
-                                                        std::conj( point_disp[0] ) * vel_x_acc
-                                                        +
-                                                        std::conj( point_disp[1] ) * vel_y_acc
-                                                        +
-                                                        std::conj( point_disp[2] ) * vel_z_acc
-                                                    ) * gp.weights[gpi] * gp.weights[gpj] * jacobi_det_2d( 
-                                                                                                            panel_k->num_nodes,
-                                                                                                            panel_k->xl,
-                                                                                                            panel_k->yl,
-                                                                                                            gp.roots[gpi],
-                                                                                                            gp.roots[gpj]
-                                                                                                        );
+                        if ( qtf_type == 0 )
+                        {
+                            val_mod = 0.25 *(
+                                                point_disp[0] * std::conj( vel_x_acc )
+                                                +
+                                                point_disp[1] * std::conj( vel_y_acc )
+                                                +
+                                                point_disp[2] * std::conj( vel_z_acc )
+                                                +
+                                                std::conj( point_disp[0] ) * vel_x_acc
+                                                +
+                                                std::conj( point_disp[1] ) * vel_y_acc
+                                                +
+                                                std::conj( point_disp[2] ) * vel_z_acc
+                                            );
+                        }
+                        else
+                        {
+                            val_mod = 0.5 * (
+                                                point_disp[0] * vel_x_acc
+                                                +
+                                                point_disp[1] * vel_y_acc
+                                                +
+                                                point_disp[2] * vel_z_acc
+                                            );
+                        }
+                        int_mod     +=  val_mod * gp.weights[gpi] * gp.weights[gpj] * jacobi_det_2d( 
+                                                                                                        panel_k->num_nodes,
+                                                                                                        panel_k->xl,
+                                                                                                        panel_k->yl,
+                                                                                                        gp.roots[gpi],
+                                                                                                        gp.roots[gpj]
+                                                                                                    );
                     }
                 }
 
@@ -282,41 +324,92 @@ void    calculate_second_order_force(
                                 ) * ang_2;
 
             // Add moment due to translational forces
-            cuscomplex      scale_f( 0.25, 0.0 );
+            if ( qtf_type == 0 )
+            {
+                cuscomplex      scale_f( 0.25, 0.0 );
 
-            clear_vector(   3,                  mom_i                                                       );
-            conj_vector(    3,                  &(raos_i[idx0+3]),      conj_vec                            );
-            cross(          conj_vec,           hydro_force,            mom_i                               );
-            svs_mult(       3,                  mom_i,                  scale_f,    mom_i                   );
-            sv_add(         3,                  &(qtf_values[idx0]),    mom_i,      &(qtf_values[idx0])     );
-            sv_add(         3,                  &(qtf_mom[idx0]),       mom_i,      &(qtf_mom[idx0])        );
+                clear_vector(   3,                  mom_i                                                       );
+                conj_vector(    3,                  &(raos_i[idx0+3]),      conj_vec                            );
+                cross(          conj_vec,           hydro_force,            mom_i                               );
+                svs_mult(       3,                  mom_i,                  scale_f,    mom_i                   );
+                sv_add(         3,                  &(qtf_values[idx0]),    mom_i,      &(qtf_values[idx0])     );
+                sv_add(         3,                  &(qtf_mom[idx0]),       mom_i,      &(qtf_mom[idx0])        );
 
-            clear_vector(   3,                  mom_i                                                       );
-            conj_vector(    3,                  hydro_force,            conj_vec                            );
-            cross(          &(raos_i[idx0+3]),  conj_vec,               mom_i                               );
-            svs_mult(       3,                  mom_i,                  scale_f,    mom_i                   );
-            sv_add(         3,                  &(qtf_values[idx0]),    mom_i,      &(qtf_values[idx0])     );
-            sv_add(         3,                  &(qtf_mom[idx0]),       mom_i,      &(qtf_mom[idx0])        );
+                clear_vector(   3,                  mom_i                                                       );
+                conj_vector(    3,                  hydro_force,            conj_vec                            );
+                cross(          &(raos_i[idx0+3]),  conj_vec,               mom_i                               );
+                svs_mult(       3,                  mom_i,                  scale_f,    mom_i                   );
+                sv_add(         3,                  &(qtf_values[idx0]),    mom_i,      &(qtf_values[idx0])     );
+                sv_add(         3,                  &(qtf_mom[idx0]),       mom_i,      &(qtf_mom[idx0])        );
 
-            // Add moment due to rotational force
-            clear_vector(   3,                  mom_i                                                       );
-            conj_vector(    3,                  &(raos_i[idx0+3]),      conj_vec                            );
-            cross(          conj_vec,           &(hydro_force[3]),      mom_i                               );
-            svs_mult(       3,                  mom_i,                  scale_f,    mom_i                   );
-            sv_add(         3,                  &(qtf_values[idx0+3]),  mom_i,      &(qtf_values[idx0+3])   );
-            sv_add(         3,                  &(qtf_mom[idx0+3]),     mom_i,      &(qtf_mom[idx0+3])      );
+                // Add moment due to rotational force
+                clear_vector(   3,                  mom_i                                                       );
+                conj_vector(    3,                  &(raos_i[idx0+3]),      conj_vec                            );
+                cross(          conj_vec,           &(hydro_force[3]),      mom_i                               );
+                svs_mult(       3,                  mom_i,                  scale_f,    mom_i                   );
+                sv_add(         3,                  &(qtf_values[idx0+3]),  mom_i,      &(qtf_values[idx0+3])   );
+                sv_add(         3,                  &(qtf_mom[idx0+3]),     mom_i,      &(qtf_mom[idx0+3])      );
 
-            clear_vector(   3,                  mom_i                                                       );
-            conj_vector(    3,                  &(hydro_force[3]),      conj_vec                            );
-            cross(          &(raos_i[idx0+3]),  conj_vec,               mom_i                               );
-            svs_mult(       3,                  mom_i,                  scale_f,    mom_i                   );
-            sv_add(         3,                  &(qtf_values[idx0+3]),  mom_i,      &(qtf_values[idx0+3])   );
-            sv_add(         3,                  &(qtf_mom[idx0+3]),     mom_i,      &(qtf_mom[idx0+3])      );
+                clear_vector(   3,                  mom_i                                                       );
+                conj_vector(    3,                  &(hydro_force[3]),      conj_vec                            );
+                cross(          &(raos_i[idx0+3]),  conj_vec,               mom_i                               );
+                svs_mult(       3,                  mom_i,                  scale_f,    mom_i                   );
+                sv_add(         3,                  &(qtf_values[idx0+3]),  mom_i,      &(qtf_values[idx0+3])   );
+                sv_add(         3,                  &(qtf_mom[idx0+3]),     mom_i,      &(qtf_mom[idx0+3])      );
+            }
+            else
+            {
+                cuscomplex      scale_f( 0.5, 0.0 );
+
+                clear_vector(   3,                  mom_i                                                       );
+                cross(          &(raos_i[idx0+3]),  hydro_force,            mom_i                               );
+                svs_mult(       3,                  mom_i,                  scale_f,    mom_i                   );
+                sv_add(         3,                  &(qtf_values[idx0]),    mom_i,      &(qtf_values[idx0])     );
+                sv_add(         3,                  &(qtf_mom[idx0]),       mom_i,      &(qtf_mom[idx0])        );
+
+                // Add moment due to rotational force
+                clear_vector(   3,                  mom_i                                                       );
+                cross(          &(raos_i[idx0+3]),  &(hydro_force[3]),      mom_i                               );
+                svs_mult(       3,                  mom_i,                  scale_f,    mom_i                   );
+                sv_add(         3,                  &(qtf_values[idx0+3]),  mom_i,      &(qtf_values[idx0+3])   );
+                sv_add(         3,                  &(qtf_mom[idx0+3]),     mom_i,      &(qtf_mom[idx0+3])      );
+            }
+            
         }
     }
 
-    // Calculate second order potential contribution using
-    // the approximate formula by Pinkster
+    // Add second order potential force
+    cusfloat wij = ang_freq_i - ang_freq_j;
+    if ( std::abs( wij ) > 1e-12 )
+    {
+        for ( int i=0; i<input->heads_np; i++ )
+        {
+            for ( int j=0; j<mesh_gp->meshes_np; j++ )
+            {
+                 // Define chunk index
+                idx0 = i * ( input->dofs_np * input->bodies_np ) + j * input->dofs_np;
+
+                // Calculate second order force contribution using Pinkster approximation
+                for ( int k=0; k<input->dofs_np; k++ )
+                {
+                    qtf_values[idx0+k] += phi_2_force[idx0+k];
+                }
+            }
+        }
+    }
+}
+
+
+void    calculate_pinkster(
+                                Input*      input,
+                                MpiConfig*  mpi_config,
+                                MeshGroup*  mesh_gp,
+                                cusfloat    ang_freq_i,
+                                cusfloat    ang_freq_j,
+                                cuscomplex* qtf_values
+                            )
+{
+    // Define constants to compute Pinkster force
     cusfloat    ai                              = input->wave_amplitude;
     cusfloat    aj                              = input->wave_amplitude;
     cusfloat    aij                             = 0.0;
@@ -330,54 +423,53 @@ void    calculate_second_order_force(
     cusfloat    ki                              = 0.0;
     cusfloat    kj                              = 0.0;
     cusfloat    h                               = input->water_depth;
+    int         idx0                            = 0;
     cusfloat    wij                             = ang_freq_i - ang_freq_j;
 
-    // if ( std::abs( wij ) > 1e-12 )
-    // {
-    //     for ( int i=0; i<input->heads_np; i++ )
-    //     {
-    //         for ( int j=0; j<mesh_gp->meshes_np; j++ )
-    //         {
-    //              // Define chunk index
-    //             idx0 = i * ( input->dofs_np * input->bodies_np ) + j * input->dofs_np;
+    
+    for ( int i=0; i<input->heads_np; i++ )
+    {
+        for ( int j=0; j<mesh_gp->meshes_np; j++ )
+        {
+                // Define chunk index
+            idx0 = i * ( input->dofs_np * input->bodies_np ) + j * input->dofs_np;
 
-    //             // Calculate ith, jth wave numbers
-    //             ki = w2k( ang_freq_i, input->water_depth, input->grav_acc );
-    //             kj = w2k( ang_freq_j, input->water_depth, input->grav_acc );
+            // Calculate ith, jth wave numbers
+            ki = w2k( ang_freq_i, input->water_depth, input->grav_acc );
+            kj = w2k( ang_freq_j, input->water_depth, input->grav_acc );
 
-    //             // Calculate wave numbers difference and the equivalent angular frequency
-    //             dk  = ki - kj;
-    //             dkwij = k2w( dk, input->water_depth, input->grav_acc );
+            // Calculate wave numbers difference and the equivalent angular frequency
+            dk  = ki - kj;
+            dkwij = k2w( dk, input->water_depth, input->grav_acc );
 
-    //             // Calculate equivalent Froude-Krylov force for frequency difference
-    //             calculate_froude_krylov(
-    //                                         input,
-    //                                         mpi_config,
-    //                                         mesh_gp,
-    //                                         dkwij,
-    //                                         froude_krylov
-    //                                     );
-                
-    //             // Calculate correction coefficients
-    //             cij = 2 * ki * kj * wij * ( 1 + std::tanh( ki * h ) * std::tanh( kj * h ) ) / ang_freq_i / ang_freq_j;
-    //             bij = (
-    //                         pow2s( ki ) / ang_freq_i / pow2s( std::cosh( ki * h ) )
-    //                         -
-    //                         pow2s( kj ) / ang_freq_j / pow2s( std::cosh( kj * h ) )
-    //                     );
-    //             aij = (
-    //                         ( bij + cij )
-    //                         /
-    //                         ( pow2s( wij ) - dk * g * std::tanh( dk * h ) )
-    //                     ) * 0.5 * g;
-    //             fij = ai * aj * aij * wij / g;
+            // Calculate equivalent Froude-Krylov force for frequency difference
+            calculate_froude_krylov(
+                                        input,
+                                        mpi_config,
+                                        mesh_gp,
+                                        dkwij,
+                                        froude_krylov
+                                    );
+            
+            // Calculate correction coefficients
+            cij = 2 * ki * kj * wij * ( 1 + std::tanh( ki * h ) * std::tanh( kj * h ) ) / ang_freq_i / ang_freq_j;
+            bij = (
+                        pow2s( ki ) / ang_freq_i / pow2s( std::cosh( ki * h ) )
+                        -
+                        pow2s( kj ) / ang_freq_j / pow2s( std::cosh( kj * h ) )
+                    );
+            aij = (
+                        ( bij + cij )
+                        /
+                        ( pow2s( wij ) - dk * g * std::tanh( dk * h ) )
+                    ) * 0.5 * g;
+            fij = ai * aj * aij * wij / g;
 
-    //             // Calcuate second order force contribution using Pinkster approximation
-    //             for ( int k=0; k<input->dofs_np; k++ )
-    //             {
-    //                 qtf_values[idx0+k] = fij * froude_krylov[k];
-    //             }
-    //         }
-    //     }
-    // }
+            // Calcuate second order force contribution using Pinkster approximation
+            for ( int k=0; k<input->dofs_np; k++ )
+            {
+                qtf_values[idx0+k] = fij * froude_krylov[k];
+            }
+        }
+    }
 }

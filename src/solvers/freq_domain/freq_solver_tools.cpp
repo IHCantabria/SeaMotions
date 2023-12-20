@@ -674,8 +674,8 @@ void    freq_domain_linear_solver(
                 // Calculate mean drift forces
                 calculate_second_order_force(
                                                 input,
-                                                mpi_config,
                                                 mesh_gp,
+                                                QTF_DIFF_CODE,
                                                 sim_data->mdrift_rel_we,
                                                 sim_data->mdrift_rel_we,
                                                 sim_data->raos,
@@ -686,6 +686,7 @@ void    freq_domain_linear_solver(
                                                 sim_data->mdrift_press_vel_x,
                                                 sim_data->mdrift_press_vel_y,
                                                 sim_data->mdrift_press_vel_z,
+                                                sim_data->potential_secord_force,
                                                 input->angfreqs[i],
                                                 input->angfreqs[i],
                                                 sim_data->mdrift,
