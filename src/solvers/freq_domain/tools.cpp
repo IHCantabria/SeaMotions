@@ -125,8 +125,6 @@ void    define_gauss_points_wl(
     }
 
     // Get the radius from the WL line center to the body COG
-    int ngpf  = input->gauss_np_factor_1d( );
-    int index = 0;
     for ( int i=0; i<mesh_gp->meshes_np; i++ )
     {
         for ( int j=mat_gp->field_points_cnp[i]; j<mat_gp->field_points_cnp[i+1]; j++ )
