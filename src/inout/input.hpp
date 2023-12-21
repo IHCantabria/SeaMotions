@@ -46,6 +46,7 @@ public:
     bool                        out_mdrift          = false;
     bool                        out_qtf             = false;
     bool                        out_qtf_comp        = false;
+    int                         out_qtf_so_model    = 0;
     bool                        out_raos            = false;
     bool                        out_sources         = false;
     bool                        out_struct_mass     = false;

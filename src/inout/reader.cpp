@@ -325,6 +325,11 @@ void    read_case(
     read_signal     = _read_channel_value( infile, input->press_rel_err );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
+    // Read QTF second order potential model
+    target_signal   = "QTFSOModel";
+    read_signal     = _read_channel_value( infile, input->out_qtf_so_model );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
     // Read water line points detection precision
     target_signal   = "WLDetPrec";
     read_signal     = _read_channel_value( infile, input->wl_det_prec );
