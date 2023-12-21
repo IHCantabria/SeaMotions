@@ -11,11 +11,11 @@
 #include "../../math/math_interface.hpp"
 
 
-void    calculate_fields_raddif_lin(
-                                        Input*          input,
-                                        cuscomplex*     intensities,
-                                        MLGCmpx*        field_gp
-                                    )
+void        calculate_fields_raddif_lin(
+                                                Input*          input,
+                                                cuscomplex*     intensities,
+                                                MLGCmpx*        field_gp
+                                        )
 {
     // Loop over RHS to compute all the panel potentials the panels potentials
     cuscomplex  alpha( 1.0, 0.0 );
@@ -43,9 +43,9 @@ void    calculate_fields_raddif_lin(
 
 
 std::string compose_dof_path( 
-                                std::string base_path,
-                                int         dofs_num,
-                                int         ang_freq_num
+                                                std::string     base_path,
+                                                int             dofs_num,
+                                                int             ang_freq_num
                             )
 {
     std::stringstream ss0;
@@ -56,7 +56,7 @@ std::string compose_dof_path(
 }
 
 
-void    define_gauss_points_diffrac_panels(
+void        define_gauss_points_diffrac_panels(
                                                 Input*      input,
                                                 MeshGroup*  mesh_gp,
                                                 MLGCmpx*    mat_gp
@@ -92,7 +92,7 @@ void    define_gauss_points_diffrac_panels(
 }
 
 
-void    define_gauss_points_wl(
+void        define_gauss_points_wl(
                                                 Input*      input,
                                                 MeshGroup*  mesh_gp,
                                                 MLGCmpx*    mat_gp
@@ -140,10 +140,10 @@ void    define_gauss_points_wl(
 }
 
 
-void    storage_radiation_potential( 
-                                        std::string dof_base_path,
-                                        int         field_points_np,
-                                        cuscomplex* rad_potential
+void        storage_radiation_potential( 
+                                                std::string dof_base_path,
+                                                int         field_points_np,
+                                                cuscomplex* rad_potential
                                     )
 {
     std::ofstream outfile( dof_base_path );
