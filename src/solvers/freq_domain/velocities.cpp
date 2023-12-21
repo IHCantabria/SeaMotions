@@ -654,9 +654,9 @@ void    calculate_velocities_total(
                         index                   = i * vel_x_gp->sysmat_nrows + r;
                         index_2                 = k * vel_x_gp->sysmat_nrows + r;
                         index_3                 = i * ( input->dofs_np * vel_x_gp->field_points_nb ) + j * input->dofs_np + k;
-                        vel_x_total[index]      += raos[index_3] * vel_x_raddif_p0[index_2];
-                        vel_y_total[index]      += raos[index_3] * vel_y_raddif_p0[index_2];
-                        vel_z_total[index]      += raos[index_3] * vel_z_raddif_p0[index_2];
+                        vel_x_total[index]      += cuscomplex( 0.0, -1.0 ) * ang_freq * raos[index_3] * vel_x_raddif_p0[index_2];
+                        vel_y_total[index]      += cuscomplex( 0.0, -1.0 ) * ang_freq * raos[index_3] * vel_y_raddif_p0[index_2];
+                        vel_z_total[index]      += cuscomplex( 0.0, -1.0 ) * ang_freq * raos[index_3] * vel_z_raddif_p0[index_2];
                     }
                 }
             }

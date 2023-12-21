@@ -514,7 +514,7 @@ void    calculate_potpanel_total_lin(
                         index                   = i * pot_gp->field_points_np + r;
                         index_2                 = k * pot_gp->field_points_np + r;
                         index_3                 = i * ( input->dofs_np * pot_gp->field_points_nb ) + j * input->dofs_np + k;
-                        potpanel_total[index]   += raos[index_3] * pot_raddif_p0[index_2];
+                        potpanel_total[index]   += cuscomplex( 0.0, -1 ) * ang_freq * raos[index_3] * pot_raddif_p0[index_2];
                     }
                 }
             }
