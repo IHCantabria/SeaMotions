@@ -10,7 +10,9 @@
 
 void Input::configure( void )
 {
-    // Check if the fast mode is used properly
+    /**********************************************************/
+    /******** Check if the fast mode is used properly *********/
+    /**********************************************************/
     if ( 
             this->poly_order > 0 
             &&
@@ -22,7 +24,9 @@ void Input::configure( void )
         throw std::runtime_error( "" );
     }
 
-    // Check headings input units
+    /**********************************************************/
+    /************** Check headings input units ****************/
+    /**********************************************************/
     if ( this->heads_units.compare( "deg" ) == 0 )
     {
         for ( int i=0; i<this->heads_np; i++ )
@@ -40,7 +44,9 @@ void Input::configure( void )
         throw std::runtime_error( "" );
     }
 
-    // Check input frequencies units
+    /**********************************************************/
+    /************** Check input frequencies units *************/
+    /**********************************************************/
     if ( this->freqs_unit.compare( "period" ) == 0 )
     {
         for ( int i=0; i<this->angfreqs_np; i++ )
@@ -65,7 +71,9 @@ void Input::configure( void )
         throw std::runtime_error( "" );
     }
 
-    // Sort frequencies from the lowest to the highest
+    /**********************************************************/
+    /**** Sort frequencies from the lowest to the highest *****/
+    /**********************************************************/
     int* sort_keys  = generate_empty_vector<int>( this->angfreqs_np );
     int  info       = 0;
     lasrt2<cusfloat>( 
@@ -86,14 +94,18 @@ void Input::configure( void )
 
     mkl_free( sort_keys );
 
-    // Create a vector for the frequencies
+    /**********************************************************/
+    /********** Create a vector for the frequencies ***********/
+    /**********************************************************/
     this->freqs = generate_empty_vector<cusfloat>( this->angfreqs_np );
     for ( int i=0; i<this->angfreqs_np; i++ )
     {
         this->freqs[i] = angfreq_to_freq( this->angfreqs[i] );
     }
 
-    // Detect points over the free surface
+    /**********************************************************/
+    /********** Detect points over the free surface ***********/
+    /**********************************************************/
     this->is_wl_points = ( this->out_mdrift || this->out_qtf );
     if ( 
             this->is_wl_points
@@ -106,7 +118,9 @@ void Input::configure( void )
         }
     }
 
-    // Calculate source nodes
+    /**********************************************************/
+    /**************** Calculate source nodes ******************/
+    /**********************************************************/
     for ( int i=0; i<this->bodies_np; i++ )
     {
         this->bodies[i]->mesh->define_source_nodes(
