@@ -11,8 +11,10 @@
 void Input::configure( void )
 {
     /**********************************************************/
-    /******** Check if the fast mode is used properly *********/
+    /****************** Check input flags *********************/
     /**********************************************************/
+
+    // Check if fast mode is configured properly
     if ( 
             this->poly_order > 0 
             &&
@@ -23,6 +25,11 @@ void Input::configure( void )
         std::cerr << "( > 0) is not allowed!" << std::endl;
         throw std::runtime_error( "" );
     }
+
+    // Check if it is necessary to calculate Mean Drift values
+    // This option will allow the frequency calculation of the 
+    // QTF depedent signals
+    this->is_calc_mdrift = ( this->out_mdrift || this->out_qtf );
 
     /**********************************************************/
     /************** Check headings input units ****************/
@@ -106,7 +113,7 @@ void Input::configure( void )
     /**********************************************************/
     /********** Detect points over the free surface ***********/
     /**********************************************************/
-    this->is_wl_points = ( this->out_mdrift || this->out_qtf );
+    this->is_wl_points = this->is_calc_mdrift;
     if ( 
             this->is_wl_points
         )

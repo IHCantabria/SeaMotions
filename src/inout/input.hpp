@@ -33,6 +33,7 @@ public:
     std::vector<cusfloat>       heads               ;
     int                         heads_np            = 0;
     std::string                 heads_units         = "";
+    bool                        is_calc_mdrift      = false;
     bool                        is_block_adaption   = false;
     bool                        is_bodies           = false;
     bool                        is_fast_solver      = false;

@@ -160,7 +160,7 @@ Output::Output(
                     );
 
     // Create dataset for mean drift forces
-    if ( input->out_mdrift )
+    if ( input->is_calc_mdrift )
     {
         CREATE_DATASET( 
                             fid,

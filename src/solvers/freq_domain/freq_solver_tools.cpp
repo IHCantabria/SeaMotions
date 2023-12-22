@@ -249,7 +249,7 @@ void    freq_domain_linear_solver(
     MatLinGroup<cuscomplex>*    vel_x_body_gp       = nullptr;
     MatLinGroup<cuscomplex>*    vel_y_body_gp       = nullptr;
     MatLinGroup<cuscomplex>*    vel_z_body_gp       = nullptr;
-    if ( input->out_mdrift )
+    if ( input->is_calc_mdrift )
     {
         sim_data->add_mean_drift_data( 
                                             input->heads_np * mesh_gp->panels_wl_tnp * input->gauss_np_factor_1d( ),
@@ -316,9 +316,7 @@ void    freq_domain_linear_solver(
     // Define field points to calculate the potential on the WL to evaluate
     // second order forces
     if ( 
-            input->out_mdrift
-            ||
-            input->out_qtf
+            input->is_calc_mdrift
         )
     {
         define_gauss_points_wl(
@@ -355,9 +353,7 @@ void    freq_domain_linear_solver(
     GWFDyInterface* gwf_dy_interf   = nullptr;
     GWFDzInterface* gwf_dz_interf   = nullptr;
     if ( 
-            input->out_mdrift
-            ||
-            input->out_qtf
+            input->is_calc_mdrift
         )
     {
         gwf_dx_interf   = new   GWFDxInterface(
@@ -431,7 +427,7 @@ void    freq_domain_linear_solver(
     
     // Calculate steady parto of the potential influence matrix to calculate
     // the mean drift
-    if ( input->out_mdrift )
+    if ( input->is_calc_mdrift )
     {
         calculate_influence_potmat_steady(
                                                     input,
@@ -615,7 +611,7 @@ void    freq_domain_linear_solver(
         }
 
         // Calculate mean drift
-        if ( input->out_mdrift )
+        if ( input->is_calc_mdrift )
         {
             // Update integration interfaces status to the current angular frequency
             gwf_dx_interf->set_ang_freq( input->angfreqs[i] );
@@ -755,7 +751,7 @@ void    freq_domain_linear_solver(
                                                 );
             }
 
-            if ( input->out_mdrift )
+            if ( input->is_calc_mdrift )
             {
                 output->save_wave_exciting_format(
                                                     i,
@@ -823,7 +819,7 @@ void    freq_domain_linear_solver(
     
     delete potpanel_lin_gp;
 
-    if ( input->out_mdrift )
+    if ( input->is_calc_mdrift )
     {
         delete      mdrift_we_gp;
         delete      vel_x_body_gp;
