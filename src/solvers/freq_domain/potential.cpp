@@ -194,81 +194,63 @@ void    calculate_influence_potmat_steady(
 }
 
 
-void    calculate_influence_potmat(
-                                                Input*          input,
-                                                MeshGroup*      mesh_gp,
-                                                cusfloat        ang_freq,
-                                                MLGCmpx*        pot_gp
-                                    )
-{
-    // Define potential funcions objects interface
-    GWFInterface*   green_interf_wave   = new   GWFInterface(
-                                                                mesh_gp->source_nodes[0],
-                                                                0.0,
-                                                                mesh_gp->source_nodes[0]->panel->center,
-                                                                ang_freq,
-                                                                input->water_depth,
-                                                                input->grav_acc
-                                                            );
+// void    calculate_influence_potmat(
+//                                                 Input*          input,
+//                                                 MeshGroup*      mesh_gp,
+//                                                 cusfloat        ang_freq,
+//                                                 MLGCmpx*        pot_gp
+//                                     )
+// {
+//     // Define potential funcions objects interface
+    
 
-    auto            wave_fcn            =   [green_interf_wave]
-                                            (cusfloat xi, cusfloat eta, cusfloat x, cusfloat y, cusfloat z) -> cuscomplex
-                                            {
-                                                return (*green_interf_wave)( xi, eta, x, y, z );
-                                            };
+//     // Generate potential matrix
+//     int         count = 0;
+//     cuscomplex  pot_wave_term( 0.0, 0.0 );
+//     for ( int i=0; i<pot_gp->field_points_np; i++ )
+//     {
+//         // Change field point
+//         green_interf_wave->set_field_point(
+//                                                 &(pot_gp->field_points[3*i])
+//                                             );
 
-    // Generate potential matrix
-    int         count = 0;
-    cuscomplex  pot_wave_term( 0.0, 0.0 );
-    for ( int i=0; i<pot_gp->field_points_np; i++ )
-    {
-        // Change field point
-        green_interf_wave->set_field_point(
-                                                &(pot_gp->field_points[3*i])
-                                            );
-
-        for ( int j=pot_gp->start_col; j<pot_gp->end_col; j++ )
-        {
-            // Change source point
-            green_interf_wave->set_source(
-                                                mesh_gp->source_nodes[j],
-                                                1.0
-                                        );
+//         for ( int j=pot_gp->start_col; j<pot_gp->end_col; j++ )
+//         {
+//             // Change source point
+//             green_interf_wave->set_source(
+//                                                 mesh_gp->source_nodes[j],
+//                                                 1.0
+//                                         );
             
-            // Compute steady and wave terms over the panel
-            if ( 
-                    mesh_gp->panels[i]->type == DIFFRAC_PANEL_CODE
-                    &&
-                    mesh_gp->panels[j]->type == DIFFRAC_PANEL_CODE
-                )
-            {
-                pot_wave_term           = adaptive_quadrature_panel(
-                                                                        mesh_gp->panels[j],
-                                                                        wave_fcn,
-                                                                        input->pot_abs_err,
-                                                                        input->pot_rel_err,
-                                                                        input->is_block_adaption,
-                                                                        false,
-                                                                        input->gauss_order
-                                                                    );
+//             // Compute steady and wave terms over the panel
+//             if ( 
+//                     mesh_gp->panels[i]->type == DIFFRAC_PANEL_CODE
+//                     &&
+//                     mesh_gp->panels[j]->type == DIFFRAC_PANEL_CODE
+//                 )
+//             {
+//                 pot_wave_term           = adaptive_quadrature_panel(
+//                                                                         mesh_gp->panels[j],
+//                                                                         wave_fcn,
+//                                                                         input->pot_abs_err,
+//                                                                         input->pot_rel_err,
+//                                                                         input->is_block_adaption,
+//                                                                         false,
+//                                                                         input->gauss_order
+//                                                                     );
 
-                pot_gp->sysmat[count]   = pot_gp->sysmat_steady[count] + pot_wave_term / 4.0 / PI;
+//                 pot_gp->sysmat[count]   = pot_gp->sysmat_steady[count] + pot_wave_term / 4.0 / PI;
 
-            }
-            else
-            {
-                pot_gp->sysmat[count]   = cuscomplex( 0.0, 0.0 );
-            }
+//             }
+//             else
+//             {
+//                 pot_gp->sysmat[count]   = cuscomplex( 0.0, 0.0 );
+//             }
             
-            count++;
-        }
-    }
-
-    // Delete allocated heap memory data for the
-    // current function
-    delete green_interf_wave;
-
-}
+//             count++;
+//         }
+//     }
+// }
 
 
 void    calculate_potpanel_raddif_nlin(
@@ -356,7 +338,7 @@ void    calculate_potpanel_raddif_nlin(
                                                 mesh_gp->source_nodes[j],
                                                 intensities[j]
                                             );
-                green_interf_wave->set_source(
+                green_interf_wave->set_source_i(
                                                 mesh_gp->source_nodes[j],
                                                 intensities[j]
                                             );
@@ -391,143 +373,104 @@ void    calculate_potpanel_raddif_nlin(
 }
 
 
-void    calculate_potpanel_total_lin(
-                                                Input*          input,
-                                                MpiConfig*      mpi_config,
-                                                MeshGroup*      mesh_gp,
-                                                cusfloat        ang_freq,
-                                                cuscomplex*     intensities,
-                                                cuscomplex*     raos,
-                                                MLGCmpx*        pot_gp,
-                                                cuscomplex*     potpanel_total
-                                    )
-{
-    // Declare auxiliar variables to use in the function
-    int index       =   0;
-    int index_2     =   0;
-    int index_3     =   0;
+// void    calculate_potpanel_total_lin(
+//                                                 Input*          input,
+//                                                 MpiConfig*      mpi_config,
+//                                                 MeshGroup*      mesh_gp,
+//                                                 cusfloat        ang_freq,
+//                                                 cuscomplex*     intensities,
+//                                                 cuscomplex*     raos,
+//                                                 MLGCmpx*        pot_gp,
+//                                                 cuscomplex*     pot_fk_p0,
+//                                                 cuscomplex*     pot_raddif_p0,
+//                                                 cuscomplex*     potpanel_total
+//                                     )
+// {
+//     // Declare auxiliar variables to use in the function
+//     int index       =   0;
+//     int index_2     =   0;
+//     int index_3     =   0;
 
-    /***************************************************************/
-    /************* Radiation-Diffraction Potential *****************/
-    /***************************************************************/
+//     /***************************************************************/
+//     /************* Radiation-Diffraction Potential *****************/
+//     /***************************************************************/
 
-    // Calculate potential influence coeffcients matrix
-    calculate_influence_potmat(
-                                    input,
-                                    mesh_gp,
-                                    ang_freq,
-                                    pot_gp
-                                );
+//     // Calculate potential influence coeffcients matrix
+//     calculate_influence_potmat(
+//                                     input,
+//                                     mesh_gp,
+//                                     ang_freq,
+//                                     pot_gp
+//                                 );
 
-    // Calculate radiation-diffraction panels potential
-    calculate_fields_raddif_lin(
-                                    input,
-                                    intensities,
-                                    pot_gp
-                                );
+//     // Calculate radiation-diffraction panels potential
+//     calculate_fields_raddif_lin(
+//                                     input,
+//                                     intensities,
+//                                     pot_gp
+//                                 );
 
-    /***************************************************************/
-    /******** Sum panel potentials from all processes **************/
-    /***************************************************************/
-    cuscomplex* pot_raddif_p0  = nullptr;
+//     /***************************************************************/
+//     /******** Sum panel potentials from all processes **************/
+//     /***************************************************************/
+//     MPI_Reduce(
+//                     pot_gp->field_values,
+//                     pot_raddif_p0,
+//                     pot_gp->fields_np * pot_gp->sysmat_nrows,
+//                     mpi_cuscomplex,
+//                     MPI_SUM,
+//                     mpi_config->proc_root,
+//                     MPI_COMM_WORLD
+//                 );
 
-    if ( mpi_config->is_root( ) )
-    {
-        pot_raddif_p0   = generate_empty_vector<cuscomplex>( pot_gp->fields_np * pot_gp->sysmat_nrows );
-    }
+//     /***************************************************************/
+//     /*************** Add Inicident Wave Potential ******************/
+//     /***************************************************************/
 
-    MPI_Reduce(
-                    pot_gp->field_values,
-                    pot_raddif_p0,
-                    pot_gp->fields_np * pot_gp->sysmat_nrows,
-                    mpi_cuscomplex,
-                    MPI_SUM,
-                    mpi_config->proc_root,
-                    MPI_COMM_WORLD
-                );
-
-    /***************************************************************/
-    /*************** Add Inicident Wave Potential ******************/
-    /***************************************************************/
-
-    if ( mpi_config->is_root( ) )
-    {
-        // Calculate incident wave potential
-        cusfloat    k   = w2k( 
-                                    ang_freq,
-                                    input->water_depth,
-                                    input->grav_acc
-                                );
-        // cuscomplex  fk_surge    = cuscomplex( 0.0, 0.0 );
+//     if ( mpi_config->is_root( ) )
+//     {
+//         // Calculate incident wave potential
+//         cusfloat    k   =   w2k( 
+//                                     ang_freq,
+//                                     input->water_depth,
+//                                     input->grav_acc
+//                                 );
         
-        for ( int i=0; i<input->heads_np; i++ )
-        {
-            for ( int j=0; j<pot_gp->field_points_np; j++ )
-            {
-                index                   =   pot_gp->field_points_np * i + j;
-                potpanel_total[index]   =   wave_potential_airy_space(
-                                                                        input->wave_amplitude,
-                                                                        ang_freq,
-                                                                        k,
-                                                                        input->water_depth,
-                                                                        input->grav_acc,
-                                                                        pot_gp->field_points[3*j],
-                                                                        pot_gp->field_points[3*j+1],
-                                                                        pot_gp->field_points[3*j+2],
-                                                                        input->heads[i]
-                                                                    );
-            }
-        }
-    }
+//         for ( int i=0; i<input->heads_np; i++ )
+//         {
+//             for ( int j=0; j<pot_gp->field_points_np; j++ )
+//             {
+//                 index                   =   pot_gp->field_points_np * i + j;
+//                 pot_fk_p0[index]        =   wave_potential_airy_space(
+//                                                                         input->wave_amplitude,
+//                                                                         ang_freq,
+//                                                                         k,
+//                                                                         input->water_depth,
+//                                                                         input->grav_acc,
+//                                                                         pot_gp->field_points[3*j],
+//                                                                         pot_gp->field_points[3*j+1],
+//                                                                         pot_gp->field_points[3*j+2],
+//                                                                         input->heads[i]
+//                                                                     );
+//             }
+//         }
+//     }
 
-    /***************************************************************/
-    /************** Add Diffraction Wave Potential *****************/
-    /***************************************************************/
+//     /***************************************************************/
+//     /****************** Compose total potential ********************/
+//     /***************************************************************/
 
-    if ( mpi_config->is_root( ) )
-    {
-        for ( int i=0; i<input->heads_np; i++ )
-        {
-            for ( int j=0; j<pot_gp->field_points_np; j++ )
-            {
-                index                   = pot_gp->field_points_np * i + j;
-                index_2                 = ( input->dofs_np + i ) * pot_gp->field_points_np + j;
-                potpanel_total[index]   += pot_raddif_p0[index_2];
-            }
-        }
-    }
+//     if ( mpi_config->is_root( ) )
+//     {
+//         calculate_total_field(
+//                                     input,
+//                                     ang_freq,
+//                                     pot_gp,
+//                                     raos,
+//                                     pot_fk_p0,
+//                                     pot_raddif_p0,
+//                                     potpanel_total
+//                                 );
+//     }
 
-    /***************************************************************/
-    /*************** Add Radiation Wave Potential *****************/
-    /***************************************************************/
-
-    if ( mpi_config->is_root( ) )
-    {
-        for ( int i=0; i<input->heads_np; i++ )
-        {
-            for ( int j=0; j<pot_gp->field_points_nb; j++ )
-            {
-                for ( int k=0; k<input->dofs_np; k++ )
-                {
-                    for ( int r=pot_gp->field_points_cnp[j]; r<pot_gp->field_points_cnp[j+1]; r++ )
-                    {
-                        index                   = i * pot_gp->field_points_np + r;
-                        index_2                 = k * pot_gp->field_points_np + r;
-                        index_3                 = i * ( input->dofs_np * pot_gp->field_points_nb ) + j * input->dofs_np + k;
-                        potpanel_total[index]   += cuscomplex( 0.0, -1 ) * ang_freq * raos[index_3] * pot_raddif_p0[index_2];
-                    }
-                }
-            }
-        }
-    }
-
-
-    /*******************************************************/
-    /**************  Deallocate heap memory ****************/
-    /*******************************************************/
-    if ( mpi_config->is_root( ) )
-    {
-        mkl_free( pot_raddif_p0 );
-    }
-
-}
+// }

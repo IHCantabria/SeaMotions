@@ -9,13 +9,6 @@
 #include "../../mesh/mesh_group.hpp"
 
 
-void        calculate_fields_raddif_lin(
-                                                Input*          input,
-                                                cuscomplex*     intensities,
-                                                MLGCmpx*        pot_gp
-                                    );
-
-
 std::string compose_dof_path( 
                                                 std::string     base_path,
                                                 int             dofs_num,

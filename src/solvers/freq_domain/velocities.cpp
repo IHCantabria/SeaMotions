@@ -241,13 +241,13 @@ void    calculate_raddif_velocity_mat_steady_nlin(
     for ( int i=0; i<vel_x_gp->field_points_np; i++ )
     {
         // Change field point
-        green_rank_dx->set_field_point_j(
+        green_rank_dx->set_field_point(
                                                 &(vel_x_gp->field_points[3*i])
                                             );
-        green_rank_dy->set_field_point_j(
+        green_rank_dy->set_field_point(
                                                 &(vel_y_gp->field_points[3*i])
                                             );
-        green_rank_dz->set_field_point_j(
+        green_rank_dz->set_field_point(
                                                 &(vel_z_gp->field_points[3*i])
                                             );
 
@@ -377,13 +377,13 @@ void    calculate_raddif_velocity_mat_wave(
     for ( int i=vel_x_gp->start_row; i<vel_x_gp->end_row+1; i++ )
     {
         // Change field point
-        green_wave_dx->set_field_point_j(
+        green_wave_dx->set_field_point(
                                                 &(vel_x_gp->field_points[3*i])
                                             );
-        green_wave_dy->set_field_point_j(
+        green_wave_dy->set_field_point(
                                                 &(vel_y_gp->field_points[3*i])
                                             );
-        green_wave_dz->set_field_point_j(
+        green_wave_dz->set_field_point(
                                                 &(vel_z_gp->field_points[3*i])
                                             );
 
@@ -461,216 +461,190 @@ void    calculate_raddif_velocity_mat_wave(
 }
 
 
-void    calculate_velocities_total(
-                                                    Input*          input,
-                                                    MpiConfig*      mpi_config,
-                                                    MeshGroup*      mesh_gp,
-                                                    cusfloat        ang_freq,
-                                                    cuscomplex*     intensities,
-                                                    cuscomplex*     raos,
-                                                    MLGCmpx*        vel_x_gp,
-                                                    MLGCmpx*        vel_y_gp,
-                                                    MLGCmpx*        vel_z_gp,
-                                                    cuscomplex*     vel_x_total,
-                                                    cuscomplex*     vel_y_total,
-                                                    cuscomplex*     vel_z_total
-                                    )
-{
-    // Declare auxiliar variables to use in the function
-    int index       =   0;
-    int index_2     =   0;
-    int index_3     =   0;
+// void    calculate_velocities_total(
+//                                                     Input*          input,
+//                                                     MpiConfig*      mpi_config,
+//                                                     MeshGroup*      mesh_gp,
+//                                                     cusfloat        ang_freq,
+//                                                     cuscomplex*     intensities,
+//                                                     cuscomplex*     raos,
+//                                                     MLGCmpx*        vel_x_gp,
+//                                                     MLGCmpx*        vel_y_gp,
+//                                                     MLGCmpx*        vel_z_gp,
+//                                                     cuscomplex*     vel_x_fk_p0,
+//                                                     cuscomplex*     vel_y_fk_p0,
+//                                                     cuscomplex*     vel_z_fk_p0,
+//                                                     cuscomplex*     vel_x_raddif_p0,
+//                                                     cuscomplex*     vel_y_raddif_p0,
+//                                                     cuscomplex*     vel_z_raddif_p0,
+//                                                     cuscomplex*     vel_x_total,
+//                                                     cuscomplex*     vel_y_total,
+//                                                     cuscomplex*     vel_z_total
+//                                     )
+// {
+//     // Declare auxiliar variables to use in the function
+//     int index       =   0;
+//     int index_2     =   0;
+//     int index_3     =   0;
     
-    /*******************************************************/
-    /*********  Calculate total velocity matrixes **********/
-    /*******************************************************/
-    calculate_raddif_velocity_mat_wave(
-                                            input,
-                                            mesh_gp,
-                                            ang_freq,
-                                            vel_x_gp,
-                                            vel_y_gp,
-                                            vel_z_gp
-                                        );
+//     /*******************************************************/
+//     /*********  Calculate total velocity matrixes **********/
+//     /*******************************************************/
+//     calculate_raddif_velocity_mat_wave(
+//                                             input,
+//                                             mesh_gp,
+//                                             ang_freq,
+//                                             vel_x_gp,
+//                                             vel_y_gp,
+//                                             vel_z_gp
+//                                         );
 
-    /*******************************************************/
-    /***  Calculate radiation and diffraction velocities ***/
-    /*******************************************************/
-    calculate_fields_raddif_lin(
-                                    input,
-                                    intensities,
-                                    vel_x_gp
-                                );
+//     /*******************************************************/
+//     /***  Calculate radiation and diffraction velocities ***/
+//     /*******************************************************/
+//     calculate_fields_raddif_lin(
+//                                     input,
+//                                     intensities,
+//                                     vel_x_gp
+//                                 );
 
-    calculate_fields_raddif_lin(
-                                    input,
-                                    intensities,
-                                    vel_y_gp
-                                );
+//     calculate_fields_raddif_lin(
+//                                     input,
+//                                     intensities,
+//                                     vel_y_gp
+//                                 );
     
-    calculate_fields_raddif_lin(
-                                    input,
-                                    intensities,
-                                    vel_z_gp
-                                );
+//     calculate_fields_raddif_lin(
+//                                     input,
+//                                     intensities,
+//                                     vel_z_gp
+//                                 );
 
 
-    /***************************************************************/
-    /******** Sum panel velocities from all processes **************/
-    /***************************************************************/
-    cuscomplex* vel_x_raddif_p0  = nullptr;
-    cuscomplex* vel_y_raddif_p0  = nullptr;
-    cuscomplex* vel_z_raddif_p0  = nullptr;
+//     /***************************************************************/
+//     /******** Sum panel velocities from all processes **************/
+//     /***************************************************************/
+//     MPI_Reduce(
+//                     vel_x_gp->field_values,
+//                     vel_x_raddif_p0,
+//                     vel_x_gp->fields_np * vel_x_gp->sysmat_nrows,
+//                     mpi_cuscomplex,
+//                     MPI_SUM,
+//                     mpi_config->proc_root,
+//                     MPI_COMM_WORLD
+//                 );
 
-    if ( mpi_config->is_root( ) )
-    {
-        vel_x_raddif_p0   = generate_empty_vector<cuscomplex>( vel_x_gp->fields_np * vel_x_gp->sysmat_nrows );
-        vel_y_raddif_p0   = generate_empty_vector<cuscomplex>( vel_x_gp->fields_np * vel_x_gp->sysmat_nrows );
-        vel_z_raddif_p0   = generate_empty_vector<cuscomplex>( vel_x_gp->fields_np * vel_x_gp->sysmat_nrows );
-    }
+//     MPI_Reduce(
+//                     vel_y_gp->field_values,
+//                     vel_y_raddif_p0,
+//                     vel_y_gp->fields_np * vel_y_gp->sysmat_nrows,
+//                     mpi_cuscomplex,
+//                     MPI_SUM,
+//                     mpi_config->proc_root,
+//                     MPI_COMM_WORLD
+//                 );
 
-    MPI_Reduce(
-                    vel_x_gp->field_values,
-                    vel_x_raddif_p0,
-                    vel_x_gp->fields_np * vel_x_gp->sysmat_nrows,
-                    mpi_cuscomplex,
-                    MPI_SUM,
-                    mpi_config->proc_root,
-                    MPI_COMM_WORLD
-                );
-
-    MPI_Reduce(
-                    vel_y_gp->field_values,
-                    vel_y_raddif_p0,
-                    vel_y_gp->fields_np * vel_y_gp->sysmat_nrows,
-                    mpi_cuscomplex,
-                    MPI_SUM,
-                    mpi_config->proc_root,
-                    MPI_COMM_WORLD
-                );
-
-    MPI_Reduce(
-                    vel_z_gp->field_values,
-                    vel_z_raddif_p0,
-                    vel_z_gp->fields_np * vel_z_gp->sysmat_nrows,
-                    mpi_cuscomplex,
-                    MPI_SUM,
-                    mpi_config->proc_root,
-                    MPI_COMM_WORLD
-                );
+//     MPI_Reduce(
+//                     vel_z_gp->field_values,
+//                     vel_z_raddif_p0,
+//                     vel_z_gp->fields_np * vel_z_gp->sysmat_nrows,
+//                     mpi_cuscomplex,
+//                     MPI_SUM,
+//                     mpi_config->proc_root,
+//                     MPI_COMM_WORLD
+//                 );
     
-    /*******************************************************/
-    /*******  Add incident wave potential velocities *******/
-    /*******************************************************/
+//     /*******************************************************/
+//     /*******  Add incident wave potential velocities *******/
+//     /*******************************************************/
 
-    if ( mpi_config->is_root( ) )
-    {
-        // Calculate incident wave potential
-        cusfloat    k   = w2k( 
-                                    ang_freq,
-                                    input->water_depth,
-                                    input->grav_acc
-                                );
+//     if ( mpi_config->is_root( ) )
+//     {
+//         // Calculate incident wave potential
+//         cusfloat    k   = w2k( 
+//                                     ang_freq,
+//                                     input->water_depth,
+//                                     input->grav_acc
+//                                 );
         
-        for ( int i=0; i<input->heads_np; i++ )
-        {
-            for ( int j=0; j<vel_x_gp->field_points_np; j++ )
-            {
-                index                   =   vel_x_gp->field_points_np * i + j;
+//         for ( int i=0; i<input->heads_np; i++ )
+//         {
+//             for ( int j=0; j<vel_x_gp->field_points_np; j++ )
+//             {
+//                 index                   =   vel_x_gp->field_points_np * i + j;
                 
-                vel_x_total[index]      =   wave_potential_airy_space_dx(
-                                                                            input->wave_amplitude,
-                                                                            ang_freq,
-                                                                            k,
-                                                                            input->water_depth,
-                                                                            input->grav_acc,
-                                                                            vel_x_gp->field_points[3*j],
-                                                                            vel_x_gp->field_points[3*j+1],
-                                                                            vel_x_gp->field_points[3*j+2],
-                                                                            input->heads[i]
-                                                                        );
+//                 vel_x_fk_p0[index]      =   wave_potential_airy_space_dx(
+//                                                                             input->wave_amplitude,
+//                                                                             ang_freq,
+//                                                                             k,
+//                                                                             input->water_depth,
+//                                                                             input->grav_acc,
+//                                                                             vel_x_gp->field_points[3*j],
+//                                                                             vel_x_gp->field_points[3*j+1],
+//                                                                             vel_x_gp->field_points[3*j+2],
+//                                                                             input->heads[i]
+//                                                                         );
 
-                vel_y_total[index]      =   wave_potential_airy_space_dy(
-                                                                            input->wave_amplitude,
-                                                                            ang_freq,
-                                                                            k,
-                                                                            input->water_depth,
-                                                                            input->grav_acc,
-                                                                            vel_x_gp->field_points[3*j],
-                                                                            vel_x_gp->field_points[3*j+1],
-                                                                            vel_x_gp->field_points[3*j+2],
-                                                                            input->heads[i]
-                                                                        );
+//                 vel_y_fk_p0[index]      =   wave_potential_airy_space_dy(
+//                                                                             input->wave_amplitude,
+//                                                                             ang_freq,
+//                                                                             k,
+//                                                                             input->water_depth,
+//                                                                             input->grav_acc,
+//                                                                             vel_x_gp->field_points[3*j],
+//                                                                             vel_x_gp->field_points[3*j+1],
+//                                                                             vel_x_gp->field_points[3*j+2],
+//                                                                             input->heads[i]
+//                                                                         );
 
-                vel_z_total[index]      =   wave_potential_airy_space_dz(
-                                                                            input->wave_amplitude,
-                                                                            ang_freq,
-                                                                            k,
-                                                                            input->water_depth,
-                                                                            input->grav_acc,
-                                                                            vel_x_gp->field_points[3*j],
-                                                                            vel_x_gp->field_points[3*j+1],
-                                                                            vel_x_gp->field_points[3*j+2],
-                                                                            input->heads[i]
-                                                                        );
-            }
-        }
-    }
+//                 vel_z_fk_p0[index]      =   wave_potential_airy_space_dz(
+//                                                                             input->wave_amplitude,
+//                                                                             ang_freq,
+//                                                                             k,
+//                                                                             input->water_depth,
+//                                                                             input->grav_acc,
+//                                                                             vel_x_gp->field_points[3*j],
+//                                                                             vel_x_gp->field_points[3*j+1],
+//                                                                             vel_x_gp->field_points[3*j+2],
+//                                                                             input->heads[i]
+//                                                                         );
+//             }
+//         }
+//     }
 
-    /*******************************************************/
-    /************  Add  diffraction velocities *************/
-    /*******************************************************/
+//     /*******************************************************/
+//     /***********  Compose total velocity field *************/
+//     /*******************************************************/
+//     if ( mpi_config->is_root( ) )
+//     {
+//         calculate_total_field(
+//                                     input,
+//                                     ang_freq,
+//                                     vel_x_gp,
+//                                     raos,
+//                                     vel_x_fk_p0,
+//                                     vel_x_raddif_p0,
+//                                     vel_x_total
+//                                 );
 
-    if ( mpi_config->is_root( ) )
-    {
-        for ( int i=0; i<input->heads_np; i++ )
-        {
-            for ( int j=0; j<vel_x_gp->field_points_np; j++ )
-            {
-                index                   = vel_x_gp->sysmat_nrows * i + j;
-                index_2                 = ( input->dofs_np + i ) * vel_x_gp->field_points_np + j;
+//         calculate_total_field(
+//                                     input,
+//                                     ang_freq,
+//                                     vel_y_gp,
+//                                     raos,
+//                                     vel_y_fk_p0,
+//                                     vel_y_raddif_p0,
+//                                     vel_y_total
+//                                 );
 
-                vel_x_total[index]      += vel_x_raddif_p0[index_2];
-                vel_y_total[index]      += vel_y_raddif_p0[index_2];
-                vel_z_total[index]      += vel_z_raddif_p0[index_2];
-            }
-        }
-    }
-
-    /***************************************************************/
-    /*************** Add Radiation Wave Velocities *****************/
-    /***************************************************************/
-
-    if ( mpi_config->is_root( ) )
-    {
-        for ( int i=0; i<input->heads_np; i++ )
-        {
-            for ( int j=0; j<vel_x_gp->field_points_nb; j++ )
-            {
-                for ( int r=vel_x_gp->field_points_cnp[j]; r<vel_x_gp->field_points_cnp[j+1]; r++ )
-                {
-                    for ( int k=0; k<input->dofs_np; k++ )
-                    {
-                        index                   = i * vel_x_gp->sysmat_nrows + r;
-                        index_2                 = k * vel_x_gp->sysmat_nrows + r;
-                        index_3                 = i * ( input->dofs_np * vel_x_gp->field_points_nb ) + j * input->dofs_np + k;
-                        vel_x_total[index]      += cuscomplex( 0.0, -1.0 ) * ang_freq * raos[index_3] * vel_x_raddif_p0[index_2];
-                        vel_y_total[index]      += cuscomplex( 0.0, -1.0 ) * ang_freq * raos[index_3] * vel_y_raddif_p0[index_2];
-                        vel_z_total[index]      += cuscomplex( 0.0, -1.0 ) * ang_freq * raos[index_3] * vel_z_raddif_p0[index_2];
-                    }
-                }
-            }
-        }
-    }
-
-    /*******************************************************/
-    /**************  Deallocate heap memory ****************/
-    /*******************************************************/ 
-    if ( mpi_config->is_root( ) )
-    {
-        mkl_free( vel_x_raddif_p0 );
-        mkl_free( vel_y_raddif_p0 );
-        mkl_free( vel_z_raddif_p0 );
-    }
-
-}
+//         calculate_total_field(
+//                                     input,
+//                                     ang_freq,
+//                                     vel_z_gp,
+//                                     raos,
+//                                     vel_z_fk_p0,
+//                                     vel_z_raddif_p0,
+//                                     vel_z_total
+//                                 );
+//     }
+// }
