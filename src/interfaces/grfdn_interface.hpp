@@ -41,7 +41,7 @@ public:
                                     cusfloat    z
                            );
 
-    void        set_field_point_j(
+    void        set_field_point(
                                     cusfloat* fp
                                 );
 

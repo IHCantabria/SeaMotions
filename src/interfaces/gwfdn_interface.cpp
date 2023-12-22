@@ -215,7 +215,7 @@ void    GWFDnInterface::set_ang_freq(
 }
 
 
-void    GWFDnInterface::set_field_point_j(
+void    GWFDnInterface::set_field_point(
                                             cusfloat*   fp
                                         )
 {

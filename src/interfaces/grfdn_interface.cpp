@@ -143,7 +143,7 @@ cuscomplex  GRFDnInterface::operator()(
 }
 
 
-void    GRFDnInterface::set_field_point_j(
+void    GRFDnInterface::set_field_point(
                                             cusfloat*   fp
                                         )
 {

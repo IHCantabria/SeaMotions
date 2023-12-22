@@ -59,7 +59,7 @@ public:
                                     cusfloat    ang_freq
                             );
 
-    void        set_field_point_j(
+    void        set_field_point(
                                     cusfloat*   fp
                                 );
 
