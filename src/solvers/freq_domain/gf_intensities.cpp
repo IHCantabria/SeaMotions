@@ -45,7 +45,7 @@ void    calculate_gf_intensity_sysmat(
     {
         // Get memory address of the ith panel
         source_i = mesh_gp->source_nodes[i];
-        gwf_interf->set_source_i( source_i );
+        gwf_interf->set_source_i( source_i, 1.0 );
 
         // Loop over rows to calcualte the influence of the panel
         // over each collocation point

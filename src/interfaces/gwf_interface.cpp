@@ -115,7 +115,7 @@ void GWFInterface::set_field_point(
 }
 
 
-void GWFInterface::set_source(
+void GWFInterface::set_source_i(
                                     SourceNode* source,
                                     cuscomplex  source_val
                                 )

@@ -53,7 +53,7 @@ public:
                                     cusfloat*   field_point
                                 );
 
-    void        set_source(
+    void        set_source_i(
                                     SourceNode* source,
                                     cuscomplex  source_val
                            );

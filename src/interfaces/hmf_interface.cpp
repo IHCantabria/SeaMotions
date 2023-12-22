@@ -112,7 +112,7 @@ cuscomplex  HMFInterface::operator()(
                                                     this->_source_nodes[i],
                                                     this->_source_values[index]
                                                 );
-            this->_green_interf_wave->set_source(
+            this->_green_interf_wave->set_source_i(
                                                     this->_source_nodes[i],
                                                     this->_source_values[index]
                                                 );

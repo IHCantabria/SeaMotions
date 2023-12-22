@@ -35,6 +35,7 @@ public:
     int         field_points_np     = 0;
     T*          field_values        = nullptr;
     int         fields_np           = 0;
+    bool        is_sysmat_field     = false;
     int         start_col           = 0;
     int         start_row           = 0;
     T*          sysmat              = nullptr;
@@ -51,7 +52,8 @@ public:
                     int         start_row_in,
                     int         end_row_in,
                     int         start_col_in,
-                    int         end_col_in
+                    int         end_col_in,
+                    bool        is_sysmat_field_in
                 );
 
     MatLinGroup(
@@ -60,7 +62,8 @@ public:
                     int         sysmat_ncols_in,
                     int         fields_np_in,
                     int         start_col_in,
-                    int         end_col_in
+                    int         end_col_in,
+                    bool        is_sysmat_field_in
                 );
 
     ~MatLinGroup(
@@ -123,14 +126,15 @@ void MatLinGroup<T>::_load_field_points(
 
 template <typename T>
 MatLinGroup<T>::MatLinGroup(
-                                int sysmat_nrows_in,
-                                int sysmat_ncols_in,
-                                int field_points_nb_in,
-                                int fields_np_in,
-                                int start_row_in,
-                                int end_row_in,
-                                int start_col_in,
-                                int end_col_in
+                                int     sysmat_nrows_in,
+                                int     sysmat_ncols_in,
+                                int     field_points_nb_in,
+                                int     fields_np_in,
+                                int     start_row_in,
+                                int     end_row_in,
+                                int     start_col_in,
+                                int     end_col_in,
+                                bool    is_sysmat_field_in
                             )
 {
     // Storage input arguments
@@ -139,6 +143,7 @@ MatLinGroup<T>::MatLinGroup(
     this->field_points_nb   = field_points_nb_in;
     this->field_points_np   = sysmat_nrows_in;
     this->fields_np         = fields_np_in;
+    this->is_sysmat_field   = is_sysmat_field_in;
     this->start_col         = start_col_in;
     this->start_row         = start_row_in;
     this->sysmat_nrows      = sysmat_nrows_in;
@@ -163,11 +168,13 @@ MatLinGroup<T>::MatLinGroup(
                                 int         sysmat_ncols_in,
                                 int         fields_np_in,
                                 int         start_col_in,
-                                int         end_col_in
+                                int         end_col_in,
+                                bool        is_sysmat_field_in
                             )
 {
     // Storage input arguments
     this->end_col           = end_col_in;
+    this->is_sysmat_field   = is_sysmat_field_in;
     this->fields_np         = fields_np_in;
     this->start_col         = start_col_in;
     this->sysmat_ncols      = sysmat_ncols_in;

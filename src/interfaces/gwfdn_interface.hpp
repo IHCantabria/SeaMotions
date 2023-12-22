@@ -17,6 +17,7 @@ protected:
     cusfloat            _field_point_j[3]   = { 0.0, 0.0, 0.0 };
     SourceNode*         _source_i           = nullptr;
     SourceNode*         _source_j           = nullptr;
+    cuscomplex          _source_value       = 0.0;
     IntegralsDb*        _integrals_db       = nullptr;
     cusfloat            _water_depth        = 0.0;
     WaveDispersionData* _wave_data          = nullptr;
@@ -64,7 +65,9 @@ public:
                                 );
 
     void        set_source_i(
-                                    SourceNode* source_node
+                                    SourceNode* source_node,
+                                    cuscomplex  source_value
+
                             );
 
     void        set_source_j(

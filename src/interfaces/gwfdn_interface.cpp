@@ -226,10 +226,12 @@ void    GWFDnInterface::set_field_point(
 
 
 void    GWFDnInterface::set_source_i(
-                                            SourceNode* source_node
+                                            SourceNode* source_node,
+                                            cuscomplex  source_value
                                     )
 {
-    this->_source_i = source_node;
+    this->_source_i     = source_node;
+    this->_source_value = source_value;
 }
 
 

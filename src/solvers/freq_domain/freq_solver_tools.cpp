@@ -19,6 +19,7 @@
 #include "../../solvers/freq_domain/froude_krylov.hpp"
 #include "../../solvers/freq_domain/hydromechanics.hpp"
 #include "../../solvers/freq_domain/potential.hpp"
+#include "../../solvers/freq_domain/panel_fields.hpp"
 #include "../../solvers/freq_domain/raos.hpp"
 #include "../../solvers/freq_domain/tools.hpp"
 #include "../../solvers/freq_domain/velocities.hpp"
@@ -213,7 +214,6 @@ void    freq_domain_linear_solver(
                                                         input->dofs_np,
                                                         input->heads_np,
                                                         scl->num_rows_local,
-                                                        scl->num_cols_local,
                                                         scl->num_rows,
                                                         mpi_config
                                                     );
@@ -242,20 +242,23 @@ void    freq_domain_linear_solver(
                                                                                 0,
                                                                                 mesh_gp->panels_raddif_tnp-1,
                                                                                 ipm_sc,
-                                                                                ipm_ed
+                                                                                ipm_ed,
+                                                                                true
                                                                             );
     
-    MatLinGroup<cuscomplex>*    mdrift_we_gp        = nullptr;
+    MatLinGroup<cuscomplex>*    qtf_wl_we_gp        = nullptr;
     MatLinGroup<cuscomplex>*    vel_x_body_gp       = nullptr;
     MatLinGroup<cuscomplex>*    vel_y_body_gp       = nullptr;
     MatLinGroup<cuscomplex>*    vel_z_body_gp       = nullptr;
     if ( input->is_calc_mdrift )
     {
         sim_data->add_mean_drift_data( 
-                                            input->heads_np * mesh_gp->panels_wl_tnp * input->gauss_np_factor_1d( ),
-                                            input->heads_np * mesh_gp->panels_raddif_tnp * input->gauss_np_factor_2d( )
+                                            mesh_gp->panels_raddif_tnp,
+                                            mesh_gp->panels_wl_tnp,
+                                            input->gauss_np_factor_2d( ),
+                                            input->gauss_np_factor_1d( )
                                         );
-        mdrift_we_gp            = new MatLinGroup<cuscomplex>(
+        qtf_wl_we_gp            = new MatLinGroup<cuscomplex>(
                                                                 mesh_gp->panels_wl_tnp * input->gauss_np_factor_1d( ),
                                                                 ipm_cols_np,
                                                                 mesh_gp->meshes_np,
@@ -263,7 +266,8 @@ void    freq_domain_linear_solver(
                                                                 0,
                                                                 ( mesh_gp->panels_wl_tnp * input->gauss_np_factor_1d( ) ) - 1,
                                                                 ipm_sc,
-                                                                ipm_ed
+                                                                ipm_ed,
+                                                                false
                                                             );
         vel_x_body_gp           = new MatLinGroup<cuscomplex>(
                                                                 mesh_gp->panels_raddif_tnp * input->gauss_np_factor_2d( ),
@@ -273,7 +277,8 @@ void    freq_domain_linear_solver(
                                                                 0,
                                                                 ( mesh_gp->panels_raddif_tnp * input->gauss_np_factor_2d( ) ) - 1,
                                                                 ipm_sc,
-                                                                ipm_ed
+                                                                ipm_ed,
+                                                                false
                                                             );
         vel_y_body_gp           = new MatLinGroup<cuscomplex>(
                                                                 mesh_gp->panels_raddif_tnp * input->gauss_np_factor_2d( ),
@@ -283,7 +288,8 @@ void    freq_domain_linear_solver(
                                                                 0,
                                                                 ( mesh_gp->panels_raddif_tnp * input->gauss_np_factor_2d( ) ) - 1,
                                                                 ipm_sc,
-                                                                ipm_ed
+                                                                ipm_ed,
+                                                                false
                                                             );
         vel_z_body_gp           = new MatLinGroup<cuscomplex>(
                                                                 mesh_gp->panels_raddif_tnp * input->gauss_np_factor_2d( ),
@@ -293,7 +299,8 @@ void    freq_domain_linear_solver(
                                                                 0,
                                                                 ( mesh_gp->panels_raddif_tnp * input->gauss_np_factor_2d( ) ) - 1,
                                                                 ipm_sc,
-                                                                ipm_ed
+                                                                ipm_ed,
+                                                                false
                                                             );
     }
 
@@ -322,7 +329,7 @@ void    freq_domain_linear_solver(
         define_gauss_points_wl(
                                     input,
                                     mesh_gp,
-                                    mdrift_we_gp
+                                    qtf_wl_we_gp
                                 );
 
         // Define field points for the evaluation of the velocities field
@@ -349,6 +356,7 @@ void    freq_domain_linear_solver(
                                                                 input->grav_acc
                                                             );
 
+    GWFInterface*   gwf_interf      = nullptr;
     GWFDxInterface* gwf_dx_interf   = nullptr;
     GWFDyInterface* gwf_dy_interf   = nullptr;
     GWFDzInterface* gwf_dz_interf   = nullptr;
@@ -356,6 +364,16 @@ void    freq_domain_linear_solver(
             input->is_calc_mdrift
         )
     {
+        // Define functors to calculate the wave induced velocities
+        gwf_interf      = new   GWFInterface(
+                                                    mesh_gp->source_nodes[0],
+                                                    0.0,
+                                                    mesh_gp->source_nodes[0]->panel->center,
+                                                    input->angfreqs[0],
+                                                    input->water_depth,
+                                                    input->grav_acc
+                                                );
+
         gwf_dx_interf   = new   GWFDxInterface(
                                                     mesh_gp->source_nodes[0],
                                                     mesh_gp->source_nodes[0],
@@ -379,7 +397,6 @@ void    freq_domain_linear_solver(
                                                     input->water_depth,
                                                     input->grav_acc
                                                 );
-
     }
 
     /****************************************************************/
@@ -425,14 +442,14 @@ void    freq_domain_linear_solver(
                                             potpanel_lin_gp
                                     );
     
-    // Calculate steady parto of the potential influence matrix to calculate
+    // Calculate steady part of the potential influence matrix to calculate
     // the mean drift
     if ( input->is_calc_mdrift )
     {
         calculate_influence_potmat_steady(
                                                     input,
                                                     mesh_gp,
-                                                    mdrift_we_gp
+                                                    qtf_wl_we_gp
                                             );
 
         calculate_raddif_velocity_mat_steady(
@@ -459,6 +476,7 @@ void    freq_domain_linear_solver(
 
         // Recalculate wave properties for the current 
         // angular frequency
+        gwf_interf->set_ang_freq( input->angfreqs[i] );
         gwf_dn_interf->set_ang_freq( input->angfreqs[i] );
 
         // Calculate sources intensity
@@ -484,10 +502,10 @@ void    freq_domain_linear_solver(
                 );
 
         // Calculate potential influence coeffcients matrix
-        calculate_influence_potmat(
+        calculate_influence_field_mat(
                                         input,
                                         mesh_gp,
-                                        input->angfreqs[i],
+                                        gwf_interf,
                                         potpanel_lin_gp
                                     );
 
@@ -628,43 +646,103 @@ void    freq_domain_linear_solver(
                     );
             
             // Calculate total potential at the target WL points
-            calculate_potpanel_total_lin(
-                                            input,
-                                            mpi_config,
-                                            mesh_gp,
-                                            input->angfreqs[i],
-                                            sim_data->intensities,
-                                            sim_data->raos,
-                                            mdrift_we_gp,
-                                            sim_data->mdrift_we_pot_total
-                                        );
+            // calculate_potpanel_total_lin(
+            //                                 input,
+            //                                 mpi_config,
+            //                                 mesh_gp,
+            //                                 input->angfreqs[i],
+            //                                 sim_data->intensities,
+            //                                 sim_data->raos,
+            //                                 qtf_wl_we_gp,
+            //                                 sim_data->qtf_wl_we_pot_total
+            //                             );
+
+            calculate_fields_lin(
+                                    input,
+                                    mpi_config,
+                                    mesh_gp,
+                                    gwf_interf,
+                                    wave_potential_airy_space,
+                                    input->angfreqs[i],
+                                    sim_data->intensities,
+                                    sim_data->raos,
+                                    qtf_wl_we_gp,
+                                    sim_data->qtf_wl_we_fk,
+                                    sim_data->qtf_wl_we_raddif,
+                                    sim_data->qtf_wl_we_total
+                                );
             
             // Calculate velocities over panels
-            calculate_velocities_total(
-                                        input,
-                                        mpi_config,
-                                        mesh_gp,
-                                        input->angfreqs[i],
-                                        sim_data->intensities,
-                                        sim_data->raos,
-                                        vel_x_body_gp,
-                                        vel_y_body_gp,
-                                        vel_z_body_gp,
-                                        sim_data->mdrift_press_vel_x,
-                                        sim_data->mdrift_press_vel_y,
-                                        sim_data->mdrift_press_vel_z
-                                    );
+            // calculate_velocities_total(
+            //                             input,
+            //                             mpi_config,
+            //                             mesh_gp,
+            //                             input->angfreqs[i],
+            //                             sim_data->intensities,
+            //                             sim_data->raos,
+            //                             vel_x_body_gp,
+            //                             vel_y_body_gp,
+            //                             vel_z_body_gp,
+            //                             sim_data->mdrift_press_vel_x,
+            //                             sim_data->mdrift_press_vel_y,
+            //                             sim_data->mdrift_press_vel_z
+            //                         );
             
+            calculate_fields_lin(
+                                    input,
+                                    mpi_config,
+                                    mesh_gp,
+                                    gwf_dx_interf,
+                                    wave_potential_airy_space_dx,
+                                    input->angfreqs[i],
+                                    sim_data->intensities,
+                                    sim_data->raos,
+                                    vel_x_body_gp,
+                                    sim_data->qtf_body_vel_x_fk,
+                                    sim_data->qtf_body_vel_x_raddif,
+                                    sim_data->qtf_body_vel_x_total
+                                );
+            
+            calculate_fields_lin(
+                                    input,
+                                    mpi_config,
+                                    mesh_gp,
+                                    gwf_dy_interf,
+                                    wave_potential_airy_space_dy,
+                                    input->angfreqs[i],
+                                    sim_data->intensities,
+                                    sim_data->raos,
+                                    vel_y_body_gp,
+                                    sim_data->qtf_body_vel_y_fk,
+                                    sim_data->qtf_body_vel_y_raddif,
+                                    sim_data->qtf_body_vel_y_total
+                                );
+
+            calculate_fields_lin(
+                                    input,
+                                    mpi_config,
+                                    mesh_gp,
+                                    gwf_dz_interf,
+                                    wave_potential_airy_space_dz,
+                                    input->angfreqs[i],
+                                    sim_data->intensities,
+                                    sim_data->raos,
+                                    vel_z_body_gp,
+                                    sim_data->qtf_body_vel_z_fk,
+                                    sim_data->qtf_body_vel_z_raddif,
+                                    sim_data->qtf_body_vel_z_total
+                                );
+
             if ( mpi_config->is_root( ) )
             {
                 // Calculate relative wave elevation
                 calculate_relative_wave_elevation_lin(
                                                             input,
-                                                            mdrift_we_gp,
-                                                            sim_data->mdrift_we_pot_total,
+                                                            qtf_wl_we_gp,
+                                                            sim_data->qtf_wl_we_total,
                                                             input->angfreqs[i],
                                                             sim_data->raos,
-                                                            sim_data->mdrift_rel_we
+                                                            sim_data->qtf_wl_rel_we
                                                         );
 
                 // Calculate mean drift forces
@@ -672,25 +750,25 @@ void    freq_domain_linear_solver(
                                                 input,
                                                 mesh_gp,
                                                 QTF_DIFF_CODE,
-                                                sim_data->mdrift_rel_we,
-                                                sim_data->mdrift_rel_we,
+                                                sim_data->qtf_wl_rel_we,
+                                                sim_data->qtf_wl_rel_we,
                                                 sim_data->raos,
                                                 sim_data->raos,
-                                                sim_data->mdrift_press_vel_x,
-                                                sim_data->mdrift_press_vel_y,
-                                                sim_data->mdrift_press_vel_z,
-                                                sim_data->mdrift_press_vel_x,
-                                                sim_data->mdrift_press_vel_y,
-                                                sim_data->mdrift_press_vel_z,
+                                                sim_data->qtf_body_vel_x_total,
+                                                sim_data->qtf_body_vel_y_total,
+                                                sim_data->qtf_body_vel_z_total,
+                                                sim_data->qtf_body_vel_x_total,
+                                                sim_data->qtf_body_vel_y_total,
+                                                sim_data->qtf_body_vel_z_total,
                                                 sim_data->potential_secord_force,
                                                 input->angfreqs[i],
                                                 input->angfreqs[i],
                                                 sim_data->mdrift,
-                                                sim_data->mdrift_wl,
-                                                sim_data->mdrift_bern,
-                                                sim_data->mdrift_acc,
-                                                sim_data->mdrift_mom,
-                                                mdrift_we_gp,
+                                                sim_data->qtf_wl,
+                                                sim_data->qtf_bern,
+                                                sim_data->qtf_acc,
+                                                sim_data->qtf_mom,
+                                                qtf_wl_we_gp,
                                                 vel_x_body_gp
                                             );
 
@@ -764,25 +842,25 @@ void    freq_domain_linear_solver(
                     output->save_wave_exciting_format(
                                                         i,
                                                         _DN_MDRIFT_WL,
-                                                        sim_data->mdrift_wl
+                                                        sim_data->qtf_wl
                                                     );
                     
                     output->save_wave_exciting_format(
                                                         i,
                                                         _DN_MDRIFT_BERN,
-                                                        sim_data->mdrift_bern
+                                                        sim_data->qtf_bern
                                                     );
 
                     output->save_wave_exciting_format(
                                                         i,
                                                         _DN_MDRIFT_ACC,
-                                                        sim_data->mdrift_acc
+                                                        sim_data->qtf_acc
                                                     );
                     
                     output->save_wave_exciting_format(
                                                         i,
                                                         _DN_MDRIFT_MOM,
-                                                        sim_data->mdrift_mom
+                                                        sim_data->qtf_mom
                                                     );
                 }
             }
@@ -806,9 +884,6 @@ void    freq_domain_linear_solver(
     MPI_Barrier( MPI_COMM_WORLD );
     delete grf_dn_interf;
     delete gwf_dn_interf;
-    delete gwf_dx_interf;
-    delete gwf_dy_interf;
-    delete gwf_dz_interf;
 
     // Delete simulation data
     delete sim_data;
@@ -821,10 +896,14 @@ void    freq_domain_linear_solver(
 
     if ( input->is_calc_mdrift )
     {
-        delete      mdrift_we_gp;
-        delete      vel_x_body_gp;
-        delete      vel_y_body_gp;
-        delete      vel_z_body_gp;
+        delete  gwf_interf;
+        delete  gwf_dx_interf;
+        delete  gwf_dy_interf;
+        delete  gwf_dz_interf;
+        delete  qtf_wl_we_gp;
+        delete  vel_x_body_gp;
+        delete  vel_y_body_gp;
+        delete  vel_z_body_gp;
     }
     
     // Delete mesh group data
@@ -851,7 +930,6 @@ void    freq_domain_nonlinear_solver(
                                                         input->dofs_np,
                                                         input->heads_np,
                                                         scl->num_rows_local,
-                                                        scl->num_cols_local,
                                                         scl->num_rows,
                                                         mpi_config
                                                     );
