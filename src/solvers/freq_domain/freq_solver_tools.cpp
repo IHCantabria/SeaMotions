@@ -692,9 +692,9 @@ void    freq_domain_linear_solver(
                                     sim_data->intensities,
                                     sim_data->raos,
                                     qtf_wl_we_gp,
-                                    sim_data->qtf_wl_we_fk,
-                                    sim_data->qtf_wl_we_raddif,
-                                    sim_data->qtf_wl_we_total
+                                    sim_data->mdrift_wl_we_fk,
+                                    sim_data->mdrift_wl_we_raddif,
+                                    sim_data->mdrift_wl_we_total
                                 );
             
             // Calculate velocities over panels
@@ -723,9 +723,9 @@ void    freq_domain_linear_solver(
                                     sim_data->intensities,
                                     sim_data->raos,
                                     vel_x_body_gp,
-                                    sim_data->qtf_body_vel_x_fk,
-                                    sim_data->qtf_body_vel_x_raddif,
-                                    sim_data->qtf_body_vel_x_total
+                                    sim_data->mdrift_body_vel_x_fk,
+                                    sim_data->mdrift_body_vel_x_raddif,
+                                    sim_data->mdrift_body_vel_x_total
                                 );
             
             calculate_fields_lin(
@@ -738,9 +738,9 @@ void    freq_domain_linear_solver(
                                     sim_data->intensities,
                                     sim_data->raos,
                                     vel_y_body_gp,
-                                    sim_data->qtf_body_vel_y_fk,
-                                    sim_data->qtf_body_vel_y_raddif,
-                                    sim_data->qtf_body_vel_y_total
+                                    sim_data->mdrift_body_vel_y_fk,
+                                    sim_data->mdrift_body_vel_y_raddif,
+                                    sim_data->mdrift_body_vel_y_total
                                 );
 
             calculate_fields_lin(
@@ -753,9 +753,9 @@ void    freq_domain_linear_solver(
                                     sim_data->intensities,
                                     sim_data->raos,
                                     vel_z_body_gp,
-                                    sim_data->qtf_body_vel_z_fk,
-                                    sim_data->qtf_body_vel_z_raddif,
-                                    sim_data->qtf_body_vel_z_total
+                                    sim_data->mdrift_body_vel_z_fk,
+                                    sim_data->mdrift_body_vel_z_raddif,
+                                    sim_data->mdrift_body_vel_z_total
                                 );
 
             if ( mpi_config->is_root( ) )
@@ -764,10 +764,10 @@ void    freq_domain_linear_solver(
                 calculate_relative_wave_elevation_lin(
                                                             input,
                                                             qtf_wl_we_gp,
-                                                            sim_data->qtf_wl_we_total,
+                                                            sim_data->mdrift_wl_we_total,
                                                             input->angfreqs[i],
                                                             sim_data->raos,
-                                                            sim_data->qtf_wl_rel_we
+                                                            sim_data->mdrift_wl_rel_we
                                                         );
 
                 // Calculate mean drift forces
@@ -775,24 +775,24 @@ void    freq_domain_linear_solver(
                                                 input,
                                                 mesh_gp,
                                                 QTF_DIFF_CODE,
-                                                sim_data->qtf_wl_rel_we,
-                                                sim_data->qtf_wl_rel_we,
+                                                sim_data->mdrift_wl_rel_we,
+                                                sim_data->mdrift_wl_rel_we,
                                                 sim_data->raos,
                                                 sim_data->raos,
-                                                sim_data->qtf_body_vel_x_total,
-                                                sim_data->qtf_body_vel_y_total,
-                                                sim_data->qtf_body_vel_z_total,
-                                                sim_data->qtf_body_vel_x_total,
-                                                sim_data->qtf_body_vel_y_total,
-                                                sim_data->qtf_body_vel_z_total,
+                                                sim_data->mdrift_body_vel_x_total,
+                                                sim_data->mdrift_body_vel_y_total,
+                                                sim_data->mdrift_body_vel_z_total,
+                                                sim_data->mdrift_body_vel_x_total,
+                                                sim_data->mdrift_body_vel_y_total,
+                                                sim_data->mdrift_body_vel_z_total,
                                                 sim_data->potential_secord_force,
                                                 input->angfreqs[i],
                                                 input->angfreqs[i],
                                                 sim_data->mdrift,
-                                                sim_data->qtf_wl,
-                                                sim_data->qtf_bern,
-                                                sim_data->qtf_acc,
-                                                sim_data->qtf_mom,
+                                                sim_data->mdrift_wl,
+                                                sim_data->mdrift_bern,
+                                                sim_data->mdrift_acc,
+                                                sim_data->mdrift_mom,
                                                 qtf_wl_we_gp,
                                                 vel_x_body_gp
                                             );
@@ -802,9 +802,9 @@ void    freq_domain_linear_solver(
                 {
                     sim_data->storage_qtf_body_freq( 
                                                         i,
-                                                        sim_data->qtf_body_vel_x_total,
-                                                        sim_data->qtf_body_vel_y_total,
-                                                        sim_data->qtf_body_vel_z_total
+                                                        sim_data->mdrift_body_vel_x_total,
+                                                        sim_data->mdrift_body_vel_y_total,
+                                                        sim_data->mdrift_body_vel_z_total
                                                     );
 
                     sim_data->storage_qtf_raos_freq(
@@ -814,7 +814,7 @@ void    freq_domain_linear_solver(
 
                     sim_data->storage_qtf_wl_freq(
                                                         i,
-                                                        sim_data->qtf_wl_rel_we
+                                                        sim_data->mdrift_wl_rel_we
                                                 );
                 }
             }
@@ -887,25 +887,25 @@ void    freq_domain_linear_solver(
                     output->save_wave_exciting_format(
                                                         i,
                                                         _DN_MDRIFT_WL,
-                                                        sim_data->qtf_wl
+                                                        sim_data->mdrift_wl
                                                     );
                     
                     output->save_wave_exciting_format(
                                                         i,
                                                         _DN_MDRIFT_BERN,
-                                                        sim_data->qtf_bern
+                                                        sim_data->mdrift_bern
                                                     );
 
                     output->save_wave_exciting_format(
                                                         i,
                                                         _DN_MDRIFT_ACC,
-                                                        sim_data->qtf_acc
+                                                        sim_data->mdrift_acc
                                                     );
                     
                     output->save_wave_exciting_format(
                                                         i,
                                                         _DN_MDRIFT_MOM,
-                                                        sim_data->qtf_mom
+                                                        sim_data->mdrift_mom
                                                     );
                 }
             }

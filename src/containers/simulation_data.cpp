@@ -17,25 +17,24 @@ void    SimulationData::add_mean_drift_data(
     int wl_heads_np     =   this->get_heads_np( wl_panels_tnp,  wl_gp_np );
     if ( this->_mpi_config->is_root( ) )
     {
-        this->mdrift                    = generate_empty_vector<cuscomplex>( this->wave_exc_np );
-        this->qtf_wl                    = generate_empty_vector<cuscomplex>( this->wave_exc_np );
-        this->qtf_bern                  = generate_empty_vector<cuscomplex>( this->wave_exc_np );
-        this->qtf_acc                   = generate_empty_vector<cuscomplex>( this->wave_exc_np );
-        this->qtf_mom                   = generate_empty_vector<cuscomplex>( this->wave_exc_np );
-        this->qtf_body_vel_x_fk         = generate_empty_vector<cuscomplex>( body_heads_np );
-        this->qtf_body_vel_y_fk         = generate_empty_vector<cuscomplex>( body_heads_np );
-        this->qtf_body_vel_z_fk         = generate_empty_vector<cuscomplex>( body_heads_np );
-        this->qtf_body_vel_x_raddif     = generate_empty_vector<cuscomplex>( body_raddif_np );
-        this->qtf_body_vel_y_raddif     = generate_empty_vector<cuscomplex>( body_raddif_np );
-        this->qtf_body_vel_z_raddif     = generate_empty_vector<cuscomplex>( body_raddif_np );
-        this->qtf_body_vel_x_total      = generate_empty_vector<cuscomplex>( body_heads_np );
-        this->qtf_body_vel_y_total      = generate_empty_vector<cuscomplex>( body_heads_np );
-        this->qtf_body_vel_z_total      = generate_empty_vector<cuscomplex>( body_heads_np );
-        this->qtf_wl_rel_we             = generate_empty_vector<cuscomplex>( wl_heads_np );
-        this->qtf_wl_we_fk              = generate_empty_vector<cuscomplex>( wl_heads_np );
-        this->qtf_wl_we_raddif          = generate_empty_vector<cuscomplex>( wl_raddif_np );
-        this->qtf_wl_we_total           = generate_empty_vector<cuscomplex>( wl_heads_np );
-        this->potential_secord_force    = generate_empty_vector<cuscomplex>( this->wave_exc_np );
+        this->mdrift                        = generate_empty_vector<cuscomplex>( this->wave_exc_np );
+        this->mdrift_wl                     = generate_empty_vector<cuscomplex>( this->wave_exc_np );
+        this->mdrift_bern                   = generate_empty_vector<cuscomplex>( this->wave_exc_np );
+        this->mdrift_acc                    = generate_empty_vector<cuscomplex>( this->wave_exc_np );
+        this->mdrift_mom                    = generate_empty_vector<cuscomplex>( this->wave_exc_np );
+        this->mdrift_body_vel_x_fk          = generate_empty_vector<cuscomplex>( body_heads_np );
+        this->mdrift_body_vel_y_fk          = generate_empty_vector<cuscomplex>( body_heads_np );
+        this->mdrift_body_vel_z_fk          = generate_empty_vector<cuscomplex>( body_heads_np );
+        this->mdrift_body_vel_x_raddif      = generate_empty_vector<cuscomplex>( body_raddif_np );
+        this->mdrift_body_vel_y_raddif      = generate_empty_vector<cuscomplex>( body_raddif_np );
+        this->mdrift_body_vel_z_raddif      = generate_empty_vector<cuscomplex>( body_raddif_np );
+        this->mdrift_body_vel_x_total       = generate_empty_vector<cuscomplex>( body_heads_np );
+        this->mdrift_body_vel_y_total       = generate_empty_vector<cuscomplex>( body_heads_np );
+        this->mdrift_body_vel_z_total       = generate_empty_vector<cuscomplex>( body_heads_np );
+        this->mdrift_wl_rel_we              = generate_empty_vector<cuscomplex>( wl_heads_np );
+        this->mdrift_wl_we_fk               = generate_empty_vector<cuscomplex>( wl_heads_np );
+        this->mdrift_wl_we_raddif           = generate_empty_vector<cuscomplex>( wl_raddif_np );
+        this->mdrift_wl_we_total            = generate_empty_vector<cuscomplex>( wl_heads_np );
     }
     this->_is_mdrift = true;
 }
@@ -186,24 +185,23 @@ SimulationData::~SimulationData(
         if ( this->_mpi_config->is_root( ) )
         {
             mkl_free( this->mdrift );
-            mkl_free( this->qtf_wl );
-            mkl_free( this->qtf_bern );
-            mkl_free( this->qtf_acc );
-            mkl_free( this->qtf_mom );
-            mkl_free( this->qtf_body_vel_x_fk );
-            mkl_free( this->qtf_body_vel_y_fk );
-            mkl_free( this->qtf_body_vel_z_fk );
-            mkl_free( this->qtf_body_vel_x_raddif );
-            mkl_free( this->qtf_body_vel_y_raddif );
-            mkl_free( this->qtf_body_vel_z_raddif );
-            mkl_free( this->qtf_body_vel_x_total );
-            mkl_free( this->qtf_body_vel_y_total );
-            mkl_free( this->qtf_body_vel_z_total );
-            mkl_free( this->qtf_wl_rel_we );
-            mkl_free( this->qtf_wl_we_fk );
-            mkl_free( this->qtf_wl_we_raddif );
-            mkl_free( this->qtf_wl_we_total );
-            mkl_free( this->potential_secord_force );
+            mkl_free( this->mdrift_wl );
+            mkl_free( this->mdrift_bern );
+            mkl_free( this->mdrift_acc );
+            mkl_free( this->mdrift_mom );
+            mkl_free( this->mdrift_body_vel_x_fk );
+            mkl_free( this->mdrift_body_vel_y_fk );
+            mkl_free( this->mdrift_body_vel_z_fk );
+            mkl_free( this->mdrift_body_vel_x_raddif );
+            mkl_free( this->mdrift_body_vel_y_raddif );
+            mkl_free( this->mdrift_body_vel_z_raddif );
+            mkl_free( this->mdrift_body_vel_x_total );
+            mkl_free( this->mdrift_body_vel_y_total );
+            mkl_free( this->mdrift_body_vel_z_total );
+            mkl_free( this->mdrift_wl_rel_we );
+            mkl_free( this->mdrift_wl_we_fk );
+            mkl_free( this->mdrift_wl_we_raddif );
+            mkl_free( this->mdrift_wl_we_total );
         }
     }
 
