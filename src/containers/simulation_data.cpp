@@ -11,10 +11,10 @@ void    SimulationData::add_mean_drift_data(
                                                 int wl_gp_np
                                             )
 {
-    int body_raddif_np  =   ( this->heads_np + this->dofs_np ) * body_panels_tnp * body_gp_np;
-    int body_heads_np   =   this->heads_np * body_panels_tnp * body_gp_np;
-    int wl_raddif_np    =   ( this->heads_np + this->dofs_np ) * wl_panels_tnp * wl_gp_np;
-    int wl_heads_np     =   this->heads_np * wl_panels_tnp * wl_gp_np;
+    int body_raddif_np  =   this->get_raddif_np( body_panels_tnp,  body_gp_np );
+    int body_heads_np   =   this->get_heads_np( body_panels_tnp,  body_gp_np );
+    int wl_raddif_np    =   this->get_raddif_np( wl_panels_tnp, wl_gp_np );
+    int wl_heads_np     =   this->get_heads_np( wl_panels_tnp,  wl_gp_np );
     if ( this->_mpi_config->is_root( ) )
     {
         this->mdrift                    = generate_empty_vector<cuscomplex>( this->wave_exc_np );
@@ -38,6 +38,82 @@ void    SimulationData::add_mean_drift_data(
         this->potential_secord_force    = generate_empty_vector<cuscomplex>( this->wave_exc_np );
     }
     this->_is_mdrift = true;
+}
+
+
+void    SimulationData::add_qtf_body_data(
+                                                int body_panels_tnp,
+                                                int body_gp_np,
+                                                int freqs_np,
+                                                int second_order_model
+                                        )
+{
+    this->body_raddif_np    = this->get_raddif_np( body_panels_tnp,  body_gp_np );
+    this->body_heads_np     = this->get_heads_np( body_panels_tnp,  body_gp_np );
+    int body_raddif_freq_np = this->body_raddif_np * freqs_np;
+    int body_heads_freq_np  = this->body_heads_np * freqs_np;
+
+    if ( this->_mpi_config->is_root( ) )
+    {
+        this->qtf_body_vel_x_total_freq     = generate_empty_vector<cuscomplex>( body_heads_freq_np );
+        this->qtf_body_vel_y_total_freq     = generate_empty_vector<cuscomplex>( body_heads_freq_np );
+        this->qtf_body_vel_z_total_freq     = generate_empty_vector<cuscomplex>( body_heads_freq_np );
+    }
+
+    this->_is_qtf_body_freq = true;
+}
+
+
+void    SimulationData::add_qtf_raos_data(
+                                                int freqs_np
+                                            )
+{
+    int wex_freq_np = this->wave_exc_np * freqs_np;
+
+    if ( this->_mpi_config->is_root( ) )
+    {
+        this->qtf_raos_freq = generate_empty_vector<cuscomplex>( wex_freq_np );
+    }
+    this->_is_qtf_raos_freq  = true;
+}
+
+
+void    SimulationData::add_qtf_wl_data(
+                                                int wl_panels_tnp,
+                                                int wl_gp_np,
+                                                int freqs_np,
+                                                int second_order_model
+                                        )
+{
+    this->wl_raddif_np          = this->get_raddif_np( wl_panels_tnp, wl_gp_np );
+    this->wl_heads_np           = this->get_heads_np( wl_panels_tnp,  wl_gp_np );
+    int wl_freqs_raddif_np      = this->wl_raddif_np * freqs_np;
+    int wl_freqs_heads_np       = this->wl_heads_np * freqs_np;
+    
+    if ( this->_mpi_config->is_root( ) )
+    {
+        this->qtf_wl_we_total_freq = generate_empty_vector<cuscomplex>( wl_freqs_heads_np );
+    }
+
+    this->_is_qtf_wl_freq   = true;
+}
+
+
+int     SimulationData::get_heads_np(
+                                                int panels_tnp,
+                                                int body_gp_np
+                                    )
+{
+    return this->heads_np * panels_tnp * body_gp_np;
+}
+
+
+int     SimulationData::get_raddif_np(
+                                                int panels_tnp,
+                                                int body_gp_np
+                                    )
+{
+    return ( this->heads_np + this->dofs_np ) * panels_tnp * body_gp_np;
 }
 
 
@@ -128,6 +204,94 @@ SimulationData::~SimulationData(
             mkl_free( this->qtf_wl_we_raddif );
             mkl_free( this->qtf_wl_we_total );
             mkl_free( this->potential_secord_force );
+        }
+    }
+
+    if ( this->_is_qtf_body_freq )
+    {
+        if ( this->_mpi_config->is_root( ) )
+        {
+            mkl_free( this->qtf_body_vel_x_total_freq );
+            mkl_free( this->qtf_body_vel_y_total_freq );
+            mkl_free( this->qtf_body_vel_z_total_freq );
+        }
+    }
+
+    if ( this->_is_qtf_raos_freq )
+    {
+        if ( this->_mpi_config->is_root( ) )
+        {
+            mkl_free( this->qtf_raos_freq );
+        }
+    }
+
+    if ( this->_is_qtf_wl_freq )
+    {
+        if ( this->_mpi_config->is_root( ) )
+        {
+            mkl_free( this->qtf_wl_we_total_freq );
+        }
+    }
+}
+
+
+void    SimulationData::storage_qtf_body_freq(
+                                                int         freq_num,
+                                                cuscomplex* qtf_body_vel_x_total,
+                                                cuscomplex* qtf_body_vel_y_total,
+                                                cuscomplex* qtf_body_vel_z_total
+                                            )
+{
+    if ( this->_mpi_config->is_root( ) )
+    {
+        int idx0    = freq_num * this->body_heads_np;
+        int idx1    = 0;
+
+        for ( int i=0; i<this->body_heads_np; i++ )
+        {
+            idx1 = idx0 + i;
+            this->qtf_body_vel_x_total_freq[idx1]   = qtf_body_vel_x_total[i];
+            this->qtf_body_vel_y_total_freq[idx1]   = qtf_body_vel_y_total[i];
+            this->qtf_body_vel_z_total_freq[idx1]   = qtf_body_vel_z_total[i];
+        }
+    }
+}
+
+
+void    SimulationData::storage_qtf_raos_freq(
+                                                int         freq_num,
+                                                cuscomplex* raos
+                                            )
+{
+    if ( this->_mpi_config->is_root( ) )
+    {
+        int idx0    = freq_num * this->wave_exc_np;
+        int idx1    = 0;
+
+        for ( int i=0; i<this->wave_exc_np; i++ )
+        {
+            idx1                        = idx0 + i;
+            this->qtf_raos_freq[idx1]   = raos[i];
+        }
+
+    }
+}
+
+
+void    SimulationData::storage_qtf_wl_freq(
+                                                int         freq_num,
+                                                cuscomplex* qtf_wl_we_total
+                                            )
+{
+    if ( this->_mpi_config->is_root( ) )
+    {
+        int idx0    = freq_num * this->wl_heads_np;
+        int idx1    = 0;
+
+        for ( int i=0; i<this->wl_heads_np; i++ )
+        {
+            idx1                                = idx0 + i;
+            this->qtf_wl_we_total_freq[idx1]    = qtf_wl_we_total[i];
         }
     }
 }
