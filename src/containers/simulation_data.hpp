@@ -14,6 +14,7 @@ private:
     bool            _is_mdrift                  = false;
     MpiConfig*      _mpi_config                 = nullptr;
     bool            _is_qtf_body_freq           = false;
+    bool            _is_qtf_data                = false;
     bool            _is_qtf_fs_freq             = false;
     bool            _is_qtf_raos_freq           = false;
     bool            _is_qtf_wl_freq             = false;
@@ -52,10 +53,15 @@ public:
     cuscomplex*     mdrift_wl_we_fk             = nullptr;
     cuscomplex*     mdrift_wl_we_raddif         = nullptr;
     cuscomplex*     mdrift_wl_we_total          = nullptr;
+    cuscomplex*     qtf_acc                     = nullptr;
+    cuscomplex*     qtf_bern                    = nullptr;
     cuscomplex*     qtf_body_vel_x_total_freq   = nullptr;
     cuscomplex*     qtf_body_vel_y_total_freq   = nullptr;
     cuscomplex*     qtf_body_vel_z_total_freq   = nullptr;
+    cuscomplex*     qtf_mom                     = nullptr;
+    int             qtf_np                      = 0;
     cuscomplex*     qtf_raos_freq               = nullptr;
+    cuscomplex*     qtf_wl                      = nullptr;
     cuscomplex*     qtf_wl_we_total_freq        = nullptr;
     cuscomplex*     panels_potential            = nullptr;
     cuscomplex*     potential_secord_force      = nullptr;
@@ -93,6 +99,10 @@ public:
                                     int body_gp_np,
                                     int wl_gp_np
                                 );
+
+    void    add_qtf_data(
+                                    void
+                        );
 
     void    add_qtf_body_data(
                                     int body_panels_tnp,

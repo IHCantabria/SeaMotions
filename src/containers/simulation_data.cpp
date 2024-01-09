@@ -40,6 +40,21 @@ void    SimulationData::add_mean_drift_data(
 }
 
 
+void    SimulationData::add_qtf_data(
+                                        void
+                                    )
+{
+    if ( this->_mpi_config->is_root( ) )
+    {
+        this->qtf_acc   = generate_empty_vector<cuscomplex>( this->qtf_np );
+        this->qtf_bern  = generate_empty_vector<cuscomplex>( this->qtf_np );
+        this->qtf_mom   = generate_empty_vector<cuscomplex>( this->qtf_np );
+        this->qtf_wl    = generate_empty_vector<cuscomplex>( this->qtf_np );
+    }
+    this->_is_qtf_data = true;
+}
+
+
 void    SimulationData::add_qtf_body_data(
                                                 int body_panels_tnp,
                                                 int body_gp_np,
@@ -129,7 +144,8 @@ SimulationData::SimulationData(
     this->dofs_np           = dofs_np_in;
     this->heads_np          = heads_np_in;
     this->hydmech_np        = pow2s( dofs_np_in * bodies_np_in );
-    this->_mpi_config       = mpi_config_in;  
+    this->_mpi_config       = mpi_config_in;
+    this->qtf_np            = pow2s( heads_np_in ) * bodies_np_in * dofs_np_in;
     this->wave_exc_np       = heads_np_in * bodies_np_in * dofs_np_in;
 
     // Allocate space variables used in all the processes
@@ -212,6 +228,17 @@ SimulationData::~SimulationData(
             mkl_free( this->qtf_body_vel_x_total_freq );
             mkl_free( this->qtf_body_vel_y_total_freq );
             mkl_free( this->qtf_body_vel_z_total_freq );
+        }
+    }
+
+    if ( this->_is_qtf_data )
+    {
+        if ( this->_mpi_config->is_root( ) )
+        {
+            mkl_free( this->qtf_acc  );
+            mkl_free( this->qtf_bern );
+            mkl_free( this->qtf_mom  );
+            mkl_free( this->qtf_wl   );
         }
     }
 

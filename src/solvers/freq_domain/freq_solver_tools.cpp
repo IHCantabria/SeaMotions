@@ -314,6 +314,9 @@ void    freq_domain_linear_solver(
                                         input->out_qtf_so_model
                                     );
 
+        // Add matrixes to storage the QTF force values
+        sim_data->add_qtf_data( );
+
         // Add raos storage for the calculation of the QTF. This is to avoid
         // reading data from disk which would be much slower.
         sim_data->add_qtf_raos_data(
