@@ -14,6 +14,81 @@
 #include "../../waves.hpp"
 
 
+void    calculate_pinkster(
+                                Input*      input,
+                                MpiConfig*  mpi_config,
+                                MeshGroup*  mesh_gp,
+                                cusfloat    ang_freq_i,
+                                cusfloat    ang_freq_j,
+                                cuscomplex* qtf_values
+                            )
+{
+    // Define constants to compute Pinkster force
+    cusfloat    ai                              = input->wave_amplitude;
+    cusfloat    aj                              = input->wave_amplitude;
+    cusfloat    aij                             = 0.0;
+    cusfloat    bij                             = 0.0;
+    cusfloat    cij                             = 0.0;
+    cusfloat    dk                              = 0.0;
+    cusfloat    dkwij                           = 0.0;
+    cusfloat    fij                             = 0.0;
+    cuscomplex  froude_krylov[input->dofs_np];  clear_vector( input->dofs_np, froude_krylov );
+    cusfloat    g                               = input->grav_acc;
+    cusfloat    ki                              = 0.0;
+    cusfloat    kj                              = 0.0;
+    cusfloat    h                               = input->water_depth;
+    int         idx0                            = 0;
+    cusfloat    wij                             = ang_freq_i - ang_freq_j;
+
+    
+    for ( int i=0; i<input->heads_np; i++ )
+    {
+        for ( int j=0; j<mesh_gp->meshes_np; j++ )
+        {
+                // Define chunk index
+            idx0 = i * ( input->dofs_np * input->bodies_np ) + j * input->dofs_np;
+
+            // Calculate ith, jth wave numbers
+            ki = w2k( ang_freq_i, input->water_depth, input->grav_acc );
+            kj = w2k( ang_freq_j, input->water_depth, input->grav_acc );
+
+            // Calculate wave numbers difference and the equivalent angular frequency
+            dk  = ki - kj;
+            dkwij = k2w( dk, input->water_depth, input->grav_acc );
+
+            // Calculate equivalent Froude-Krylov force for frequency difference
+            calculate_froude_krylov(
+                                        input,
+                                        mpi_config,
+                                        mesh_gp,
+                                        dkwij,
+                                        froude_krylov
+                                    );
+            
+            // Calculate correction coefficients
+            cij = 2 * ki * kj * wij * ( 1 + std::tanh( ki * h ) * std::tanh( kj * h ) ) / ang_freq_i / ang_freq_j;
+            bij = (
+                        pow2s( ki ) / ang_freq_i / pow2s( std::cosh( ki * h ) )
+                        -
+                        pow2s( kj ) / ang_freq_j / pow2s( std::cosh( kj * h ) )
+                    );
+            aij = (
+                        ( bij + cij )
+                        /
+                        ( pow2s( wij ) - dk * g * std::tanh( dk * h ) )
+                    ) * 0.5 * g;
+            fij = ai * aj * aij * wij / g;
+
+            // Calcuate second order force contribution using Pinkster approximation
+            for ( int k=0; k<input->dofs_np; k++ )
+            {
+                qtf_values[idx0+k] = fij * froude_krylov[k];
+            }
+        }
+    }
+}
+
+
 cuscomplex  calculate_qtf_diff_term(
                                         cuscomplex c0,
                                         cuscomplex c1
@@ -515,81 +590,6 @@ void        calculate_qtf_terms_force(
                 {
                     qtf_values[idx0+k] += phi_2_force[idx0+k];
                 }
-            }
-        }
-    }
-}
-
-
-void    calculate_pinkster(
-                                Input*      input,
-                                MpiConfig*  mpi_config,
-                                MeshGroup*  mesh_gp,
-                                cusfloat    ang_freq_i,
-                                cusfloat    ang_freq_j,
-                                cuscomplex* qtf_values
-                            )
-{
-    // Define constants to compute Pinkster force
-    cusfloat    ai                              = input->wave_amplitude;
-    cusfloat    aj                              = input->wave_amplitude;
-    cusfloat    aij                             = 0.0;
-    cusfloat    bij                             = 0.0;
-    cusfloat    cij                             = 0.0;
-    cusfloat    dk                              = 0.0;
-    cusfloat    dkwij                           = 0.0;
-    cusfloat    fij                             = 0.0;
-    cuscomplex  froude_krylov[input->dofs_np];  clear_vector( input->dofs_np, froude_krylov );
-    cusfloat    g                               = input->grav_acc;
-    cusfloat    ki                              = 0.0;
-    cusfloat    kj                              = 0.0;
-    cusfloat    h                               = input->water_depth;
-    int         idx0                            = 0;
-    cusfloat    wij                             = ang_freq_i - ang_freq_j;
-
-    
-    for ( int i=0; i<input->heads_np; i++ )
-    {
-        for ( int j=0; j<mesh_gp->meshes_np; j++ )
-        {
-                // Define chunk index
-            idx0 = i * ( input->dofs_np * input->bodies_np ) + j * input->dofs_np;
-
-            // Calculate ith, jth wave numbers
-            ki = w2k( ang_freq_i, input->water_depth, input->grav_acc );
-            kj = w2k( ang_freq_j, input->water_depth, input->grav_acc );
-
-            // Calculate wave numbers difference and the equivalent angular frequency
-            dk  = ki - kj;
-            dkwij = k2w( dk, input->water_depth, input->grav_acc );
-
-            // Calculate equivalent Froude-Krylov force for frequency difference
-            calculate_froude_krylov(
-                                        input,
-                                        mpi_config,
-                                        mesh_gp,
-                                        dkwij,
-                                        froude_krylov
-                                    );
-            
-            // Calculate correction coefficients
-            cij = 2 * ki * kj * wij * ( 1 + std::tanh( ki * h ) * std::tanh( kj * h ) ) / ang_freq_i / ang_freq_j;
-            bij = (
-                        pow2s( ki ) / ang_freq_i / pow2s( std::cosh( ki * h ) )
-                        -
-                        pow2s( kj ) / ang_freq_j / pow2s( std::cosh( kj * h ) )
-                    );
-            aij = (
-                        ( bij + cij )
-                        /
-                        ( pow2s( wij ) - dk * g * std::tanh( dk * h ) )
-                    ) * 0.5 * g;
-            fij = ai * aj * aij * wij / g;
-
-            // Calcuate second order force contribution using Pinkster approximation
-            for ( int k=0; k<input->dofs_np; k++ )
-            {
-                qtf_values[idx0+k] = fij * froude_krylov[k];
             }
         }
     }

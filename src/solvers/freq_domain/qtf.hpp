@@ -15,6 +15,15 @@
 
 
 // Declare module functions
+void        calculate_pinkster(
+                                        Input*      input,
+                                        MpiConfig*  mpi_config,
+                                        MeshGroup*  mesh_gp,
+                                        cusfloat    ang_freq_i,
+                                        cusfloat    ang_freq_j,
+                                        cuscomplex* qtf_values
+                            );
+
 cuscomplex  calculate_qtf_diff_term(
                                         cuscomplex c0,
                                         cuscomplex c1
