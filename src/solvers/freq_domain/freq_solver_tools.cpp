@@ -315,7 +315,9 @@ void    freq_domain_linear_solver(
                                     );
 
         // Add matrixes to storage the QTF force values
-        sim_data->add_qtf_data( );
+        sim_data->add_qtf_data( 
+                                    input->angfreqs_np
+                                );
 
         // Add raos storage for the calculation of the QTF. This is to avoid
         // reading data from disk which would be much slower.
@@ -922,6 +924,76 @@ void    freq_domain_linear_solver(
         if ( mpi_config->is_root( ) )
         {
             std::cout << "Execution time [s]: " << ( freq_tend - freq_tstart ) << std::endl;
+        }
+    }
+
+    /****************************************************************/
+    /*************** Calculate second order forces ******************/
+    /****************************************************************/
+    if ( input->out_qtf )
+    {
+        // Define auxiliary data
+        int idx0 = 0;
+        int idx1 = 0;
+        
+        // Loop over frequencies to get the second order force matrix matrix
+        std::cout << "Calculating second order force..." << std::endl;
+        for ( int i=0; i<input->angfreqs_np; i++ )
+        {
+            for ( int j=0; j<input->angfreqs_np; j++ )
+            {
+                if ( i != j )
+                {
+                    std::cout << "i: " << i << " - j: " << j << " - ang_freq_i: " << input->angfreqs[i];
+                    std::cout << " - ang_freq_j: " << input->angfreqs[j] << std::endl;
+                    if ( input->out_qtf_so_model == 0 )
+                    {
+                        // Calculate second order force using Pinkster model
+                        calculate_pinkster(
+                                                input,
+                                                mpi_config,
+                                                mesh_gp,
+                                                input->angfreqs[i],
+                                                input->angfreqs[j],
+                                                sim_data->mdrift
+                                            );
+
+                        // Distribute Pinkster force along the second order force
+                        // matrix format
+                        for ( int ih=0; ih<input->heads_np; ih++ )
+                        {
+                            for ( int ib=0; ib<input->bodies_np; ib++ )
+                            {
+                                for ( int id=0; id<input->dofs_np; id++ )
+                                {
+                                    idx0    = (
+                                                    ih * ( input->heads_np * input->bodies_np * pow2s( input->angfreqs_np ) * input->dofs_np )
+                                                    +
+                                                    ih * ( input->bodies_np * pow2s( input->angfreqs_np ) * input->dofs_np )
+                                                    +
+                                                    ib * ( pow2s( input->angfreqs_np ) * input->dofs_np )
+                                                    +
+                                                    i *  ( input->angfreqs_np * input->dofs_np )
+                                                    +
+                                                    j *  input->dofs_np
+                                                    +
+                                                    id
+                                                );
+                                    idx1    = (
+                                                    ih * ( input->bodies_np * input->dofs_np )
+                                                    +
+                                                    ib * input->dofs_np
+                                                    +
+                                                    id
+                                                );
+                                    
+                                    sim_data->qtf_secord_force[idx0] = sim_data->mdrift[idx1];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
