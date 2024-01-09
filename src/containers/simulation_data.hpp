@@ -61,6 +61,7 @@ public:
     cuscomplex*     qtf_mom                     = nullptr;
     int             qtf_np                      = 0;
     cuscomplex*     qtf_raos_freq               = nullptr;
+    cuscomplex*     qtf_secord_force            = nullptr;
     cuscomplex*     qtf_wl                      = nullptr;
     cuscomplex*     qtf_wl_we_total_freq        = nullptr;
     cuscomplex*     panels_potential            = nullptr;
@@ -101,7 +102,7 @@ public:
                                 );
 
     void    add_qtf_data(
-                                    void
+                                    int freqs_np
                         );
 
     void    add_qtf_body_data(

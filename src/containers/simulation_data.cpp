@@ -41,15 +41,17 @@ void    SimulationData::add_mean_drift_data(
 
 
 void    SimulationData::add_qtf_data(
-                                        void
+                                        int freqs_np
                                     )
 {
+    int qtf_freq_np = this->qtf_np * pow2s( freqs_np );
     if ( this->_mpi_config->is_root( ) )
     {
-        this->qtf_acc   = generate_empty_vector<cuscomplex>( this->qtf_np );
-        this->qtf_bern  = generate_empty_vector<cuscomplex>( this->qtf_np );
-        this->qtf_mom   = generate_empty_vector<cuscomplex>( this->qtf_np );
-        this->qtf_wl    = generate_empty_vector<cuscomplex>( this->qtf_np );
+        this->qtf_acc           = generate_empty_vector<cuscomplex>( qtf_freq_np );
+        this->qtf_bern          = generate_empty_vector<cuscomplex>( qtf_freq_np );
+        this->qtf_mom           = generate_empty_vector<cuscomplex>( qtf_freq_np );
+        this->qtf_secord_force  = generate_empty_vector<cuscomplex>( qtf_freq_np );
+        this->qtf_wl            = generate_empty_vector<cuscomplex>( qtf_freq_np );
     }
     this->_is_qtf_data = true;
 }
