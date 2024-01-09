@@ -40,6 +40,12 @@ void    calculate_pinkster(
     int         idx0                            = 0;
     cusfloat    wij                             = ang_freq_i - ang_freq_j;
 
+    // Clear input vector in order avoid spurious data 
+    // to be added to the QTF matrix
+    clear_vector(
+                    input->heads_np * input->bodies_np * input->dofs_np,
+                    qtf_values
+                );
     
     for ( int i=0; i<input->heads_np; i++ )
     {
