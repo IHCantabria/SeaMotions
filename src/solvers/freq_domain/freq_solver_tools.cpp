@@ -771,7 +771,7 @@ void    freq_domain_linear_solver(
                                                         );
 
                 // Calculate mean drift forces
-                calculate_second_order_force(
+                calculate_qtf_terms_force(
                                                 input,
                                                 mesh_gp,
                                                 QTF_DIFF_CODE,
@@ -794,7 +794,8 @@ void    freq_domain_linear_solver(
                                                 sim_data->mdrift_acc,
                                                 sim_data->mdrift_mom,
                                                 qtf_wl_we_gp,
-                                                vel_x_body_gp
+                                                vel_x_body_gp,
+                                                false
                                             );
 
                 // Check if QTF calcuation is required to storage panel information

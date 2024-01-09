@@ -14,7 +14,20 @@
 #include "../../waves.hpp"
 
 
-void    calculate_second_order_force(
+cuscomplex  calculate_qtf_diff_term(
+                                        cuscomplex c0,
+                                        cuscomplex c1
+                                    )
+{
+    return 0.5 * ( 
+                    c0 * std::conj( c1 )
+                    +
+                    std::conj( c0 ) * c1
+                );
+}
+
+
+void        calculate_qtf_terms_force(
                                             Input*          input,
                                             MeshGroup*      mesh_gp,
                                             int             qtf_type,
@@ -37,7 +50,8 @@ void    calculate_second_order_force(
                                             cuscomplex*     qtf_acc,
                                             cuscomplex*     qtf_mom,
                                             MLGCmpx*        pot_gp,
-                                            MLGCmpx*        vel_gp
+                                            MLGCmpx*        vel_gp,
+                                            bool            is_multi_head
                                     )
 {
     // Asssert if qtf_type is on the range
@@ -58,34 +72,40 @@ void    calculate_second_order_force(
 
     // Clear QTF input vector to ensure that previous data will not be storaged
     // erroneously
+    int heads_factor_np = input->heads_np;
+    if ( is_multi_head )
+    {
+        heads_factor_np *= input->heads_np;
+    }
+
     clear_vector( 
-                    input->heads_np * mesh_gp->meshes_np * input->dofs_np,
+                    heads_factor_np * mesh_gp->meshes_np * input->dofs_np,
                     qtf_values
                 );
     clear_vector( 
-                    input->heads_np * mesh_gp->meshes_np * input->dofs_np,
+                    heads_factor_np * mesh_gp->meshes_np * input->dofs_np,
                     qtf_wl
                 );
     clear_vector( 
-                    input->heads_np * mesh_gp->meshes_np * input->dofs_np,
+                    heads_factor_np * mesh_gp->meshes_np * input->dofs_np,
                     qtf_bern
                 );
     clear_vector( 
-                    input->heads_np * mesh_gp->meshes_np * input->dofs_np,
+                    heads_factor_np * mesh_gp->meshes_np * input->dofs_np,
                     qtf_acc
                 );
     clear_vector( 
-                    input->heads_np * mesh_gp->meshes_np * input->dofs_np,
+                    heads_factor_np * mesh_gp->meshes_np * input->dofs_np,
                     qtf_mom
                 );
 
     // Calculate second order force due to relative wave
     // elevation at the WL
-    for ( int i=0; i<input->heads_np; i++ )
+    for ( int ih1=0; ih1<input->heads_np; ih1++ )
     {
         for ( int j=0; j<mesh_gp->meshes_np; j++ )
         {
-            idx0 = i * ( input->dofs_np * input->bodies_np ) + j * input->dofs_np;
+            idx0 = ih1 * ( input->dofs_np * input->bodies_np ) + j * input->dofs_np;
             for ( int k=pot_gp->field_points_cnp[j]/ngpf_1d; k<pot_gp->field_points_cnp[j+1]/ngpf_1d; k++ )
             {
                 panel_k = mesh_gp->panels_wl[k];
@@ -93,10 +113,10 @@ void    calculate_second_order_force(
 
                 for ( int gpi=0; gpi<input->gauss_order; gpi++ )
                 {
-                    idx1 = i *  pot_gp->field_points_np + k * ngp + gpi;
+                    idx1 = ih1 *  pot_gp->field_points_np + k * ngp + gpi;
                     if ( qtf_type == 0 )
                     {
-                        val_mod = mdrift_rel_we_i[idx1] * std::conj( mdrift_rel_we_j[idx1] );
+                        val_mod = calculate_qtf_diff_term( mdrift_rel_we_i[idx1], mdrift_rel_we_j[idx1] );
                     }
                     else
                     {
@@ -117,11 +137,11 @@ void    calculate_second_order_force(
     }
 
     // Calculate second order force due to the bernouilly contribution
-    for ( int i=0; i<input->heads_np; i++ )
+    for ( int ih1=0; ih1<input->heads_np; ih1++ )
     {
         for ( int j=0; j<mesh_gp->meshes_np; j++ )
         {
-            idx0 = i * ( input->dofs_np * input->bodies_np ) + j * input->dofs_np;
+            idx0 = ih1 * ( input->dofs_np * input->bodies_np ) + j * input->dofs_np;
             for ( int k= vel_gp->field_points_cnp[j]/ngpf; k<vel_gp->field_points_cnp[j+1]/ngpf; k++ )
             {
                 int_mod             = cuscomplex( 0.0, 0.0 );
@@ -131,16 +151,16 @@ void    calculate_second_order_force(
                 {
                     for ( int gpj=0; gpj<ngp; gpj++ )
                     {
-                        idx1    = i * vel_gp->field_points_np + k * pow2s( ngp ) + gpi * ngp + gpj;
+                        idx1    = ih1 * vel_gp->field_points_np + k * pow2s( ngp ) + gpi * ngp + gpj;
 
                         if ( qtf_type == 0 )
                         {
                             val_mod     = (
-                                                vel_x_i[idx1] * std::conj( vel_x_j[idx1] )
+                                                calculate_qtf_diff_term( vel_x_i[idx1], vel_x_j[idx1] )
                                                 +
-                                                vel_y_i[idx1] * std::conj( vel_y_j[idx1] )
+                                                calculate_qtf_diff_term( vel_y_i[idx1], vel_y_j[idx1] )
                                                 +
-                                                vel_z_i[idx1] * std::conj( vel_z_j[idx1] )
+                                                calculate_qtf_diff_term( vel_z_i[idx1], vel_z_j[idx1] )
                                             );
                         }
                         else
@@ -183,12 +203,12 @@ void    calculate_second_order_force(
     cuscomplex  vel_y_acc;
     cuscomplex  vel_z_acc;
 
-    for ( int i=0; i<input->heads_np; i++ )
+    for ( int ih1=0; ih1<input->heads_np; ih1++ )
     {
         for ( int j=0; j<mesh_gp->meshes_np; j++ )
         {
             // Get index to locate RAO data
-            idx0 = i * ( input->dofs_np * input->bodies_np ) + j * input->dofs_np;
+            idx0 = ih1 * ( input->dofs_np * input->bodies_np ) + j * input->dofs_np;
 
             // Get RAO values for the current body
             for ( int r=0; r<3; r++ )
@@ -208,7 +228,7 @@ void    calculate_second_order_force(
                     for ( int gpj=0; gpj<input->gauss_order; gpj++ )
                     {
                         // Define field points index
-                        idx1 = i * vel_gp->field_points_np + k * pow2s( ngp ) + gpi * ngp + gpj;
+                        idx1 = ih1 * vel_gp->field_points_np + k * pow2s( ngp ) + gpi * ngp + gpj;
                         idx2 = k * pow2s( ngp ) + gpi * ngp + gpj;
 
                         // Define vector from cog to field point
@@ -241,18 +261,12 @@ void    calculate_second_order_force(
                         // Calculate point displacement
                         if ( qtf_type == 0 )
                         {
-                            val_mod = 0.25 *(
-                                                point_disp[0] * std::conj( vel_x_acc )
+                            val_mod = 0.5 * (
+                                                calculate_qtf_diff_term( point_disp[0], vel_x_acc )
                                                 +
-                                                point_disp[1] * std::conj( vel_y_acc )
+                                                calculate_qtf_diff_term( point_disp[1], vel_y_acc )
                                                 +
-                                                point_disp[2] * std::conj( vel_z_acc )
-                                                +
-                                                std::conj( point_disp[0] ) * vel_x_acc
-                                                +
-                                                std::conj( point_disp[1] ) * vel_y_acc
-                                                +
-                                                std::conj( point_disp[2] ) * vel_z_acc
+                                                calculate_qtf_diff_term( point_disp[2], vel_z_acc )
                                             );
                         }
                         else
@@ -290,12 +304,12 @@ void    calculate_second_order_force(
     cuscomplex  hydro_force[input->dofs_np];    clear_vector( input->dofs_np, hydro_force );
     cuscomplex  mom_i[3];                       clear_vector( 3, mom_i );
 
-    for ( int i=0; i<input->heads_np; i++ )
+    for ( int ih1=0; ih1<input->heads_np; ih1++ )
     {
         for ( int j=0; j<mesh_gp->meshes_np; j++ )
         {
             // Define chunk index
-            idx0 = i * ( input->dofs_np * input->bodies_np ) + j * input->dofs_np;
+            idx0 = ih1 * ( input->dofs_np * input->bodies_np ) + j * input->dofs_np;
 
             // Calculate total hydrodynamic force
             hydro_force[0] = - input->bodies[j]->mass * raos_j[idx0] * ang_2;

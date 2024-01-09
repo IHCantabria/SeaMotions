@@ -15,7 +15,12 @@
 
 
 // Declare module functions
-void    calculate_second_order_force(
+cuscomplex  calculate_qtf_diff_term(
+                                        cuscomplex c0,
+                                        cuscomplex c1
+                                    );
+
+void        calculate_qtf_terms_force(
                                         Input*          input,
                                         MeshGroup*      mesh_gp,
                                         int             qtf_type,
@@ -38,7 +43,8 @@ void    calculate_second_order_force(
                                         cuscomplex*     qtf_acc,
                                         cuscomplex*     qtf_mom,
                                         MLGCmpx*        pot_gp,
-                                        MLGCmpx*        vel_gp
+                                        MLGCmpx*        vel_gp,
+                                        bool            is_multi_head
                                     );
 
 
