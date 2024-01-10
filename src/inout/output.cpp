@@ -736,8 +736,8 @@ void    Output::save_qtf_format(
                                     *
                                     input->dofs_np
                                 );
-    cuscomplex* data_mag    = generate_empty_vector<cuscomplex>( force_np );
-    cuscomplex* data_pha    = generate_empty_vector<cuscomplex>( force_np );
+    cusfloat* data_mag  = generate_empty_vector<cusfloat>( force_np );
+    cusfloat* data_pha  = generate_empty_vector<cusfloat>( force_np );
 
     int id_old  = 0;
     int id_new  = 0;
