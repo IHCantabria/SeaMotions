@@ -60,7 +60,8 @@ void        qtf_distribute_matrix_data(
                                             int         freq_jdx,
                                             cuscomplex* local_mat,
                                             cuscomplex* global_mat,
-                                            int         mode
+                                            int         vector_mode,
+                                            int         op_mode
                                         );
 
 

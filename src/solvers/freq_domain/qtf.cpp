@@ -586,7 +586,8 @@ void        qtf_distribute_matrix_data(
                                             int         freq_jdx,
                                             cuscomplex* local_mat,
                                             cuscomplex* global_mat,
-                                            int         mode
+                                            int         vector_mode,
+                                            int         op_mode
                                         )
 {
     // Declare local variables
@@ -594,47 +595,105 @@ void        qtf_distribute_matrix_data(
     int idx1 = 1;
 
     // Loop over headings to distribute data
-    for ( int ih=0; ih<input->heads_np; ih++ )
+    if ( vector_mode == 0 )
     {
-        for ( int ib=0; ib<input->bodies_np; ib++ )
+        for ( int ih1=0; ih1<input->heads_np; ih1++ )
         {
-            for ( int id=0; id<input->dofs_np; id++ )
+            for ( int ih2=0; ih2<input->heads_np; ih2++ )
             {
-                idx0    = (
-                                ih * ( input->heads_np * input->bodies_np * pow2s( input->angfreqs_np ) * input->dofs_np )
-                                +
-                                ih * ( input->bodies_np * pow2s( input->angfreqs_np ) * input->dofs_np )
-                                +
-                                ib * ( pow2s( input->angfreqs_np ) * input->dofs_np )
-                                +
-                                freq_idx *  ( input->angfreqs_np * input->dofs_np )
-                                +
-                                freq_jdx *  input->dofs_np
-                                +
-                                id
-                            );
-                idx1    = (
-                                ih * ( input->bodies_np * input->dofs_np )
-                                +
-                                ib * input->dofs_np
-                                +
-                                id
-                            );
-                
-                if ( mode == 0 )
+                for ( int ib=0; ib<input->bodies_np; ib++ )
                 {
-                    global_mat[idx0] = local_mat[idx1];
-                }
-                else if ( mode == 1 )
-                {
-                    global_mat[idx0] += local_mat[idx1];
-                }
-                else
-                {
-                    std::cout << "ERROR\n function: qtf_distribute_matrix_data - mode: " << mode << " - not valid" << std::endl;
-                    throw std::exception( );
+                    for ( int id=0; id<input->dofs_np; id++ )
+                    {
+                        idx0    = (
+                                        ih1 * ( input->heads_np * input->bodies_np * pow2s( input->angfreqs_np ) * input->dofs_np )
+                                        +
+                                        ih2 * ( input->bodies_np * pow2s( input->angfreqs_np ) * input->dofs_np )
+                                        +
+                                        ib * ( pow2s( input->angfreqs_np ) * input->dofs_np )
+                                        +
+                                        freq_idx *  ( input->angfreqs_np * input->dofs_np )
+                                        +
+                                        freq_jdx *  input->dofs_np
+                                        +
+                                        id
+                                    );
+                        idx1    = (
+                                        ih1 * ( input->bodies_np * input->dofs_np * input->heads_np )
+                                        +
+                                        ih2 * ( input->bodies_np * input->dofs_np )
+                                        +
+                                        ib * input->dofs_np
+                                        +
+                                        id
+                                    );
+                        
+                        if ( op_mode == 0 )
+                        {
+                            global_mat[idx0] = local_mat[idx1];
+                        }
+                        else if ( op_mode == 1 )
+                        {
+                            global_mat[idx0] += local_mat[idx1];
+                        }
+                        else
+                        {
+                            std::cout << "ERROR\n function: qtf_distribute_matrix_data - op_mode: " << op_mode << " - not valid" << std::endl;
+                            throw std::exception( );
+                        }
+                    }
                 }
             }
         }
+    }
+    else if ( vector_mode == 1 )
+    {
+        for ( int ih=0; ih<input->heads_np; ih++ )
+        {
+            for ( int ib=0; ib<input->bodies_np; ib++ )
+            {
+                for ( int id=0; id<input->dofs_np; id++ )
+                {
+                    idx0    = (
+                                    ih * ( input->heads_np * input->bodies_np * pow2s( input->angfreqs_np ) * input->dofs_np )
+                                    +
+                                    ih * ( input->bodies_np * pow2s( input->angfreqs_np ) * input->dofs_np )
+                                    +
+                                    ib * ( pow2s( input->angfreqs_np ) * input->dofs_np )
+                                    +
+                                    freq_idx *  ( input->angfreqs_np * input->dofs_np )
+                                    +
+                                    freq_jdx *  input->dofs_np
+                                    +
+                                    id
+                                );
+                    idx1    = (
+                                    ih * ( input->bodies_np * input->dofs_np )
+                                    +
+                                    ib * input->dofs_np
+                                    +
+                                    id
+                                );
+                    
+                    if ( op_mode == 0 )
+                    {
+                        global_mat[idx0] = local_mat[idx1];
+                    }
+                    else if ( op_mode == 1 )
+                    {
+                        global_mat[idx0] += local_mat[idx1];
+                    }
+                    else
+                    {
+                        std::cout << "ERROR\n function: qtf_distribute_matrix_data - op_mode: " << op_mode << " - not valid" << std::endl;
+                        throw std::exception( );
+                    }
+                }
+            }
+        }   
+    }
+    else
+    {
+        std::cout << "ERROR\n function: qtf_distribute_matrix_data - vector_mode: " << vector_mode << " - not valid" << std::endl;
     }
 }
