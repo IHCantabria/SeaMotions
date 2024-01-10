@@ -963,6 +963,7 @@ void    freq_domain_linear_solver(
                                                         j,
                                                         sim_data->qtf_diff_secord_force,
                                                         sim_data->qtf_diff_freqs,
+                                                        1,
                                                         0
                                                     );
                         if ( input->out_qtf_comp )
@@ -973,6 +974,7 @@ void    freq_domain_linear_solver(
                                                         j,
                                                         sim_data->qtf_diff_secord_force,
                                                         sim_data->qtf_diff_secord_force_freqs,
+                                                        1,
                                                         0
                                                     );
                         }
@@ -1011,6 +1013,7 @@ void    freq_domain_linear_solver(
                                                 j,
                                                 sim_data->qtf,
                                                 sim_data->qtf_diff_freqs,
+                                                0,
                                                 1
                                             );
 
@@ -1022,6 +1025,7 @@ void    freq_domain_linear_solver(
                                                 j,
                                                 sim_data->qtf_diff_wl,
                                                 sim_data->qtf_diff_wl_freqs,
+                                                0,
                                                 0
                                             );
                     
@@ -1031,6 +1035,7 @@ void    freq_domain_linear_solver(
                                                 j,
                                                 sim_data->qtf_diff_bern,
                                                 sim_data->qtf_diff_bern_freqs,
+                                                0,
                                                 0
                                             );
 
@@ -1040,6 +1045,7 @@ void    freq_domain_linear_solver(
                                                 j,
                                                 sim_data->qtf_diff_acc,
                                                 sim_data->qtf_diff_acc_freqs,
+                                                0,
                                                 0
                                             );
 
@@ -1049,6 +1055,7 @@ void    freq_domain_linear_solver(
                                                 j,
                                                 sim_data->qtf_diff_mom,
                                                 sim_data->qtf_diff_mom_freqs,
+                                                0,
                                                 0
                                             );
                 }
@@ -1085,6 +1092,7 @@ void    freq_domain_linear_solver(
                                                 j,
                                                 sim_data->qtf,
                                                 sim_data->qtf_sum_freqs,
+                                                0,
                                                 1
                                             );
 
@@ -1096,6 +1104,7 @@ void    freq_domain_linear_solver(
                                                 j,
                                                 sim_data->qtf_sum_wl,
                                                 sim_data->qtf_sum_wl_freqs,
+                                                0,
                                                 0
                                             );
                     
@@ -1105,6 +1114,7 @@ void    freq_domain_linear_solver(
                                                 j,
                                                 sim_data->qtf_sum_bern,
                                                 sim_data->qtf_sum_bern_freqs,
+                                                0,
                                                 0
                                             );
 
@@ -1114,6 +1124,7 @@ void    freq_domain_linear_solver(
                                                 j,
                                                 sim_data->qtf_sum_acc,
                                                 sim_data->qtf_sum_acc_freqs,
+                                                0,
                                                 0
                                             );
 
@@ -1123,6 +1134,7 @@ void    freq_domain_linear_solver(
                                                 j,
                                                 sim_data->qtf_sum_mom,
                                                 sim_data->qtf_sum_mom_freqs,
+                                                0,
                                                 0
                                             );
                 }
