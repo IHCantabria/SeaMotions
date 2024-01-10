@@ -1141,6 +1141,65 @@ void    freq_domain_linear_solver(
 
             }
         }
+
+        // Save data into the disk file
+        output->save_qtf_format( 
+                                    "qtf_diff",
+                                    sim_data->qtf_diff_freqs
+                                );
+
+        output->save_qtf_format(
+                                    "qtf_sum",
+                                    sim_data->qtf_sum_freqs
+                                );
+
+        if ( input->out_qtf_comp )
+        {
+            // Storage QTF acceleration term
+            output->save_qtf_format(
+                                        "qtf_diff_acc",
+                                        sim_data->qtf_diff_acc_freqs
+                                    );
+            
+            output->save_qtf_format(
+                                        "qtf_sum_acc",
+                                        sim_data->qtf_sum_acc_freqs
+                                    );
+
+            // Storage QTF bernoulli term
+            output->save_qtf_format(
+                                        "qtf_diff_bern",
+                                        sim_data->qtf_diff_bern_freqs
+                                    );
+            
+            output->save_qtf_format(
+                                        "qtf_sum_bern",
+                                        sim_data->qtf_sum_bern_freqs
+                                    );
+
+            // Storage QTF momentum term
+            output->save_qtf_format(
+                                        "qtf_diff_mom",
+                                        sim_data->qtf_diff_mom_freqs
+                                    );
+            
+            output->save_qtf_format(
+                                        "qtf_sum_mom",
+                                        sim_data->qtf_sum_mom_freqs
+                                    );
+
+            // Storage QTF wl term
+            output->save_qtf_format(
+                                        "qtf_diff_wl",
+                                        sim_data->qtf_diff_wl_freqs
+                                    );
+            
+            output->save_qtf_format(
+                                        "qtf_sum_wl",
+                                        sim_data->qtf_sum_wl_freqs
+                                    );
+            
+        }
     }
 
     /****************************************************************/
