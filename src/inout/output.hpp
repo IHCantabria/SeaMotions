@@ -37,8 +37,10 @@
 #define  _DN_MDRIFT_ACC_PHA     "mean_drift_acc_pha"
 #define  _DN_MDRIFT_MOM_MAG     "mean_drift_mom_mag"
 #define  _DN_MDRIFT_MOM_PHA     "mean_drift_mom_pha"
-#define  _DN_QTF_DIFF           "qtf_diff"
-#define  _DN_QTF_SUM            "qtf_sum"
+#define  _DN_QTF_DIFF_MAG       "qtf_diff_mag"
+#define  _DN_QTF_DIFF_PHA       "qtf_diff_pha"
+#define  _DN_QTF_SUM_MAG        "qtf_sum_mag"
+#define  _DN_QTF_SUM_PHA        "qtf_sum_pha"
 #define  _DN_RAO                "rao"
 #define  _DN_RAO_MAG            "rao_mag"
 #define  _DN_RAO_PHA            "rao_pha"
@@ -97,6 +99,11 @@ public:
     void    save_structural_mass( 
                                             void 
                                 );
+
+    void    qtf_format(
+                                            std::string channel_name,
+                                            cuscomplex* forces
+                        );
 
     void    save_wave_exciting_format(
                                             int         freq_index,

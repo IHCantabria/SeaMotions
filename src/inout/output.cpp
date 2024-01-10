@@ -48,9 +48,9 @@ Output::Output(
     // Storage QTF datasets dimensions for the ith body
     this->_ds_qf[0]   = input->bodies_np;
     this->_ds_qf[1]   = input->heads_np;
-    this->_ds_qf[2]   = input->angfreqs_np;
+    this->_ds_qf[2]   = input->heads_np;
     this->_ds_qf[3]   = input->angfreqs_np;
-    this->_ds_qf[4]   = 2;
+    this->_ds_qf[4]   = input->angfreqs_np;
     this->_ds_qf[5]   = input->dofs_np;
 
     // Storage mean drift dataset dimensions for the ith body
@@ -251,7 +251,15 @@ Output::Output(
     {
         CREATE_DATASET( 
                             fid,
-                            _DN_QTF_DIFF,
+                            _DN_QTF_DIFF_MAG,
+                            _DS_QF_NP,
+                            this->_ds_qf,
+                            cusfloat_h5
+                        );
+
+        CREATE_DATASET( 
+                            fid,
+                            _DN_QTF_DIFF_PHA,
                             _DS_QF_NP,
                             this->_ds_qf,
                             cusfloat_h5
@@ -260,7 +268,15 @@ Output::Output(
         // Create dataset for QTF frequency summation
         CREATE_DATASET( 
                             fid,
-                            _DN_QTF_SUM,
+                            _DN_QTF_SUM_MAG,
+                            _DS_QF_NP,
+                            this->_ds_qf,
+                            cusfloat_h5
+                        );
+
+        CREATE_DATASET( 
+                            fid,
+                            _DN_QTF_SUM_PHA,
                             _DS_QF_NP,
                             this->_ds_qf,
                             cusfloat_h5
@@ -548,6 +564,124 @@ void    Output::save_structural_mass(
 
     // Close file unit
     fid.close( );
+}
+
+
+void    Output::qtf_format(
+                                            std::string channel_name,
+                                            cuscomplex* forces
+                            )
+{
+    // Get local handle to input object
+    Input* input    = this->_input;
+
+    // Define datasets name
+    std::string _dn_mag = channel_name + std::string( "_mag" );
+    std::string _dn_pha = channel_name + std::string( "_pha" );
+
+    // Open file unit
+    H5::H5File fid( this->_results_fipath.c_str( ), H5F_ACC_RDWR );
+
+    // Convert to magnitude and phase format. Also, the data is re-ordered in the format: NB x NH x NH x NF x NF x NDOF
+    int         force_np    =  (
+                                    input->bodies_np 
+                                    *
+                                    pow2s( input->heads_np )
+                                    *
+                                    pow2s( input->angfreqs_np )
+                                    *
+                                    input->dofs_np
+                                );
+    cuscomplex* data_mag    = generate_empty_vector<cuscomplex>( force_np );
+    cuscomplex* data_pha    = generate_empty_vector<cuscomplex>( force_np );
+
+    int id_old  = 0;
+    int id_new  = 0;
+
+    for ( int ib=0; ib<this->_input->bodies_np; ib++ )
+    {
+        for ( int ih1=0; ih1<this->_input->heads_np; ih1++ )
+        {
+            for ( int ih2=0; ih2<this->_input->heads_np; ih2++ )
+            {
+                for ( int ifr1=0; ifr1<this->_input->angfreqs_np; ifr1++ )
+                {
+                    for ( int ifr2=0; ifr2<this->_input->angfreqs_np; ifr2++ )
+                    {
+                        for ( int id=0; id<this->_input->dofs_np; id++ )
+                        {
+                            // Define matrix indexes
+                            id_old      =  (
+                                                ih1  * ( input->heads_np * input->bodies_np * pow2s( input->angfreqs_np ) * input->dofs_np )
+                                                +
+                                                ih2  * ( input->bodies_np * pow2s( input->angfreqs_np ) * input->dofs_np )
+                                                +
+                                                ib   * ( pow2s( input->angfreqs_np ) * input->dofs_np )
+                                                +
+                                                ifr1 * ( input->angfreqs_np * input->dofs_np )
+                                                +
+                                                ifr2 *  input->dofs_np
+                                                +
+                                                id
+                                            );
+
+                            id_new      =   (
+                                                ib   * ( pow2s( input->heads_np ) * pow2s( input->angfreqs_np ) * input->dofs_np )
+                                                +
+                                                ih1  * ( input->heads_np * pow2s( input->angfreqs_np ) * input->dofs_np )
+                                                +
+                                                ih2  * ( pow2s( input->angfreqs_np ) * input->dofs_np )
+                                                +
+                                                ifr1 * ( input->angfreqs_np * input->dofs_np )
+                                                +
+                                                ifr2 * input->dofs_np
+                                                +
+                                                id
+                                            );
+
+                            // Re-order data
+                            data_mag[id_new]    = std::abs( forces[id_old] );
+                            data_pha[id_new]    = std::atan2( forces[id_old].imag( ), forces[id_old].real( ) );
+
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Storage input data into disk
+    hsize_t _ds_qf_ch[_DS_QF_NP]    = { input->dofs_np, input->heads_np, input->heads_np, input->angfreqs_np, input->angfreqs_np, input->dofs_np };
+    hsize_t offset[_DS_QF_NP]       = { 0, 0, 0, 0, 0, 0 };
+
+    SAVE_DATASET_CHUNK(
+                            fid,
+                            _dn_mag.c_str( ),
+                            _DS_QF_NP,
+                            this->_ds_qf,
+                            _ds_qf_ch,
+                            offset,
+                            data_mag,
+                            cusfloat_h5
+                        );
+
+    SAVE_DATASET_CHUNK(
+                            fid,
+                            _dn_pha.c_str( ),
+                            _DS_QF_NP,
+                            this->_ds_qf,
+                            _ds_qf_ch,
+                            offset,
+                            data_pha,
+                            cusfloat_h5
+                        );
+
+    // Close file unit
+    fid.close( );
+
+    // Deallocate heap memory used for the current function
+    mkl_free( data_mag );
+    mkl_free( data_pha );
 }
 
 
