@@ -651,7 +651,7 @@ void    Output::save_qtf_format(
     }
 
     // Storage input data into disk
-    hsize_t _ds_qf_ch[_DS_QF_NP]    = { input->dofs_np, input->heads_np, input->heads_np, input->angfreqs_np, input->angfreqs_np, input->dofs_np };
+    hsize_t _ds_qf_ch[_DS_QF_NP]    = { input->bodies_np, input->heads_np, input->heads_np, input->angfreqs_np, input->angfreqs_np, input->dofs_np };
     hsize_t offset[_DS_QF_NP]       = { 0, 0, 0, 0, 0, 0 };
 
     SAVE_DATASET_CHUNK(
