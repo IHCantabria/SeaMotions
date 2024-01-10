@@ -47,13 +47,33 @@ void    SimulationData::add_qtf_data(
     int qtf_freq_np = this->qtf_np * pow2s( freqs_np );
     if ( this->_mpi_config->is_root( ) )
     {
-        this->qtf               = generate_empty_vector<cuscomplex>( qtf_freq_np );
-        this->qtf_acc           = generate_empty_vector<cuscomplex>( qtf_freq_np );
-        this->qtf_aux           = generate_empty_vector<cuscomplex>( this->qtf_np );
-        this->qtf_bern          = generate_empty_vector<cuscomplex>( qtf_freq_np );
-        this->qtf_mom           = generate_empty_vector<cuscomplex>( qtf_freq_np );
-        this->qtf_secord_force  = generate_empty_vector<cuscomplex>( qtf_freq_np );
-        this->qtf_wl            = generate_empty_vector<cuscomplex>( qtf_freq_np );
+        this->qtf                       = generate_empty_vector<cuscomplex>( this->qtf_np );
+        this->qtf_diff_acc              = generate_empty_vector<cuscomplex>( this->qtf_np );
+        this->qtf_diff_bern             = generate_empty_vector<cuscomplex>( this->qtf_np );
+        this->qtf_diff_mom              = generate_empty_vector<cuscomplex>( this->qtf_np );
+        this->qtf_diff_secord_force     = generate_empty_vector<cuscomplex>( this->qtf_np );
+        this->qtf_diff_wl               = generate_empty_vector<cuscomplex>( this->qtf_np );
+        this->qtf_sum_acc               = generate_empty_vector<cuscomplex>( this->qtf_np );
+        this->qtf_sum_bern              = generate_empty_vector<cuscomplex>( this->qtf_np );
+        this->qtf_sum_mom               = generate_empty_vector<cuscomplex>( this->qtf_np );
+        this->qtf_sum_secord_force      = generate_empty_vector<cuscomplex>( this->qtf_np );
+        this->qtf_sum_wl                = generate_empty_vector<cuscomplex>( this->qtf_np );
+
+        if ( this->_input->out_qtf_comp )
+        {
+            this->qtf_diff_acc_freqs            = generate_empty_vector<cuscomplex>( qtf_freq_np );
+            this->qtf_diff_bern_freqs           = generate_empty_vector<cuscomplex>( qtf_freq_np );
+            this->qtf_diff_freqs                = generate_empty_vector<cuscomplex>( qtf_freq_np );
+            this->qtf_diff_mom_freqs            = generate_empty_vector<cuscomplex>( qtf_freq_np );
+            this->qtf_diff_secord_force_freqs   = generate_empty_vector<cuscomplex>( qtf_freq_np );
+            this->qtf_diff_wl_freqs             = generate_empty_vector<cuscomplex>( qtf_freq_np );
+            this->qtf_sum_acc_freqs             = generate_empty_vector<cuscomplex>( qtf_freq_np );
+            this->qtf_sum_bern_freqs            = generate_empty_vector<cuscomplex>( qtf_freq_np );
+            this->qtf_sum_freqs                 = generate_empty_vector<cuscomplex>( qtf_freq_np );
+            this->qtf_sum_mom_freqs             = generate_empty_vector<cuscomplex>( qtf_freq_np );
+            this->qtf_sum_secord_force_freqs    = generate_empty_vector<cuscomplex>( qtf_freq_np );
+            this->qtf_sum_wl_freqs              = generate_empty_vector<cuscomplex>( qtf_freq_np );
+        }
     }
     this->_is_qtf_data = true;
 }
@@ -66,10 +86,10 @@ void    SimulationData::add_qtf_body_data(
                                                 int second_order_model
                                         )
 {
-    this->body_raddif_np    = this->get_raddif_np( body_panels_tnp,  body_gp_np );
-    this->body_heads_np     = this->get_heads_np( body_panels_tnp,  body_gp_np );
-    int body_raddif_freq_np = this->body_raddif_np * freqs_np;
-    int body_heads_freq_np  = this->body_heads_np * freqs_np;
+    this->qtf_body_raddif_np    = this->get_raddif_np( body_panels_tnp,  body_gp_np );
+    this->qtf_body_heads_np     = this->get_heads_np( body_panels_tnp,  body_gp_np );
+    int body_raddif_freq_np     = this->qtf_body_raddif_np * freqs_np;
+    int body_heads_freq_np      = this->qtf_body_heads_np * freqs_np;
 
     if ( this->_mpi_config->is_root( ) )
     {
@@ -103,10 +123,10 @@ void    SimulationData::add_qtf_wl_data(
                                                 int second_order_model
                                         )
 {
-    this->wl_raddif_np          = this->get_raddif_np( wl_panels_tnp, wl_gp_np );
-    this->wl_heads_np           = this->get_heads_np( wl_panels_tnp,  wl_gp_np );
-    int wl_freqs_raddif_np      = this->wl_raddif_np * freqs_np;
-    int wl_freqs_heads_np       = this->wl_heads_np * freqs_np;
+    this->qtf_wl_raddif_np      = this->get_raddif_np( wl_panels_tnp, wl_gp_np );
+    this->qtf_wl_heads_np       = this->get_heads_np( wl_panels_tnp,  wl_gp_np );
+    int wl_freqs_raddif_np      = this->qtf_wl_raddif_np * freqs_np;
+    int wl_freqs_heads_np       = this->qtf_wl_heads_np * freqs_np;
     
     if ( this->_mpi_config->is_root( ) )
     {
@@ -136,18 +156,20 @@ int     SimulationData::get_raddif_np(
 
 
 SimulationData::SimulationData(
+                                    Input*      input_in,
+                                    MpiConfig*  mpi_config_in,
                                     int         bodies_np_in,
                                     int         dofs_np_in,
                                     int         heads_np_in,
                                     int         rows_local_np,
-                                    int         rows_np,
-                                    MpiConfig*  mpi_config_in
+                                    int         rows_np
                                 )
 {
     // Storage input arguments into class attributes
     this->dofs_np           = dofs_np_in;
     this->heads_np          = heads_np_in;
     this->hydmech_np        = pow2s( dofs_np_in * bodies_np_in );
+    this->_input            = input_in;
     this->_mpi_config       = mpi_config_in;
     this->qtf_np            = pow2s( heads_np_in ) * bodies_np_in * dofs_np_in;
     this->wave_exc_np       = heads_np_in * bodies_np_in * dofs_np_in;
@@ -239,13 +261,33 @@ SimulationData::~SimulationData(
     {
         if ( this->_mpi_config->is_root( ) )
         {
-            mkl_free( this->qtf      );
-            mkl_free( this->qtf_acc  );
-            mkl_free( this->qtf_aux  );
-            mkl_free( this->qtf_acc  );
-            mkl_free( this->qtf_bern );
-            mkl_free( this->qtf_mom  );
-            mkl_free( this->qtf_wl   );
+            mkl_free( this->qtf                   );
+            mkl_free( this->qtf_diff_acc          );
+            mkl_free( this->qtf_diff_bern         );
+            mkl_free( this->qtf_diff_mom          );
+            mkl_free( this->qtf_diff_secord_force );
+            mkl_free( this->qtf_diff_wl           );
+            mkl_free( this->qtf_sum_acc           );
+            mkl_free( this->qtf_sum_bern          );
+            mkl_free( this->qtf_sum_mom           );
+            mkl_free( this->qtf_sum_secord_force  );
+            mkl_free( this->qtf_sum_wl            );
+
+            if ( this->_input->out_qtf_comp )
+            {
+                mkl_free( this->qtf_diff_acc_freqs          );
+                mkl_free( this->qtf_diff_bern_freqs         );
+                mkl_free( this->qtf_diff_freqs              );
+                mkl_free( this->qtf_diff_mom_freqs          );
+                mkl_free( this->qtf_diff_secord_force_freqs );
+                mkl_free( this->qtf_diff_wl_freqs           );
+                mkl_free( this->qtf_sum_acc_freqs           );
+                mkl_free( this->qtf_sum_bern_freqs          );
+                mkl_free( this->qtf_sum_freqs               );
+                mkl_free( this->qtf_sum_mom_freqs           );
+                mkl_free( this->qtf_sum_secord_force_freqs  );
+                mkl_free( this->qtf_sum_wl_freqs            );
+            }
         }
     }
 
@@ -276,10 +318,10 @@ void    SimulationData::storage_qtf_body_freq(
 {
     if ( this->_mpi_config->is_root( ) )
     {
-        int idx0    = freq_num * this->body_heads_np;
+        int idx0    = freq_num * this->qtf_body_heads_np;
         int idx1    = 0;
 
-        for ( int i=0; i<this->body_heads_np; i++ )
+        for ( int i=0; i<this->qtf_body_heads_np; i++ )
         {
             idx1 = idx0 + i;
             this->qtf_body_vel_x_total_freq[idx1]   = qtf_body_vel_x_total[i];
@@ -317,10 +359,10 @@ void    SimulationData::storage_qtf_wl_freq(
 {
     if ( this->_mpi_config->is_root( ) )
     {
-        int idx0    = freq_num * this->wl_heads_np;
+        int idx0    = freq_num * this->qtf_wl_heads_np;
         int idx1    = 0;
 
-        for ( int i=0; i<this->wl_heads_np; i++ )
+        for ( int i=0; i<this->qtf_wl_heads_np; i++ )
         {
             idx1                                = idx0 + i;
             this->qtf_wl_we_total_freq[idx1]    = qtf_wl_we_total[i];

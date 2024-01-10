@@ -4,6 +4,7 @@
 
 // Include local modules
 #include "../config.hpp"
+#include "../inout/input.hpp"
 #include "mpi_config.hpp"
 
 
@@ -11,20 +12,19 @@ struct SimulationData
 {
 private:
     // Declare private class attributes
+    Input*          _input                      = nullptr;
     bool            _is_mdrift                  = false;
-    MpiConfig*      _mpi_config                 = nullptr;
     bool            _is_qtf_body_freq           = false;
     bool            _is_qtf_data                = false;
     bool            _is_qtf_fs_freq             = false;
     bool            _is_qtf_raos_freq           = false;
     bool            _is_qtf_wl_freq             = false;
+    MpiConfig*      _mpi_config                 = nullptr;
 
 public:
     // Declare class attributes
     cusfloat*       added_mass                  = nullptr;
     cusfloat*       added_mass_p0               = nullptr;
-    int             body_heads_np               = 0;
-    int             body_raddif_np              = 0;
     cusfloat*       damping_rad                 = nullptr;
     cusfloat*       damping_rad_p0              = nullptr;
     int             dofs_np                     = 0;
@@ -54,17 +54,37 @@ public:
     cuscomplex*     mdrift_wl_we_raddif         = nullptr;
     cuscomplex*     mdrift_wl_we_total          = nullptr;
     cuscomplex*     qtf                         = nullptr;
-    cuscomplex*     qtf_acc                     = nullptr;
-    cuscomplex*     qtf_aux                     = nullptr;
-    cuscomplex*     qtf_bern                    = nullptr;
+    int             qtf_body_heads_np           = 0;
+    int             qtf_body_raddif_np          = 0;
     cuscomplex*     qtf_body_vel_x_total_freq   = nullptr;
     cuscomplex*     qtf_body_vel_y_total_freq   = nullptr;
     cuscomplex*     qtf_body_vel_z_total_freq   = nullptr;
-    cuscomplex*     qtf_mom                     = nullptr;
+    cuscomplex*     qtf_diff_acc                = nullptr;
+    cuscomplex*     qtf_diff_acc_freqs          = nullptr;
+    cuscomplex*     qtf_diff_bern               = nullptr;
+    cuscomplex*     qtf_diff_bern_freqs         = nullptr;
+    cuscomplex*     qtf_diff_freqs              = nullptr;
+    cuscomplex*     qtf_diff_mom                = nullptr;
+    cuscomplex*     qtf_diff_mom_freqs          = nullptr;
+    cuscomplex*     qtf_diff_secord_force       = nullptr;
+    cuscomplex*     qtf_diff_secord_force_freqs = nullptr;
+    cuscomplex*     qtf_diff_wl                 = nullptr;
+    cuscomplex*     qtf_diff_wl_freqs           = nullptr;
     int             qtf_np                      = 0;
     cuscomplex*     qtf_raos_freq               = nullptr;
-    cuscomplex*     qtf_secord_force            = nullptr;
-    cuscomplex*     qtf_wl                      = nullptr;
+    cuscomplex*     qtf_sum_acc                 = nullptr;
+    cuscomplex*     qtf_sum_acc_freqs           = nullptr;
+    cuscomplex*     qtf_sum_bern                = nullptr;
+    cuscomplex*     qtf_sum_bern_freqs          = nullptr;
+    cuscomplex*     qtf_sum_freqs               = nullptr;
+    cuscomplex*     qtf_sum_mom                 = nullptr;
+    cuscomplex*     qtf_sum_mom_freqs           = nullptr;
+    cuscomplex*     qtf_sum_secord_force        = nullptr;
+    cuscomplex*     qtf_sum_secord_force_freqs  = nullptr;
+    cuscomplex*     qtf_sum_wl                  = nullptr;
+    cuscomplex*     qtf_sum_wl_freqs            = nullptr;
+    int             qtf_wl_heads_np             = 0;
+    int             qtf_wl_raddif_np            = 0;
     cuscomplex*     qtf_wl_we_total_freq        = nullptr;
     cuscomplex*     panels_potential            = nullptr;
     cuscomplex*     potential_secord_force      = nullptr;
@@ -76,19 +96,18 @@ public:
     cuscomplex*     wave_diffrac_p0             = nullptr;
     int             wave_exc_np                 = 0;
     cuscomplex*     wave_exc_p0                 = nullptr;
-    int             wl_heads_np                 = 0;
-    int             wl_raddif_np                = 0;
 
     // Declare class constructors and destructor
     SimulationData( ) = default;
 
     SimulationData(
+                        Input*      input_in,
+                        MpiConfig*  mpi_config_in,
                         int         bodies_np,
                         int         dofs_np,
                         int         heads_np,
                         int         rows_local_np,
-                        int         rows_np,
-                        MpiConfig*  mpi_config_in
+                        int         rows_np
                     );
 
     ~SimulationData( 
