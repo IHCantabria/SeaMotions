@@ -265,6 +265,78 @@ Output::Output(
                             cusfloat_h5
                         );
 
+        if ( this->_input->out_qtf_comp )
+        {
+            // Set ouput for Acceleration component
+            CREATE_DATASET( 
+                                fid,
+                                _DN_QTF_DIFF_ACC_MAG,
+                                _DS_QF_NP,
+                                this->_ds_qf,
+                                cusfloat_h5
+                            );
+            
+            CREATE_DATASET( 
+                                fid,
+                                _DN_QTF_DIFF_ACC_PHA,
+                                _DS_QF_NP,
+                                this->_ds_qf,
+                                cusfloat_h5
+                            );
+            
+            // Set output for Bernouilly component
+            CREATE_DATASET( 
+                                fid,
+                                _DN_QTF_DIFF_BERN_MAG,
+                                _DS_QF_NP,
+                                this->_ds_qf,
+                                cusfloat_h5
+                            );
+            
+            CREATE_DATASET( 
+                                fid,
+                                _DN_QTF_DIFF_BERN_PHA,
+                                _DS_QF_NP,
+                                this->_ds_qf,
+                                cusfloat_h5
+                            );
+            
+            // Set output for Momentum component
+            CREATE_DATASET( 
+                                fid,
+                                _DN_QTF_DIFF_MOM_MAG,
+                                _DS_QF_NP,
+                                this->_ds_qf,
+                                cusfloat_h5
+                            );
+            
+            CREATE_DATASET( 
+                                fid,
+                                _DN_QTF_DIFF_MOM_PHA,
+                                _DS_QF_NP,
+                                this->_ds_qf,
+                                cusfloat_h5
+                            );
+            
+            // Set output for WL component
+            CREATE_DATASET( 
+                                fid,
+                                _DN_QTF_DIFF_WL_MAG,
+                                _DS_QF_NP,
+                                this->_ds_qf,
+                                cusfloat_h5
+                            );
+            
+            CREATE_DATASET( 
+                                fid,
+                                _DN_QTF_DIFF_WL_PHA,
+                                _DS_QF_NP,
+                                this->_ds_qf,
+                                cusfloat_h5
+                            );
+            
+        }
+
         // Create dataset for QTF frequency summation
         CREATE_DATASET( 
                             fid,
@@ -281,6 +353,78 @@ Output::Output(
                             this->_ds_qf,
                             cusfloat_h5
                         );
+
+        if ( this->_input->out_qtf_comp )
+        {
+            // Set ouput for Acceleration component
+            CREATE_DATASET( 
+                                fid,
+                                _DN_QTF_SUM_ACC_MAG,
+                                _DS_QF_NP,
+                                this->_ds_qf,
+                                cusfloat_h5
+                            );
+
+            CREATE_DATASET( 
+                                fid,
+                                _DN_QTF_SUM_ACC_PHA,
+                                _DS_QF_NP,
+                                this->_ds_qf,
+                                cusfloat_h5
+                            );
+            
+            // Set output for Bernouilly component
+            CREATE_DATASET( 
+                                fid,
+                                _DN_QTF_SUM_BERN_MAG,
+                                _DS_QF_NP,
+                                this->_ds_qf,
+                                cusfloat_h5
+                            );
+
+            CREATE_DATASET( 
+                                fid,
+                                _DN_QTF_SUM_BERN_PHA,
+                                _DS_QF_NP,
+                                this->_ds_qf,
+                                cusfloat_h5
+                            );
+            
+            // Set output for Momentum component
+            CREATE_DATASET( 
+                                fid,
+                                _DN_QTF_SUM_MOM_MAG,
+                                _DS_QF_NP,
+                                this->_ds_qf,
+                                cusfloat_h5
+                            );
+
+            CREATE_DATASET( 
+                                fid,
+                                _DN_QTF_SUM_MOM_PHA,
+                                _DS_QF_NP,
+                                this->_ds_qf,
+                                cusfloat_h5
+                            );
+            
+            // Set output for WL component
+            CREATE_DATASET( 
+                                fid,
+                                _DN_QTF_SUM_WL_MAG,
+                                _DS_QF_NP,
+                                this->_ds_qf,
+                                cusfloat_h5
+                            );
+
+            CREATE_DATASET( 
+                                fid,
+                                _DN_QTF_SUM_WL_PHA,
+                                _DS_QF_NP,
+                                this->_ds_qf,
+                                cusfloat_h5
+                            );
+            
+        }
 
     }
 
