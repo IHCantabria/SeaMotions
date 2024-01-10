@@ -210,12 +210,13 @@ void    freq_domain_linear_solver(
     std::cout << "Staring Linear solver..." << std::endl;
     // Allocate space for the intensities, hydromechanics and wave exciting forces
     SimulationData* sim_data    = new SimulationData(
+                                                        input,
+                                                        mpi_config,
                                                         mesh_gp->meshes_np,
                                                         input->dofs_np,
                                                         input->heads_np,
                                                         scl->num_rows_local,
-                                                        scl->num_rows,
-                                                        mpi_config
+                                                        scl->num_rows
                                                     );
 
     // Allocate space for the intensities influence system matrix
@@ -790,8 +791,6 @@ void    freq_domain_linear_solver(
                                                 sim_data->mdrift_body_vel_x_total,
                                                 sim_data->mdrift_body_vel_y_total,
                                                 sim_data->mdrift_body_vel_z_total,
-                                                sim_data->potential_secord_force,
-                                                input->angfreqs[i],
                                                 input->angfreqs[i],
                                                 sim_data->mdrift,
                                                 sim_data->mdrift_wl,
@@ -955,44 +954,195 @@ void    freq_domain_linear_solver(
                                                 mesh_gp,
                                                 input->angfreqs[i],
                                                 input->angfreqs[j],
-                                                sim_data->mdrift
+                                                sim_data->qtf_diff_secord_force
                                             );
 
                         // Distribute Pinkster force along the second order force
                         // matrix format
-                        for ( int ih=0; ih<input->heads_np; ih++ )
+                        qtf_distribute_matrix_data(
+                                                        input,
+                                                        i,
+                                                        j,
+                                                        sim_data->qtf_diff_secord_force,
+                                                        sim_data->qtf_diff_freqs,
+                                                        0
+                                                    );
+                        if ( input->out_qtf_comp )
                         {
-                            for ( int ib=0; ib<input->bodies_np; ib++ )
-                            {
-                                for ( int id=0; id<input->dofs_np; id++ )
-                                {
-                                    idx0    = (
-                                                    ih * ( input->heads_np * input->bodies_np * pow2s( input->angfreqs_np ) * input->dofs_np )
-                                                    +
-                                                    ih * ( input->bodies_np * pow2s( input->angfreqs_np ) * input->dofs_np )
-                                                    +
-                                                    ib * ( pow2s( input->angfreqs_np ) * input->dofs_np )
-                                                    +
-                                                    i *  ( input->angfreqs_np * input->dofs_np )
-                                                    +
-                                                    j *  input->dofs_np
-                                                    +
-                                                    id
-                                                );
-                                    idx1    = (
-                                                    ih * ( input->bodies_np * input->dofs_np )
-                                                    +
-                                                    ib * input->dofs_np
-                                                    +
-                                                    id
-                                                );
-                                    
-                                    sim_data->qtf_secord_force[idx0] = sim_data->mdrift[idx1];
-                                }
-                            }
+                            qtf_distribute_matrix_data(
+                                                        input,
+                                                        i,
+                                                        j,
+                                                        sim_data->qtf_diff_secord_force,
+                                                        sim_data->qtf_diff_secord_force_freqs,
+                                                        0
+                                                    );
                         }
                     }
                 }
+
+                // Calculate QTF diff force terms
+                calculate_qtf_terms_force(
+                                                input,
+                                                mesh_gp,
+                                                QTF_DIFF_CODE,
+                                                &(sim_data->qtf_wl_we_total_freq[i*sim_data->qtf_wl_heads_np]),
+                                                &(sim_data->qtf_wl_we_total_freq[j*sim_data->qtf_wl_heads_np]),
+                                                &(sim_data->qtf_raos_freq[i*sim_data->wave_exc_np]),
+                                                &(sim_data->qtf_raos_freq[j*sim_data->wave_exc_np]),
+                                                &(sim_data->qtf_body_vel_x_total_freq[i*sim_data->qtf_body_heads_np]),
+                                                &(sim_data->qtf_body_vel_y_total_freq[i*sim_data->qtf_body_heads_np]),
+                                                &(sim_data->qtf_body_vel_z_total_freq[i*sim_data->qtf_body_heads_np]),
+                                                &(sim_data->qtf_body_vel_x_total_freq[j*sim_data->qtf_body_heads_np]),
+                                                &(sim_data->qtf_body_vel_y_total_freq[j*sim_data->qtf_body_heads_np]),
+                                                &(sim_data->qtf_body_vel_z_total_freq[j*sim_data->qtf_body_heads_np]),
+                                                input->angfreqs[j],
+                                                sim_data->qtf,
+                                                sim_data->qtf_diff_wl,
+                                                sim_data->qtf_diff_bern,
+                                                sim_data->qtf_diff_acc,
+                                                sim_data->qtf_diff_mom,
+                                                qtf_wl_we_gp,
+                                                vel_x_body_gp,
+                                                true
+                                            );
+
+                qtf_distribute_matrix_data(
+                                                input,
+                                                i,
+                                                j,
+                                                sim_data->qtf,
+                                                sim_data->qtf_diff_freqs,
+                                                1
+                                            );
+
+                if ( input->out_qtf_comp )
+                {
+                    qtf_distribute_matrix_data(
+                                                input,
+                                                i,
+                                                j,
+                                                sim_data->qtf_diff_wl,
+                                                sim_data->qtf_diff_wl_freqs,
+                                                0
+                                            );
+                    
+                    qtf_distribute_matrix_data(
+                                                input,
+                                                i,
+                                                j,
+                                                sim_data->qtf_diff_bern,
+                                                sim_data->qtf_diff_bern_freqs,
+                                                0
+                                            );
+
+                    qtf_distribute_matrix_data(
+                                                input,
+                                                i,
+                                                j,
+                                                sim_data->qtf_diff_acc,
+                                                sim_data->qtf_diff_acc_freqs,
+                                                0
+                                            );
+
+                    qtf_distribute_matrix_data(
+                                                input,
+                                                i,
+                                                j,
+                                                sim_data->qtf_diff_mom,
+                                                sim_data->qtf_diff_mom_freqs,
+                                                0
+                                            );
+                }
+
+                // Calculate QTF sum force terms
+                calculate_qtf_terms_force(
+                                                input,
+                                                mesh_gp,
+                                                QTF_SUM_CODE,
+                                                &(sim_data->qtf_wl_we_total_freq[i*sim_data->qtf_wl_heads_np]),
+                                                &(sim_data->qtf_wl_we_total_freq[j*sim_data->qtf_wl_heads_np]),
+                                                &(sim_data->qtf_raos_freq[i*sim_data->wave_exc_np]),
+                                                &(sim_data->qtf_raos_freq[j*sim_data->wave_exc_np]),
+                                                &(sim_data->qtf_body_vel_x_total_freq[i*sim_data->qtf_body_heads_np]),
+                                                &(sim_data->qtf_body_vel_y_total_freq[i*sim_data->qtf_body_heads_np]),
+                                                &(sim_data->qtf_body_vel_z_total_freq[i*sim_data->qtf_body_heads_np]),
+                                                &(sim_data->qtf_body_vel_x_total_freq[j*sim_data->qtf_body_heads_np]),
+                                                &(sim_data->qtf_body_vel_y_total_freq[j*sim_data->qtf_body_heads_np]),
+                                                &(sim_data->qtf_body_vel_z_total_freq[j*sim_data->qtf_body_heads_np]),
+                                                input->angfreqs[j],
+                                                sim_data->qtf,
+                                                sim_data->qtf_sum_wl,
+                                                sim_data->qtf_sum_bern,
+                                                sim_data->qtf_sum_acc,
+                                                sim_data->qtf_sum_mom,
+                                                qtf_wl_we_gp,
+                                                vel_x_body_gp,
+                                                true
+                                            );
+
+                qtf_distribute_matrix_data(
+                                                input,
+                                                i,
+                                                j,
+                                                sim_data->qtf,
+                                                sim_data->qtf_sum_freqs,
+                                                1
+                                            );
+
+                if ( input->out_qtf_comp )
+                {
+                    qtf_distribute_matrix_data(
+                                                input,
+                                                i,
+                                                j,
+                                                sim_data->qtf_sum_wl,
+                                                sim_data->qtf_sum_wl_freqs,
+                                                0
+                                            );
+                    
+                    qtf_distribute_matrix_data(
+                                                input,
+                                                i,
+                                                j,
+                                                sim_data->qtf_sum_bern,
+                                                sim_data->qtf_sum_bern_freqs,
+                                                0
+                                            );
+
+                    qtf_distribute_matrix_data(
+                                                input,
+                                                i,
+                                                j,
+                                                sim_data->qtf_sum_acc,
+                                                sim_data->qtf_sum_acc_freqs,
+                                                0
+                                            );
+
+                    qtf_distribute_matrix_data(
+                                                input,
+                                                i,
+                                                j,
+                                                sim_data->qtf_sum_mom,
+                                                sim_data->qtf_sum_mom_freqs,
+                                                0
+                                            );
+                }
+
+            }
+        }
+    }
+
+    /****************************************************************/
+    /***************** Calculate Total QTF forces *******************/
+    /****************************************************************/
+    if ( input->out_qtf )
+    {
+        for ( int i=0; i<input->angfreqs_np; i++ )
+        {
+            for ( int j=0; j<input->angfreqs_np; j++ )
+            {
+                
             }
         }
     }
@@ -1047,12 +1197,13 @@ void    freq_domain_nonlinear_solver(
 
     // Allocate space for the intensities, hydromechanics and wave exciting forces
     SimulationData* sim_data    = new SimulationData(
+                                                        input,
+                                                        mpi_config,
                                                         mesh_gp->meshes_np,
                                                         input->dofs_np,
                                                         input->heads_np,
                                                         scl->num_rows_local,
-                                                        scl->num_rows,
-                                                        mpi_config
+                                                        scl->num_rows
                                                     );
 
     // Allocate space for the intensities influence system matrix
