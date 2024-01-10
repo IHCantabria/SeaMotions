@@ -373,6 +373,14 @@ void    freq_domain_linear_solver(
     /****************************************************************/
     /*************** Create Green function interface ****************/
     /****************************************************************/
+    GWFInterface*   gwf_interf      = new   GWFInterface(
+                                                                    mesh_gp->source_nodes[0],
+                                                                    0.0,
+                                                                    mesh_gp->source_nodes[0]->panel->center,
+                                                                    input->angfreqs[0],
+                                                                    input->water_depth,
+                                                                    input->grav_acc
+                                                                );
     GRFDnInterface* grf_dn_interf   = new   GRFDnInterface(
                                                                 mesh_gp->source_nodes[0],
                                                                 mesh_gp->source_nodes[0],
@@ -387,7 +395,6 @@ void    freq_domain_linear_solver(
                                                                 input->grav_acc
                                                             );
 
-    GWFInterface*   gwf_interf      = nullptr;
     GWFDxInterface* gwf_dx_interf   = nullptr;
     GWFDyInterface* gwf_dy_interf   = nullptr;
     GWFDzInterface* gwf_dz_interf   = nullptr;
@@ -396,15 +403,6 @@ void    freq_domain_linear_solver(
         )
     {
         // Define functors to calculate the wave induced velocities
-        gwf_interf      = new   GWFInterface(
-                                                    mesh_gp->source_nodes[0],
-                                                    0.0,
-                                                    mesh_gp->source_nodes[0]->panel->center,
-                                                    input->angfreqs[0],
-                                                    input->water_depth,
-                                                    input->grav_acc
-                                                );
-
         gwf_dx_interf   = new   GWFDxInterface(
                                                     mesh_gp->source_nodes[0],
                                                     mesh_gp->source_nodes[0],
