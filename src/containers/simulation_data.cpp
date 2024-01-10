@@ -47,7 +47,9 @@ void    SimulationData::add_qtf_data(
     int qtf_freq_np = this->qtf_np * pow2s( freqs_np );
     if ( this->_mpi_config->is_root( ) )
     {
+        this->qtf               = generate_empty_vector<cuscomplex>( qtf_freq_np );
         this->qtf_acc           = generate_empty_vector<cuscomplex>( qtf_freq_np );
+        this->qtf_aux           = generate_empty_vector<cuscomplex>( this->qtf_np );
         this->qtf_bern          = generate_empty_vector<cuscomplex>( qtf_freq_np );
         this->qtf_mom           = generate_empty_vector<cuscomplex>( qtf_freq_np );
         this->qtf_secord_force  = generate_empty_vector<cuscomplex>( qtf_freq_np );
@@ -237,6 +239,9 @@ SimulationData::~SimulationData(
     {
         if ( this->_mpi_config->is_root( ) )
         {
+            mkl_free( this->qtf      );
+            mkl_free( this->qtf_acc  );
+            mkl_free( this->qtf_aux  );
             mkl_free( this->qtf_acc  );
             mkl_free( this->qtf_bern );
             mkl_free( this->qtf_mom  );
