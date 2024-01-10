@@ -100,7 +100,7 @@ public:
                                             void 
                                 );
 
-    void    qtf_format(
+    void    save_qtf_format(
                                             std::string channel_name,
                                             cuscomplex* forces
                         );

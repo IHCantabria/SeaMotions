@@ -567,7 +567,7 @@ void    Output::save_structural_mass(
 }
 
 
-void    Output::qtf_format(
+void    Output::save_qtf_format(
                                             std::string channel_name,
                                             cuscomplex* forces
                             )
