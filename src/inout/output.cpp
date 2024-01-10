@@ -317,6 +317,23 @@ Output::Output(
                                 this->_ds_qf,
                                 cusfloat_h5
                             );
+
+            // Set out for second order potential component
+            CREATE_DATASET( 
+                                fid,
+                                _DN_QTF_DIFF_SOP_MAG,
+                                _DS_QF_NP,
+                                this->_ds_qf,
+                                cusfloat_h5
+                            );
+            
+            CREATE_DATASET( 
+                                fid,
+                                _DN_QTF_DIFF_SOP_PHA,
+                                _DS_QF_NP,
+                                this->_ds_qf,
+                                cusfloat_h5
+                            );
             
             // Set output for WL component
             CREATE_DATASET( 
@@ -402,6 +419,23 @@ Output::Output(
             CREATE_DATASET( 
                                 fid,
                                 _DN_QTF_SUM_MOM_PHA,
+                                _DS_QF_NP,
+                                this->_ds_qf,
+                                cusfloat_h5
+                            );
+
+            // Set out for second order potential component
+            CREATE_DATASET( 
+                                fid,
+                                _DN_QTF_SUM_SOP_MAG,
+                                _DS_QF_NP,
+                                this->_ds_qf,
+                                cusfloat_h5
+                            );
+
+            CREATE_DATASET( 
+                                fid,
+                                _DN_QTF_SUM_SOP_PHA,
                                 _DS_QF_NP,
                                 this->_ds_qf,
                                 cusfloat_h5
