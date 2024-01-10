@@ -16,45 +16,52 @@
 
 // Declare module functions
 void        calculate_pinkster(
-                                        Input*      input,
-                                        MpiConfig*  mpi_config,
-                                        MeshGroup*  mesh_gp,
-                                        cusfloat    ang_freq_i,
-                                        cusfloat    ang_freq_j,
-                                        cuscomplex* qtf_values
+                                            Input*      input,
+                                            MpiConfig*  mpi_config,
+                                            MeshGroup*  mesh_gp,
+                                            cusfloat    ang_freq_i,
+                                            cusfloat    ang_freq_j,
+                                            cuscomplex* qtf_values
                             );
 
 cuscomplex  calculate_qtf_diff_term(
-                                        cuscomplex c0,
-                                        cuscomplex c1
+                                            cuscomplex c0,
+                                            cuscomplex c1
                                     );
 
 void        calculate_qtf_terms_force(
-                                        Input*          input,
-                                        MeshGroup*      mesh_gp,
-                                        int             qtf_type,
-                                        cuscomplex*     mdrift_rel_we_i,
-                                        cuscomplex*     mdrift_rel_we_j,
-                                        cuscomplex*     raos_i,
-                                        cuscomplex*     raos_j,
-                                        cuscomplex*     vel_x_i,
-                                        cuscomplex*     vel_y_i,
-                                        cuscomplex*     vel_z_i,
-                                        cuscomplex*     vel_x_j,
-                                        cuscomplex*     vel_y_j,
-                                        cuscomplex*     vel_z_j,
-                                        cuscomplex*     phi_2_force,
-                                        cusfloat        ang_freq_i,
-                                        cusfloat        ang_freq_j,
-                                        cuscomplex*     qtf_values,
-                                        cuscomplex*     qtf_wl,
-                                        cuscomplex*     qtf_bern,
-                                        cuscomplex*     qtf_acc,
-                                        cuscomplex*     qtf_mom,
-                                        MLGCmpx*        pot_gp,
-                                        MLGCmpx*        vel_gp,
-                                        bool            is_multi_head
+                                            Input*          input,
+                                            MeshGroup*      mesh_gp,
+                                            int             qtf_type,
+                                            cuscomplex*     mdrift_rel_we_i,
+                                            cuscomplex*     mdrift_rel_we_j,
+                                            cuscomplex*     raos_i,
+                                            cuscomplex*     raos_j,
+                                            cuscomplex*     vel_x_i,
+                                            cuscomplex*     vel_y_i,
+                                            cuscomplex*     vel_z_i,
+                                            cuscomplex*     vel_x_j,
+                                            cuscomplex*     vel_y_j,
+                                            cuscomplex*     vel_z_j,
+                                            cusfloat        ang_freq_j,
+                                            cuscomplex*     qtf_values,
+                                            cuscomplex*     qtf_wl,
+                                            cuscomplex*     qtf_bern,
+                                            cuscomplex*     qtf_acc,
+                                            cuscomplex*     qtf_mom,
+                                            MLGCmpx*        pot_gp,
+                                            MLGCmpx*        vel_gp,
+                                            bool            is_multi_head
                                     );
+
+void        qtf_distribute_matrix_data(
+                                            Input*      input,
+                                            int         freq_idx,
+                                            int         freq_jdx,
+                                            cuscomplex* local_mat,
+                                            cuscomplex* global_mat,
+                                            int         mode
+                                        );
 
 
 #endif

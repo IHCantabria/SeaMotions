@@ -122,8 +122,6 @@ void        calculate_qtf_terms_force(
                                             cuscomplex*     vel_x_j,
                                             cuscomplex*     vel_y_j,
                                             cuscomplex*     vel_z_j,
-                                            cuscomplex*     phi_2_force,
-                                            cusfloat        ang_freq_i,
                                             cusfloat        ang_freq_j,
                                             cuscomplex*     qtf_values,
                                             cuscomplex*     qtf_wl,
@@ -579,22 +577,62 @@ void        calculate_qtf_terms_force(
             }
         }
     }
+}
 
-    // Add second order potential force
-    cusfloat wij = ang_freq_i - ang_freq_j;
-    if ( std::abs( wij ) > 1e-12 )
+
+void        qtf_distribute_matrix_data(
+                                            Input*      input,
+                                            int         freq_idx,
+                                            int         freq_jdx,
+                                            cuscomplex* local_mat,
+                                            cuscomplex* global_mat,
+                                            int         mode
+                                        )
+{
+    // Declare local variables
+    int idx0 = 0;
+    int idx1 = 1;
+
+    // Loop over headings to distribute data
+    for ( int ih=0; ih<input->heads_np; ih++ )
     {
-        for ( int i=0; i<input->heads_np; i++ )
+        for ( int ib=0; ib<input->bodies_np; ib++ )
         {
-            for ( int j=0; j<mesh_gp->meshes_np; j++ )
+            for ( int id=0; id<input->dofs_np; id++ )
             {
-                 // Define chunk index
-                idx0 = i * ( input->dofs_np * input->bodies_np ) + j * input->dofs_np;
-
-                // Calculate second order force contribution using Pinkster approximation
-                for ( int k=0; k<input->dofs_np; k++ )
+                idx0    = (
+                                ih * ( input->heads_np * input->bodies_np * pow2s( input->angfreqs_np ) * input->dofs_np )
+                                +
+                                ih * ( input->bodies_np * pow2s( input->angfreqs_np ) * input->dofs_np )
+                                +
+                                ib * ( pow2s( input->angfreqs_np ) * input->dofs_np )
+                                +
+                                freq_idx *  ( input->angfreqs_np * input->dofs_np )
+                                +
+                                freq_jdx *  input->dofs_np
+                                +
+                                id
+                            );
+                idx1    = (
+                                ih * ( input->bodies_np * input->dofs_np )
+                                +
+                                ib * input->dofs_np
+                                +
+                                id
+                            );
+                
+                if ( mode == 0 )
                 {
-                    qtf_values[idx0+k] += phi_2_force[idx0+k];
+                    global_mat[idx0] = local_mat[idx1];
+                }
+                else if ( mode == 1 )
+                {
+                    global_mat[idx0] += local_mat[idx1];
+                }
+                else
+                {
+                    std::cout << "ERROR\n function: qtf_distribute_matrix_data - mode: " << mode << " - not valid" << std::endl;
+                    throw std::exception( );
                 }
             }
         }
