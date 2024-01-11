@@ -28,7 +28,7 @@ void sub_test_0( void )
     cusfloat z = -h/1000.0;
 
     cusfloat w0 = 2*PI/T;
-    WaveDispersionData wd = WaveDispersionData(w0, 30, h, 9.81);
+    WaveDispersionFO wd = WaveDispersionFO(w0, 30, h, 9.81);
     wd.calculate_john_terms();
     cusfloat H = wd.nu*h;
 

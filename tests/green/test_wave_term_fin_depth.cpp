@@ -176,7 +176,7 @@ bool launch_integral(
             // Calculate dependent variables on H parameter
             nu = ref_data.H[j]/h;
             w = std::sqrt(nu*g);
-            WaveDispersionData wave_data(w, num_kn, h, g);
+            WaveDispersionFO wave_data(w, num_kn, h, g);
             wave_data.calculate_john_terms();
 
             for (int k=0; k<ref_data.num_z; k++)
@@ -236,7 +236,7 @@ bool launch_john(
                                         cusfloat,
                                         cusfloat,
                                         cusfloat,
-                                        WaveDispersionData&
+                                        WaveDispersionFO&
                                         )> f_def,
                 std::string function_type
                 )
@@ -264,7 +264,7 @@ bool launch_john(
             // Calculate dependent variables on H parameter
             nu = ref_data.H[j]/h;
             w = std::sqrt(nu*g);
-            WaveDispersionData wave_data(w, num_kn, h, g);
+            WaveDispersionFO wave_data(w, num_kn, h, g);
             wave_data.calculate_john_terms();
 
             for (int k=0; k<ref_data.num_z; k++)
@@ -343,7 +343,7 @@ int main(int argc, char* argv[])
                                     cusfloat,
                                     cusfloat,
                                     cusfloat,
-                                    WaveDispersionData&)>(&john_series),
+                                    WaveDispersionFO&)>(&john_series),
                         "G"
                         );
     if (!pass)
@@ -364,7 +364,7 @@ int main(int argc, char* argv[])
                                     cusfloat,
                                     cusfloat,
                                     cusfloat,
-                                    WaveDispersionData&)
+                                    WaveDispersionFO&)
                                     >(&john_series_dz),
                         "dG_dz"
                         );
@@ -382,7 +382,7 @@ int main(int argc, char* argv[])
                                                     cusfloat,
                                                     cusfloat,
                                                     cusfloat,
-                                                    WaveDispersionData&,
+                                                    WaveDispersionFO&,
                                                     IntegralsDb&
                                                     )>(G_integral), 
                             "G_integral"
