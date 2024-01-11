@@ -43,6 +43,7 @@ void        calculate_qtf_terms_force(
                                             cuscomplex*     vel_x_j,
                                             cuscomplex*     vel_y_j,
                                             cuscomplex*     vel_z_j,
+                                            cusfloat        ang_freq_i,
                                             cusfloat        ang_freq_j,
                                             cuscomplex*     qtf_values,
                                             cuscomplex*     qtf_wl,

@@ -128,6 +128,7 @@ void        calculate_qtf_terms_force(
                                             cuscomplex*     vel_x_j,
                                             cuscomplex*     vel_y_j,
                                             cuscomplex*     vel_z_j,
+                                            cusfloat        ang_freq_i,
                                             cusfloat        ang_freq_j,
                                             cuscomplex*     qtf_values,
                                             cuscomplex*     qtf_wl,
@@ -348,14 +349,17 @@ void        calculate_qtf_terms_force(
     }
 
     // Calculate second order force due to acceleration term
-    cusfloat    cog_to_fp[3];   clear_vector( 3, cog_to_fp );
-    cuscomplex  cog_to_fp_c[3]; clear_vector( 3, cog_to_fp );
-    cuscomplex  point_disp[3];  clear_vector( 3, point_disp );
-    cuscomplex  rao_trans[3];   clear_vector( 3, rao_trans );
-    cuscomplex  rao_rot[3];     clear_vector( 3, rao_rot );
-    cuscomplex  vel_x_acc;
-    cuscomplex  vel_y_acc;
-    cuscomplex  vel_z_acc;
+    cusfloat    cog_to_fp[3];               clear_vector( 3, cog_to_fp );
+    cuscomplex  cog_to_fp_c[3];             clear_vector( 3, cog_to_fp );
+    cuscomplex  point_disp_i[3];            clear_vector( 3, point_disp_i );
+    cuscomplex  point_disp_j[3];            clear_vector( 3, point_disp_j );
+    cuscomplex  rao_rot_i[3];               clear_vector( 3, rao_rot_i );
+    cuscomplex  rao_rot_j[3];               clear_vector( 3, rao_rot_j );
+    cuscomplex  rao_trans_i[3];             clear_vector( 3, rao_trans_i );
+    cuscomplex  rao_trans_j[3];             clear_vector( 3, rao_trans_j );
+    cuscomplex  vel_x_acc_i, vel_x_acc_j;
+    cuscomplex  vel_y_acc_i, vel_y_acc_j;
+    cuscomplex  vel_z_acc_i, vel_z_acc_j;
 
     for ( int ih1=0; ih1<input->heads_np; ih1++ )
     {
@@ -373,18 +377,46 @@ void        calculate_qtf_terms_force(
                                 +
                                 j * input->dofs_np
                             );
+                    
+                    idx1_i  = ( 
+                                    ih1 * ( input->dofs_np * input->bodies_np )
+                                    +
+                                    j * input->dofs_np
+                                );
+                    idx1_j  = ( 
+                                    ih2 * ( input->dofs_np * input->bodies_np )
+                                    +
+                                    j * input->dofs_np
+                                );
                 }
                 else
                 {
-                    idx0 = ih1 * ( input->dofs_np * input->bodies_np ) + j * input->dofs_np;
+                    idx0    = (
+                                    ih1 * ( input->dofs_np * input->bodies_np )
+                                    +
+                                    j * input->dofs_np
+                                );
+                    
+                    idx1_i  = ( 
+                                    ih1 * ( input->dofs_np * input->bodies_np )
+                                    +
+                                    j * input->dofs_np
+                                );
+                    idx1_j  = ( 
+                                    ih1 * ( input->dofs_np * input->bodies_np )
+                                    +
+                                    j * input->dofs_np
+                                );
+                    
                 }
 
                 // Get RAO values for the current body
-                idx1_i = ih1 * ( input->dofs_np * input->bodies_np ) + j * input->dofs_np;
                 for ( int r=0; r<3; r++ )
                 {
-                    rao_trans[r]    = raos_i[idx1_i+r] * input->wave_amplitude;
-                    rao_rot[r]      = raos_i[idx1_i+3+r] * input->wave_amplitude;
+                    rao_rot_i[r]    = raos_i[idx1_i+3+r] * input->wave_amplitude;
+                    rao_rot_j[r]    = raos_j[idx1_j+3+r] * input->wave_amplitude;
+                    rao_trans_i[r]  = raos_i[idx1_i+r] * input->wave_amplitude;
+                    rao_trans_j[r]  = raos_j[idx1_j+r] * input->wave_amplitude;
                 }
 
                 for ( int k= vel_gp->field_points_cnp[j]/ngpf; k<vel_gp->field_points_cnp[j+1]/ngpf; k++ )
@@ -400,10 +432,12 @@ void        calculate_qtf_terms_force(
                             // Define field points index
                             if ( is_multi_head )
                             {
+                                idx1_i = ih1 * vel_gp->field_points_np + k * pow2s( ngp ) + gpi * ngp + gpj;
                                 idx1_j = ih2 * vel_gp->field_points_np + k * pow2s( ngp ) + gpi * ngp + gpj;
                             }
                             else
                             {
+                                idx1_i = ih1 * vel_gp->field_points_np + k * pow2s( ngp ) + gpi * ngp + gpj;
                                 idx1_j = ih1 * vel_gp->field_points_np + k * pow2s( ngp ) + gpi * ngp + gpj;
                             }
                             idx2 = k * pow2s( ngp ) + gpi * ngp + gpj;
@@ -416,44 +450,74 @@ void        calculate_qtf_terms_force(
                             }
 
                             // Calculate first order displacement of the panel centre
-                            clear_vector( 3, point_disp );
+                            clear_vector( 3, point_disp_i );
 
                             cross(
-                                        rao_rot,
+                                        rao_rot_i,
                                         cog_to_fp_c,
-                                        point_disp
+                                        point_disp_i
                                 );
                             sv_add(
                                         3,
-                                        point_disp,
-                                        rao_trans,
-                                        point_disp
+                                        point_disp_i,
+                                        rao_trans_i,
+                                        point_disp_i
+                                    );
+
+                            clear_vector( 3, point_disp_j );
+
+                            cross(
+                                        rao_rot_j,
+                                        cog_to_fp_c,
+                                        point_disp_j
+                                );
+                            sv_add(
+                                        3,
+                                        point_disp_j,
+                                        rao_trans_j,
+                                        point_disp_j
                                     );
 
                             // Get velocity pressure term
-                            vel_x_acc   = input->water_density * cuscomplex( 0.0, -ang_freq_j ) * vel_x_j[idx1_j];
-                            vel_y_acc   = input->water_density * cuscomplex( 0.0, -ang_freq_j ) * vel_y_j[idx1_j];
-                            vel_z_acc   = input->water_density * cuscomplex( 0.0, -ang_freq_j ) * vel_z_j[idx1_j];
+                            vel_x_acc_i = input->water_density * cuscomplex( 0.0, -ang_freq_i ) * vel_x_i[idx1_i];
+                            vel_y_acc_i = input->water_density * cuscomplex( 0.0, -ang_freq_i ) * vel_y_i[idx1_i];
+                            vel_z_acc_i = input->water_density * cuscomplex( 0.0, -ang_freq_i ) * vel_z_i[idx1_i];
+
+                            vel_x_acc_j = input->water_density * cuscomplex( 0.0, -ang_freq_j ) * vel_x_j[idx1_j];
+                            vel_y_acc_j = input->water_density * cuscomplex( 0.0, -ang_freq_j ) * vel_y_j[idx1_j];
+                            vel_z_acc_j = input->water_density * cuscomplex( 0.0, -ang_freq_j ) * vel_z_j[idx1_j];
 
                             // Calculate point displacement
                             if ( qtf_type == 0 )
                             {
                                 val_mod = 0.5 * (
-                                                    calculate_qtf_diff_term( point_disp[0], vel_x_acc )
+                                                    point_disp_i[0] * std::conj( vel_x_acc_j )
                                                     +
-                                                    calculate_qtf_diff_term( point_disp[1], vel_y_acc )
+                                                    point_disp_i[1] * std::conj( vel_y_acc_j )
                                                     +
-                                                    calculate_qtf_diff_term( point_disp[2], vel_z_acc )
+                                                    point_disp_i[2] * std::conj( vel_z_acc_j )
+                                                    +
+                                                    std::conj( point_disp_j[0] ) * vel_x_acc_i
+                                                    +
+                                                    std::conj( point_disp_j[1] ) * vel_y_acc_i
+                                                    +
+                                                    std::conj( point_disp_j[2] ) * vel_z_acc_i
                                                 );
                             }
                             else
                             {
                                 val_mod = 0.5 * (
-                                                    point_disp[0] * vel_x_acc
+                                                    point_disp_i[0] * vel_x_acc_j
                                                     +
-                                                    point_disp[1] * vel_y_acc
+                                                    point_disp_i[1] * vel_y_acc_j
                                                     +
-                                                    point_disp[2] * vel_z_acc
+                                                    point_disp_i[2] * vel_z_acc_j
+                                                    +
+                                                    point_disp_j[0] * vel_x_acc_i
+                                                    +
+                                                    point_disp_j[1] * vel_y_acc_i
+                                                    +
+                                                    point_disp_j[2] * vel_z_acc_i
                                                 );
                             }
                             int_mod     +=  val_mod * gp.weights[gpi] * gp.weights[gpj] * jacobi_det_2d( 
