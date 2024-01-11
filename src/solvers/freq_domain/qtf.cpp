@@ -14,7 +14,43 @@
 #include "../../waves.hpp"
 
 
-void    calculate_pinkster(
+void        calculate_mass_acceleration(
+                                            Input*      input,
+                                            cuscomplex* raos,
+                                            cusfloat    ang_2,
+                                            int         ib,
+                                            int         idx,
+                                            cuscomplex* hydro_force
+                                        )
+{
+    hydro_force[0] = - input->bodies[ib]->mass * raos[idx] * ang_2;
+    hydro_force[1] = - input->bodies[ib]->mass * raos[idx+1] * ang_2;
+    hydro_force[2] = - input->bodies[ib]->mass * raos[idx+2] * ang_2;
+    hydro_force[3] = - (
+                            input->bodies[ib]->inertia[0] * raos[idx+3]
+                            +
+                            input->bodies[ib]->inertia[1] * raos[idx+4]
+                            +
+                            input->bodies[ib]->inertia[2] * raos[idx+5]
+                        ) * ang_2;
+    hydro_force[4] = - (
+                            input->bodies[ib]->inertia[1] * raos[idx+3]
+                            +
+                            input->bodies[ib]->inertia[3] * raos[idx+4]
+                            +
+                            input->bodies[ib]->inertia[4] * raos[idx+5]
+                        ) * ang_2;
+    hydro_force[5] = - (
+                            input->bodies[ib]->inertia[2] * raos[idx+3]
+                            +
+                            input->bodies[ib]->inertia[4] * raos[idx+4]
+                            +
+                            input->bodies[ib]->inertia[5] * raos[idx+5]
+                        ) * ang_2;
+}
+
+
+void        calculate_pinkster(
                                 Input*      input,
                                 MpiConfig*  mpi_config,
                                 MeshGroup*  mesh_gp,
@@ -243,7 +279,7 @@ void        calculate_qtf_terms_force(
 
                         if ( qtf_type == 0 )
                         {
-                            val_mod = calculate_qtf_diff_term( mdrift_rel_we_i[idx1_i], mdrift_rel_we_j[idx1_j] );
+                            val_mod = mdrift_rel_we_i[idx1_i] * std::conj( mdrift_rel_we_j[idx1_j] );
                         }
                         else
                         {
@@ -310,11 +346,11 @@ void        calculate_qtf_terms_force(
                             if ( qtf_type == 0 )
                             {
                                 val_mod     =   (
-                                                    calculate_qtf_diff_term( vel_x_i[idx1_i], vel_x_j[idx1_j] )
+                                                    vel_x_i[idx1_i] * std::conj( vel_x_j[idx1_j] )
                                                     +
-                                                    calculate_qtf_diff_term( vel_y_i[idx1_i], vel_y_j[idx1_j] )
+                                                    vel_y_i[idx1_i] * std::conj( vel_y_j[idx1_j] )
                                                     +
-                                                    calculate_qtf_diff_term( vel_z_i[idx1_i], vel_z_j[idx1_j] )
+                                                    vel_z_i[idx1_i] * std::conj( vel_z_j[idx1_j] )
                                                 );
                             }
                             else
@@ -490,7 +526,7 @@ void        calculate_qtf_terms_force(
                             // Calculate point displacement
                             if ( qtf_type == 0 )
                             {
-                                val_mod = 0.5 * (
+                                val_mod = 0.25 * (
                                                     point_disp_i[0] * std::conj( vel_x_acc_j )
                                                     +
                                                     point_disp_i[1] * std::conj( vel_y_acc_j )
@@ -506,7 +542,7 @@ void        calculate_qtf_terms_force(
                             }
                             else
                             {
-                                val_mod = 0.5 * (
+                                val_mod = 0.25 * (
                                                     point_disp_i[0] * vel_x_acc_j
                                                     +
                                                     point_disp_i[1] * vel_y_acc_j
@@ -541,9 +577,11 @@ void        calculate_qtf_terms_force(
     }
 
     // Calculate second order force due to momentum
-    cusfloat    ang_2                           = pow2s( ang_freq_j );
+    cusfloat    ang_i_2                         = pow2s( ang_freq_i );
+    cusfloat    ang_j_2                         = pow2s( ang_freq_j );
     cuscomplex  conj_vec[3];                    clear_vector( 3, conj_vec );
-    cuscomplex  hydro_force[input->dofs_np];    clear_vector( input->dofs_np, hydro_force );
+    cuscomplex  hydro_force_i[input->dofs_np];  clear_vector( input->dofs_np, hydro_force_i );
+    cuscomplex  hydro_force_j[input->dofs_np];  clear_vector( input->dofs_np, hydro_force_j );
     cuscomplex  mom_i[3];                       clear_vector( 3, mom_i );
 
     for ( int ih1=0; ih1<input->heads_np; ih1++ )
@@ -567,30 +605,23 @@ void        calculate_qtf_terms_force(
                 }
 
                 // Calculate total hydrodynamic force
-                hydro_force[0] = - input->bodies[j]->mass * raos_j[idx1_i] * ang_2;
-                hydro_force[1] = - input->bodies[j]->mass * raos_j[idx1_i+1] * ang_2;
-                hydro_force[2] = - input->bodies[j]->mass * raos_j[idx1_i+2] * ang_2;
-                hydro_force[3] = - (
-                                        input->bodies[j]->inertia[0] * raos_j[idx1_i+3]
-                                        +
-                                        input->bodies[j]->inertia[1] * raos_j[idx1_i+4]
-                                        +
-                                        input->bodies[j]->inertia[2] * raos_j[idx1_i+5]
-                                    ) * ang_2;
-                hydro_force[4] = - (
-                                        input->bodies[j]->inertia[1] * raos_j[idx1_i+3]
-                                        +
-                                        input->bodies[j]->inertia[3] * raos_j[idx1_i+4]
-                                        +
-                                        input->bodies[j]->inertia[4] * raos_j[idx1_i+5]
-                                    ) * ang_2;
-                hydro_force[5] = - (
-                                        input->bodies[j]->inertia[2] * raos_j[idx1_i+3]
-                                        +
-                                        input->bodies[j]->inertia[4] * raos_j[idx1_i+4]
-                                        +
-                                        input->bodies[j]->inertia[5] * raos_j[idx1_i+5]
-                                    ) * ang_2;
+                calculate_mass_acceleration(
+                                                input,
+                                                raos_i,
+                                                ang_i_2,
+                                                j,
+                                                idx1_i,
+                                                hydro_force_i
+                                            );
+
+                calculate_mass_acceleration(
+                                                input,
+                                                raos_j,
+                                                ang_j_2,
+                                                j,
+                                                idx1_j,
+                                                hydro_force_j
+                                            );
 
                 // Add moment due to translational forces
                 if ( qtf_type == 0 )
@@ -598,50 +629,65 @@ void        calculate_qtf_terms_force(
                     cuscomplex      scale_f( 0.25, 0.0 );
 
                     clear_vector(   3,                  mom_i                                                       );
-                    conj_vector(    3,                  &(raos_i[idx1_j+3]),    conj_vec                            );
-                    cross(          conj_vec,           hydro_force,            mom_i                               );
+                    conj_vector(    3,                  hydro_force_j,          conj_vec                            );
+                    cross(          &(raos_i[idx1_i+3]),conj_vec,               mom_i                               );
                     svs_mult(       3,                  mom_i,                  scale_f,    mom_i                   );
                     sv_add(         3,                  &(qtf_values[idx0]),    mom_i,      &(qtf_values[idx0])     );
                     sv_add(         3,                  &(qtf_mom[idx0]),       mom_i,      &(qtf_mom[idx0])        );
 
                     clear_vector(   3,                  mom_i                                                       );
-                    conj_vector(    3,                  hydro_force,            conj_vec                            );
-                    cross(          &(raos_i[idx1_j+3]),conj_vec,               mom_i                               );
+                    conj_vector(    3,                  &(raos_j[idx1_j+3]),    conj_vec                            );
+                    cross(          conj_vec,           hydro_force_i,          mom_i                               );
                     svs_mult(       3,                  mom_i,                  scale_f,    mom_i                   );
                     sv_add(         3,                  &(qtf_values[idx0]),    mom_i,      &(qtf_values[idx0])     );
                     sv_add(         3,                  &(qtf_mom[idx0]),       mom_i,      &(qtf_mom[idx0])        );
+
 
                     // Add moment due to rotational force
                     clear_vector(   3,                  mom_i                                                       );
-                    conj_vector(    3,                  &(raos_i[idx1_j+3]),    conj_vec                            );
-                    cross(          conj_vec,           &(hydro_force[3]),      mom_i                               );
+                    conj_vector(    3,                  &(hydro_force_j[3]),    conj_vec                            );
+                    cross(          &(raos_i[idx1_i+3]),conj_vec,               mom_i                               );
                     svs_mult(       3,                  mom_i,                  scale_f,    mom_i                   );
                     sv_add(         3,                  &(qtf_values[idx0+3]),  mom_i,      &(qtf_values[idx0+3])   );
                     sv_add(         3,                  &(qtf_mom[idx0+3]),     mom_i,      &(qtf_mom[idx0+3])      );
 
                     clear_vector(   3,                  mom_i                                                       );
-                    conj_vector(    3,                  &(hydro_force[3]),      conj_vec                            );
-                    cross(          &(raos_i[idx1_j+3]),conj_vec,               mom_i                               );
+                    conj_vector(    3,                  &(raos_j[idx1_j+3]),    conj_vec                            );
+                    cross(          conj_vec,           &(hydro_force_i[3]),    mom_i                               );
                     svs_mult(       3,                  mom_i,                  scale_f,    mom_i                   );
                     sv_add(         3,                  &(qtf_values[idx0+3]),  mom_i,      &(qtf_values[idx0+3])   );
                     sv_add(         3,                  &(qtf_mom[idx0+3]),     mom_i,      &(qtf_mom[idx0+3])      );
+
                 }
                 else
                 {
-                    cuscomplex      scale_f( 0.5, 0.0 );
+                    cuscomplex      scale_f( 0.25, 0.0 );
 
                     clear_vector(   3,                  mom_i                                                       );
-                    cross(          &(raos_i[idx1_j+3]),hydro_force,            mom_i                               );
+                    cross(          &(raos_i[idx1_i+3]),hydro_force_j,          mom_i                               );
+                    svs_mult(       3,                  mom_i,                  scale_f,    mom_i                   );
+                    sv_add(         3,                  &(qtf_values[idx0]),    mom_i,      &(qtf_values[idx0])     );
+                    sv_add(         3,                  &(qtf_mom[idx0]),       mom_i,      &(qtf_mom[idx0])        );
+
+                    clear_vector(   3,                  mom_i                                                       );
+                    cross(          &(raos_j[idx1_j+3]),hydro_force_i,          mom_i                               );
                     svs_mult(       3,                  mom_i,                  scale_f,    mom_i                   );
                     sv_add(         3,                  &(qtf_values[idx0]),    mom_i,      &(qtf_values[idx0])     );
                     sv_add(         3,                  &(qtf_mom[idx0]),       mom_i,      &(qtf_mom[idx0])        );
 
                     // Add moment due to rotational force
                     clear_vector(   3,                  mom_i                                                       );
-                    cross(          &(raos_i[idx1_j+3]),&(hydro_force[3]),      mom_i                               );
+                    cross(          &(raos_i[idx1_i+3]),&(hydro_force_j[3]),    mom_i                               );
                     svs_mult(       3,                  mom_i,                  scale_f,    mom_i                   );
                     sv_add(         3,                  &(qtf_values[idx0+3]),  mom_i,      &(qtf_values[idx0+3])   );
                     sv_add(         3,                  &(qtf_mom[idx0+3]),     mom_i,      &(qtf_mom[idx0+3])      );
+
+                    clear_vector(   3,                  mom_i                                                       );
+                    cross(          &(raos_j[idx1_j+3]),&(hydro_force_i[3]),    mom_i                               );
+                    svs_mult(       3,                  mom_i,                  scale_f,    mom_i                   );
+                    sv_add(         3,                  &(qtf_values[idx0+3]),  mom_i,      &(qtf_values[idx0+3])   );
+                    sv_add(         3,                  &(qtf_mom[idx0+3]),     mom_i,      &(qtf_mom[idx0+3])      );
+
                 }
                 
             }
