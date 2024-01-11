@@ -130,7 +130,14 @@ void        calculate_pinkster(
             // Calcuate second order force contribution using Pinkster approximation
             for ( int k=0; k<input->dofs_np; k++ )
             {
-                qtf_values[idx0+k] = fij * froude_krylov[idx0+k];
+                if ( dk < 0.0 )
+                {
+                    qtf_values[idx0+k] = std::conj( fij * froude_krylov[idx0+k] );
+                }
+                else
+                {
+                    qtf_values[idx0+k] = fij * froude_krylov[idx0+k];
+                }
             }
         }
     }
