@@ -7,8 +7,10 @@
 #include <complex>
 
 // Inlude local modules
-#include "config.hpp"
-#include "./math/math_tools.hpp"
+#include "waves_common.hpp"
+
+#include "../config.hpp"
+#include "../math/math_tools.hpp"
 
 
 cusfloat dispersion_imag_zero(cusfloat nu, cusfloat h, cusfloat k)

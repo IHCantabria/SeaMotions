@@ -2,6 +2,7 @@
 // Include local modules
 #include "grfdn_interface.hpp"
 #include "../math/shape_functions.hpp"
+#include "../math/math_tools.hpp"
 
 
 GRFDnInterface::GRFDnInterface( 

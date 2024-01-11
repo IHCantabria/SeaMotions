@@ -3,6 +3,7 @@
 #include "gf_intensities.hpp"
 #include "../../math/integration.hpp"
 #include "../../green/source.hpp"
+#include "../../waves/waves_common.hpp"
 
 
 void    calculate_gf_intensity_sysmat(

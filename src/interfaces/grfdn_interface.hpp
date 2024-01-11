@@ -6,7 +6,6 @@
 #include "../containers/source_node.hpp"
 #include "../green/integrals_db.hpp"
 #include "../green/pulsating_fin_depth.hpp"
-#include "../waves.hpp"
 
 
 struct GRFDnInterface

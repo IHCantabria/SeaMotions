@@ -24,7 +24,7 @@ GWFInterface::GWFInterface(
     copy_vector( 3, field_point_in, this->_field_point );
     
     // Define wave dispersion data
-    this->_wave_data    = new WaveDispersionData(
+    this->_wave_data    = new WaveDispersionFO(
                                                     ang_freq,
                                                     30,
                                                     water_depth_in,
@@ -87,11 +87,11 @@ void GWFInterface::set_ang_freq(
                                     cusfloat ang_freq
                                 )
 {
-    // Delete previous instance of WaveDispersionData class
+    // Delete previous instance of WaveDispersionFO class
     delete this->_wave_data;
 
-    // Create new WaveDispersionData class
-    this->_wave_data = new WaveDispersionData(
+    // Create new WaveDispersionFO class
+    this->_wave_data = new WaveDispersionFO(
                                                     ang_freq,
                                                     30,
                                                     this->_water_depth,

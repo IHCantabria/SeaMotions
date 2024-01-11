@@ -2,6 +2,7 @@
 // Include local modules
 #include "grfdx_interface.hpp"
 #include "../math/shape_functions.hpp"
+#include "../math/math_tools.hpp"
 
 
 GRFDxInterface::GRFDxInterface( 

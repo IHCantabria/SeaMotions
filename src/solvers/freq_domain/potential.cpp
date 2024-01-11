@@ -8,7 +8,6 @@
 #include "../../math/integration.hpp"
 #include "../../math/math_interface.hpp"
 #include "tools.hpp"
-#include "../../waves.hpp"
 
 
 void    calculate_influence_potmat_steady(

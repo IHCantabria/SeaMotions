@@ -7,7 +7,7 @@
 #include "../green/integrals_db.hpp"
 #include "../green/pulsating_fin_depth.hpp"
 #include "gwfdn_interface.hpp"
-#include "../waves.hpp"
+#include "../waves/wave_dispersion_fo.hpp"
 
 
 struct GWFDyInterface: public GWFDnInterface

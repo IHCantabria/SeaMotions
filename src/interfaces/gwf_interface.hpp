@@ -5,7 +5,7 @@
 // Include local modules
 #include "../containers/source_node.hpp"
 #include "../green/integrals_db.hpp"
-#include "../waves.hpp"
+#include "../waves/wave_dispersion_fo.hpp"
 
 
 struct GWFInterface
@@ -18,7 +18,7 @@ private:
     SourceNode*         _source         = nullptr;
     cuscomplex          _source_value   = 0.0;
     cusfloat            _water_depth    = 0.0;
-    WaveDispersionData* _wave_data      = nullptr;
+    WaveDispersionFO* _wave_data      = nullptr;
 
 public:
 

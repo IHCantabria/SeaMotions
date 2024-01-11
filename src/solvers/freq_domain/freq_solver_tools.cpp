@@ -24,7 +24,8 @@
 #include "../../solvers/freq_domain/tools.hpp"
 #include "../../solvers/freq_domain/velocities.hpp"
 #include "../../solvers/freq_domain/wave_elevation.hpp"
-#include "../../waves.hpp"
+#include "../../waves/wave_dispersion_fo.hpp"
+#include "../../waves/waves_common.hpp"
 
 
 void    calculate_freq_domain_coeffs(

@@ -2,7 +2,7 @@
 // Include local modules
 #include "../../math/integration.hpp"
 #include "froude_krylov.hpp"
-#include "../../waves.hpp"
+#include "../../waves/waves_common.hpp"
 
 
 void    calculate_froude_krylov(

@@ -6,7 +6,7 @@
 #include "../containers/source_node.hpp"
 #include "../green/integrals_db.hpp"
 #include "../green/pulsating_fin_depth.hpp"
-#include "../waves.hpp"
+#include "../waves/wave_dispersion_fo.hpp"
 
 
 struct GWFDnInterface
@@ -20,7 +20,7 @@ protected:
     cuscomplex          _source_value       = 0.0;
     IntegralsDb*        _integrals_db       = nullptr;
     cusfloat            _water_depth        = 0.0;
-    WaveDispersionData* _wave_data          = nullptr;
+    WaveDispersionFO* _wave_data          = nullptr;
 
     // Define protected methods
     void    _clear_heap(

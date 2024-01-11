@@ -2,6 +2,7 @@
 // Include local modules
 #include "gwfdy_interface.hpp"
 #include "../math/shape_functions.hpp"
+#include "../math/math_tools.hpp"
 
 
 GWFDyInterface::GWFDyInterface( 

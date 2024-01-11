@@ -11,7 +11,7 @@
 #include "../../math/math_interface.hpp"
 #include "../../math/math_tools.hpp"
 #include "../../math/topology.hpp"
-#include "../../waves.hpp"
+#include "../../waves/waves_common.hpp"
 
 
 void        calculate_mass_acceleration(

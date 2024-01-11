@@ -49,8 +49,7 @@ set(test_dispersion_src
     ../src/tools.hpp
     ../src/tools.cpp
     ../src/tools.txx
-    ../src/waves.hpp
-    ../src/waves.cpp
+    ${waves_module_files}
 )
 
 add_executable(test_dispersion_cmd ${test_dispersion_src})

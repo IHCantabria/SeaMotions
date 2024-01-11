@@ -7,7 +7,6 @@
 #include "../green/integrals_db.hpp"
 #include "../green/pulsating_fin_depth.hpp"
 #include "grfdn_interface.hpp"
-#include "../waves.hpp"
 
 
 struct GRFDzInterface: public GRFDnInterface

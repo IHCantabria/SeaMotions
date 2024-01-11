@@ -2,6 +2,7 @@
 // Include local modules
 #include "gwfdn_interface.hpp"
 #include "../math/shape_functions.hpp"
+#include "../math/math_tools.hpp"
 
 
 void    GWFDnInterface::_clear_heap(
@@ -19,7 +20,7 @@ void    GWFDnInterface::_initialize(
                                     )
 {
     // Calculate wave numbers
-    this->_wave_data    = new WaveDispersionData( 
+    this->_wave_data    = new WaveDispersionFO( 
                                                     ang_freq,
                                                     30,
                                                     this->_water_depth,
@@ -200,7 +201,7 @@ void    GWFDnInterface::set_ang_freq(
     delete this->_wave_data;
 
     // Create new wave data for the new angular frequency
-    this->_wave_data = new WaveDispersionData( 
+    this->_wave_data = new WaveDispersionFO( 
                                                     ang_freq,
                                                     30,
                                                     this->_water_depth,

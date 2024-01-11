@@ -5,7 +5,6 @@
 // Include local modules
 #include "../containers/source_node.hpp"
 #include "../green/integrals_db.hpp"
-#include "../waves.hpp"
 
 
 struct GRFInterface

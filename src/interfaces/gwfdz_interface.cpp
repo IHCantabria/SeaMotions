@@ -2,6 +2,8 @@
 // Include local modules
 #include "gwfdz_interface.hpp"
 #include "../math/shape_functions.hpp"
+#include "../math/math_tools.hpp"
+#include "../math/math_tools.hpp"
 
 
 GWFDzInterface::GWFDzInterface( 

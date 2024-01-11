@@ -8,7 +8,7 @@
 // Include local modules
 #include "../config.hpp"
 #include "./integrals_db.hpp"
-#include "../waves.hpp"
+#include "../waves/wave_dispersion_fo.hpp"
 
 // Include namespaces objects into the local namespace
 using namespace std;
@@ -26,7 +26,7 @@ cuscomplex  G_integral(
                                                 cusfloat z,
                                                 cusfloat zeta,
                                                 cusfloat h,
-                                                WaveDispersionData &wave_data,
+                                                WaveDispersionFO &wave_data,
                                                 IntegralsDb &idb
                     );
 
@@ -39,7 +39,7 @@ cuscomplex  G_integral(
                                                 cusfloat eta,
                                                 cusfloat zeta,
                                                 cusfloat h,
-                                                WaveDispersionData &wave_data,
+                                                WaveDispersionFO &wave_data,
                                                 IntegralsDb &idb
                     );
 
@@ -49,7 +49,7 @@ cuscomplex  G_integral_dr(
                                                 cusfloat z,
                                                 cusfloat zeta,
                                                 cusfloat h,
-                                                WaveDispersionData &wave_data,
+                                                WaveDispersionFO &wave_data,
                                                 IntegralsDb &idb
                         );
 
@@ -67,7 +67,7 @@ cuscomplex  G_integral_wave_dr(
                                                 cusfloat z,
                                                 cusfloat zeta,
                                                 cusfloat h,
-                                                WaveDispersionData &wave_data,
+                                                WaveDispersionFO &wave_data,
                                                 IntegralsDb &idb
                                 );
                     
@@ -77,7 +77,7 @@ cuscomplex  G_integral_dz(
                                                 cusfloat z,
                                                 cusfloat zeta,
                                                 cusfloat h,
-                                                WaveDispersionData &wave_data,
+                                                WaveDispersionFO &wave_data,
                                                 IntegralsDb &idb
                         );
 
@@ -95,7 +95,7 @@ cuscomplex  G_integral_wave_dz(
                                                 cusfloat z,
                                                 cusfloat zeta,
                                                 cusfloat h,
-                                                WaveDispersionData &wave_data,
+                                                WaveDispersionFO &wave_data,
                                                 IntegralsDb &idb
                                 );
 
@@ -119,7 +119,7 @@ cuscomplex  G_integral_wave(
                                                 cusfloat eta,
                                                 cusfloat zeta,
                                                 cusfloat h,
-                                                WaveDispersionData &wave_data,
+                                                WaveDispersionFO &wave_data,
                                                 IntegralsDb &idb
                             );
 
@@ -129,7 +129,7 @@ cuscomplex  john_series(
                                                 cusfloat z, 
                                                 cusfloat zeta, 
                                                 cusfloat h,
-                                                WaveDispersionData &wave_data
+                                                WaveDispersionFO &wave_data
                         );
 
 
@@ -141,7 +141,7 @@ cuscomplex  john_series(
                                                 cusfloat eta,
                                                 cusfloat zeta,
                                                 cusfloat h,
-                                                WaveDispersionData &wave_data
+                                                WaveDispersionFO &wave_data
                         );
 
 
@@ -153,7 +153,7 @@ tuplecc     john_series_dhoriz(
                                                 cusfloat eta,
                                                 cusfloat zeta,
                                                 cusfloat h,
-                                                WaveDispersionData &wave_data
+                                                WaveDispersionFO &wave_data
                                 );
 
 
@@ -162,7 +162,7 @@ cuscomplex  john_series_dr(
                                                 cusfloat z,
                                                 cusfloat zeta,
                                                 cusfloat h,
-                                                WaveDispersionData &wave_data
+                                                WaveDispersionFO &wave_data
                             );
 
 
@@ -174,7 +174,7 @@ cuscomplex  john_series_dx(
                                                 cusfloat eta,
                                                 cusfloat zeta,
                                                 cusfloat h,
-                                                WaveDispersionData &wave_data
+                                                WaveDispersionFO &wave_data
                             );
 
 
@@ -186,7 +186,7 @@ cuscomplex  john_series_dy(
                                                 cusfloat eta,
                                                 cusfloat zeta,
                                                 cusfloat h,
-                                                WaveDispersionData &wave_data
+                                                WaveDispersionFO &wave_data
                             );
 
 
@@ -195,7 +195,7 @@ cuscomplex  john_series_dz(
                                                 cusfloat z,
                                                 cusfloat zeta,
                                                 cusfloat h,
-                                                WaveDispersionData &wave_data
+                                                WaveDispersionFO &wave_data
                             );
 
                         
@@ -207,7 +207,7 @@ cuscomplex  john_series_dz(
                                                 cusfloat eta,
                                                 cusfloat zeta,
                                                 cusfloat h,
-                                                WaveDispersionData &wave_data
+                                                WaveDispersionFO &wave_data
                             );
 
 
@@ -219,7 +219,7 @@ cuscomplex  wave_term_fin_depth(
                                                 cusfloat eta,
                                                 cusfloat zeta,
                                                 cusfloat h,
-                                                WaveDispersionData &wave_data,
+                                                WaveDispersionFO &wave_data,
                                                 IntegralsDb &idb
                                 );
 
@@ -228,7 +228,7 @@ cuscomplex  wave_term_fin_depth_integral(
                                                 cusfloat z,
                                                 cusfloat zeta,
                                                 cusfloat h,
-                                                WaveDispersionData &wave_data,
+                                                WaveDispersionFO &wave_data,
                                                 IntegralsDb &idb
                                         );
 
@@ -238,7 +238,7 @@ cuscomplex  wave_term_fin_depth_integral_dr(
                                                 cusfloat z,
                                                 cusfloat zeta,
                                                 cusfloat h,
-                                                WaveDispersionData &wave_data,
+                                                WaveDispersionFO &wave_data,
                                                 IntegralsDb &idb
                                             );
 
@@ -248,7 +248,7 @@ cuscomplex  wave_term_fin_depth_integral_dz(
                                                 cusfloat z,
                                                 cusfloat zeta,
                                                 cusfloat h,
-                                                WaveDispersionData &wave_data,
+                                                WaveDispersionFO &wave_data,
                                                 IntegralsDb &idb
                                             );
 
