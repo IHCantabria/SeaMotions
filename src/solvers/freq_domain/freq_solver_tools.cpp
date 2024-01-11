@@ -790,6 +790,7 @@ void    freq_domain_linear_solver(
                                                 sim_data->mdrift_body_vel_y_total,
                                                 sim_data->mdrift_body_vel_z_total,
                                                 input->angfreqs[i],
+                                                input->angfreqs[i],
                                                 sim_data->mdrift,
                                                 sim_data->mdrift_wl,
                                                 sim_data->mdrift_bern,
@@ -996,6 +997,7 @@ void    freq_domain_linear_solver(
                                                 &(sim_data->qtf_body_vel_x_total_freq[j*sim_data->qtf_body_heads_np]),
                                                 &(sim_data->qtf_body_vel_y_total_freq[j*sim_data->qtf_body_heads_np]),
                                                 &(sim_data->qtf_body_vel_z_total_freq[j*sim_data->qtf_body_heads_np]),
+                                                input->angfreqs[i],
                                                 input->angfreqs[j],
                                                 sim_data->qtf,
                                                 sim_data->qtf_diff_wl,
@@ -1075,6 +1077,7 @@ void    freq_domain_linear_solver(
                                                 &(sim_data->qtf_body_vel_x_total_freq[j*sim_data->qtf_body_heads_np]),
                                                 &(sim_data->qtf_body_vel_y_total_freq[j*sim_data->qtf_body_heads_np]),
                                                 &(sim_data->qtf_body_vel_z_total_freq[j*sim_data->qtf_body_heads_np]),
+                                                input->angfreqs[i],
                                                 input->angfreqs[j],
                                                 sim_data->qtf,
                                                 sim_data->qtf_sum_wl,
@@ -1186,6 +1189,17 @@ void    freq_domain_linear_solver(
             output->save_qtf_format(
                                         "qtf_sum_mom",
                                         sim_data->qtf_sum_mom_freqs
+                                    );
+
+            // Storage QTF second order potential term
+            output->save_qtf_format(
+                                        "qtf_diff_sop",
+                                        sim_data->qtf_diff_secord_force_freqs
+                                    );
+            
+            output->save_qtf_format(
+                                        "qtf_sum_sop",
+                                        sim_data->qtf_sum_secord_force_freqs
                                     );
 
             // Storage QTF wl term
