@@ -169,6 +169,117 @@ cuscomplex  wave_potential_so_space(
 }
 
 
+cuscomplex  wave_potential_so_space_dx( 
+                                        cusfloat            x,
+                                        cusfloat            y,
+                                        cusfloat            z,
+                                        WaveDispersionSO*   wd,
+                                        bool                is_diff
+                                    )
+{
+    // Check if there is difference or summation term
+    cusfloat    k_ds_vec[2] = { 0.0, 0.0 };
+
+    if ( is_diff )
+    {
+        k_ds_vec[0]     = wd->k_diff_vec[0];
+        k_ds_vec[1]     = wd->k_diff_vec[1];
+    }
+    else
+    {
+        k_ds_vec[0]     = wd->k_sum_vec[0];
+        k_ds_vec[1]     = wd->k_sum_vec[1];
+    }
+
+    // Calculate potential
+    cuscomplex  pot2    =   k_ds_vec[0] * wave_potential_so_space( 
+                                                                        x,
+                                                                        y,
+                                                                        z,
+                                                                        wd,
+                                                                        is_diff
+                                                                );
+
+    return pot2;
+}
+
+
+cuscomplex  wave_potential_so_space_dy( 
+                                        cusfloat            x,
+                                        cusfloat            y,
+                                        cusfloat            z,
+                                        WaveDispersionSO*   wd,
+                                        bool                is_diff
+                                    )
+{
+    // Check if there is difference or summation term
+    cusfloat    k_ds_vec[2] = { 0.0, 0.0 };
+
+    if ( is_diff )
+    {
+        k_ds_vec[0]     = wd->k_diff_vec[0];
+        k_ds_vec[1]     = wd->k_diff_vec[1];
+    }
+    else
+    {
+        k_ds_vec[0]     = wd->k_sum_vec[0];
+        k_ds_vec[1]     = wd->k_sum_vec[1];
+    }
+
+    // Calculate potential
+    cuscomplex  pot2    =   k_ds_vec[1] * wave_potential_so_space( 
+                                                                        x,
+                                                                        y,
+                                                                        z,
+                                                                        wd,
+                                                                        is_diff
+                                                                    );
+
+    return pot2;
+}
+
+
+cuscomplex  wave_potential_so_space_dz( 
+                                        cusfloat            x,
+                                        cusfloat            y,
+                                        cusfloat            z,
+                                        WaveDispersionSO*   wd,
+                                        bool                is_diff
+                                    )
+{
+    // Check if there is difference or summation term
+    cusfloat    k_ds_mod    = 0.0;
+
+    if ( is_diff )
+    {
+        k_ds_mod        = wd->k_diff_mod;
+    }
+    else
+    {
+        k_ds_mod        = wd->k_sum_mod;
+    }
+
+    // Calculate scale factor
+    cuscomplex  scale   = (
+                                wave_vertical_profile_fo_dz( k_ds_mod, wd->water_depth, z )
+                                /
+                                wave_vertical_profile_fo( k_ds_mod, wd->water_depth, z )
+                            );
+
+    // Calculate potential
+
+    cuscomplex  pot2    =   scale * wave_potential_so_space( 
+                                                                x,
+                                                                y,
+                                                                z,
+                                                                wd,
+                                                                is_diff
+                                                            );
+
+    return pot2;
+}
+
+
 cusfloat    wave_vertical_profile_fo(
                                             cusfloat    k,
                                             cusfloat    h,

@@ -5,6 +5,7 @@
 // Include local modules
 #include "../config.hpp"
 #include "../math/math_tools.hpp"
+#include "../waves/wave_dispersion_so.hpp"
 
 
 // Declare module functions
@@ -55,6 +56,38 @@ cuscomplex  wave_potential_fo_space_dz(
                                             cusfloat z,
                                             cusfloat mu
                                         );
+
+cuscomplex  wave_potential_so_space( 
+                                            cusfloat            x,
+                                            cusfloat            y,
+                                            cusfloat            z,
+                                            WaveDispersionSO*   wd,
+                                            bool                is_diff
+                                    );
+
+cuscomplex  wave_potential_so_space_dx( 
+                                            cusfloat            x,
+                                            cusfloat            y,
+                                            cusfloat            z,
+                                            WaveDispersionSO*   wd,
+                                            bool                is_diff
+                                    );
+
+cuscomplex  wave_potential_so_space_dy( 
+                                            cusfloat            x,
+                                            cusfloat            y,
+                                            cusfloat            z,
+                                            WaveDispersionSO*   wd,
+                                            bool                is_diff
+                                    );
+
+cuscomplex  wave_potential_so_space_dz( 
+                                            cusfloat            x,
+                                            cusfloat            y,
+                                            cusfloat            z,
+                                            WaveDispersionSO*   wd,
+                                            bool                is_diff
+                                    );
 
 cusfloat    wave_vertical_profile_fo(
                                             cusfloat    k,
