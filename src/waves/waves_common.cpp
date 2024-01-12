@@ -170,10 +170,20 @@ cuscomplex  wave_potential_so_space(
 
 
 cusfloat    wave_vertical_profile_fo(
-                                        cusfloat    k,
-                                        cusfloat    h,
-                                        cusfloat    z
+                                            cusfloat    k,
+                                            cusfloat    h,
+                                            cusfloat    z
                                     )
 {
     return std::cosh( k * ( h + z ) ) / std::cosh( k * h );
+}
+
+
+cusfloat    wave_vertical_profile_fo_dz(
+                                            cusfloat    k,
+                                            cusfloat    h,
+                                            cusfloat    z
+                                        )
+{
+    return k * std::sinh( k * ( h + z ) ) / std::cosh( k * h );
 }

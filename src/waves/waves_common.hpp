@@ -62,4 +62,10 @@ cusfloat    wave_vertical_profile_fo(
                                             cusfloat    z
                                     );
 
+cusfloat    wave_vertical_profile_fo_dz(
+                                            cusfloat    k,
+                                            cusfloat    h,
+                                            cusfloat    z
+                                        );
+
 #endif
