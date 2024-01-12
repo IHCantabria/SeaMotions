@@ -11,6 +11,7 @@
 #include "../../math/math_interface.hpp"
 #include "../../math/math_tools.hpp"
 #include "../../math/topology.hpp"
+#include "../../waves/wave_dispersion_base_fo.hpp"
 #include "../../waves/waves_common.hpp"
 
 

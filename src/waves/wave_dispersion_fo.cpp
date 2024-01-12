@@ -3,8 +3,10 @@
 #include <iostream>
 
 // Include local modules
-#include "waves_common.hpp"
 #include "wave_dispersion_fo.hpp"
+
+#include "../math/math_tools.hpp"
+#include "wave_dispersion_base_fo.hpp"
 
 
 void    WaveDispersionFO::_calculate_dispersion(void)

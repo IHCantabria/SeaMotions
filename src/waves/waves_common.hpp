@@ -8,26 +8,6 @@
 
 
 // Declare module functions
-cusfloat    k2w( 
-                                            cusfloat k, 
-                                            cusfloat h, 
-                                            cusfloat g 
-                );
-
-cusfloat    w2k(
-                                            cusfloat w, 
-                                            cusfloat h, 
-                                            cusfloat g
-                );
-
-void        w2ki(
-                                            cusfloat w, 
-                                            cusfloat h, 
-                                            cusfloat g, 
-                                            int n, 
-                                            cusfloat* kn
-                );
-
 cuscomplex  wave_potential_fo_space( 
                                             cusfloat aw,
                                             cusfloat w,
@@ -75,5 +55,11 @@ cuscomplex  wave_potential_fo_space_dz(
                                             cusfloat z,
                                             cusfloat mu
                                         );
+
+cusfloat    wave_vertical_profile_fo(
+                                            cusfloat    k,
+                                            cusfloat    h,
+                                            cusfloat    z
+                                    );
 
 #endif

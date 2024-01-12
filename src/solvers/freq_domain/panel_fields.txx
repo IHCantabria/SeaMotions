@@ -2,6 +2,7 @@
 // Include local modules
 #include "../../math/math_interface.hpp"
 #include "../../math/integration.hpp"
+#include "../../waves/wave_dispersion_base_fo.hpp"
 
 
 template<typename T>

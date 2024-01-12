@@ -232,10 +232,14 @@ set(
 # Pack waves module files
 set(
         waves_module_files
-        ${CMAKE_SOURCE_DIR}/src/waves/waves_common.hpp
-        ${CMAKE_SOURCE_DIR}/src/waves/waves_common.cpp
+        ${CMAKE_SOURCE_DIR}/src/waves/wave_dispersion_base_fo.hpp
+        ${CMAKE_SOURCE_DIR}/src/waves/wave_dispersion_base_fo.cpp
         ${CMAKE_SOURCE_DIR}/src/waves/wave_dispersion_fo.hpp
         ${CMAKE_SOURCE_DIR}/src/waves/wave_dispersion_fo.cpp
+        ${CMAKE_SOURCE_DIR}/src/waves/wave_dispersion_so.hpp
+        ${CMAKE_SOURCE_DIR}/src/waves/wave_dispersion_so.cpp
+        ${CMAKE_SOURCE_DIR}/src/waves/waves_common.hpp
+        ${CMAKE_SOURCE_DIR}/src/waves/waves_common.cpp
     )
 
 # Pack version files

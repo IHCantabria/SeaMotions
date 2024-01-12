@@ -2,6 +2,7 @@
 // Include local modules
 #include "../../math/integration.hpp"
 #include "froude_krylov.hpp"
+#include "../../waves/wave_dispersion_base_fo.hpp"
 #include "../../waves/waves_common.hpp"
 
 

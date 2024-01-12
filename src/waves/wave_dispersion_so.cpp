@@ -2,7 +2,8 @@
 // Include local modules
 #include "wave_dispersion_so.hpp"
 
-#include "waves_common.hpp"
+#include "../math/math_tools.hpp"
+#include "wave_dispersion_base_fo.hpp"
 
 
 void    WaveDispersionSO::set_new_data(

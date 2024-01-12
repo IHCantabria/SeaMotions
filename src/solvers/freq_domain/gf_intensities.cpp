@@ -3,6 +3,7 @@
 #include "gf_intensities.hpp"
 #include "../../math/integration.hpp"
 #include "../../green/source.hpp"
+#include "../../waves/wave_dispersion_base_fo.hpp"
 #include "../../waves/waves_common.hpp"
 
 
