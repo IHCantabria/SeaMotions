@@ -88,6 +88,8 @@ void    WaveDispersionSO::_update_status(
 
 
 WaveDispersionSO::WaveDispersionSO(
+                                        cusfloat    a0_in,
+                                        cusfloat    a1_in,
                                         cusfloat    w0_in,
                                         cusfloat    w1_in,
                                         cusfloat    head_0_in,
@@ -97,6 +99,8 @@ WaveDispersionSO::WaveDispersionSO(
                                     )
 {
     // Storage general usage input arguments
+    this->a0            = a0_in;
+    this->a1            = a1_in;
     this->grav_acc      = grav_acc_in;
     this->water_depth   = water_depth_in;
 

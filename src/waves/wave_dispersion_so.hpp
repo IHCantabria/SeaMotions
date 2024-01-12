@@ -19,6 +19,8 @@ private:
 
 public:
     // Define public class attributes
+    cusfloat    a0              = 0.0;
+    cusfloat    a1              = 0.0;
     cusfloat    grav_acc        = 0.0;
     cusfloat    head_0          = 0.0;
     cusfloat    head_1          = 0.0;
@@ -44,6 +46,8 @@ public:
     WaveDispersionSO( ) = default;
 
     WaveDispersionSO(
+                        cusfloat    a0_in,
+                        cusfloat    a1_in,
                         cusfloat    w0_in,
                         cusfloat    w1_in,
                         cusfloat    head_0_in,
