@@ -57,11 +57,15 @@ public:
                     );
 
     // Define class methods
-    void    set_new_data(
-                            cusfloat w0_in,
-                            cusfloat w1_in,
-                            cusfloat head_0_in,
-                            cusfloat head_1_in
+    cusfloat    get_w_ds(
+                                bool    is_diff
+                        );
+
+    void        set_new_data(
+                                cusfloat w0_in,
+                                cusfloat w1_in,
+                                cusfloat head_0_in,
+                                cusfloat head_1_in
                         );
 
 };

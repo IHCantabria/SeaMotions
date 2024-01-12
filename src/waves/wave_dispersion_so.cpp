@@ -5,6 +5,19 @@
 #include "../math/math_tools.hpp"
 #include "wave_dispersion_base_fo.hpp"
 
+cusfloat    WaveDispersionSO::get_w_ds(
+                                            bool    is_diff
+                                    )
+{
+    cusfloat    w_ds    = this->w_sum;
+    if ( is_diff )
+    {
+        w_ds = this->w_diff;
+    }
+
+    return w_ds;
+}
+
 
 void    WaveDispersionSO::set_new_data(
                                             cusfloat w0_in,
