@@ -211,6 +211,8 @@ set(
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/potential.cpp
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/qtf.hpp
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/qtf.cpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/qtf_indirect_method.hpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/qtf_indirect_method.cpp
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/raos.hpp
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/raos.cpp
         ${CMAKE_SOURCE_DIR}/src/solvers/freq_domain/tools.hpp
