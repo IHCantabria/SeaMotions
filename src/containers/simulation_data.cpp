@@ -47,6 +47,7 @@ void    SimulationData::add_qtf_data(
     int qtf_freq_np = this->qtf_np * pow2s( freqs_np );
     if ( this->_mpi_config->is_root( ) )
     {
+        // Define common variables to storage QTF values
         this->qtf                       = generate_empty_vector<cuscomplex>( this->qtf_np );
         this->qtf_diff_acc              = generate_empty_vector<cuscomplex>( this->qtf_np );
         this->qtf_diff_bern             = generate_empty_vector<cuscomplex>( this->qtf_np );
@@ -59,8 +60,22 @@ void    SimulationData::add_qtf_data(
         this->qtf_sum_secord_force      = generate_empty_vector<cuscomplex>( this->qtf_np );
         this->qtf_sum_wl                = generate_empty_vector<cuscomplex>( this->qtf_np );
 
+        // Define variables used for Indirect method
+        if ( this->_input->out_qtf_so_model == 1 )
+        {
+            this->qtf_diff_froude_krylov_fo_p0  = generate_empty_vector<cuscomplex>( this->qtf_np );
+            this->qtf_diff_body_force_p0        = generate_empty_vector<cuscomplex>( this->qtf_np );
+            this->qtf_diff_fs_near_field_p0     = generate_empty_vector<cuscomplex>( this->qtf_np );
+            this->qtf_diff_fs_far_field_p0      = generate_empty_vector<cuscomplex>( this->qtf_np );
+            this->qtf_sum_froude_krylov_fo_p0   = generate_empty_vector<cuscomplex>( this->qtf_np );
+            this->qtf_sum_body_force_p0         = generate_empty_vector<cuscomplex>( this->qtf_np );
+            this->qtf_sum_fs_near_field_p0      = generate_empty_vector<cuscomplex>( this->qtf_np );
+            this->qtf_sum_fs_far_field_p0       = generate_empty_vector<cuscomplex>( this->qtf_np );
+        }
+
         if ( this->_input->out_qtf_comp )
         {
+            // Define common variables to storage QTF values
             this->qtf_diff_acc_freqs            = generate_empty_vector<cuscomplex>( qtf_freq_np );
             this->qtf_diff_bern_freqs           = generate_empty_vector<cuscomplex>( qtf_freq_np );
             this->qtf_diff_freqs                = generate_empty_vector<cuscomplex>( qtf_freq_np );
@@ -73,6 +88,19 @@ void    SimulationData::add_qtf_data(
             this->qtf_sum_mom_freqs             = generate_empty_vector<cuscomplex>( qtf_freq_np );
             this->qtf_sum_secord_force_freqs    = generate_empty_vector<cuscomplex>( qtf_freq_np );
             this->qtf_sum_wl_freqs              = generate_empty_vector<cuscomplex>( qtf_freq_np );
+
+            // Define variables used for Indirect method
+            if ( this->_input->out_qtf_so_model == 1 )
+            {
+                this->qtf_diff_froude_krylov_fo_freqs_p0    = generate_empty_vector<cuscomplex>( qtf_freq_np );
+                this->qtf_diff_body_force_freqs_p0          = generate_empty_vector<cuscomplex>( qtf_freq_np );
+                this->qtf_diff_fs_near_field_freqs_p0       = generate_empty_vector<cuscomplex>( qtf_freq_np );
+                this->qtf_diff_fs_far_field_freqs_p0        = generate_empty_vector<cuscomplex>( qtf_freq_np );
+                this->qtf_sum_froude_krylov_fo_freqs_p0     = generate_empty_vector<cuscomplex>( qtf_freq_np );
+                this->qtf_sum_body_force_freqs_p0           = generate_empty_vector<cuscomplex>( qtf_freq_np );
+                this->qtf_sum_fs_near_field_freqs_p0        = generate_empty_vector<cuscomplex>( qtf_freq_np );
+                this->qtf_sum_fs_far_field_freqs_p0         = generate_empty_vector<cuscomplex>( qtf_freq_np );
+            }
         }
     }
     this->_is_qtf_data = true;
@@ -82,8 +110,7 @@ void    SimulationData::add_qtf_data(
 void    SimulationData::add_qtf_body_data(
                                                 int body_panels_tnp,
                                                 int body_gp_np,
-                                                int freqs_np,
-                                                int second_order_model
+                                                int freqs_np
                                         )
 {
     this->qtf_body_raddif_np    = this->get_raddif_np( body_panels_tnp,  body_gp_np );
@@ -273,6 +300,18 @@ SimulationData::~SimulationData(
             mkl_free( this->qtf_sum_secord_force  );
             mkl_free( this->qtf_sum_wl            );
 
+            if ( this->_input->out_qtf_so_model == 1 )
+            {
+                mkl_free( this->qtf_diff_froude_krylov_fo_p0 );
+                mkl_free( this->qtf_diff_body_force_p0       );
+                mkl_free( this->qtf_diff_fs_near_field_p0    );
+                mkl_free( this->qtf_diff_fs_far_field_p0     );
+                mkl_free( this->qtf_sum_froude_krylov_fo_p0  );
+                mkl_free( this->qtf_sum_body_force_p0        );
+                mkl_free( this->qtf_sum_fs_near_field_p0     );
+                mkl_free( this->qtf_sum_fs_far_field_p0      );
+            }
+
             if ( this->_input->out_qtf_comp )
             {
                 mkl_free( this->qtf_diff_acc_freqs          );
@@ -287,6 +326,18 @@ SimulationData::~SimulationData(
                 mkl_free( this->qtf_sum_mom_freqs           );
                 mkl_free( this->qtf_sum_secord_force_freqs  );
                 mkl_free( this->qtf_sum_wl_freqs            );
+
+                if ( this->_input->out_qtf_so_model == 1 )
+                {
+                    mkl_free( this->qtf_diff_froude_krylov_fo_freqs_p0 );
+                    mkl_free( this->qtf_diff_body_force_freqs_p0       );
+                    mkl_free( this->qtf_diff_fs_near_field_freqs_p0    );
+                    mkl_free( this->qtf_diff_fs_far_field_freqs_p0     );
+                    mkl_free( this->qtf_sum_froude_krylov_fo_freqs_p0  );
+                    mkl_free( this->qtf_sum_body_force_freqs_p0        );
+                    mkl_free( this->qtf_sum_fs_near_field_freqs_p0     );
+                    mkl_free( this->qtf_sum_fs_far_field_freqs_p0      );
+                }
             }
         }
     }
