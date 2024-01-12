@@ -146,7 +146,7 @@ void    calculate_gf_intensity_sysmat(
             if ( panel_j->type == DIFFRAC_PANEL_CODE )
             {
                 // Get wave potential derivatives for the panel
-                wave_dx             =   wave_potential_airy_space_dx(
+                wave_dx             =   wave_potential_fo_space_dx(
                                                                         1.0,
                                                                         w,
                                                                         k,
@@ -158,7 +158,7 @@ void    calculate_gf_intensity_sysmat(
                                                                         input->heads[i]
                                                                     );
 
-                wave_dy             =   wave_potential_airy_space_dy(
+                wave_dy             =   wave_potential_fo_space_dy(
                                                                         1.0,
                                                                         w,
                                                                         k,
@@ -170,7 +170,7 @@ void    calculate_gf_intensity_sysmat(
                                                                         input->heads[i]
                                                                     );
 
-                wave_dz             =   wave_potential_airy_space_dz(
+                wave_dz             =   wave_potential_fo_space_dz(
                                                                         1.0,
                                                                         w,
                                                                         k,

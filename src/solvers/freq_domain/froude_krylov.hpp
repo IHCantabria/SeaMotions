@@ -8,7 +8,7 @@
 #include "../../mesh/mesh_group.hpp"
 
 
-void    calculate_froude_krylov(
+void    calculate_froude_krylov_fo(
                                     Input*          input,
                                     MpiConfig*      mpi_config,
                                     MeshGroup*      mesh_gp,

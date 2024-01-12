@@ -92,7 +92,7 @@ void        calculate_pinkster(
     dkwij = k2w( dk, input->water_depth, input->grav_acc );
 
     // Calculate equivalent Froude-Krylov force for frequency difference
-    calculate_froude_krylov(
+    calculate_froude_krylov_fo(
                                 input,
                                 mpi_config,
                                 mesh_gp,

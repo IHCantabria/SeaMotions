@@ -151,7 +151,7 @@ void w2ki(cusfloat w, cusfloat h, cusfloat g, int n, cusfloat* kn)
 }
 
 
-cuscomplex  wave_potential_airy_space( 
+cuscomplex  wave_potential_fo_space( 
                                             cusfloat aw,
                                             cusfloat w,
                                             cusfloat k,
@@ -169,7 +169,7 @@ cuscomplex  wave_potential_airy_space(
 }
 
 
-cuscomplex  wave_potential_airy_space_dx( 
+cuscomplex  wave_potential_fo_space_dx( 
                                             cusfloat aw,
                                             cusfloat w,
                                             cusfloat k,
@@ -187,7 +187,7 @@ cuscomplex  wave_potential_airy_space_dx(
 }
 
 
-cuscomplex  wave_potential_airy_space_dy( 
+cuscomplex  wave_potential_fo_space_dy( 
                                             cusfloat aw,
                                             cusfloat w,
                                             cusfloat k,
@@ -205,7 +205,7 @@ cuscomplex  wave_potential_airy_space_dy(
 }
 
 
-cuscomplex  wave_potential_airy_space_dz( 
+cuscomplex  wave_potential_fo_space_dz( 
                                             cusfloat aw,
                                             cusfloat w,
                                             cusfloat k,

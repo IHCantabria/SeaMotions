@@ -573,7 +573,7 @@ void    calculate_raddif_velocity_mat_wave(
 //             {
 //                 index                   =   vel_x_gp->field_points_np * i + j;
                 
-//                 vel_x_fk_p0[index]      =   wave_potential_airy_space_dx(
+//                 vel_x_fk_p0[index]      =   wave_potential_fo_space_dx(
 //                                                                             input->wave_amplitude,
 //                                                                             ang_freq,
 //                                                                             k,
@@ -585,7 +585,7 @@ void    calculate_raddif_velocity_mat_wave(
 //                                                                             input->heads[i]
 //                                                                         );
 
-//                 vel_y_fk_p0[index]      =   wave_potential_airy_space_dy(
+//                 vel_y_fk_p0[index]      =   wave_potential_fo_space_dy(
 //                                                                             input->wave_amplitude,
 //                                                                             ang_freq,
 //                                                                             k,
@@ -597,7 +597,7 @@ void    calculate_raddif_velocity_mat_wave(
 //                                                                             input->heads[i]
 //                                                                         );
 
-//                 vel_z_fk_p0[index]      =   wave_potential_airy_space_dz(
+//                 vel_z_fk_p0[index]      =   wave_potential_fo_space_dz(
 //                                                                             input->wave_amplitude,
 //                                                                             ang_freq,
 //                                                                             k,

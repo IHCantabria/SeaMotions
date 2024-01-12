@@ -582,7 +582,7 @@ void    freq_domain_linear_solver(
                                         );
         
         // Calculate Froude-Krylov forces
-        calculate_froude_krylov(
+        calculate_froude_krylov_fo(
                                     input,
                                     mpi_config,
                                     mesh_gp,
@@ -692,7 +692,7 @@ void    freq_domain_linear_solver(
                                     mpi_config,
                                     mesh_gp,
                                     gwf_interf,
-                                    wave_potential_airy_space,
+                                    wave_potential_fo_space,
                                     input->angfreqs[i],
                                     sim_data->intensities,
                                     sim_data->raos,
@@ -723,7 +723,7 @@ void    freq_domain_linear_solver(
                                     mpi_config,
                                     mesh_gp,
                                     gwf_dx_interf,
-                                    wave_potential_airy_space_dx,
+                                    wave_potential_fo_space_dx,
                                     input->angfreqs[i],
                                     sim_data->intensities,
                                     sim_data->raos,
@@ -738,7 +738,7 @@ void    freq_domain_linear_solver(
                                     mpi_config,
                                     mesh_gp,
                                     gwf_dy_interf,
-                                    wave_potential_airy_space_dy,
+                                    wave_potential_fo_space_dy,
                                     input->angfreqs[i],
                                     sim_data->intensities,
                                     sim_data->raos,
@@ -753,7 +753,7 @@ void    freq_domain_linear_solver(
                                     mpi_config,
                                     mesh_gp,
                                     gwf_dz_interf,
-                                    wave_potential_airy_space_dz,
+                                    wave_potential_fo_space_dz,
                                     input->angfreqs[i],
                                     sim_data->intensities,
                                     sim_data->raos,
@@ -1415,7 +1415,7 @@ void    freq_domain_nonlinear_solver(
                                         );
 
         // Calculate Froude-Krylov forces
-        calculate_froude_krylov(
+        calculate_froude_krylov_fo(
                                     input,
                                     mpi_config,
                                     mesh_gp,

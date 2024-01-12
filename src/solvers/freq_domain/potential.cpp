@@ -440,7 +440,7 @@ void    calculate_potpanel_raddif_nlin(
 //             for ( int j=0; j<pot_gp->field_points_np; j++ )
 //             {
 //                 index                   =   pot_gp->field_points_np * i + j;
-//                 pot_fk_p0[index]        =   wave_potential_airy_space(
+//                 pot_fk_p0[index]        =   wave_potential_fo_space(
 //                                                                         input->wave_amplitude,
 //                                                                         ang_freq,
 //                                                                         k,

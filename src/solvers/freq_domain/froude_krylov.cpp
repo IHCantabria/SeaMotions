@@ -5,7 +5,7 @@
 #include "../../waves/waves_common.hpp"
 
 
-void    calculate_froude_krylov(
+void    calculate_froude_krylov_fo(
                                     Input*          input,
                                     MpiConfig*      mpi_config,
                                     MeshGroup*      mesh_gp,
@@ -55,7 +55,7 @@ void    calculate_froude_krylov(
                                     cusfloat z
                                 )
                                 {
-                                    return wave_potential_airy_space(
+                                    return wave_potential_fo_space(
                                                                         1.0,
                                                                         ang_freq,
                                                                         k,
