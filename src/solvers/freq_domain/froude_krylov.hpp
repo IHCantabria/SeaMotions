@@ -16,4 +16,13 @@ void    calculate_froude_krylov_fo(
                                     cuscomplex*     froude_krylov
                                 );
 
+void    calculate_froude_krylov_so(
+                                    Input*          input,
+                                    MeshGroup*      mesh_gp,
+                                    cusfloat        ang_freq_i,
+                                    cusfloat        ang_freq_j,
+                                    bool            is_diff,
+                                    cuscomplex*     froude_krylov
+                                );
+
 #endif

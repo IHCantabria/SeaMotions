@@ -147,7 +147,6 @@ void    calculate_froude_krylov_fo(
 
 void    calculate_froude_krylov_so(
                                     Input*          input,
-                                    MpiConfig*      mpi_config,
                                     MeshGroup*      mesh_gp,
                                     cusfloat        ang_freq_i,
                                     cusfloat        ang_freq_j,
