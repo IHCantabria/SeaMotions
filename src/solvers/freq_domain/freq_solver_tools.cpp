@@ -14,6 +14,7 @@
 #include "../../interfaces/gwfdy_interface.hpp"
 #include "../../interfaces/gwfdz_interface.hpp"
 #include "qtf.hpp"
+#include "qtf_indirect_method.hpp"
 #include "../../solvers/freq_domain/diffraction.hpp"
 #include "../../solvers/freq_domain/gf_intensities.hpp"
 #include "../../solvers/freq_domain/froude_krylov.hpp"
@@ -312,8 +313,7 @@ void    freq_domain_linear_solver(
         sim_data->add_qtf_body_data(
                                         mesh_gp->panels_raddif_tnp,
                                         input->gauss_np_factor_2d( ),
-                                        input->angfreqs_np,
-                                        input->out_qtf_so_model
+                                        input->angfreqs_np
                                     );
 
         // Add matrixes to storage the QTF force values
@@ -956,30 +956,45 @@ void    freq_domain_linear_solver(
                                                 input->angfreqs[j],
                                                 sim_data->qtf_diff_secord_force
                                             );
+                    }
+                    else if ( input->out_qtf_so_model == 1 )
+                    {
+                        calculate_secord_force_indirect(
+                                                            input,
+                                                            mesh_gp,
+                                                            input->angfreqs[i],
+                                                            input->angfreqs[j],
+                                                            true,
+                                                            sim_data->qtf_diff_froude_krylov_fo_p0,
+                                                            sim_data->qtf_diff_body_force_p0,
+                                                            sim_data->qtf_diff_fs_near_field_p0,
+                                                            sim_data->qtf_diff_fs_far_field_p0,
+                                                            sim_data->qtf_diff_secord_force
+                                                        );
+                    }
 
-                        // Distribute Pinkster force along the second order force
-                        // matrix format
+                    // Distribute Pinkster force along the second order force
+                    // matrix format
+                    qtf_distribute_matrix_data(
+                                                    input,
+                                                    i,
+                                                    j,
+                                                    sim_data->qtf_diff_secord_force,
+                                                    sim_data->qtf_diff_freqs,
+                                                    1,
+                                                    0
+                                                );
+                    if ( input->out_qtf_comp )
+                    {
                         qtf_distribute_matrix_data(
-                                                        input,
-                                                        i,
-                                                        j,
-                                                        sim_data->qtf_diff_secord_force,
-                                                        sim_data->qtf_diff_freqs,
-                                                        1,
-                                                        0
-                                                    );
-                        if ( input->out_qtf_comp )
-                        {
-                            qtf_distribute_matrix_data(
-                                                        input,
-                                                        i,
-                                                        j,
-                                                        sim_data->qtf_diff_secord_force,
-                                                        sim_data->qtf_diff_secord_force_freqs,
-                                                        1,
-                                                        0
-                                                    );
-                        }
+                                                    input,
+                                                    i,
+                                                    j,
+                                                    sim_data->qtf_diff_secord_force,
+                                                    sim_data->qtf_diff_secord_force_freqs,
+                                                    1,
+                                                    0
+                                                );
                     }
                 }
 
