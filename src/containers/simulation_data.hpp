@@ -135,10 +135,6 @@ public:
                                     int wl_gp_np
                                 );
 
-    void    add_qtf_data(
-                                    int freqs_np
-                        );
-
     void    add_qtf_base_data(
                                     int body_panels_tnp,
                                     int body_gp_np,
@@ -146,6 +142,10 @@ public:
                                     int wl_gp_np,
                                     int freqs_np
                             );
+
+    void    add_qtf_data(
+                                    int freqs_np
+                        );
 
     int     get_heads_np(
                                     int panels_tnp,

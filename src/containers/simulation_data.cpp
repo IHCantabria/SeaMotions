@@ -40,6 +40,38 @@ void    SimulationData::add_mean_drift_data(
 }
 
 
+void    SimulationData::add_qtf_base_data(
+                                                int body_panels_tnp,
+                                                int body_gp_np,
+                                                int wl_panels_tnp,
+                                                int wl_gp_np,
+                                                int freqs_np
+                                        )
+{
+    this->qtf_body_raddif_np    = this->get_raddif_np( body_panels_tnp,  body_gp_np );
+    this->qtf_body_heads_np     = this->get_heads_np( body_panels_tnp,  body_gp_np );
+    int body_raddif_freq_np     = this->qtf_body_raddif_np * freqs_np;
+    int body_heads_freq_np      = this->qtf_body_heads_np * freqs_np;
+
+    this->qtf_wl_raddif_np      = this->get_raddif_np( wl_panels_tnp, wl_gp_np );
+    this->qtf_wl_heads_np       = this->get_heads_np( wl_panels_tnp,  wl_gp_np );
+    int wl_freqs_raddif_np      = this->qtf_wl_raddif_np * freqs_np;
+    int wl_freqs_heads_np       = this->qtf_wl_heads_np * freqs_np;
+
+    int wex_freq_np             = this->wave_exc_np * freqs_np;
+
+    if ( this->_mpi_config->is_root( ) )
+    {
+        this->qtf_body_vel_x_total_freq     = generate_empty_vector<cuscomplex>( body_heads_freq_np );
+        this->qtf_body_vel_y_total_freq     = generate_empty_vector<cuscomplex>( body_heads_freq_np );
+        this->qtf_body_vel_z_total_freq     = generate_empty_vector<cuscomplex>( body_heads_freq_np );
+        this->qtf_raos_freq                 = generate_empty_vector<cuscomplex>( wex_freq_np );
+        this->qtf_wl_we_total_freq          = generate_empty_vector<cuscomplex>( wl_freqs_heads_np );
+    }
+    this->_is_qtf_base_freq = true;
+}
+
+
 void    SimulationData::add_qtf_data(
                                         int freqs_np
                                     )
@@ -104,38 +136,6 @@ void    SimulationData::add_qtf_data(
         }
     }
     this->_is_qtf_data = true;
-}
-
-
-void    SimulationData::add_qtf_base_data(
-                                                int body_panels_tnp,
-                                                int body_gp_np,
-                                                int wl_panels_tnp,
-                                                int wl_gp_np,
-                                                int freqs_np
-                                        )
-{
-    this->qtf_body_raddif_np    = this->get_raddif_np( body_panels_tnp,  body_gp_np );
-    this->qtf_body_heads_np     = this->get_heads_np( body_panels_tnp,  body_gp_np );
-    int body_raddif_freq_np     = this->qtf_body_raddif_np * freqs_np;
-    int body_heads_freq_np      = this->qtf_body_heads_np * freqs_np;
-
-    this->qtf_wl_raddif_np      = this->get_raddif_np( wl_panels_tnp, wl_gp_np );
-    this->qtf_wl_heads_np       = this->get_heads_np( wl_panels_tnp,  wl_gp_np );
-    int wl_freqs_raddif_np      = this->qtf_wl_raddif_np * freqs_np;
-    int wl_freqs_heads_np       = this->qtf_wl_heads_np * freqs_np;
-
-    int wex_freq_np             = this->wave_exc_np * freqs_np;
-
-    if ( this->_mpi_config->is_root( ) )
-    {
-        this->qtf_body_vel_x_total_freq     = generate_empty_vector<cuscomplex>( body_heads_freq_np );
-        this->qtf_body_vel_y_total_freq     = generate_empty_vector<cuscomplex>( body_heads_freq_np );
-        this->qtf_body_vel_z_total_freq     = generate_empty_vector<cuscomplex>( body_heads_freq_np );
-        this->qtf_raos_freq                 = generate_empty_vector<cuscomplex>( wex_freq_np );
-        this->qtf_wl_we_total_freq          = generate_empty_vector<cuscomplex>( wl_freqs_heads_np );
-    }
-    this->_is_qtf_base_freq = true;
 }
 
 
