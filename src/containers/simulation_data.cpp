@@ -464,8 +464,8 @@ void    SimulationData::storage_qtf_indirect_freq(
         }
 
         // Storage WL velocity raddiation data
-        int idx0    = freq_num * this->qtf_wl_raddif_np;
-        int idx1    = 0;
+        idx0    = freq_num * this->qtf_wl_raddif_np;
+        idx1    = 0;
 
         for ( int i=0; i<this->qtf_wl_raddif_np; i++ )
         {
@@ -476,8 +476,8 @@ void    SimulationData::storage_qtf_indirect_freq(
         }
 
         // Storage WL velocity total data
-        int idx0    = freq_num * this->qtf_wl_heads_np;
-        int idx1    = 0;
+        idx0    = freq_num * this->qtf_wl_heads_np;
+        idx1    = 0;
 
         for ( int i=0; i<this->qtf_wl_heads_np; i++ )
         {
