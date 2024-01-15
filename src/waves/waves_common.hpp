@@ -62,7 +62,7 @@ cuscomplex  wave_potential_so_space(
                                             cusfloat            y,
                                             cusfloat            z,
                                             WaveDispersionSO*   wd,
-                                            bool                is_diff
+                                            int                 qtf_type
                                     );
 
 cuscomplex  wave_potential_so_space_dx( 
@@ -70,7 +70,7 @@ cuscomplex  wave_potential_so_space_dx(
                                             cusfloat            y,
                                             cusfloat            z,
                                             WaveDispersionSO*   wd,
-                                            bool                is_diff
+                                            int                 qtf_type
                                     );
 
 cuscomplex  wave_potential_so_space_dy( 
@@ -78,7 +78,7 @@ cuscomplex  wave_potential_so_space_dy(
                                             cusfloat            y,
                                             cusfloat            z,
                                             WaveDispersionSO*   wd,
-                                            bool                is_diff
+                                            int                 qtf_type
                                     );
 
 cuscomplex  wave_potential_so_space_dz( 
@@ -86,7 +86,7 @@ cuscomplex  wave_potential_so_space_dz(
                                             cusfloat            y,
                                             cusfloat            z,
                                             WaveDispersionSO*   wd,
-                                            bool                is_diff
+                                            int                 qtf_type
                                     );
 
 cusfloat    wave_vertical_profile_fo(

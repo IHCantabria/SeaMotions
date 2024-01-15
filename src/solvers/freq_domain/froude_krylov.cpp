@@ -150,7 +150,7 @@ void    calculate_froude_krylov_so(
                                     MeshGroup*      mesh_gp,
                                     cusfloat        ang_freq_i,
                                     cusfloat        ang_freq_j,
-                                    bool            is_diff,
+                                    int             qtf_type,
                                     cuscomplex*     froude_krylov
                                 )
 {
@@ -171,7 +171,7 @@ void    calculate_froude_krylov_so(
     // wave potential for the desised heading
     auto    target_fcn  =   [ 
                                 wdso,
-                                is_diff
+                                qtf_type
                             ]
                             (
                                 cusfloat ,
@@ -186,7 +186,7 @@ void    calculate_froude_krylov_so(
                                                                     y,
                                                                     z,
                                                                     wdso,
-                                                                    is_diff
+                                                                    qtf_type
                                                                 );
                             };
 
@@ -209,7 +209,7 @@ void    calculate_froude_krylov_so(
     int         index           = 0;
     int         index_1         = 0;
     cuscomplex  press_i         = cuscomplex( 0.0, 0.0 );
-    cusfloat    w_ds            = wdso->get_w_ds( is_diff );
+    cusfloat    w_ds            = wdso->get_w_ds( qtf_type );
 
     for ( int ih1=0; ih1<input->heads_np; ih1++ )
     {

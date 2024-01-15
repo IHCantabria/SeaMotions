@@ -12,7 +12,7 @@ void    calculate_secord_force_indirect(
                                             MeshGroup*  mesh_gp,
                                             cusfloat    ang_freq_i,
                                             cusfloat    ang_freq_j,
-                                            bool        is_diff,
+                                            int         qtf_type,
                                             cuscomplex* froude_krylov,
                                             cuscomplex* body_force,
                                             cuscomplex* fs_near_field,

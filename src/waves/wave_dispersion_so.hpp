@@ -58,7 +58,7 @@ public:
 
     // Define class methods
     cusfloat    get_w_ds(
-                                bool    is_diff
+                                int     qtf_type
                         );
 
     void        set_new_data(

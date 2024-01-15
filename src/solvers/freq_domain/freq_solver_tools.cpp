@@ -1091,7 +1091,7 @@ void    freq_domain_linear_solver(
                                                             mesh_gp,
                                                             input->angfreqs[i],
                                                             input->angfreqs[j],
-                                                            true,
+                                                            QTF_DIFF_CODE,
                                                             sim_data->qtf_diff_froude_krylov_fo_p0,
                                                             sim_data->qtf_diff_body_force_p0,
                                                             sim_data->qtf_diff_fs_near_field_p0,

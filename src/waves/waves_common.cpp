@@ -1,5 +1,6 @@
 
 // Include general usage libraries
+#include <cassert>
 #include <iostream>
 
 // Include general usage scientific libraries
@@ -91,7 +92,7 @@ cuscomplex  wave_potential_so_space(
                                         cusfloat            y,
                                         cusfloat            z,
                                         WaveDispersionSO*   wd,
-                                        bool                is_diff
+                                        int                 qtf_type
                                     )
 {
     // Check if there is difference or summation term
@@ -102,7 +103,8 @@ cuscomplex  wave_potential_so_space(
     cusfloat    w_ds        = 0.0;
     cusfloat    w_k_ds      = 0.0;
 
-    if ( is_diff )
+    assert( ( ( qtf_type == 0 ) || ( qtf_type == 1 ) ) && "qtf_type should be 0 or 1" );
+    if ( qtf_type == 0 )
     {
         k_ds_mod        = wd->k_diff_mod;
         k_ds_vec[0]     = wd->k_diff_vec[0];
@@ -112,7 +114,7 @@ cuscomplex  wave_potential_so_space(
         w_ds            = wd->w_diff;
         w_k_ds          = wd->w_k_diff;
     }
-    else
+    else if ( qtf_type == 1 )
     {
         k_ds_mod        = wd->k_sum_mod;
         k_ds_vec[0]     = wd->k_sum_vec[0];
@@ -174,18 +176,19 @@ cuscomplex  wave_potential_so_space_dx(
                                         cusfloat            y,
                                         cusfloat            z,
                                         WaveDispersionSO*   wd,
-                                        bool                is_diff
+                                        int                 qtf_type
                                     )
 {
     // Check if there is difference or summation term
     cusfloat    k_ds_vec[2] = { 0.0, 0.0 };
 
-    if ( is_diff )
+    assert( ( ( qtf_type == 0 ) || ( qtf_type == 1 ) ) && "qtf_type should be 0 or 1" );
+    if ( qtf_type == 0 )
     {
         k_ds_vec[0]     = wd->k_diff_vec[0];
         k_ds_vec[1]     = wd->k_diff_vec[1];
     }
-    else
+    else if ( qtf_type == 1 )
     {
         k_ds_vec[0]     = wd->k_sum_vec[0];
         k_ds_vec[1]     = wd->k_sum_vec[1];
@@ -197,7 +200,7 @@ cuscomplex  wave_potential_so_space_dx(
                                                                         y,
                                                                         z,
                                                                         wd,
-                                                                        is_diff
+                                                                        qtf_type
                                                                 );
 
     return pot2;
@@ -209,18 +212,19 @@ cuscomplex  wave_potential_so_space_dy(
                                         cusfloat            y,
                                         cusfloat            z,
                                         WaveDispersionSO*   wd,
-                                        bool                is_diff
+                                        int                 qtf_type
                                     )
 {
     // Check if there is difference or summation term
     cusfloat    k_ds_vec[2] = { 0.0, 0.0 };
 
-    if ( is_diff )
+    assert( ( ( qtf_type == 0 ) || ( qtf_type == 1 ) ) && "qtf_type should be 0 or 1" );
+    if ( qtf_type == 0 )
     {
         k_ds_vec[0]     = wd->k_diff_vec[0];
         k_ds_vec[1]     = wd->k_diff_vec[1];
     }
-    else
+    else if ( qtf_type == 1 )
     {
         k_ds_vec[0]     = wd->k_sum_vec[0];
         k_ds_vec[1]     = wd->k_sum_vec[1];
@@ -232,7 +236,7 @@ cuscomplex  wave_potential_so_space_dy(
                                                                         y,
                                                                         z,
                                                                         wd,
-                                                                        is_diff
+                                                                        qtf_type
                                                                     );
 
     return pot2;
@@ -244,17 +248,18 @@ cuscomplex  wave_potential_so_space_dz(
                                         cusfloat            y,
                                         cusfloat            z,
                                         WaveDispersionSO*   wd,
-                                        bool                is_diff
+                                        int                 qtf_type
                                     )
 {
     // Check if there is difference or summation term
     cusfloat    k_ds_mod    = 0.0;
 
-    if ( is_diff )
+    assert( ( ( qtf_type == 0 ) || ( qtf_type == 1 ) ) && "qtf_type should be 0 or 1" );
+    if ( qtf_type == 0 )
     {
         k_ds_mod        = wd->k_diff_mod;
     }
-    else
+    else if ( qtf_type == 1 )
     {
         k_ds_mod        = wd->k_sum_mod;
     }
@@ -273,7 +278,7 @@ cuscomplex  wave_potential_so_space_dz(
                                                                 y,
                                                                 z,
                                                                 wd,
-                                                                is_diff
+                                                                qtf_type
                                                             );
 
     return pot2;
