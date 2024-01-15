@@ -309,31 +309,19 @@ void    freq_domain_linear_solver(
 
     if ( input->out_qtf )
     {
-        // Add body data variables storage for the calculation of the QTF
-        sim_data->add_qtf_body_data(
-                                        mesh_gp->panels_raddif_tnp,
-                                        input->gauss_np_factor_2d( ),
-                                        input->angfreqs_np
-                                    );
-
-        // Add matrixes to storage the QTF force values
-        sim_data->add_qtf_data( 
+        // Add data variables to storage the QTF terms values
+        sim_data->add_qtf_data(
                                     input->angfreqs_np
                                 );
-
-        // Add raos storage for the calculation of the QTF. This is to avoid
-        // reading data from disk which would be much slower.
-        sim_data->add_qtf_raos_data(
-                                        input->angfreqs_np
-                                    );
-
-        // Add WL data variables storage for the calculation of the QTF
-        sim_data->add_qtf_wl_data(
+        
+        // Add data variables storage for the calculation of the QTF
+        sim_data->add_qtf_base_data(
+                                        mesh_gp->panels_raddif_tnp,
+                                        input->gauss_np_factor_2d( ),
                                         mesh_gp->panels_wl_tnp,
                                         input->gauss_np_factor_1d( ),
-                                        input->angfreqs_np,
-                                        input->out_qtf_so_model
-                                );
+                                        input->angfreqs_np
+                                    );
     }
 
     /****************************************************************/
@@ -805,22 +793,14 @@ void    freq_domain_linear_solver(
                 // Check if QTF calcuation is required to storage panel information
                 if ( input->out_qtf )
                 {
-                    sim_data->storage_qtf_body_freq( 
+                    sim_data->storage_qtf_base_freq(
                                                         i,
                                                         sim_data->mdrift_body_vel_x_total,
                                                         sim_data->mdrift_body_vel_y_total,
-                                                        sim_data->mdrift_body_vel_z_total
-                                                    );
-
-                    sim_data->storage_qtf_raos_freq(
-                                                        i,
-                                                        sim_data->raos
-                                                    );
-
-                    sim_data->storage_qtf_wl_freq(
-                                                        i,
+                                                        sim_data->mdrift_body_vel_z_total,
+                                                        sim_data->raos,
                                                         sim_data->mdrift_wl_rel_we
-                                                );
+                                                    );
                 }
             }
         }

@@ -14,11 +14,8 @@ private:
     // Declare private class attributes
     Input*          _input                      = nullptr;
     bool            _is_mdrift                  = false;
-    bool            _is_qtf_body_freq           = false;
+    bool            _is_qtf_base_freq           = false;
     bool            _is_qtf_data                = false;
-    bool            _is_qtf_fs_freq             = false;
-    bool            _is_qtf_raos_freq           = false;
-    bool            _is_qtf_wl_freq             = false;
     MpiConfig*      _mpi_config                 = nullptr;
 
 public:
@@ -142,22 +139,13 @@ public:
                                     int freqs_np
                         );
 
-    void    add_qtf_body_data(
+    void    add_qtf_base_data(
                                     int body_panels_tnp,
                                     int body_gp_np,
-                                    int freqs_np
-                            );
-
-    void    add_qtf_raos_data(
-                                    int freqs_np
-                            );
-
-    void    add_qtf_wl_data(
                                     int wl_panels_tnp,
                                     int wl_gp_np,
-                                    int freqs_np,
-                                    int second_order_model
-                                );
+                                    int freqs_np
+                            );
 
     int     get_heads_np(
                                     int panels_tnp,
@@ -169,20 +157,12 @@ public:
                                     int body_gp_np
                         );
 
-    void    storage_qtf_body_freq(
+    void    storage_qtf_base_freq(
                                     int         freq_num,
                                     cuscomplex* qtf_body_vel_x_total,
                                     cuscomplex* qtf_body_vel_y_total,
-                                    cuscomplex* qtf_body_vel_z_total
-                                );
-
-    void    storage_qtf_raos_freq(
-                                    int         freq_num,
-                                    cuscomplex* raos
-                                );
-
-    void    storage_qtf_wl_freq(
-                                    int         freq_num,
+                                    cuscomplex* qtf_body_vel_z_total,
+                                    cuscomplex* raos,
                                     cuscomplex* qtf_wl_we_total
                                 );
     
