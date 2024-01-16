@@ -201,6 +201,12 @@ template<typename T>    inline  void        sv_div(
                                                                         T* v, 
                                                                         T* w
                                                     );
+
+template<typename T>    inline  T           sv_dot(
+                                                                        int n,
+                                                                        T* u,
+                                                                        T* v
+                                                    );
         
 template<typename T>    inline  void        sv_inv(
                                                                         int n, 

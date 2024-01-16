@@ -278,6 +278,23 @@ inline void sv_div(int n, T* u, T* v, T* w)
 }
 
 
+template<typename T>    
+inline  T   sv_dot(
+                        int n,
+                        T* u,
+                        T* v
+                    )
+{
+    T value = 0;
+    for ( int i=0; i<n; i++ )
+    {
+        value += u[i] * v[i];
+    }
+
+    return value;
+}
+
+
 template<typename T>
 inline void sv_inv(int n, T s, T* u, T* w)
 {
