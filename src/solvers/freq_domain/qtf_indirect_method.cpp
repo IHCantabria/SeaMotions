@@ -20,8 +20,8 @@ void    calculate_qtf_indirect_body_term(
                                             int             qtf_type,
                                             cuscomplex*     raos_i,
                                             cuscomplex*     raos_j,
-                                            cuscomplex*     fluid_body_pot_i,
-                                            cuscomplex*     fluid_body_pot_j,
+                                            cuscomplex*     fluid_body_pot_raddif_i,
+                                            cuscomplex*     fluid_body_pot_raddif_j,
                                             cuscomplex*     fluid_body_vel_raddif_x_i,
                                             cuscomplex*     fluid_body_vel_raddif_y_i,
                                             cuscomplex*     fluid_body_vel_raddif_z_i,
@@ -34,6 +34,14 @@ void    calculate_qtf_indirect_body_term(
                                             cuscomplex*     fluid_body_vel_total_x_j,
                                             cuscomplex*     fluid_body_vel_total_y_j,
                                             cuscomplex*     fluid_body_vel_total_z_j,
+                                            cuscomplex*     fluid_wl_pot_raddif_i,
+                                            cuscomplex*     fluid_wl_pot_raddif_j,
+                                            cuscomplex*     fluid_wl_vel_x_total_i,
+                                            cuscomplex*     fluid_wl_vel_y_total_i,
+                                            cuscomplex*     fluid_wl_vel_z_total_i,
+                                            cuscomplex*     fluid_wl_vel_x_total_j,
+                                            cuscomplex*     fluid_wl_vel_y_total_j,
+                                            cuscomplex*     fluid_wl_vel_z_total_j,
                                             SimulationData* sim_data,
                                             MLGCmpx*        body_gp,
                                             MLGCmpx*        wl_gp,
@@ -106,7 +114,9 @@ void    calculate_qtf_indirect_body_term(
         w_ds = ang_freq_i + ang_freq_j;
     }
 
-    // Calculate first body term
+    /************************************************************************/
+    /********************* Calculate first body term ************************/
+    /************************************************************************/
     for ( int ih1=0; ih1<input->heads_np; ih1++ )
     {
         for ( int ih2=0; ih2<input->heads_np; ih2++ )
@@ -278,11 +288,11 @@ void    calculate_qtf_indirect_body_term(
                                 // Get radiation potential
                                 if ( qtf_type == 0 )
                                 {
-                                    psi_ds = fluid_body_pot_i[idx2] - fluid_body_pot_j[idx2];
+                                    psi_ds = fluid_body_pot_raddif_i[idx2] - fluid_body_pot_raddif_j[idx2];
                                 }
                                 else
                                 {
-                                    psi_ds = fluid_body_pot_i[idx2] + fluid_body_pot_j[idx2];
+                                    psi_ds = fluid_body_pot_raddif_i[idx2] + fluid_body_pot_raddif_j[idx2];
                                 }
 
                                 // Get total force
@@ -296,7 +306,9 @@ void    calculate_qtf_indirect_body_term(
         }
     }
 
-    // Calculate second body term
+    /************************************************************************/
+    /******************** Calculate second body term ************************/
+    /************************************************************************/
     for ( int ih1=0; ih1<input->heads_np; ih1++ )
     {
         for ( int ih2=0; ih2<input->heads_np; ih2++ )
@@ -423,6 +435,123 @@ void    calculate_qtf_indirect_body_term(
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+
+    /************************************************************************/
+    /******************* Calculate thrid body term WL ***********************/
+    /************************************************************************/
+    for ( int ih1=0; ih1<input->heads_np; ih1++ )
+    {
+        for ( int ih2=0; ih2<input->heads_np; ih2++ )
+        {
+            for ( int j=0; j<mesh_gp->meshes_np; j++ )
+            {
+                idx0 = (
+                            ih1 * ( input->dofs_np * input->bodies_np * input->heads_np )
+                            +
+                            ih2 * ( input->dofs_np * input->bodies_np )
+                            +
+                            j * input->dofs_np
+                        );
+
+                for ( int k=wl_gp->field_points_cnp[j]/ngpf_1d; k<wl_gp->field_points_cnp[j+1]/ngpf_1d; k++ )
+                {
+                    panel_k = mesh_gp->panels_wl[k];
+                    int_mod = cuscomplex( 0.0, 0.0 );
+
+                    // Translate normal vector to complex form
+                    for ( int r=0; r<3; r++ )
+                    {
+                        normal_vec_c[r] = cuscomplex( panel_k->normal_vec[r], 0.0 );
+                    }
+
+                    for ( int gpi=0; gpi<input->gauss_order; gpi++ )
+                    {
+                        // Get indexes for heading dependent data
+                        idx1_b = k * ngp + gpi;
+                        idx1_i = ih1 *  wl_gp->field_points_np + idx1_b;
+                        idx1_j = ih2 *  wl_gp->field_points_np + idx1_b;
+
+                        // Get RAO values for the current body
+                        for ( int r=0; r<3; r++ )
+                        {
+                            rao_rot_i[r]    = raos_i[idx1_i+3+r] * input->wave_amplitude;
+                            rao_rot_j[r]    = raos_j[idx1_j+3+r] * input->wave_amplitude;
+                            rao_trans_i[r]  = raos_i[idx1_i+r]   * input->wave_amplitude;
+                            rao_trans_j[r]  = raos_j[idx1_j+r]   * input->wave_amplitude;
+                        }
+
+                        // Get total fluid velocity components
+                        fluid_body_vel_total_i[0]   = fluid_body_vel_total_x_i[idx1_i];
+                        fluid_body_vel_total_i[1]   = fluid_body_vel_total_y_i[idx1_i];
+                        fluid_body_vel_total_i[2]   = fluid_body_vel_total_z_i[idx1_i];
+
+                        fluid_body_vel_total_j[0]   = fluid_body_vel_total_x_j[idx1_j];
+                        fluid_body_vel_total_j[1]   = fluid_body_vel_total_y_j[idx1_j];
+                        fluid_body_vel_total_j[2]   = fluid_body_vel_total_z_j[idx1_j];
+
+                        // Calculate panel field points displacement
+                        calculate_field_point_rot(
+                                                        rao_trans_i,
+                                                        rao_rot_i,
+                                                        &(wl_gp->field_points[3*idx1_b]),
+                                                        panel_k->body_cog,
+                                                        field_point_pos_i
+                                                    );
+
+                        calculate_field_point_rot(
+                                                        rao_trans_j,
+                                                        rao_rot_j,
+                                                        &(wl_gp->field_points[3*idx1_b]),
+                                                        panel_k->body_cog,
+                                                        field_point_pos_j
+                                                    );
+
+                        // Check for conjugated quantities
+                        if ( qtf_type == 0 )
+                        {
+                            conj_vector( 3, field_point_pos_j, field_point_pos_j );
+                            conj_vector( 3, fluid_body_vel_total_j, fluid_body_vel_total_j );
+                        }
+
+                        // Calculate cross product in between field point displacement and the 
+                        // total velocity vector
+                        cross( field_point_pos_i, fluid_body_vel_total_j, ca_i );
+                        cross( field_point_pos_j, fluid_body_vel_total_i, ca_j );
+
+                        // Loop over 6 DOFs in order to calculate the contribution for each of them
+                        for ( int r=0; r<input->dofs_np; r++ )
+                        {
+                            // Get index for radiation values
+                            idx2   = r * wl_gp->field_points_nb + idx1_b;
+
+                            // Get radiation potential
+                            if ( qtf_type == 0 )
+                            {
+                                psi_ds = fluid_wl_pot_raddif_i[idx2] - fluid_wl_pot_raddif_j[idx2];
+                            }
+                            else
+                            {
+                                psi_ds = fluid_wl_pot_raddif_i[idx2] + fluid_wl_pot_raddif_j[idx2];
+                            }
+
+                            // Get integrand value
+                            sv_add(  3, ca_i, ca_j, cb_i );
+                            svs_mult( 3, cb_i, psi_ds, cb_i );
+                            val_mod = sv_dot( 3, cb_i, normal_vec_c );
+
+                            // Get gauss integral chunk value
+                            int_mod = val_mod * gp.weights[gpi] * panel_k->len_wl / 2.0;
+
+                            // Add to QTF body force object and scale the gauss integral chunk value
+                            qtf_body_force[idx0+r] += cuscomplex( 0.0, - w_ds * rho_w / 2.0 ) * int_mod;
+                        }
+
+                    }
+
                 }
             }
         }
