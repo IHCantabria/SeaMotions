@@ -207,6 +207,13 @@ template<typename T>    inline  T           sv_dot(
                                                                         T* u,
                                                                         T* v
                                                     );
+
+template<typename T>    inline  void        sv_dot_vm(
+                                                                        int n,
+                                                                        T*  vec,
+                                                                        T*  mat,
+                                                                        T*  vec_out
+                                                    );
         
 template<typename T>    inline  void        sv_inv(
                                                                         int n, 

@@ -296,6 +296,25 @@ inline  T   sv_dot(
 
 
 template<typename T>
+inline void sv_dot_vm(
+                        int n,
+                        T*  vec,
+                        T*  mat,
+                        T*  vec_out
+                    )
+{
+    for ( int i=0; i<n; i++ )
+    {
+        vec_out[i]  = 0.0;
+        for ( int j=0; j<n; j++ )
+        {
+            vec_out[i] += vec[j] * mat[j*n+i];
+        }
+    }
+}
+
+
+template<typename T>
 inline void sv_inv(int n, T s, T* u, T* w)
 {
     for (int i=0; i<n; i++)
