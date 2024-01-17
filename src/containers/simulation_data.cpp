@@ -25,6 +25,9 @@ void    SimulationData::add_mean_drift_data(
         this->mdrift_bern                   = generate_empty_vector<cuscomplex>( this->wave_exc_np );
         this->mdrift_acc                    = generate_empty_vector<cuscomplex>( this->wave_exc_np );
         this->mdrift_mom                    = generate_empty_vector<cuscomplex>( this->wave_exc_np );
+        this->mdrift_body_pot_fk            = generate_empty_vector<cuscomplex>( body_heads_np );
+        this->mdrift_body_pot_raddif        = generate_empty_vector<cuscomplex>( body_raddif_np );
+        this->mdrift_body_pot_total         = generate_empty_vector<cuscomplex>( body_heads_np );
         this->mdrift_body_vel_x_fk          = generate_empty_vector<cuscomplex>( body_heads_np );
         this->mdrift_body_vel_y_fk          = generate_empty_vector<cuscomplex>( body_heads_np );
         this->mdrift_body_vel_z_fk          = generate_empty_vector<cuscomplex>( body_heads_np );
@@ -273,6 +276,9 @@ SimulationData::~SimulationData(
             mkl_free( this->mdrift_bern );
             mkl_free( this->mdrift_acc );
             mkl_free( this->mdrift_mom );
+            mkl_free( this->mdrift_body_pot_fk     );
+            mkl_free( this->mdrift_body_pot_raddif );
+            mkl_free( this->mdrift_body_pot_total  );
             mkl_free( this->mdrift_body_vel_x_fk );
             mkl_free( this->mdrift_body_vel_y_fk );
             mkl_free( this->mdrift_body_vel_z_fk );

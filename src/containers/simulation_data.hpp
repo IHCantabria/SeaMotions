@@ -35,6 +35,9 @@ public:
     cuscomplex*     mdrift                              = nullptr;
     cuscomplex*     mdrift_acc                          = nullptr;
     cuscomplex*     mdrift_bern                         = nullptr;
+    cuscomplex*     mdrift_body_pot_fk                  = nullptr;
+    cuscomplex*     mdrift_body_pot_raddif              = nullptr;
+    cuscomplex*     mdrift_body_pot_total               = nullptr;
     cuscomplex*     mdrift_body_vel_x_fk                = nullptr;
     cuscomplex*     mdrift_body_vel_y_fk                = nullptr;
     cuscomplex*     mdrift_body_vel_z_fk                = nullptr;
