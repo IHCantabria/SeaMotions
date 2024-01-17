@@ -9,6 +9,25 @@
 #include "../../mesh/mesh_group.hpp"
 
 
+void        calculate_field_point_rot(
+                                                cuscomplex*     raos_trans,
+                                                cuscomplex*     raos_rot,
+                                                cusfloat*       field_point,
+                                                cusfloat*       cog,
+                                                cuscomplex*     point_disp
+                                    );
+
+
+void        calculate_field_point_vel_rot(
+                                                cuscomplex*     raos_trans,
+                                                cuscomplex*     raos_rot,
+                                                cusfloat*       field_point,
+                                                cusfloat*       cog,
+                                                cusfloat        ang_freq,
+                                                cuscomplex*     point_disp
+                                        );
+
+
 std::string compose_dof_path( 
                                                 std::string     base_path,
                                                 int             dofs_num,

@@ -10,6 +10,67 @@
 #include "../../math/gauss.hpp"
 
 
+void        calculate_field_point_rot(
+                                                cuscomplex*     raos_trans,
+                                                cuscomplex*     raos_rot,
+                                                cusfloat*       field_point,
+                                                cusfloat*       cog,
+                                                cuscomplex*     point_disp
+                                    )
+{
+    // Define vector from cog to field point
+    cuscomplex cog_to_fp_c[3];      clear_vector( 3, cog_to_fp_c );
+    for ( int r=0; r<3; r++ )
+    {
+        cog_to_fp_c[r]  = cuscomplex( field_point[r] - cog[r], 0.0 );
+    }
+
+    // Calculate first order displacement of the panel centre
+    clear_vector( 3, point_disp );
+
+    cross(
+                raos_rot,
+                cog_to_fp_c,
+                point_disp
+        );
+    sv_add(
+                3,
+                point_disp,
+                raos_trans,
+                point_disp
+            );
+}
+
+
+void        calculate_field_point_vel_rot(
+                                                cuscomplex*     raos_trans,
+                                                cuscomplex*     raos_rot,
+                                                cusfloat*       field_point,
+                                                cusfloat*       cog,
+                                                cusfloat        ang_freq,
+                                                cuscomplex*     point_disp
+                                        )
+{
+    // Calculate point position
+    calculate_field_point_rot(
+                                    raos_trans,
+                                    raos_rot,
+                                    field_point,
+                                    cog,
+                                    point_disp
+                                );
+
+    // Scale with angular frequency in order to
+    // obtain the point velocity
+    svs_mult( 
+                3,
+                point_disp,
+                cuscomplex( 0.0, -ang_freq ),
+                point_disp
+            );
+}
+
+
 std::string compose_dof_path( 
                                                 std::string     base_path,
                                                 int             dofs_num,
