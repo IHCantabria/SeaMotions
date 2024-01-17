@@ -18,6 +18,12 @@ void        calculate_field_point_rot(
                                     );
 
 
+void        calculate_field_point_rot_jac(
+                                                cuscomplex*     raos_rot,
+                                                cuscomplex*     jac
+                                        );
+
+
 void        calculate_field_point_vel_rot(
                                                 cuscomplex*     raos_trans,
                                                 cuscomplex*     raos_rot,

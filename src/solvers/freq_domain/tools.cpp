@@ -42,6 +42,23 @@ void        calculate_field_point_rot(
 }
 
 
+void        calculate_field_point_rot_jac(
+                                                cuscomplex*     raos_rot,
+                                                cuscomplex*     jac
+                                            )
+{
+    jac[0]  =   cuscomplex( 0.0, 0.0 );
+    jac[1]  = - raos_rot[2];
+    jac[2]  =   raos_rot[1];
+    jac[3]  =   raos_rot[2];
+    jac[4]  =   cuscomplex( 0.0, 0.0 );
+    jac[5]  = - raos_rot[0];
+    jac[6]  = - raos_rot[1];
+    jac[7]  =   raos_rot[0];
+    jac[8]  =   cuscomplex( 0.0, 0.0 );
+}
+
+
 void        calculate_field_point_vel_rot(
                                                 cuscomplex*     raos_trans,
                                                 cuscomplex*     raos_rot,
