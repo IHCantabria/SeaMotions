@@ -62,10 +62,8 @@ public:
     cuscomplex*     mdrift_wl_we_total                  = nullptr;
     cuscomplex*     qtf                                 = nullptr;
     int             qtf_body_heads_np                   = 0;
+    cuscomplex*     qtf_body_pot_raddif_freq            = nullptr;
     int             qtf_body_raddif_np                  = 0;
-    cuscomplex*     qtf_body_vel_x_raddif_freq          = nullptr;
-    cuscomplex*     qtf_body_vel_y_raddif_freq          = nullptr;
-    cuscomplex*     qtf_body_vel_z_raddif_freq          = nullptr;
     cuscomplex*     qtf_body_vel_x_total_freq           = nullptr;
     cuscomplex*     qtf_body_vel_y_total_freq           = nullptr;
     cuscomplex*     qtf_body_vel_z_total_freq           = nullptr;
@@ -110,10 +108,8 @@ public:
     cuscomplex*     qtf_sum_wl                          = nullptr;
     cuscomplex*     qtf_sum_wl_freqs                    = nullptr;
     int             qtf_wl_heads_np                     = 0;
+    cuscomplex*     qtf_wl_pot_raddif_freq              = nullptr;
     int             qtf_wl_raddif_np                    = 0;
-    cuscomplex*     qtf_wl_vel_x_raddif_freq            = nullptr;
-    cuscomplex*     qtf_wl_vel_y_raddif_freq            = nullptr;
-    cuscomplex*     qtf_wl_vel_z_raddif_freq            = nullptr;
     cuscomplex*     qtf_wl_vel_x_total_freq             = nullptr;
     cuscomplex*     qtf_wl_vel_y_total_freq             = nullptr;
     cuscomplex*     qtf_wl_vel_z_total_freq             = nullptr;
@@ -195,15 +191,11 @@ public:
 
     void    storage_qtf_indirect_freq(
                                         int         freq_num,
-                                        cuscomplex* qtf_body_vel_x_raddif,
-                                        cuscomplex* qtf_body_vel_y_raddif,
-                                        cuscomplex* qtf_body_vel_z_raddif,
-                                        cuscomplex* qtf_wl_vel_x_raddif_freq,
-                                        cuscomplex* qtf_wl_vel_y_raddif_freq,
-                                        cuscomplex* qtf_wl_vel_z_raddif_freq,
-                                        cuscomplex* qtf_wl_vel_x_total_freq,
-                                        cuscomplex* qtf_wl_vel_y_total_freq,
-                                        cuscomplex* qtf_wl_vel_z_total_freq
+                                        cuscomplex* qtf_body_pot_raddif,
+                                        cuscomplex* qtf_wl_pot_raddif,
+                                        cuscomplex* qtf_wl_vel_x_total,
+                                        cuscomplex* qtf_wl_vel_y_total,
+                                        cuscomplex* qtf_wl_vel_z_total
                                     );
     
 };

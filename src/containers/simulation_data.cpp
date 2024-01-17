@@ -169,12 +169,8 @@ void    SimulationData::add_qtf_indirect_data(
         this->mdrift_wl_vel_x_total         = generate_empty_vector<cuscomplex>( this->qtf_wl_heads_np );
         this->mdrift_wl_vel_y_total         = generate_empty_vector<cuscomplex>( this->qtf_wl_heads_np );
         this->mdrift_wl_vel_z_total         = generate_empty_vector<cuscomplex>( this->qtf_wl_heads_np );
-        this->qtf_body_vel_x_raddif_freq    = generate_empty_vector<cuscomplex>( body_raddif_freq_np );
-        this->qtf_body_vel_y_raddif_freq    = generate_empty_vector<cuscomplex>( body_raddif_freq_np );
-        this->qtf_body_vel_z_raddif_freq    = generate_empty_vector<cuscomplex>( body_raddif_freq_np );
-        this->qtf_wl_vel_x_raddif_freq      = generate_empty_vector<cuscomplex>( wl_freqs_raddif_np );
-        this->qtf_wl_vel_y_raddif_freq      = generate_empty_vector<cuscomplex>( wl_freqs_raddif_np );
-        this->qtf_wl_vel_z_raddif_freq      = generate_empty_vector<cuscomplex>( wl_freqs_raddif_np );
+        this->qtf_body_pot_raddif_freq      = generate_empty_vector<cuscomplex>( body_raddif_freq_np );
+        this->qtf_wl_pot_raddif_freq        = generate_empty_vector<cuscomplex>( wl_freqs_raddif_np );
         this->qtf_wl_vel_x_total_freq       = generate_empty_vector<cuscomplex>( wl_freqs_heads_np );
         this->qtf_wl_vel_y_total_freq       = generate_empty_vector<cuscomplex>( wl_freqs_heads_np );
         this->qtf_wl_vel_z_total_freq       = generate_empty_vector<cuscomplex>( wl_freqs_heads_np );
@@ -377,12 +373,8 @@ SimulationData::~SimulationData(
         mkl_free( this->mdrift_wl_vel_x_total       );
         mkl_free( this->mdrift_wl_vel_y_total       );
         mkl_free( this->mdrift_wl_vel_z_total       );
-        mkl_free( this->qtf_body_vel_x_raddif_freq  );
-        mkl_free( this->qtf_body_vel_y_raddif_freq  );
-        mkl_free( this->qtf_body_vel_z_raddif_freq  );
-        mkl_free( this->qtf_wl_vel_x_raddif_freq    );
-        mkl_free( this->qtf_wl_vel_y_raddif_freq    );
-        mkl_free( this->qtf_wl_vel_z_raddif_freq    );
+        mkl_free( this->qtf_body_pot_raddif_freq    );
+        mkl_free( this->qtf_wl_pot_raddif_freq      );
         mkl_free( this->qtf_wl_vel_x_total_freq     );
         mkl_free( this->qtf_wl_vel_y_total_freq     );
         mkl_free( this->qtf_wl_vel_z_total_freq     );
@@ -438,12 +430,8 @@ void    SimulationData::storage_qtf_base_freq(
 
 void    SimulationData::storage_qtf_indirect_freq(
                                                     int         freq_num,
-                                                    cuscomplex* qtf_body_vel_x_raddif,
-                                                    cuscomplex* qtf_body_vel_y_raddif,
-                                                    cuscomplex* qtf_body_vel_z_raddif,
-                                                    cuscomplex* qtf_wl_vel_x_raddif,
-                                                    cuscomplex* qtf_wl_vel_y_raddif,
-                                                    cuscomplex* qtf_wl_vel_z_raddif,
+                                                    cuscomplex* qtf_body_pot_raddif,
+                                                    cuscomplex* qtf_wl_pot_raddif,
                                                     cuscomplex* qtf_wl_vel_x_total,
                                                     cuscomplex* qtf_wl_vel_y_total,
                                                     cuscomplex* qtf_wl_vel_z_total
@@ -458,9 +446,7 @@ void    SimulationData::storage_qtf_indirect_freq(
         for ( int i=0; i<this->qtf_body_raddif_np; i++ )
         {
             idx1 = idx0 + i;
-            this->qtf_body_vel_x_raddif_freq[idx1]   = qtf_body_vel_x_raddif[i];
-            this->qtf_body_vel_y_raddif_freq[idx1]   = qtf_body_vel_y_raddif[i];
-            this->qtf_body_vel_z_raddif_freq[idx1]   = qtf_body_vel_z_raddif[i];
+            this->qtf_body_pot_raddif_freq[idx1] = qtf_body_pot_raddif[i];
         }
 
         // Storage WL velocity raddiation data
@@ -470,9 +456,7 @@ void    SimulationData::storage_qtf_indirect_freq(
         for ( int i=0; i<this->qtf_wl_raddif_np; i++ )
         {
             idx1 = idx0 + i;
-            this->qtf_wl_vel_x_raddif_freq[idx1] = qtf_wl_vel_x_raddif[i];
-            this->qtf_wl_vel_y_raddif_freq[idx1] = qtf_wl_vel_y_raddif[i];
-            this->qtf_wl_vel_z_raddif_freq[idx1] = qtf_wl_vel_z_raddif[i];
+            this->qtf_wl_pot_raddif_freq[idx1] = qtf_wl_pot_raddif[i];
         }
 
         // Storage WL velocity total data
