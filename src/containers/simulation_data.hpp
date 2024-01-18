@@ -47,6 +47,18 @@ public:
     cuscomplex*     mdrift_body_vel_x_total             = nullptr;
     cuscomplex*     mdrift_body_vel_y_total             = nullptr;
     cuscomplex*     mdrift_body_vel_z_total             = nullptr;
+    cuscomplex*     mdrift_fs_pot_fk                    = nullptr;
+    cuscomplex*     mdrift_fs_pot_raddif                = nullptr;
+    cuscomplex*     mdrift_fs_pot_total                 = nullptr;
+    cuscomplex*     mdrift_fs_vel_x_fk                  = nullptr;
+    cuscomplex*     mdrift_fs_vel_y_fk                  = nullptr;
+    cuscomplex*     mdrift_fs_vel_z_fk                  = nullptr;
+    cuscomplex*     mdrift_fs_vel_x_raddif              = nullptr;
+    cuscomplex*     mdrift_fs_vel_y_raddif              = nullptr;
+    cuscomplex*     mdrift_fs_vel_z_raddif              = nullptr;
+    cuscomplex*     mdrift_fs_vel_x_total               = nullptr;
+    cuscomplex*     mdrift_fs_vel_y_total               = nullptr;
+    cuscomplex*     mdrift_fs_vel_z_total               = nullptr;
     cuscomplex*     mdrift_mom                          = nullptr;
     cuscomplex*     mdrift_wl                           = nullptr;
     cuscomplex*     mdrift_wl_rel_we                    = nullptr;
@@ -92,6 +104,16 @@ public:
     cuscomplex*     qtf_diff_secord_force_freqs         = nullptr;
     cuscomplex*     qtf_diff_wl                         = nullptr;
     cuscomplex*     qtf_diff_wl_freqs                   = nullptr;
+    int             qtf_fs_heads_np                     = 0;
+    cuscomplex*     qtf_fs_pot_raddif_freq              = nullptr;
+    cuscomplex*     qtf_fs_pot_total_freq               = nullptr;
+    int             qtf_fs_raddif_np                    = 0;
+    cuscomplex*     qtf_fs_vel_x_raddif_freq            = nullptr;
+    cuscomplex*     qtf_fs_vel_y_raddif_freq            = nullptr;
+    cuscomplex*     qtf_fs_vel_z_raddif_freq            = nullptr;
+    cuscomplex*     qtf_fs_vel_x_total_freq             = nullptr;
+    cuscomplex*     qtf_fs_vel_y_total_freq             = nullptr;
+    cuscomplex*     qtf_fs_vel_z_total_freq             = nullptr;
     int             qtf_np                              = 0;
     cuscomplex*     qtf_raos_freq                       = nullptr;
     cuscomplex*     qtf_sum_acc                         = nullptr;
@@ -171,6 +193,8 @@ public:
     void    add_qtf_indirect_data(
                                         int body_panels_tnp,
                                         int body_gp_np,
+                                        int fs_panels_tnp,
+                                        int fs_gp_np,
                                         int wl_panels_tnp,
                                         int wl_gp_np,
                                         int freqs_np
@@ -201,6 +225,14 @@ public:
                                         cuscomplex* qtf_body_vel_x_raddif,
                                         cuscomplex* qtf_body_vel_y_raddif,
                                         cuscomplex* qtf_body_vel_z_raddif,
+                                        cuscomplex* qtf_fs_pot_raddif,
+                                        cuscomplex* qtf_fs_pot_total,
+                                        cuscomplex* qtf_fs_vel_x_raddif,
+                                        cuscomplex* qtf_fs_vel_y_raddif,
+                                        cuscomplex* qtf_fs_vel_z_raddif,
+                                        cuscomplex* qtf_fs_vel_x_total,
+                                        cuscomplex* qtf_fs_vel_y_total,
+                                        cuscomplex* qtf_fs_vel_z_total,
                                         cuscomplex* qtf_wl_pot_raddif,
                                         cuscomplex* qtf_wl_vel_x_total,
                                         cuscomplex* qtf_wl_vel_y_total,
