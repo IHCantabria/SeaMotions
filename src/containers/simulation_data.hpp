@@ -108,9 +108,9 @@ public:
     cuscomplex*     qtf_fs_pot_raddif_freq              = nullptr;
     cuscomplex*     qtf_fs_pot_total_freq               = nullptr;
     int             qtf_fs_raddif_np                    = 0;
-    cuscomplex*     qtf_fs_vel_x_raddif_freq            = nullptr;
-    cuscomplex*     qtf_fs_vel_y_raddif_freq            = nullptr;
-    cuscomplex*     qtf_fs_vel_z_raddif_freq            = nullptr;
+    cuscomplex*     qtf_fs_vel_x_fk_freq                = nullptr;
+    cuscomplex*     qtf_fs_vel_y_fk_freq                = nullptr;
+    cuscomplex*     qtf_fs_vel_z_fk_freq                = nullptr;
     cuscomplex*     qtf_fs_vel_x_total_freq             = nullptr;
     cuscomplex*     qtf_fs_vel_y_total_freq             = nullptr;
     cuscomplex*     qtf_fs_vel_z_total_freq             = nullptr;
