@@ -1134,6 +1134,7 @@ void    freq_domain_linear_solver(
                                                                 sim_data->mdrift_body_vel_x_raddif,
                                                                 sim_data->mdrift_body_vel_y_raddif,
                                                                 sim_data->mdrift_body_vel_z_raddif,
+                                                                sim_data->mdrift_fs_pot_fk,
                                                                 sim_data->mdrift_fs_pot_raddif,
                                                                 sim_data->mdrift_fs_pot_total,
                                                                 sim_data->mdrift_fs_vel_x_fk,

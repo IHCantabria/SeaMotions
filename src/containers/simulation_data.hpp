@@ -105,6 +105,7 @@ public:
     cuscomplex*     qtf_diff_wl                         = nullptr;
     cuscomplex*     qtf_diff_wl_freqs                   = nullptr;
     int             qtf_fs_heads_np                     = 0;
+    cuscomplex*     qtf_fs_pot_fk_freq                  = nullptr;
     cuscomplex*     qtf_fs_pot_raddif_freq              = nullptr;
     cuscomplex*     qtf_fs_pot_total_freq               = nullptr;
     int             qtf_fs_raddif_np                    = 0;
@@ -225,6 +226,7 @@ public:
                                         cuscomplex* qtf_body_vel_x_raddif,
                                         cuscomplex* qtf_body_vel_y_raddif,
                                         cuscomplex* qtf_body_vel_z_raddif,
+                                        cuscomplex* qtf_fs_pot_fk,
                                         cuscomplex* qtf_fs_pot_raddif,
                                         cuscomplex* qtf_fs_pot_total,
                                         cuscomplex* qtf_fs_vel_x_raddif,

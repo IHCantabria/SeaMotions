@@ -196,6 +196,7 @@ void    SimulationData::add_qtf_indirect_data(
         this->qtf_body_vel_x_raddif_freq    = generate_empty_vector<cuscomplex>( body_raddif_freq_np );
         this->qtf_body_vel_y_raddif_freq    = generate_empty_vector<cuscomplex>( body_raddif_freq_np );
         this->qtf_body_vel_z_raddif_freq    = generate_empty_vector<cuscomplex>( body_raddif_freq_np );
+        this->qtf_fs_pot_fk_freq            = generate_empty_vector<cuscomplex>( fs_freqs_heads_freq_np );
         this->qtf_fs_pot_raddif_freq        = generate_empty_vector<cuscomplex>( fs_freqs_raddif_freq_np );
         this->qtf_fs_pot_total_freq         = generate_empty_vector<cuscomplex>( fs_freqs_heads_freq_np );
         this->qtf_fs_vel_x_fk_freq          = generate_empty_vector<cuscomplex>( fs_freqs_heads_freq_np );
@@ -426,6 +427,7 @@ SimulationData::~SimulationData(
         mkl_free( this->qtf_body_vel_x_raddif_freq  );
         mkl_free( this->qtf_body_vel_y_raddif_freq  );
         mkl_free( this->qtf_body_vel_z_raddif_freq  );
+        mkl_free( this->qtf_fs_pot_fk_freq          );
         mkl_free( this->qtf_fs_pot_raddif_freq      );
         mkl_free( this->qtf_fs_pot_total_freq       );
         mkl_free( this->qtf_fs_vel_x_fk_freq        );
@@ -494,6 +496,7 @@ void    SimulationData::storage_qtf_indirect_freq(
                                                     cuscomplex* qtf_body_vel_x_raddif,
                                                     cuscomplex* qtf_body_vel_y_raddif,
                                                     cuscomplex* qtf_body_vel_z_raddif,
+                                                    cuscomplex* qtf_fs_pot_fk,
                                                     cuscomplex* qtf_fs_pot_raddif,
                                                     cuscomplex* qtf_fs_pot_total,
                                                     cuscomplex* qtf_fs_vel_x_fk,
@@ -540,6 +543,7 @@ void    SimulationData::storage_qtf_indirect_freq(
         for ( int i=0; i<this->qtf_fs_heads_np; i++ )
         {
             idx1 = idx0 + i;
+            this->qtf_fs_pot_fk_freq[idx1]       = qtf_fs_pot_fk[i];
             this->qtf_fs_pot_total_freq[idx1]    = qtf_fs_pot_total[i];
             this->qtf_fs_vel_x_fk_freq[idx1]     = qtf_fs_vel_x_fk[i];
             this->qtf_fs_vel_y_fk_freq[idx1]     = qtf_fs_vel_y_fk[i];
