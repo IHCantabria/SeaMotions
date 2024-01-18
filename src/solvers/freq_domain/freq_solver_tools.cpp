@@ -307,6 +307,7 @@ void    freq_domain_linear_solver(
                                                             );
     }
 
+    MatLinGroup<cuscomplex>*    qtf_body_pot_gp     = nullptr;
     MatLinGroup<cuscomplex>*    qtf_wl_vel_x_gp     = nullptr;
     MatLinGroup<cuscomplex>*    qtf_wl_vel_y_gp     = nullptr;
     MatLinGroup<cuscomplex>*    qtf_wl_vel_z_gp     = nullptr;
@@ -337,6 +338,18 @@ void    freq_domain_linear_solver(
                                             input->gauss_np_factor_1d( ),
                                             input->angfreqs_np
                                         );
+
+            qtf_body_pot_gp         = new MatLinGroup<cuscomplex>(
+                                                                    mesh_gp->panels_raddif_tnp * input->gauss_np_factor_2d( ),
+                                                                    ipm_cols_np,
+                                                                    mesh_gp->meshes_np,
+                                                                    ( input->dofs_np + input->heads_np ),
+                                                                    0,
+                                                                    ( mesh_gp->panels_raddif_tnp * input->gauss_np_factor_2d( ) ) - 1,
+                                                                    ipm_sc,
+                                                                    ipm_ed,
+                                                                    false
+                                                                );
 
             qtf_wl_vel_x_gp         = new MatLinGroup<cuscomplex>(
                                                                     mesh_gp->panels_wl_tnp * input->gauss_np_factor_1d( ),
@@ -412,6 +425,12 @@ void    freq_domain_linear_solver(
 
     if ( input->out_qtf_so_model == 1 )
     {
+        define_gauss_points_diffrac_panels( 
+                                                input, 
+                                                mesh_gp, 
+                                                qtf_body_pot_gp 
+                                            );
+
         define_gauss_points_wl(
                                     input,
                                     mesh_gp,
@@ -553,6 +572,12 @@ void    freq_domain_linear_solver(
 
     if ( input->out_qtf_so_model == 1 )
     {
+        calculate_influence_potmat_steady(
+                                                input,
+                                                mesh_gp,
+                                                qtf_body_pot_gp
+                                            );
+
         calculate_raddif_velocity_mat_steady(
                                                 input,
                                                 mesh_gp,
@@ -887,6 +912,22 @@ void    freq_domain_linear_solver(
 
                     if ( input->out_qtf_so_model == 1 )
                     {
+                        // Calculate potential field over the body
+                        calculate_fields_lin(
+                                                input,
+                                                mpi_config,
+                                                mesh_gp,
+                                                gwf_interf,
+                                                wave_potential_fo_space,
+                                                input->angfreqs[i],
+                                                sim_data->intensities,
+                                                sim_data->raos,
+                                                qtf_body_pot_gp,
+                                                sim_data->mdrift_body_pot_fk,
+                                                sim_data->mdrift_body_pot_raddif,
+                                                sim_data->mdrift_body_pot_total
+                                            );
+
                         // Calculate velocities field over the WL
                         calculate_fields_lin(
                                                 input,
@@ -937,12 +978,11 @@ void    freq_domain_linear_solver(
                         // using the indirect method
                         sim_data->storage_qtf_indirect_freq(
                                                                 i,
+                                                                sim_data->mdrift_body_pot_raddif,
                                                                 sim_data->mdrift_body_vel_x_raddif,
                                                                 sim_data->mdrift_body_vel_y_raddif,
                                                                 sim_data->mdrift_body_vel_z_raddif,
-                                                                sim_data->mdrift_wl_vel_x_raddif,
-                                                                sim_data->mdrift_wl_vel_y_raddif,
-                                                                sim_data->mdrift_wl_vel_z_raddif,
+                                                                sim_data->mdrift_wl_we_raddif,
                                                                 sim_data->mdrift_wl_vel_x_total,
                                                                 sim_data->mdrift_wl_vel_y_total,
                                                                 sim_data->mdrift_wl_vel_z_total
@@ -1391,6 +1431,7 @@ void    freq_domain_linear_solver(
 
     if ( input->out_qtf_so_model == 1 )
     {
+        delete qtf_body_pot_gp;
         delete qtf_wl_vel_x_gp;
         delete qtf_wl_vel_y_gp;
         delete qtf_wl_vel_z_gp;
