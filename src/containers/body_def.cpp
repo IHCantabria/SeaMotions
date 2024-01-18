@@ -9,6 +9,11 @@ BodyDef::~BodyDef( void )
     {
         delete this->mesh;
     }
+
+    if ( this->is_mesh_fs_qtf )
+    {
+        delete this->mesh_fs_qtf;
+    }
 }
 
 

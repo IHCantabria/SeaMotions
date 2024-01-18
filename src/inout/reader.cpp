@@ -31,6 +31,7 @@ void read_bodies(
 
         // Load body data
         read_body(
+                    input,
                     folder_path,
                     input->bodies_finame[i],
                     input->bodies[i]
@@ -44,6 +45,7 @@ void read_bodies(
 
 
 void read_body(
+                    Input*      input,
                     std::string folder_path,
                     std::string target_file,
                     BodyDef*    body
@@ -224,6 +226,23 @@ void read_body(
         {
             delete mi;
         }
+    }
+
+    // Load QTF free surface
+    if ( input->out_qtf_so_model > 0 )
+    {
+        // Define QTF free surface name
+        std::stringstream ss;
+        ss << body->mesh_body_name << "_fs_qtf";
+
+        // Load QTF free surface mesh
+        body->mesh_fs_qtf       = new Mesh(
+                                            mesh_fipath_.string( ),
+                                            ss.str( ),
+                                            body->cog,
+                                            LID_PANEL_CODE
+                                        );
+        body->is_mesh_fs_qtf    = true;
     }
 
     // Close file unit
