@@ -39,6 +39,7 @@ void    freq_domain_linear_solver(
                                                 Input*          input,
                                                 MpiConfig*      mpi_config,
                                                 MeshGroup*      mesh_gp,
+                                                MeshGroup*      mesh_fs_qtf_gp,
                                                 SclCmpx*        scl,
                                                 Hydrostatics**  hydrostatics,
                                                 Output*         output
