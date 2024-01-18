@@ -31,6 +31,10 @@ void Input::configure( void )
     // QTF depedent signals
     this->is_calc_mdrift = ( this->out_mdrift || this->out_qtf );
 
+    // Check if it is necessary to load the free surface 
+    // QTF mesh
+    this->is_fs_qtf = this->out_qtf_so_model > 0 ? true: false;
+
     /**********************************************************/
     /************** Check headings input units ****************/
     /**********************************************************/
