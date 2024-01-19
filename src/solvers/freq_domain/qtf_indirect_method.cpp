@@ -562,6 +562,259 @@ void    calculate_qtf_indirect_body_term(
 }
 
 
+void    calculate_qtf_indirect_fs_near_term(
+                                                Input*          input,
+                                                MeshGroup*      mesh_gp,
+                                                int             freq_pos_i,
+                                                int             freq_pos_j,
+                                                int             qtf_type,
+                                                SimulationData* sim_data,
+                                                MLGCmpx*        body_gp,
+                                                cuscomplex*     qtf_fs_force
+                                            )
+{
+    // Get required fields
+    cusfloat    ang_freq_i          = input->angfreqs[freq_pos_i];
+    cusfloat    ang_freq_j          = input->angfreqs[freq_pos_j];
+
+    cuscomplex* pot_fk_freq_i       = &( sim_data->qtf_fs_pot_fk_freq[freq_pos_i*sim_data->qtf_fs_heads_np]         );
+    cuscomplex* pot_fk_freq_j       = &( sim_data->qtf_fs_pot_fk_freq[freq_pos_j*sim_data->qtf_fs_heads_np]         );
+
+    cuscomplex* pot_raddif_freq_i   = &( sim_data->qtf_fs_pot_raddif_freq[freq_pos_i*sim_data->qtf_fs_raddif_np]    );
+    cuscomplex* pot_raddif_freq_j   = &( sim_data->qtf_fs_pot_raddif_freq[freq_pos_j*sim_data->qtf_fs_raddif_np]    );
+
+    cuscomplex* pot_total_freq_i    = &( sim_data->qtf_fs_pot_total_freq[freq_pos_i*sim_data->qtf_fs_heads_np]      );
+    cuscomplex* pot_total_freq_j    = &( sim_data->qtf_fs_pot_total_freq[freq_pos_j*sim_data->qtf_fs_heads_np]      );
+    
+    cuscomplex* vel_x_fk_freq_i     = &( sim_data->qtf_fs_vel_x_fk_freq[freq_pos_i*sim_data->qtf_fs_raddif_np]      );
+    cuscomplex* vel_y_fk_freq_i     = &( sim_data->qtf_fs_vel_y_fk_freq[freq_pos_i*sim_data->qtf_fs_raddif_np]      );
+    cuscomplex* vel_z_fk_freq_i     = &( sim_data->qtf_fs_vel_z_fk_freq[freq_pos_i*sim_data->qtf_fs_raddif_np]      );
+    cuscomplex* vel_x_fk_freq_j     = &( sim_data->qtf_fs_vel_x_fk_freq[freq_pos_j*sim_data->qtf_fs_raddif_np]      );
+    cuscomplex* vel_y_fk_freq_j     = &( sim_data->qtf_fs_vel_y_fk_freq[freq_pos_j*sim_data->qtf_fs_raddif_np]      );
+    cuscomplex* vel_z_fk_freq_j     = &( sim_data->qtf_fs_vel_z_fk_freq[freq_pos_j*sim_data->qtf_fs_raddif_np]      );
+
+    cuscomplex* vel_x_total_freq_i  = &( sim_data->qtf_fs_vel_x_total_freq[freq_pos_i*sim_data->qtf_fs_heads_np]    );
+    cuscomplex* vel_y_total_freq_i  = &( sim_data->qtf_fs_vel_y_total_freq[freq_pos_i*sim_data->qtf_fs_heads_np]    );
+    cuscomplex* vel_z_total_freq_i  = &( sim_data->qtf_fs_vel_z_total_freq[freq_pos_i*sim_data->qtf_fs_heads_np]    );
+    cuscomplex* vel_x_total_freq_j  = &( sim_data->qtf_fs_vel_x_total_freq[freq_pos_j*sim_data->qtf_fs_heads_np]    );
+    cuscomplex* vel_y_total_freq_j  = &( sim_data->qtf_fs_vel_y_total_freq[freq_pos_j*sim_data->qtf_fs_heads_np]    );
+    cuscomplex* vel_z_total_freq_j  = &( sim_data->qtf_fs_vel_z_total_freq[freq_pos_j*sim_data->qtf_fs_heads_np]    );
+
+    // Declare local variables
+    cuscomplex  f0                  = cuscomplex( 0.0, 0.0 );
+    cuscomplex  f1                  = cuscomplex( 0.0, 0.0 );
+    cuscomplex  f2                  = cuscomplex( 0.0, 0.0 );
+    GaussPoints gp( input->gauss_order );
+    cusfloat    grav_acc            = input->grav_acc;
+    int         idx0                = 0;
+    int         idx1_b              = 0;
+    int         idx1_i              = 0;
+    int         idx1_j              = 0;
+    int         idx2                = 0;
+    cuscomplex  int_mod             = cuscomplex( 0.0, 0.0 );
+    PanelGeom*  panel_k             = nullptr;
+    cuscomplex  pot_fk_i            = cuscomplex( 0.0, 0.0 );
+    cuscomplex  pot_fk_j            = cuscomplex( 0.0, 0.0 );
+    cuscomplex  pot_pert_i          = cuscomplex( 0.0, 0.0 );
+    cuscomplex  pot_pert_j          = cuscomplex( 0.0, 0.0 );
+    cuscomplex  pot_total_i         = cuscomplex( 0.0, 0.0 );
+    cuscomplex  pot_total_j         = cuscomplex( 0.0, 0.0 );
+    cuscomplex  psi_ds              = cuscomplex( 0.0, 0.0 );
+    int         ngp                 = input->gauss_order;
+    int         ngpf                = input->gauss_np_factor_2d( );
+    cusfloat    rho_w               = input->water_density;
+    cusfloat    sf                  = 0.0;
+    cuscomplex  val_mod_0           = cuscomplex( 0.0, 0.0 );
+    cuscomplex  val_mod_1           = cuscomplex( 0.0, 0.0 );
+    cuscomplex  vel_fk_i[3];        clear_vector( 3, vel_fk_i );
+    cuscomplex  vel_fk_j[3];        clear_vector( 3, vel_fk_j );
+    cuscomplex  vel_pert_i[3];      clear_vector( 3, vel_pert_i );
+    cuscomplex  vel_pert_j[3];      clear_vector( 3, vel_pert_j );
+    cuscomplex  vel_total_i[3];     clear_vector( 3, vel_total_i );
+    cuscomplex  vel_total_j[3];     clear_vector( 3, vel_total_j );
+    cusfloat    w2_i                = pow2s( ang_freq_i );
+    cusfloat    w2_j                = pow2s( ang_freq_j );
+    cusfloat    w_ds                = 0.0;
+
+    // Calculate constants depending if there is QTF diff or QTF sum
+    // requested
+    if ( qtf_type == 0 )
+    {
+        sf      = 1.0;
+        w_ds    = ang_freq_i - ang_freq_j;
+    }
+    else
+    {
+        sf      = -1.0;
+        w_ds    = ang_freq_i + ang_freq_j;
+    }
+
+    // Calculate scaling factors
+    f0  = cuscomplex( 0.0, w_ds );
+    f1  = - cuscomplex( 0.0, ang_freq_i / 2.0 / grav_acc );
+    f2  = sf * cuscomplex( 0.0, ang_freq_j / 2.0 / grav_acc );
+
+    // Clear output results vector
+    clear_vector( 
+                    pow2s( input->heads_np ) * input->bodies_np * input->dofs_np,
+                    qtf_fs_force
+                );
+
+    // Define second order wave dispersion object
+    WaveDispersionSO*   wdso    = new WaveDispersionSO( 
+                                                        input->wave_amplitude,
+                                                        input->wave_amplitude,
+                                                        ang_freq_i,
+                                                        ang_freq_j,
+                                                        input->heads[0],
+                                                        input->heads[0],
+                                                        input->water_depth,
+                                                        input->grav_acc
+                                                    );
+
+    cusfloat    k2_i    = pow2s( wdso->k0 );
+    cusfloat    k2_j    = pow2s( wdso->k1 );
+
+    // Calculate second order forces for the different headings combinations
+    for ( int ih1=0; ih1<input->heads_np; ih1++ )
+    {
+        for ( int ih2=0; ih2<input->heads_np; ih2++ )
+        {
+            
+            for ( int j=0; j<mesh_gp->meshes_np; j++ )
+            {
+                
+                idx0 = (
+                            ih1 * ( input->dofs_np * input->bodies_np * input->heads_np )
+                            +
+                            ih2 * ( input->dofs_np * input->bodies_np )
+                            + 
+                            j * input->dofs_np
+                        );
+                        
+                
+
+                for ( int k=body_gp->field_points_cnp[j]/ngpf; k<body_gp->field_points_cnp[j+1]/ngpf; k++ )
+                {
+                    int_mod             = cuscomplex( 0.0, 0.0 );
+                    panel_k             = mesh_gp->panels[k];
+
+                    // Loop over gauss points to perform the integration
+                    for ( int gpi=0; gpi<ngp; gpi++ )
+                    {
+                        for ( int gpj=0; gpj<ngp; gpj++ )
+                        {
+                            // Get panel indexes
+                            idx1_b  = k * pow2s( ngp ) + gpi * ngp + gpj;
+                            idx1_i  = ih1 * body_gp->field_points_np + idx1_b;
+                            idx1_j  = ih2 * body_gp->field_points_np + idx1_b;
+
+                            // Get total fluid velocity components
+                            pot_fk_i        = pot_fk_freq_i[idx1_i];
+                            pot_fk_j        = pot_fk_freq_j[idx1_j];
+
+                            pot_total_i     = pot_total_freq_i[idx1_i];
+                            pot_total_j     = pot_total_freq_j[idx1_j];
+
+                            pot_pert_i      = pot_total_i - pot_fk_i;
+                            pot_pert_j      = pot_total_j - pot_fk_j;
+
+                            vel_fk_i[0]     = vel_x_fk_freq_i[idx1_i];
+                            vel_fk_i[1]     = vel_y_fk_freq_i[idx1_i];
+                            vel_fk_i[2]     = vel_z_fk_freq_i[idx1_i];
+
+                            vel_fk_j[0]     = vel_x_fk_freq_j[idx1_j];
+                            vel_fk_j[1]     = vel_y_fk_freq_j[idx1_j];
+                            vel_fk_j[2]     = vel_z_fk_freq_j[idx1_j];
+
+                            vel_total_i[0]  = vel_x_total_freq_i[idx1_i];
+                            vel_total_i[1]  = vel_y_total_freq_i[idx1_i];
+                            vel_total_i[2]  = vel_z_total_freq_i[idx1_i];
+
+                            vel_total_j[0]  = vel_x_total_freq_j[idx1_j];
+                            vel_total_j[1]  = vel_y_total_freq_j[idx1_j];
+                            vel_total_j[2]  = vel_z_total_freq_j[idx1_j];
+
+                            vel_pert_i[0]   = vel_total_i[0] - vel_fk_i[0];
+                            vel_pert_i[1]   = vel_total_i[1] - vel_fk_i[1];
+                            vel_pert_i[2]   = vel_total_i[2] - vel_fk_i[2];
+
+                            vel_pert_j[0]   = vel_total_j[0] - vel_fk_j[0];
+                            vel_pert_j[1]   = vel_total_j[1] - vel_fk_j[1];
+                            vel_pert_j[2]   = vel_total_j[2] - vel_fk_j[2];
+
+                            // Check if the terms needs to be conjugated
+                            if ( qtf_type == 0 )
+                            {
+                                pot_fk_j    = std::conj( pot_fk_j );
+                                pot_pert_j  = std::conj( pot_pert_j );
+                                pot_total_j = std::conj( pot_total_j );
+
+                                conj_vector( 3, vel_fk_j, vel_fk_j );
+                                conj_vector( 3, vel_pert_j, vel_pert_j );
+                                conj_vector( 3, vel_total_j, vel_total_j );
+                            }
+
+                            // Calculate field points position
+                            val_mod_0   =       (
+                                                    f0 * ( sv_dot( 3, vel_total_i, vel_pert_j ) + sv_dot( 3, vel_pert_i, vel_fk_j ) )
+                                                    +
+                                                    f1 * ( pot_total_i * ( - w2_j * vel_pert_j[2] ) + pot_pert_i * ( - w2_j * vel_fk_j[2] ) )
+                                                    +
+                                                    f2 * ( pot_total_j * ( - w2_i * vel_pert_i[2] ) + pot_pert_j * ( - w2_i * vel_fk_i[2] ) )
+                                                );
+
+                            val_mod_1   =  0.5 * (
+                                                    -
+                                                    cuscomplex( 0.0, ang_freq_i ) * pot_total_i * k2_j * pot_pert_j
+                                                    -
+                                                    cuscomplex( 0.0, ang_freq_i ) * pot_pert_i * k2_j * pot_fk_j
+                                                    +
+                                                    sf * cuscomplex( 0.0, ang_freq_j ) * pot_total_j * k2_i * pot_pert_i
+                                                    +
+                                                    sf * cuscomplex( 0.0, ang_freq_j ) * pot_pert_j * k2_i * pot_fk_i
+                                                );
+
+                            // Loop over dofs to get the force for each 6 DOFs component
+                            for ( int r=0; r<input->dofs_np; r++ )
+                            {
+                                // Get index to access the radiation potential data
+                                idx2 =  r * body_gp->field_points_np + idx1_b;
+
+                                // Get raddiation fluid velocity components
+                                if ( qtf_type == 0 )
+                                {
+                                    psi_ds = pot_raddif_freq_i[idx2] - pot_raddif_freq_j[idx2];
+                                }
+                                else
+                                {
+                                    psi_ds = pot_raddif_freq_i[idx2] + pot_raddif_freq_j[idx2];
+                                }
+
+                                // Apply integration weights and multiply by the jacobian determinant
+                                int_mod     =  ( val_mod_0 + val_mod_1 ) * gp.weights[gpi] * gp.weights[gpj] * jacobi_det_2d( 
+                                                                                                                panel_k->num_nodes,
+                                                                                                                panel_k->xl,
+                                                                                                                panel_k->yl,
+                                                                                                                gp.roots[gpi],
+                                                                                                                gp.roots[gpj]
+                                                                                                            );
+
+                                // Get total force
+                                qtf_fs_force[idx0+r]    += cuscomplex( 0.0, w_ds * rho_w / grav_acc ) * psi_ds * int_mod;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Delete local heap memory
+    delete wdso;
+}
+
+
 void    calculate_secord_force_indirect(
                                             Input*      input,
                                             MeshGroup*  mesh_gp,
