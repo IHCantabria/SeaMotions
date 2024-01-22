@@ -164,6 +164,11 @@ void    SimulationData::add_qtf_indirect_data(
     int fs_freqs_raddif_freq_np = this->qtf_fs_raddif_np * freqs_np;
     int fs_freqs_heads_freq_np  = this->qtf_fs_heads_np  * freqs_np;
 
+    this->qtf_kochin_heads_np   =   this->heads_np * this->_input->bodies_np * this->_input->kochin_np;
+    this->qtf_kochin_rad_np     =   this->dofs_np * this->_input->bodies_np * this->_input->kochin_np;
+    int kochin_heads_freq_np    =   this->qtf_kochin_heads_np * freqs_np;
+    int kochin_rad_freq_np      =   this->qtf_kochin_rad_np   * freqs_np;
+
     int wl_freqs_raddif_np      = this->qtf_wl_raddif_np * freqs_np;
     int wl_freqs_heads_np       = this->qtf_wl_heads_np * freqs_np;
 
@@ -183,6 +188,10 @@ void    SimulationData::add_qtf_indirect_data(
         this->mdrift_fs_vel_x_total         = generate_empty_vector<cuscomplex>( this->qtf_fs_heads_np );
         this->mdrift_fs_vel_y_total         = generate_empty_vector<cuscomplex>( this->qtf_fs_heads_np );
         this->mdrift_fs_vel_z_total         = generate_empty_vector<cuscomplex>( this->qtf_fs_heads_np );
+        this->mdrift_kochin_pert_cos        = generate_empty_vector<cuscomplex>( this->qtf_kochin_heads_np );
+        this->mdrift_kochin_pert_sin        = generate_empty_vector<cuscomplex>( this->qtf_kochin_heads_np );
+        this->mdrift_kochin_rad_cos         = generate_empty_vector<cuscomplex>( this->qtf_kochin_rad_np );
+        this->mdrift_kochin_rad_sin         = generate_empty_vector<cuscomplex>( this->qtf_kochin_rad_np );
         this->mdrift_wl_vel_x_fk            = generate_empty_vector<cuscomplex>( this->qtf_wl_heads_np );
         this->mdrift_wl_vel_y_fk            = generate_empty_vector<cuscomplex>( this->qtf_wl_heads_np );
         this->mdrift_wl_vel_z_fk            = generate_empty_vector<cuscomplex>( this->qtf_wl_heads_np );
@@ -205,6 +214,10 @@ void    SimulationData::add_qtf_indirect_data(
         this->qtf_fs_vel_x_total_freq       = generate_empty_vector<cuscomplex>( fs_freqs_raddif_freq_np );
         this->qtf_fs_vel_y_total_freq       = generate_empty_vector<cuscomplex>( fs_freqs_raddif_freq_np );
         this->qtf_fs_vel_z_total_freq       = generate_empty_vector<cuscomplex>( fs_freqs_raddif_freq_np );
+        this->qtf_kochin_pert_cos_freqs     = generate_empty_vector<cuscomplex>( kochin_heads_freq_np );
+        this->qtf_kochin_pert_sin_freqs     = generate_empty_vector<cuscomplex>( kochin_heads_freq_np );
+        this->qtf_kochin_rad_cos_freqs      = generate_empty_vector<cuscomplex>( kochin_rad_freq_np );
+        this->qtf_kochin_rad_sin_freqs      = generate_empty_vector<cuscomplex>( kochin_rad_freq_np );
         this->qtf_wl_pot_raddif_freq        = generate_empty_vector<cuscomplex>( wl_freqs_raddif_np );
         this->qtf_wl_vel_x_total_freq       = generate_empty_vector<cuscomplex>( wl_freqs_heads_np );
         this->qtf_wl_vel_y_total_freq       = generate_empty_vector<cuscomplex>( wl_freqs_heads_np );
@@ -414,6 +427,10 @@ SimulationData::~SimulationData(
         mkl_free( this->mdrift_fs_vel_x_total       );
         mkl_free( this->mdrift_fs_vel_y_total       );
         mkl_free( this->mdrift_fs_vel_z_total       );
+        mkl_free( this->mdrift_kochin_pert_cos      );
+        mkl_free( this->mdrift_kochin_pert_sin      );
+        mkl_free( this->mdrift_kochin_rad_cos       );
+        mkl_free( this->mdrift_kochin_rad_sin       );
         mkl_free( this->mdrift_wl_vel_x_fk          );
         mkl_free( this->mdrift_wl_vel_y_fk          );
         mkl_free( this->mdrift_wl_vel_z_fk          );
@@ -436,6 +453,10 @@ SimulationData::~SimulationData(
         mkl_free( this->qtf_fs_vel_x_total_freq     );
         mkl_free( this->qtf_fs_vel_y_total_freq     );
         mkl_free( this->qtf_fs_vel_z_total_freq     );
+        mkl_free( this->qtf_kochin_pert_cos_freqs   );
+        mkl_free( this->qtf_kochin_pert_sin_freqs   );
+        mkl_free( this->qtf_kochin_rad_cos_freqs    );
+        mkl_free( this->qtf_kochin_rad_sin_freqs    );
         mkl_free( this->qtf_wl_pot_raddif_freq      );
         mkl_free( this->qtf_wl_vel_x_total_freq     );
         mkl_free( this->qtf_wl_vel_y_total_freq     );
@@ -508,7 +529,11 @@ void    SimulationData::storage_qtf_indirect_freq(
                                                     cuscomplex* qtf_wl_pot_raddif,
                                                     cuscomplex* qtf_wl_vel_x_total,
                                                     cuscomplex* qtf_wl_vel_y_total,
-                                                    cuscomplex* qtf_wl_vel_z_total
+                                                    cuscomplex* qtf_wl_vel_z_total,
+                                                    cuscomplex* qtf_kochin_pert_cos,
+                                                    cuscomplex* qtf_kochin_pert_sin,
+                                                    cuscomplex* qtf_kochin_rad_cos,
+                                                    cuscomplex* qtf_kochin_rad_sin
                                                 )
 {
     if ( this->_mpi_config->is_root( ) )
@@ -573,6 +598,26 @@ void    SimulationData::storage_qtf_indirect_freq(
             this->qtf_wl_vel_x_total_freq[idx1]  = qtf_wl_vel_x_total[i];
             this->qtf_wl_vel_y_total_freq[idx1]  = qtf_wl_vel_y_total[i];
             this->qtf_wl_vel_z_total_freq[idx1]  = qtf_wl_vel_z_total[i];
+        }
+
+        // Storage Kochin coefficients
+        idx0    = freq_num * this->qtf_kochin_heads_np;
+        idx1    = 0;
+
+        for ( int i=0; i<this->qtf_kochin_heads_np; i++ )
+        {
+            idx1 = idx0 + i;
+            this->qtf_kochin_pert_cos_freqs[idx1] = qtf_kochin_pert_cos[i];
+            this->qtf_kochin_pert_sin_freqs[idx1] = qtf_kochin_pert_sin[i];
+        }
+
+        idx0    = freq_num * this->qtf_kochin_rad_np;
+        idx1    = 0;
+        for ( int i=0; i<this->qtf_kochin_rad_np; i++ )
+        {
+            idx1 = idx0 + i;
+            this->qtf_kochin_rad_cos_freqs[idx1] = qtf_kochin_rad_cos[i];
+            this->qtf_kochin_rad_sin_freqs[idx1] = qtf_kochin_rad_sin[i];
         }
     }
 }

@@ -32,6 +32,7 @@ public:
     int             hydmech_np                          = 0;
     cusfloat*       hydrostiff_p0                       = nullptr;
     cuscomplex*     intensities                         = nullptr;
+    
     cuscomplex*     mdrift                              = nullptr;
     cuscomplex*     mdrift_acc                          = nullptr;
     cuscomplex*     mdrift_bern                         = nullptr;
@@ -59,6 +60,10 @@ public:
     cuscomplex*     mdrift_fs_vel_x_total               = nullptr;
     cuscomplex*     mdrift_fs_vel_y_total               = nullptr;
     cuscomplex*     mdrift_fs_vel_z_total               = nullptr;
+    cuscomplex*     mdrift_kochin_pert_cos              = nullptr;
+    cuscomplex*     mdrift_kochin_pert_sin              = nullptr;
+    cuscomplex*     mdrift_kochin_rad_cos               = nullptr;
+    cuscomplex*     mdrift_kochin_rad_sin               = nullptr;
     cuscomplex*     mdrift_mom                          = nullptr;
     cuscomplex*     mdrift_wl                           = nullptr;
     cuscomplex*     mdrift_wl_rel_we                    = nullptr;
@@ -115,6 +120,12 @@ public:
     cuscomplex*     qtf_fs_vel_x_total_freq             = nullptr;
     cuscomplex*     qtf_fs_vel_y_total_freq             = nullptr;
     cuscomplex*     qtf_fs_vel_z_total_freq             = nullptr;
+    int             qtf_kochin_heads_np                 = 0;
+    int             qtf_kochin_rad_np                   = 0;
+    cuscomplex*     qtf_kochin_pert_cos_freqs           = nullptr;
+    cuscomplex*     qtf_kochin_pert_sin_freqs           = nullptr;
+    cuscomplex*     qtf_kochin_rad_cos_freqs            = nullptr;
+    cuscomplex*     qtf_kochin_rad_sin_freqs            = nullptr;
     int             qtf_np                              = 0;
     cuscomplex*     qtf_raos_freq                       = nullptr;
     cuscomplex*     qtf_sum_acc                         = nullptr;
@@ -238,7 +249,11 @@ public:
                                         cuscomplex* qtf_wl_pot_raddif,
                                         cuscomplex* qtf_wl_vel_x_total,
                                         cuscomplex* qtf_wl_vel_y_total,
-                                        cuscomplex* qtf_wl_vel_z_total
+                                        cuscomplex* qtf_wl_vel_z_total,
+                                        cuscomplex* qtf_kochin_pert_cos,
+                                        cuscomplex* qtf_kochin_pert_sin,
+                                        cuscomplex* qtf_kochin_rad_cos,
+                                        cuscomplex* qtf_kochin_rad_sin
                                     );
     
 };
