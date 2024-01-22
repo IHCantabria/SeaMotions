@@ -3,6 +3,7 @@
 #include "kochin.hpp"
 
 #include "../math/integration.hpp"
+#include "../waves/wave_dispersion_base_fo.hpp"
 
 
 void    calculate_kochin_coefficients(
@@ -79,4 +80,142 @@ void    calculate_kochin_coefficients(
             }
         }
     }
+}
+
+
+void    calculate_kochin_pert_coeffs(
+                                        Input*          input,
+                                        MeshGroup*      mesh_gp,
+                                        int             freq_pos,
+                                        SimulationData* sim_data
+                                    )
+{
+    // Define local variables
+    cusfloat    ang_freq    = input->angfreqs[freq_pos];
+    int         idx0        = 0;
+    int         idx1        = 0;
+    int         idx2        = 0;
+
+    // Get current wave number
+    cusfloat            wave_num    = w2k( 
+                                            ang_freq, 
+                                            input->water_depth, 
+                                            input->grav_acc 
+                                        );
+    
+    // Define Kochin object interface
+    KochinInterface*    kochin      = new KochinInterface(
+                                                            mesh_gp->source_nodes[0],
+                                                            wave_num,
+                                                            input->water_depth,
+                                                            0,
+                                                            false
+                                                        );
+    // Calcualte perturbation potential
+    cuscomplex*         pert_src    = generate_empty_vector<cuscomplex>( input->heads_np * mesh_gp->source_nodes_tnp );
+
+    for ( int i=0; i<input->heads_np; i++ )
+    {
+        for ( int j=0; j<mesh_gp->meshes_np; j++ )
+        {
+            for ( int k=mesh_gp->source_nodes_cnp[j]; k<mesh_gp->source_nodes_cnp[j+1]; k++ )
+            {
+                // Update index
+                idx0 = i * mesh_gp->source_nodes_tnp + k;
+
+                // Add radiation potential
+                for ( int r=0; r<input->dofs_np; r++ )
+                {
+                    idx1            =  ( 
+                                            r * mesh_gp->source_nodes_tnp 
+                                            + 
+                                            k
+                                        );
+                    idx2            =  (
+                                            i * ( mesh_gp->meshes_np * input->dofs_np )
+                                            +
+                                            j * input->dofs_np 
+                                            + 
+                                            r
+                                        );
+                    
+                    pert_src[idx0]  += cuscomplex( 0.0, -1.0 ) * ang_freq * sim_data->raos[idx2] * sim_data->intensities[idx1];
+                }
+
+                // Add diffraction potential
+                idx1            = ( input->dofs_np + i ) * mesh_gp->source_nodes_tnp + k;
+                pert_src[idx0] += sim_data->intensities[idx1];
+
+            }
+        }
+    }
+    
+    // Loop over DOFs in order to calculate the kochin raddiation coefficients
+    for ( int i=0; i<input->heads_np; i++ )
+    {
+        idx0    = i * mesh_gp->source_nodes_tnp;
+        idx1    =  i * ( mesh_gp->meshes_np * input->kochin_np );
+
+        calculate_kochin_coefficients(
+                                        input,
+                                        mesh_gp,
+                                        kochin,
+                                        &(pert_src[idx0]),
+                                        &(sim_data->mdrift_kochin_pert_cos[idx1]),
+                                        &(sim_data->mdrift_kochin_pert_sin[idx1])
+                                    );
+    }
+
+    // Delete heap memory
+    delete kochin;
+    mkl_free( pert_src );
+
+}
+
+
+void    calculate_kochin_rad_coeffs(
+                                        Input*          input,
+                                        MeshGroup*      mesh_gp,
+                                        int             freq_pos,
+                                        SimulationData* sim_data
+                                    )
+{
+    // Define local variables
+    int idx0    = 0;
+    int idx1    = 0;
+
+    // Get current wave number
+    cusfloat    wave_num        = w2k( 
+                                            input->angfreqs[freq_pos], 
+                                            input->water_depth, 
+                                            input->grav_acc 
+                                        );
+    
+    // Define Kochin object interface
+    KochinInterface*    kochin  = new KochinInterface(
+                                                        mesh_gp->source_nodes[0],
+                                                        wave_num,
+                                                        input->water_depth,
+                                                        0,
+                                                        false
+                                                    );
+    
+    // Loop over DOFs in order to calculate the kochin raddiation coefficients
+    for ( int i=0; i<input->dofs_np; i++ )
+    {
+        idx0    = i * mesh_gp->source_nodes_tnp;
+        idx1    = i * ( mesh_gp->meshes_np * input->kochin_np );
+
+        calculate_kochin_coefficients(
+                                        input,
+                                        mesh_gp,
+                                        kochin,
+                                        &(sim_data->intensities[idx0]),
+                                        &(sim_data->mdrift_kochin_rad_cos[idx1]),
+                                        &(sim_data->mdrift_kochin_rad_sin[idx1])
+                                    );
+    }
+
+    // Delete heap memory
+    delete kochin;
 }

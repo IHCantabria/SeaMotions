@@ -86,6 +86,8 @@ set(
         ${CMAKE_SOURCE_DIR}/src/green/dipole.cpp
         ${CMAKE_SOURCE_DIR}/src/green/integrals_db.hpp
         ${CMAKE_SOURCE_DIR}/src/green/integrals_db.cpp
+        ${CMAKE_SOURCE_DIR}/src/green/kochin.hpp
+        ${CMAKE_SOURCE_DIR}/src/green/kochin.cpp
         ${CMAKE_SOURCE_DIR}/src/green/pulsating_fin_depth.hpp
         ${CMAKE_SOURCE_DIR}/src/green/pulsating_fin_depth.cpp
         ${CMAKE_SOURCE_DIR}/src/green/pulsating_fin_depth_cheby.hpp
