@@ -314,6 +314,11 @@ void    read_case(
     read_signal     = _read_channel_value( infile, input->gfdn_rel_err );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
+    // Read number of Kotchin expansion coefficients
+    target_signal   = "KochinNC";
+    read_signal     = _read_channel_value( infile, input->kochin_np );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
     // Read method to solver the logarithmic singularity
     target_signal   = "LogSingAna";
     read_signal     = _read_channel_value( infile, input->is_log_sin_ana );

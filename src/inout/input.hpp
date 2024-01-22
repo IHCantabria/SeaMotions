@@ -30,6 +30,7 @@ public:
     cusfloat                    grav_acc            = 0.0;
     cusfloat*                   freqs               = nullptr;
     std::string                 freqs_unit          = "";
+    int                         kochin_np           = 0;
     std::vector<cusfloat>       heads               ;
     int                         heads_np            = 0;
     std::string                 heads_units         = "";
