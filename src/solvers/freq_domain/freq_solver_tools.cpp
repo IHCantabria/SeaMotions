@@ -9,6 +9,7 @@
 
 #include "../../containers/matlin_group.hpp"
 #include "../../containers/simulation_data.hpp"
+#include "../../green/kochin.hpp"
 #include "../../interfaces/grf_interface.hpp"
 #include "../../interfaces/gwfdx_interface.hpp"
 #include "../../interfaces/gwfdy_interface.hpp"
@@ -1125,6 +1126,21 @@ void    freq_domain_linear_solver(
                                                 sim_data->mdrift_wl_vel_z_raddif,
                                                 sim_data->mdrift_wl_vel_z_total
                                             );
+
+                        // Calculate Kochin coefficients for the far field integral
+                        calculate_kochin_pert_coeffs(
+                                                        input,
+                                                        mesh_gp,
+                                                        i,
+                                                        sim_data
+                                                    );
+
+                        calculate_kochin_rad_coeffs(
+                                                        input,
+                                                        mesh_gp,
+                                                        i,
+                                                        sim_data
+                                                    );
                         
                         // Storage parameters necessary for the second order potential calculation
                         // using the indirect method
@@ -1146,7 +1162,11 @@ void    freq_domain_linear_solver(
                                                                 sim_data->mdrift_wl_we_raddif,
                                                                 sim_data->mdrift_wl_vel_x_total,
                                                                 sim_data->mdrift_wl_vel_y_total,
-                                                                sim_data->mdrift_wl_vel_z_total
+                                                                sim_data->mdrift_wl_vel_z_total,
+                                                                sim_data->mdrift_kochin_pert_cos,
+                                                                sim_data->mdrift_kochin_pert_sin,
+                                                                sim_data->mdrift_kochin_rad_cos,
+                                                                sim_data->mdrift_kochin_rad_sin
                                                             );
                     }
                 }
