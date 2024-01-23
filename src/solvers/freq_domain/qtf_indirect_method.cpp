@@ -1013,6 +1013,52 @@ cuscomplex  calculate_r2_integral(
     cuscomplex  sf0     = std::exp( cuscomplex( 0.0, PI / 2.0 ) );
     cusfloat    ep_l    = ep_n( l_order );
     cuscomplex  sfi     = std::pow( cuscomplex( 0.0, 1.0 ), l_order );
+
+    if ( qtf_type == 0 )
+    {
+        sfi = std::conj( sfi );
+    }
+
+    // Calculate alpha and beta
+    cusfloat    alpha   = 0.0;
+    cusfloat    beta    = wdso->k1;
+    if ( qtf_type == 0 )
+    {
+        alpha = wdso->k_diff_mod + wdso->k0;
+    }
+    else
+    {
+        alpha = wdso->k_sum_mod + wdso->k0;
+    }
+
+    // Calculate 0 to inf analytical integral
+    cuscomplex  int_value_ana   = besseljn_expi_int( 
+                                                        alpha,
+                                                        beta,
+                                                        static_cast<cusfloat>( l_order )
+                                                    );
+
+    // Calculate 0 to R numerical integral
+    cusfloat    cos_value_num   = romberg_quadrature(
+                                                        besseljn_cos_kernel,
+                                                        0.0,
+                                                        R,
+                                                        1e-6
+                                                    );
+    
+    cusfloat    sin_value_num   = romberg_quadrature(
+                                                        besseljn_sin_kernel,
+                                                        0.0,
+                                                        R,
+                                                        1e-6
+                                                    );
+
+    cuscomplex  int_value_num   = cuscomplex( cos_value_num, sin_value_num );
+
+    // Calculate R to infinite integral
+    cuscomplex  int_value       = sf0 * ep_l * sfi * ( int_value_ana - int_value_num );
+
+    return int_value;
 }
 
 
