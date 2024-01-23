@@ -6,14 +6,14 @@
 #include "../waves/wave_dispersion_base_fo.hpp"
 
 
-void    calculate_kochin_coefficients(
-                                        Input*              input,
-                                        MeshGroup*          mesh_gp,
-                                        KochinInterface*    kochin,
-                                        cuscomplex*         sources,
-                                        cuscomplex*         cos_coeff,
-                                        cuscomplex*         sin_coeff
-                                    )
+void        calculate_kochin_coefficients(
+                                            Input*              input,
+                                            MeshGroup*          mesh_gp,
+                                            KochinInterface*    kochin,
+                                            cuscomplex*         sources,
+                                            cuscomplex*         cos_coeff,
+                                            cuscomplex*         sin_coeff
+                                        )
 {
     // Define local variables
     int         idx0        = 0;
@@ -83,12 +83,80 @@ void    calculate_kochin_coefficients(
 }
 
 
-void    calculate_kochin_pert_coeffs(
-                                        Input*          input,
-                                        MeshGroup*      mesh_gp,
-                                        int             freq_pos,
-                                        SimulationData* sim_data
-                                    )
+cusfloat    calculate_kochin_cosexp_t0(
+                                            cusfloat    th,
+                                            cusfloat    beta,
+                                            int         ln,
+                                            int         m,
+                                            int         n
+                                        )
+{
+    cusfloat    a   = - std::sin( beta * ln - th * ( ln - m + n )  ) / ( ln - m + n );
+    cusfloat    b   = - std::sin( ln * ( beta - th ) + th * ( m + n ) ) / ( ln - m - n );
+    cusfloat    c   =   std::sin( ln * ( th - beta ) + th * ( m - n ) ) / ( ln + m - n );
+    cusfloat    d   =   std::sin( ln * ( th - beta ) + th * ( m + n ) ) / ( ln + m + n );
+
+    return 0.25 * ( a + b + c + d );
+}
+
+
+cusfloat    calculate_kochin_cosexp_t1(
+                                            cusfloat    th,
+                                            cusfloat    beta,
+                                            cusfloat    ln,
+                                            cusfloat    m,
+                                            cusfloat    n
+                                        )
+{
+    cusfloat    a   = + std::cos( ln * ( beta - th ) + th * ( n - m ) ) / ( ln + m - n );
+    cusfloat    b   = - std::cos( beta * ln - th * ( ln - m + n ) ) / ( ln - m + n );
+    cusfloat    c   = + std::cos( ln * ( beta - th ) + th * ( m + n ) ) / ( ln - m - n );
+    cusfloat    d   = - std::cos( ln * ( th - beta ) + th * ( m + n ) ) / ( ln + m + n );
+
+    return 0.25 * ( a + b + c + d );
+}
+
+
+cusfloat    calculate_kochin_cosexp_t2(
+                                            cusfloat    th,
+                                            cusfloat    beta,
+                                            cusfloat    ln,
+                                            cusfloat    m,
+                                            cusfloat    n
+                                        )
+{
+    cusfloat    a   = - std::cos( ln * ( beta - th ) + th * ( n - m ) ) / ( ln + m - n );
+    cusfloat    b   = + std::cos( beta * ln - th * ( ln - m + n ) ) / ( ln - m + n );
+    cusfloat    c   = + std::cos( ln * ( beta - th ) + th * ( m + n ) ) / ( ln - m - n );
+    cusfloat    d   = - std::cos( ln * ( th - beta ) + th * ( m + n ) ) / ( ln + m + n );
+
+    return 0.25 * ( a + b + c + d );
+}
+
+
+cusfloat    calculate_kochin_cosexp_t3(
+                                            cusfloat    th,
+                                            cusfloat    beta,
+                                            cusfloat    ln,
+                                            cusfloat    m,
+                                            cusfloat    n
+                                        )
+{
+    cusfloat    a   = - std::sin( beta * ln - th * ( ln - m + n ) ) / ( ln - m + n );
+    cusfloat    b   = + std::sin( ln * ( beta - th ) + th * ( m + n ) ) / ( ln - m - n );
+    cusfloat    c   = + std::sin( ln * ( th - beta ) + th * ( m - n ) ) / ( ln + m - n );
+    cusfloat    d   = - std::sin( ln * ( th - beta ) + th * ( m + n ) ) / ( ln + m + n );
+
+    return 0.25 * ( a + b + c + d );
+}
+
+
+void        calculate_kochin_pert_coeffs(
+                                            Input*          input,
+                                            MeshGroup*      mesh_gp,
+                                            int             freq_pos,
+                                            SimulationData* sim_data
+                                        )
 {
     // Define local variables
     cusfloat    ang_freq    = input->angfreqs[freq_pos];
@@ -173,12 +241,12 @@ void    calculate_kochin_pert_coeffs(
 }
 
 
-void    calculate_kochin_rad_coeffs(
-                                        Input*          input,
-                                        MeshGroup*      mesh_gp,
-                                        int             freq_pos,
-                                        SimulationData* sim_data
-                                    )
+void        calculate_kochin_rad_coeffs(
+                                            Input*          input,
+                                            MeshGroup*      mesh_gp,
+                                            int             freq_pos,
+                                            SimulationData* sim_data
+                                        )
 {
     // Define local variables
     int idx0    = 0;
