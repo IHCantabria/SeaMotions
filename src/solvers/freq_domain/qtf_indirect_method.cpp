@@ -829,7 +829,12 @@ void    calculate_qtf_indirect_fs_far_term(
                                             )
 {
     // Define local variables
+    int         forces_np           = pow2s( input->heads_np ) * input->bodies_np * input->dofs_np;
     int         idx0                = 0;
+    cuscomplex* idf11               = generate_empty_vector<cuscomplex>( forces_np );
+    cuscomplex* idf12               = generate_empty_vector<cuscomplex>( forces_np );
+    cuscomplex* idf21               = generate_empty_vector<cuscomplex>( forces_np );
+    cuscomplex* idf22               = generate_empty_vector<cuscomplex>( forces_np );
 
     // Get required fields
     cusfloat    ang_freq_i          = input->angfreqs[freq_pos_i];
@@ -938,6 +943,10 @@ void    calculate_qtf_indirect_fs_far_term(
     }
 
     // Delete local heap memory
+    mkl_free( idf11 );
+    mkl_free( idf12 );
+    mkl_free( idf21 );
+    mkl_free( idf22 );
     delete wdso; 
 }
 
