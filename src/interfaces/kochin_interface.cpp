@@ -6,6 +6,7 @@
 #include "kochin_interface.hpp"
 
 #include "../math/shape_functions.hpp"
+#include "../math/special_math.hpp"
 #include "../waves/waves_common.hpp"
 
 
@@ -96,7 +97,7 @@ void        KochinInterface::set_l_order(
 {
     this->_l_order  = l_order;
     this->_cf_l     = std::pow( cuscomplex( 0.0, -1.0 ), this->_l_order );
-    this->_ep_l     = ( this->_l_order > 0 ) ? 2 : 1;
+    this->_ep_l     = ep_n( l_order );
 }
 
 
