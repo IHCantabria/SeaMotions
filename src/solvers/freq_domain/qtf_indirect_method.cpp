@@ -1088,7 +1088,7 @@ cuscomplex  calculate_theta_integral(
 {
     // Clear incoming vector in order to avoid taking into account spurious data
     clear_vector( 
-                    input->heads_np * input->bodies_np * input->dofs_np,
+                    input->bodies_np * input->dofs_np,
                     body_force
                 );
 
@@ -1105,105 +1105,98 @@ cuscomplex  calculate_theta_integral(
     cusfloat    t3_int  = 0.0;
 
     // Loop over values to calculate the resulting forces
-    for ( int ih=0; ih<input->heads_np; ih++ )
+    for ( int ib=0; ib<input->bodies_np; ib++ )
     {
-        for ( int ib=0; ib<input->bodies_np; ib++ )
+        for ( int id=0; id<input->dofs_np; id++ )
         {
-            for ( int id=0; id<input->dofs_np; id++ )
-            {
-                // Define index to stoage the data
-                idx0    = ( 
-                                ih * ( input->bodies_np * input->dofs_np )
-                                +
-                                ib * input->dofs_np
-                                +
-                                id
-                            );
+            // Define index to stoage the data
+            idx0    = ( 
+                            ib * input->dofs_np
+                            +
+                            id
+                        );
 
-                // Loop over kochin coefficients to calculate the force
-                for ( int m=0; m<input->kochin_np; m++ )
+            // Loop over kochin coefficients to calculate the force
+            for ( int m=0; m<input->kochin_np; m++ )
+            {
+                // Get current index for the mth perturbation coefficient
+                idx1 = (
+                            ib * input->kochin_np
+                            +
+                            m
+                        );
+                
+                // Get perturbation series coefficients
+                if ( qtf_type == 0 )
                 {
-                    // Get current index for the mth perturbation coefficient
+                    cpm = std::conj( kochin_cos_pert_j[idx1] );
+                    spm = std::conj( kochin_sin_pert_j[idx1] );
+                }
+                else
+                {
+                    cpm = kochin_cos_pert_j[idx1];
+                    spm = kochin_sin_pert_j[idx1];
+                }
+
+                
+                for ( int n=0; n<input->kochin_np; n++ )
+                {
+                    // Get current index for the nth perturbation coefficient
                     idx1 = (
-                                ih * ( input->bodies_np * input->kochin_np )
+                                id *  ( input->bodies_np * input->kochin_np )
                                 +
                                 ib * input->kochin_np
                                 +
                                 m
                             );
-                    
-                    // Get perturbation series coefficients
+
+                    // Get radiation coefficient
                     if ( qtf_type == 0 )
                     {
-                        cpm = std::conj( kochin_cos_pert_j[idx1] );
-                        spm = std::conj( kochin_sin_pert_j[idx1] );
+                        crn = ( kochin_cos_rad_i[idx1] - kochin_cos_rad_j[idx1] );
+                        srn = ( kochin_sin_rad_i[idx1] - kochin_sin_rad_j[idx1] );
                     }
                     else
                     {
-                        cpm = kochin_cos_pert_j[idx1];
-                        spm = kochin_sin_pert_j[idx1];
+                        crn = ( kochin_cos_rad_i[idx1] + kochin_cos_rad_j[idx1] );
+                        srn = ( kochin_sin_rad_i[idx1] + kochin_sin_rad_j[idx1] );
                     }
 
-                    
-                    for ( int n=0; n<input->kochin_np; n++ )
-                    {
-                        // Get current index for the nth perturbation coefficient
-                        idx1 = (
-                                    id * ( input->bodies_np * input->kochin_np )
-                                    +
-                                    ib * input->kochin_np
-                                    +
-                                    m
+                    // Calculate angular integrals
+                    t0_int  = (
+                                    calculate_kochin_cosexp_t0( 2*PI, beta, l_order, m, n )
+                                    -
+                                    calculate_kochin_cosexp_t0( 0.0, beta, l_order, m, n )
                                 );
 
-                        // Get radiation coefficient
-                        if ( qtf_type == 0 )
-                        {
-                            crn = ( kochin_cos_rad_i[idx1] - kochin_cos_rad_j[idx1] );
-                            srn = ( kochin_sin_rad_i[idx1] - kochin_sin_rad_j[idx1] );
-                        }
-                        else
-                        {
-                            crn = ( kochin_cos_rad_i[idx1] + kochin_cos_rad_j[idx1] );
-                            srn = ( kochin_sin_rad_i[idx1] + kochin_sin_rad_j[idx1] );
-                        }
+                    t1_int  = (
+                                    calculate_kochin_cosexp_t1( 2*PI, beta, l_order, m, n )
+                                    -
+                                    calculate_kochin_cosexp_t1( 0.0, beta, l_order, m, n )
+                                );
 
-                        // Calculate angular integrals
-                        t0_int  = (
-                                        calculate_kochin_cosexp_t0( 2*PI, beta, l_order, m, n )
-                                        -
-                                        calculate_kochin_cosexp_t0( 0.0, beta, l_order, m, n )
-                                    );
+                    t2_int  = (
+                                    calculate_kochin_cosexp_t2( 2*PI, beta, l_order, m, n )
+                                    -
+                                    calculate_kochin_cosexp_t2( 0.0, beta, l_order, m, n )
+                                );
 
-                        t1_int  = (
-                                        calculate_kochin_cosexp_t1( 2*PI, beta, l_order, m, n )
-                                        -
-                                        calculate_kochin_cosexp_t1( 0.0, beta, l_order, m, n )
-                                    );
+                    t3_int  = (
+                                    calculate_kochin_cosexp_t3( 2*PI, beta, l_order, m, n )
+                                    -
+                                    calculate_kochin_cosexp_t3( 0.0, beta, l_order, m, n )
+                                );
 
-                        t2_int  = (
-                                        calculate_kochin_cosexp_t2( 2*PI, beta, l_order, m, n )
-                                        -
-                                        calculate_kochin_cosexp_t2( 0.0, beta, l_order, m, n )
-                                    );
-
-                        t3_int  = (
-                                        calculate_kochin_cosexp_t3( 2*PI, beta, l_order, m, n )
-                                        -
-                                        calculate_kochin_cosexp_t3( 0.0, beta, l_order, m, n )
-                                    );
-
-                        // Calculate body force
-                        body_force[idx0] += (
-                                                cpm * crn * t0_int
-                                                +
-                                                cpm * srn * t1_int
-                                                +
-                                                spm * crn * t2_int
-                                                +
-                                                spm * srn * t3_int
-                                            );
-                    }
+                    // Calculate body force
+                    body_force[idx0] += (
+                                            cpm * crn * t0_int
+                                            +
+                                            cpm * srn * t1_int
+                                            +
+                                            spm * crn * t2_int
+                                            +
+                                            spm * srn * t3_int
+                                        );
                 }
             }
         }
