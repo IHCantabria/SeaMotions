@@ -7,6 +7,7 @@
 #include "froude_krylov.hpp"
 #include "../../math/integration.hpp"
 #include "../../math/math_tools.hpp"
+#include "../../math/special_math.hpp"
 #include "../../waves/waves_common.hpp"
 #include "../../waves/wave_dispersion_so.hpp"
 #include "tools.hpp"
@@ -827,7 +828,7 @@ void    calculate_qtf_indirect_fs_far_term(
                                             )
 {
     // Define local variables
-    int     idx0    = 0;
+    int         idx0                = 0;
 
     // Get required fields
     cusfloat    ang_freq_i          = input->angfreqs[freq_pos_i];
@@ -937,6 +938,67 @@ void    calculate_qtf_indirect_fs_far_term(
 
     // Delete local heap memory
     delete wdso; 
+}
+
+
+cuscomplex  calculate_r1_integral(
+                                    cusfloat            R,
+                                    WaveDispersionSO*   wdso,
+                                    int                 l_order,
+                                    int                 qtf_type
+                                )
+{
+    // Calculate scaling factors
+    cuscomplex sf0( 1.0, 0.0 );
+    if ( qtf_type == 1 )
+    {
+        sf0 = std::exp( cuscomplex( 0.0, PI / 2.0 ) );
+    }
+
+    cusfloat    ep_l    = ( l_order > 0 ) ? 2 : 1;
+    cuscomplex  sfi     = std::pow( cuscomplex( 0.0, 1.0 ), l_order );
+
+    // Calculate alpha and beta parameters
+    cusfloat    alpha   = 0.0;
+    cusfloat    beta    = wdso->k0;
+
+    if ( qtf_type == 0 )
+    {
+        alpha   = wdso->k_diff_mod - wdso->k1;
+    }
+    else
+    {
+        alpha   = wdso->k_sum_mod + wdso->k1;
+    }
+
+    // Calculate 0 to inf analytical integral
+    cuscomplex  int_value_ana   = besseljn_expi_int( 
+                                                        alpha,
+                                                        beta,
+                                                        static_cast<cusfloat>( l_order )
+                                                    );
+
+    // Calculate 0 to R numerical integral
+    cusfloat    cos_value_num   = romberg_quadrature(
+                                                        besseljn_cos_kernel,
+                                                        0.0,
+                                                        R,
+                                                        1e-6
+                                                    );
+    
+    cusfloat    sin_value_num   = romberg_quadrature(
+                                                        besseljn_sin_kernel,
+                                                        0.0,
+                                                        R,
+                                                        1e-6
+                                                    );
+
+    cuscomplex  int_value_num   = cuscomplex( cos_value_num, sin_value_num );
+
+    // Calculate R to infinite integral
+    cuscomplex  int_value       = sf0 * ep_l * sfi * ( int_value_ana - int_value_num );
+
+    return int_value;
 }
 
 
