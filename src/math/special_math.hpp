@@ -70,6 +70,10 @@ cusfloat    bessely1(
                                     cusfloat x
                     );
 
+cusfloat    ep_n( 
+                                    int n 
+                );
+
 cusfloat    expint_i( 
                                     cusfloat x
                     );

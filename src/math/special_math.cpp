@@ -585,6 +585,12 @@ cusfloat    bessely1( cusfloat x )
 }
 
 
+cusfloat    ep_n( int n )
+{
+    return ( n > 0 ) ? 2.0 : 1.0;
+}
+
+
 cusfloat    expint_i( cusfloat x )
 {
     cusfloat ei = EULERGAMMA + std::log(x);
