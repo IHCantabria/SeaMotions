@@ -101,4 +101,10 @@ cusfloat    wave_vertical_profile_fo_dz(
                                             cusfloat    z
                                         );
 
+cusfloat    wave_vertical_profile_mod_fo(
+                                            cusfloat    k,
+                                            cusfloat    h,
+                                            cusfloat    z
+                                        );
+
 #endif

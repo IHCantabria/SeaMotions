@@ -303,3 +303,13 @@ cusfloat    wave_vertical_profile_fo_dz(
 {
     return k * std::sinh( k * ( h + z ) ) / std::cosh( k * h );
 }
+
+
+cusfloat    wave_vertical_profile_mod_fo(
+                                            cusfloat    k,
+                                            cusfloat    h,
+                                            cusfloat    z
+                                        )
+{
+    return wave_vertical_profile_fo( k, h, z ) / ( k * h * ( 1 - pow2s( std::tanh( k * h ) ) ) + std::tanh( k * h ) );
+}
