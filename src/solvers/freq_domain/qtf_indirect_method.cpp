@@ -815,6 +815,131 @@ void    calculate_qtf_indirect_fs_near_term(
 }
 
 
+void    calculate_qtf_indirect_fs_far_term(
+                                                Input*          input,
+                                                MeshGroup*      mesh_gp,
+                                                int             freq_pos_i,
+                                                int             freq_pos_j,
+                                                int             qtf_type,
+                                                SimulationData* sim_data,
+                                                MLGCmpx*        body_gp,
+                                                cuscomplex*     qtf_fs_force
+                                            )
+{
+    // Define local variables
+    int     idx0    = 0;
+
+    // Get required fields
+    cusfloat    ang_freq_i          = input->angfreqs[freq_pos_i];
+    cusfloat    ang_freq_j          = input->angfreqs[freq_pos_j];
+
+    cusfloat    grav_acc            = input->grav_acc;
+    cusfloat    rho_w               = input->water_density;
+
+    // Define second order wave dispersion object
+    WaveDispersionSO*   wdso        = new WaveDispersionSO( 
+                                                            input->wave_amplitude,
+                                                            input->wave_amplitude,
+                                                            ang_freq_i,
+                                                            ang_freq_j,
+                                                            input->heads[0],
+                                                            input->heads[0],
+                                                            input->water_depth,
+                                                            input->grav_acc
+                                                        );
+
+    // Define common scaling factors
+    cusfloat    k_ds    = 0.0;
+    cusfloat    sf0     = 0.0;
+    cusfloat    sf1     = 0.0;
+    cusfloat    w_ds    = 0.0;
+
+    if ( qtf_type == 0 )
+    {
+        k_ds    = wdso->k_diff_mod;
+        sf0     = 1.0;
+        sf1     = - 1.0;
+        w_ds    = wdso->w_diff;
+    }
+    else
+    {
+        k_ds    = wdso->k_sum_mod;
+        sf0     = - 1.0;
+        sf1     = 1.0;
+        w_ds    = wdso->w_sum;
+    }
+
+    cuscomplex  sf2     = cuscomplex( 0.0, 1.0 ) * w_ds * rho_w / grav_acc;
+    cuscomplex  sf3     = (
+                                cuscomplex( 0.0, 1.0 )
+                                *
+                                input->wave_amplitude
+                                *
+                                grav_acc
+                                *
+                                8.0 
+                                * 
+                                PI
+                                *
+                                std::sqrt( k_ds )
+                                *
+                                wave_vertical_profile_mod_fo( 
+                                                                k_ds,
+                                                                input->water_depth,
+                                                                0.0
+                                                            )
+                            );
+
+    cuscomplex  kappa_1 = sf0 * cuscomplex( 0.0, -1.0 ) * w_ds * wdso->k0 * wdso->k1;
+    cuscomplex  kappa_2 =  (
+                                (
+                                    cuscomplex( 0.0, 1.0 )
+                                    *
+                                    w_ds
+                                    *
+                                    pow2s( ang_freq_i ) / grav_acc
+                                    *
+                                    pow2s( ang_freq_j ) / grav_acc
+                                )
+                                +
+                                sf0 * (
+                                            cuscomplex( 0.0, 1.0 ) * ang_freq_i * ang_freq_j / 2.0
+                                            *
+                                            (
+                                                pow2s( wdso->k0 ) / ( ang_freq_i * pow2s( std::cosh( wdso->k0 * input->water_depth ) ) )
+                                                +
+                                                sf1 * pow2s( wdso->k1 ) / ( ang_freq_j * pow2s( std::cosh( wdso->k1 * input->water_depth ) ) )
+                                            )
+                                        )
+                            );
+
+    // Calculate second order forces for the different headings combinations
+    for ( int ih1=0; ih1<input->heads_np; ih1++ )
+    {
+        for ( int ih2=0; ih2<input->heads_np; ih2++ )
+        {
+            
+            for ( int j=0; j<mesh_gp->meshes_np; j++ )
+            {
+                // Get index for the storage of the body force
+                idx0 = (
+                            ih1 * ( input->dofs_np * input->bodies_np * input->heads_np )
+                            +
+                            ih2 * ( input->dofs_np * input->bodies_np )
+                            + 
+                            j * input->dofs_np
+                        );
+
+                //
+            }
+        }
+    }
+
+    // Delete local heap memory
+    delete wdso; 
+}
+
+
 void    calculate_secord_force_indirect(
                                             Input*      input,
                                             MeshGroup*  mesh_gp,
