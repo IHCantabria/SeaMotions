@@ -11,7 +11,7 @@
 #include "special_math.hpp"
 
 
-cusfloat besseli0(cusfloat x)
+cusfloat    besseli0( cusfloat x )
 {
     // Check if the input is a real positive number
     if (x < -3.75)
@@ -85,7 +85,7 @@ cusfloat besseli0(cusfloat x)
 }
 
 
-cusfloat besseli1(cusfloat x)
+cusfloat    besseli1( cusfloat x )
 {
     // Check if the input is a real positive number
     if (x < -3.75)
@@ -160,7 +160,7 @@ cusfloat besseli1(cusfloat x)
 }
 
 
-cusfloat besselj0(cusfloat x)
+cusfloat    besselj0( cusfloat x )
 {
     // Check if the input is a real positive number
     if (x < 0.0)
@@ -208,7 +208,7 @@ cusfloat besselj0(cusfloat x)
 }
 
 
-cusfloat besselj1(cusfloat x)
+cusfloat    besselj1( cusfloat x )
 {
     // Check if the input is a real positive number
     if (x < 0.0)
@@ -257,7 +257,96 @@ cusfloat besselj1(cusfloat x)
 }
 
 
-cusfloat besselk0(cusfloat x)
+cusfloat    besseljn_cos_int( 
+                               cusfloat alpha, 
+                               cusfloat beta, 
+                               cusfloat nu
+                           )
+{
+    cusfloat int_value = 0.0;
+    if ( beta < alpha )
+    {
+        int_value = (
+                        std::cos( nu * std::asin( beta / alpha ) )
+                        /
+                        std::sqrt( pow2s( alpha ) - pow2s( beta ) )
+                    );
+    }
+    else if ( beta > alpha )
+    {
+        cusfloat    f1 = std::sqrt( pow2s( beta ) - pow2s( alpha ) );
+        int_value = (
+                        - std::pow( alpha, nu ) * std::sin( nu * PI / 2.0 )
+                        /
+                        ( f1 * std::pow( beta + f1, nu ) )
+                    );
+    }
+}
+
+
+cusfloat    besseljn_cos_kernel(
+                                    cusfloat alpha,
+                                    cusfloat beta,
+                                    cusfloat nu,
+                                    cusfloat x
+                                )
+{
+    return cos( alpha * x ) * std::cyl_bessel_j( nu, beta * x );
+}
+
+
+cuscomplex  besseljn_expi_int( 
+                                cusfloat alpha,
+                                cusfloat beta,
+                                cusfloat nu
+                            )
+{
+    return cuscomplex( 
+                            besseljn_cos_int( alpha, beta, nu ),
+                            besseljn_sin_int( alpha, beta, nu )
+                        );
+}
+
+
+cusfloat    besseljn_sin_int( 
+                                cusfloat alpha, 
+                                cusfloat beta, 
+                                cusfloat nu
+                            )
+{
+    cusfloat int_value = 0.0;
+    if ( beta < alpha )
+    {
+        int_value = (
+                        std::sin( nu * std::asin( beta / alpha ) )
+                        /
+                        std::sqrt( pow2s( alpha ) - pow2s( beta ) )
+                    );
+    }
+    else if ( beta > alpha )
+    {
+        cusfloat    f1 = std::sqrt( pow2s( beta ) - pow2s( alpha ) );
+        int_value = (
+                        std::pow( alpha, nu ) * std::cos( nu * PI / 2.0 )
+                        /
+                        ( f1 * std::pow( beta + f1, nu ) )
+                    );
+    }
+}
+
+
+cusfloat    besseljn_sin_kernel(
+                                    cusfloat alpha,
+                                    cusfloat beta,
+                                    cusfloat nu,
+                                    cusfloat x
+                                )
+{
+    return sin( alpha * x ) * std::cyl_bessel_j( nu, beta * x );
+}
+
+
+cusfloat    besselk0( cusfloat x )
 {
     // Check if the input is a real positive number
     if (!(x > 0.0))
@@ -327,7 +416,7 @@ cusfloat besselk0(cusfloat x)
 }
 
 
-cusfloat besselk1(cusfloat x)
+cusfloat    besselk1( cusfloat x )
 {
     // Check if the input is a real positive number
     if (!(x > 0.0))
@@ -397,7 +486,7 @@ cusfloat besselk1(cusfloat x)
 }
 
 
-cusfloat bessely0(cusfloat x)
+cusfloat    bessely0( cusfloat x )
 {
     // Check if the input is a real positive number
     if (x < 0.0)
@@ -446,7 +535,7 @@ cusfloat bessely0(cusfloat x)
 }
 
 
-cusfloat bessely1(cusfloat x)
+cusfloat    bessely1( cusfloat x )
 {
     // Check if the input is a real positive number
     if (x < 0.0)
@@ -496,7 +585,7 @@ cusfloat bessely1(cusfloat x)
 }
 
 
-cusfloat expint_i(cusfloat x)
+cusfloat    expint_i( cusfloat x )
 {
     cusfloat ei = EULERGAMMA + std::log(x);
     cusfloat ei_old = ei;
@@ -525,7 +614,10 @@ cusfloat expint_i(cusfloat x)
 }
 
 
-cusfloat legendre_poly_raw(int n, cusfloat x)
+cusfloat    legendre_poly_raw( 
+                                int n, 
+                                cusfloat x
+                            )
 {
     // Include name
     using namespace std;
@@ -574,7 +666,10 @@ cusfloat legendre_poly_raw(int n, cusfloat x)
 }
 
 
-cusfloat legendre_poly_der_raw(int n, cusfloat x)
+cusfloat    legendre_poly_der_raw(
+                                    int n, 
+                                    cusfloat x
+                                )
 {
     // Include name
     using namespace std;
@@ -623,7 +718,9 @@ cusfloat legendre_poly_der_raw(int n, cusfloat x)
 }
 
 
-cusfloat polynomial_f0(cusfloat x)
+cusfloat    polynomial_f0(
+                            cusfloat x
+                        )
 {
     // Define local variables
     cusfloat xi = 3.0/x;
@@ -647,7 +744,7 @@ cusfloat polynomial_f0(cusfloat x)
 }
 
 
-cusfloat polynomial_f1(cusfloat x)
+cusfloat    polynomial_f1( cusfloat x )
 {
     // Define local variables
     cusfloat xi = 3.0/x;
@@ -671,7 +768,7 @@ cusfloat polynomial_f1(cusfloat x)
 }
 
 
-cusfloat polynomial_th0(cusfloat x)
+cusfloat    polynomial_th0( cusfloat x )
 {
     // Define local variables
     cusfloat xi = 3.0/x;
@@ -695,7 +792,7 @@ cusfloat polynomial_th0(cusfloat x)
 }
 
 
-cusfloat polynomial_th1(cusfloat x)
+cusfloat    polynomial_th1( cusfloat x )
 {
     // Define local variables
     cusfloat xi = 3.0/x;
@@ -719,7 +816,7 @@ cusfloat polynomial_th1(cusfloat x)
 }
 
 
-cusfloat psi_fun(int n)
+cusfloat    psi_fun( int n )
 {
     // Check for function domain bounds
     if (n <= 0)
@@ -740,7 +837,7 @@ cusfloat psi_fun(int n)
 }
 
 
-cusfloat rational_fraction_f0(cusfloat x)
+cusfloat    rational_fraction_f0( cusfloat x )
 {
     // Define local constants
     cusfloat a0 = 0.79788454;
@@ -759,7 +856,7 @@ cusfloat rational_fraction_f0(cusfloat x)
 }
 
 
-cusfloat rational_fraction_f1(cusfloat x)
+cusfloat    rational_fraction_f1( cusfloat x )
 {
     // Define local constants
     cusfloat a0 = 0.79788459;
@@ -778,7 +875,7 @@ cusfloat rational_fraction_f1(cusfloat x)
 }
 
 
-cusfloat rational_fraction_struve0(cusfloat x)
+cusfloat rational_fraction_struve0( cusfloat x )
 {
     // Define local constans
     cusfloat a0 = 0.99999906;
@@ -803,7 +900,7 @@ cusfloat rational_fraction_struve0(cusfloat x)
 }
 
 
-cusfloat rational_fraction_struve1(cusfloat x)
+cusfloat rational_fraction_struve1( cusfloat x )
 {
     // Define local constans
     cusfloat a0 = 1.00000004;
@@ -828,7 +925,7 @@ cusfloat rational_fraction_struve1(cusfloat x)
 }
 
 
-cusfloat rational_fraction_th0(cusfloat x)
+cusfloat rational_fraction_th0( cusfloat x )
 {
     // Define local constants
     cusfloat a0 = -0.12499967;
@@ -848,7 +945,7 @@ cusfloat rational_fraction_th0(cusfloat x)
 }
 
 
-cusfloat rational_fraction_th1(cusfloat x)
+cusfloat rational_fraction_th1( cusfloat x )
 {
     // Define local constants
     cusfloat a0 = 0.37499947;
@@ -868,7 +965,7 @@ cusfloat rational_fraction_th1(cusfloat x)
 }
 
 
-cusfloat struve0(cusfloat x)
+cusfloat struve0( cusfloat x )
 {
     // Check if the input is a real positive number
     if (x < 0.0)
@@ -915,7 +1012,7 @@ cusfloat struve0(cusfloat x)
 }
 
 
-cusfloat struve1(cusfloat x)
+cusfloat struve1( cusfloat x )
 {
     // Check if the input is a real positive number
     if (x < 0.0)

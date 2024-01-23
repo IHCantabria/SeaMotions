@@ -6,27 +6,126 @@
 #include "../config.hpp"
 
 
-cusfloat besseli0(cusfloat x);
-cusfloat besseli1(cusfloat x);
-cusfloat besselj0(cusfloat x);
-cusfloat besselj1(cusfloat x);
-cusfloat besselk0(cusfloat x);
-cusfloat besselk1(cusfloat x);
-cusfloat bessely0(cusfloat x);
-cusfloat bessely1(cusfloat x);
-cusfloat expint_i(cusfloat x);
-cusfloat legendre_poly_raw(int n, cusfloat x);
-cusfloat legendre_poly_der_raw(int n, cusfloat x);
-cusfloat polynomial_f0(cusfloat x);
-cusfloat polynomial_f1(cusfloat x);
-cusfloat polynomial_th0(cusfloat x);
-cusfloat polynomial_th1(cusfloat x);
-cusfloat psi_fun(int n);
-cusfloat rational_fraction_f0(cusfloat x);
-cusfloat rational_fraction_f1(cusfloat x);
-cusfloat rational_fraction_th0(cusfloat x);
-cusfloat rational_fraction_th1(cusfloat x);
-cusfloat struve0(cusfloat x);
-cusfloat struve1(cusfloat x);
+cusfloat    besseli0( 
+                                    cusfloat x 
+                    );
+
+cusfloat    besseli1( 
+                                    cusfloat x
+                    );
+
+cusfloat    besselj0( 
+                                    cusfloat x
+                    );
+
+cusfloat    besselj1( 
+                                    cusfloat x
+                    );
+
+cusfloat    besseljn_cos_int( 
+                                    cusfloat alpha, 
+                                    cusfloat beta, 
+                                    cusfloat nu
+                           );
+
+cusfloat    besseljn_cos_kernel(
+                                    cusfloat alpha,
+                                    cusfloat beta,
+                                    cusfloat nu,
+                                    cusfloat x
+                                );
+
+cuscomplex  besseljn_expi_int( 
+                                    cusfloat alpha,
+                                    cusfloat beta,
+                                    cusfloat nu
+                            );
+
+cusfloat    besseljn_sin_int( 
+                                    cusfloat alpha, 
+                                    cusfloat beta, 
+                                    cusfloat nu
+                            );
+
+cusfloat    besseljn_sin_kernel(
+                                    cusfloat alpha,
+                                    cusfloat beta,
+                                    cusfloat nu,
+                                    cusfloat x
+                                );
+
+cusfloat    besselk0( 
+                                    cusfloat x 
+                    );
+
+cusfloat    besselk1( 
+                                    cusfloat x
+                    );
+
+cusfloat    bessely0( 
+                                    cusfloat x
+                    );
+
+cusfloat    bessely1( 
+                                    cusfloat x
+                    );
+
+cusfloat    expint_i( 
+                                    cusfloat x
+                    );
+
+cusfloat    legendre_poly_raw( 
+                                    int n,
+                                    cusfloat x 
+                            );
+
+cusfloat    legendre_poly_der_raw( 
+                                    int n,
+                                    cusfloat x
+                                );
+
+cusfloat    polynomial_f0( 
+                                    cusfloat x
+                        );
+
+cusfloat    polynomial_f1( 
+                                    cusfloat x 
+                        );
+
+cusfloat    polynomial_th0( 
+                                    cusfloat x
+                            );
+
+cusfloat    polynomial_th1( 
+                                    cusfloat x
+                        );
+
+cusfloat    psi_fun( 
+                                    int n
+                    );
+
+cusfloat    rational_fraction_f0( 
+                                    cusfloat x
+                                );
+
+cusfloat    rational_fraction_f1( 
+                                    cusfloat x
+                                );
+
+cusfloat    rational_fraction_th0( 
+                                    cusfloat x
+                                );
+
+cusfloat    rational_fraction_th1( 
+                                    cusfloat x
+                                );
+
+cusfloat    struve0( 
+                                    cusfloat x
+                    );
+
+cusfloat    struve1( 
+                                    cusfloat x
+                    );
 
 #endif
