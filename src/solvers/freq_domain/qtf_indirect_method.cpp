@@ -955,7 +955,7 @@ cuscomplex  calculate_r1_integral(
         sf0 = std::exp( cuscomplex( 0.0, PI / 2.0 ) );
     }
 
-    cusfloat    ep_l    = ( l_order > 0 ) ? 2 : 1;
+    cusfloat    ep_l    = ep_n( l_order );
     cuscomplex  sfi     = std::pow( cuscomplex( 0.0, 1.0 ), l_order );
 
     // Calculate alpha and beta parameters
@@ -999,6 +999,20 @@ cuscomplex  calculate_r1_integral(
     cuscomplex  int_value       = sf0 * ep_l * sfi * ( int_value_ana - int_value_num );
 
     return int_value;
+}
+
+
+cuscomplex  calculate_r2_integral(
+                                    cusfloat            R,
+                                    WaveDispersionSO*   wdso,
+                                    int                 l_order,
+                                    int                 qtf_type
+                                )
+{
+    // Define scaling factors
+    cuscomplex  sf0     = std::exp( cuscomplex( 0.0, PI / 2.0 ) );
+    cusfloat    ep_l    = ep_n( l_order );
+    cuscomplex  sfi     = std::pow( cuscomplex( 0.0, 1.0 ), l_order );
 }
 
 
