@@ -830,17 +830,41 @@ void    calculate_qtf_indirect_fs_far_term(
 {
     // Define local variables
     int         forces_np           = pow2s( input->heads_np ) * input->bodies_np * input->dofs_np;
+    int         forces_head_np      = input->bodies_np * input->dofs_np;
     int         idx0                = 0;
+    int         idx1                = 0;
     cuscomplex* idf11               = generate_empty_vector<cuscomplex>( forces_np );
     cuscomplex* idf12               = generate_empty_vector<cuscomplex>( forces_np );
     cuscomplex* idf21               = generate_empty_vector<cuscomplex>( forces_np );
     cuscomplex* idf22               = generate_empty_vector<cuscomplex>( forces_np );
+    cuscomplex  r0                  = cuscomplex( 0.0, 0.0 );
+    cuscomplex  r1                  = cuscomplex( 0.0, 0.0 );
+    cuscomplex* th0_aux_force       = generate_empty_vector<cuscomplex>( forces_head_np );
+    cuscomplex* th0_lm1_force       = generate_empty_vector<cuscomplex>( forces_head_np );
+    cuscomplex* th0_l_force         = generate_empty_vector<cuscomplex>( forces_head_np );
+    cuscomplex* th0_lp1_force       = generate_empty_vector<cuscomplex>( forces_head_np );
+    cuscomplex* th1_aux_force       = generate_empty_vector<cuscomplex>( forces_head_np );
+    cuscomplex* th1_lm1_force       = generate_empty_vector<cuscomplex>( forces_head_np );
+    cuscomplex* th1_l_force         = generate_empty_vector<cuscomplex>( forces_head_np );
+    cuscomplex* th1_lp1_force       = generate_empty_vector<cuscomplex>( forces_head_np );
+    cuscomplex* vec_aux_force       = generate_empty_vector<cuscomplex>( forces_head_np );
 
     // Get required fields
     cusfloat    ang_freq_i          = input->angfreqs[freq_pos_i];
     cusfloat    ang_freq_j          = input->angfreqs[freq_pos_j];
 
+    cuscomplex* kochin_pert_cos_i   = &( sim_data->qtf_kochin_pert_cos_freqs[freq_pos_i*sim_data->qtf_kochin_heads_np] );
+    cuscomplex* kochin_pert_sin_i   = &( sim_data->qtf_kochin_pert_sin_freqs[freq_pos_i*sim_data->qtf_kochin_heads_np] );
+    cuscomplex* kochin_pert_cos_j   = &( sim_data->qtf_kochin_pert_cos_freqs[freq_pos_j*sim_data->qtf_kochin_heads_np] );
+    cuscomplex* kochin_pert_sin_j   = &( sim_data->qtf_kochin_pert_sin_freqs[freq_pos_j*sim_data->qtf_kochin_heads_np] );
+
+    cuscomplex* kochin_rad_cos_i    = &( sim_data->qtf_kochin_rad_cos_freqs[freq_pos_i*sim_data->qtf_kochin_rad_np] );
+    cuscomplex* kochin_rad_sin_i    = &( sim_data->qtf_kochin_rad_sin_freqs[freq_pos_i*sim_data->qtf_kochin_rad_np] );
+    cuscomplex* kochin_rad_cos_j    = &( sim_data->qtf_kochin_rad_cos_freqs[freq_pos_j*sim_data->qtf_kochin_rad_np] );
+    cuscomplex* kochin_rad_sin_j    = &( sim_data->qtf_kochin_rad_sin_freqs[freq_pos_j*sim_data->qtf_kochin_rad_np] );
+
     cusfloat    grav_acc            = input->grav_acc;
+    cusfloat    radius_fs           = input->bodies[0]->mesh_fs_qtf->get_fs_radius( );
     cusfloat    rho_w               = input->water_density;
 
     // Define second order wave dispersion object
@@ -921,37 +945,247 @@ void    calculate_qtf_indirect_fs_far_term(
                             );
 
     // Calculate second order forces for the different headings combinations
-    for ( int ih1=0; ih1<input->heads_np; ih1++ )
+    for ( int ih0=0; ih0<input->heads_np; ih0++ )
     {
-        for ( int ih2=0; ih2<input->heads_np; ih2++ )
+        for ( int ih1=0; ih1<input->heads_np; ih1++ )
         {
-            
-            for ( int j=0; j<mesh_gp->meshes_np; j++ )
-            {
-                // Get index for the storage of the body force
-                idx0 = (
-                            ih1 * ( input->dofs_np * input->bodies_np * input->heads_np )
-                            +
-                            ih2 * ( input->dofs_np * input->bodies_np )
-                            + 
-                            j * input->dofs_np
-                        );
+            // Get index for the storage of the body force
+            idx0 = (
+                        ih0 * ( input->dofs_np * input->bodies_np * input->heads_np )
+                        +
+                        ih1 * ( input->dofs_np * input->bodies_np )
+                    );
 
-                //
+            // Get first theta integrals
+            idx1    = ih0 * ( input->bodies_np * input->kochin_np );
+            calculate_theta_integral(
+                                        input,
+                                        input->heads[ih0],
+                                        -1,
+                                        qtf_type,
+                                        0,
+                                        &( kochin_pert_cos_j[idx1] ),
+                                        &( kochin_pert_sin_j[idx1] ),
+                                        kochin_rad_cos_i,
+                                        kochin_rad_sin_i,
+                                        kochin_rad_cos_j,
+                                        kochin_rad_sin_j,
+                                        th0_lm1_force
+                                    );
+
+            calculate_theta_integral(
+                                        input,
+                                        input->heads[ih0],
+                                        0,
+                                        qtf_type,
+                                        0,
+                                        &( kochin_pert_cos_j[idx1] ),
+                                        &( kochin_pert_sin_j[idx1] ),
+                                        kochin_rad_cos_i,
+                                        kochin_rad_sin_i,
+                                        kochin_rad_cos_j,
+                                        kochin_rad_sin_j,
+                                        th0_l_force
+                                    );
+
+            idx1    = ih1 * ( input->bodies_np * input->kochin_np );
+            calculate_theta_integral(
+                                        input,
+                                        input->heads[ih1],
+                                        -1,
+                                        qtf_type,
+                                        1,
+                                        &( kochin_pert_cos_i[idx1] ),
+                                        &( kochin_pert_sin_i[idx1] ),
+                                        kochin_rad_cos_i,
+                                        kochin_rad_sin_i,
+                                        kochin_rad_cos_j,
+                                        kochin_rad_sin_j,
+                                        th1_lm1_force
+                                    );
+            
+            calculate_theta_integral(
+                                        input,
+                                        input->heads[ih1],
+                                        0,
+                                        qtf_type,
+                                        1,
+                                        &( kochin_pert_cos_i[idx1] ),
+                                        &( kochin_pert_sin_i[idx1] ),
+                                        kochin_rad_cos_i,
+                                        kochin_rad_sin_i,
+                                        kochin_rad_cos_j,
+                                        kochin_rad_sin_j,
+                                        th1_l_force
+                                    );
+
+            // Loop over l order in order to perform the sumation
+            for ( int l_order=0; l_order<100; l_order++ )
+            {
+                // Calculate r1 function
+                r0 = calculate_r0_integral( radius_fs, wdso, l_order, qtf_type );
+
+                // Calculate r2 function
+                r1 = calculate_r1_integral( radius_fs, wdso, l_order, qtf_type );
+
+                // Calculate theta function
+                idx1    = ih0 * ( input->bodies_np * input->kochin_np );
+                calculate_theta_integral(
+                                            input,
+                                            input->heads[ih0],
+                                            l_order,
+                                            qtf_type,
+                                            0,
+                                            &( kochin_pert_cos_j[idx1] ),
+                                            &( kochin_pert_sin_j[idx1] ),
+                                            kochin_rad_cos_i,
+                                            kochin_rad_sin_i,
+                                            kochin_rad_cos_j,
+                                            kochin_rad_sin_j,
+                                            th0_lp1_force
+                                        );
+
+                idx1    = ih1 * ( input->bodies_np * input->kochin_np );
+                calculate_theta_integral(
+                                            input,
+                                            input->heads[ih1],
+                                            l_order,
+                                            qtf_type,
+                                            1,
+                                            &( kochin_pert_cos_i[idx1] ),
+                                            &( kochin_pert_sin_i[idx1] ),
+                                            kochin_rad_cos_i,
+                                            kochin_rad_sin_i,
+                                            kochin_rad_cos_j,
+                                            kochin_rad_sin_j,
+                                            th1_lp1_force
+                                        );
+
+                // Calculate theta auxiliar function
+                sv_add( forces_head_np, th0_lm1_force, th0_lp1_force, th0_aux_force );
+                sv_add( forces_head_np, th1_lm1_force, th1_lp1_force, th1_aux_force );
+
+                // Scale theta integrals and sum to their corresponding integrals
+                svs_mult( forces_head_np, th0_aux_force, 0.5 * r0, vec_aux_force );
+                sv_add( forces_head_np, vec_aux_force, &( idf11[idx0] ), &( idf11[idx0] ));
+
+                svs_mult( forces_head_np, th1_aux_force, 0.5 * r1, vec_aux_force );
+                sv_add( forces_head_np, vec_aux_force, &( idf12[idx0] ), &( idf12[idx0] ));
+
+                svs_mult( forces_head_np, th0_l_force, r0, vec_aux_force );
+                sv_add( forces_head_np, vec_aux_force, &( idf21[idx0] ), &( idf21[idx0] ));
+
+                svs_mult( forces_head_np, th1_l_force, r1, vec_aux_force );
+                sv_add( forces_head_np, vec_aux_force, &( idf22[idx0] ), &( idf22[idx0] ));
+
+                // Roll theta values
+                copy_vector( forces_head_np, th0_l_force, th0_lm1_force );
+                copy_vector( forces_head_np, th0_lp1_force, th0_l_force );
+                copy_vector( forces_head_np, th1_l_force, th1_lm1_force );
+                copy_vector( forces_head_np, th1_lp1_force, th1_l_force );
+
             }
+
         }
     }
+
+    // Scale radial and angular integrals
+    cuscomplex  sf_11 = (
+                            -1.0
+                            *
+                            sf2
+                            *
+                            kappa_1
+                            * 
+                            sf3 
+                            *
+                            std::sqrt( wdso->k1 ) 
+                            *
+                            wave_vertical_profile_mod_fo( wdso->k1, input->water_depth, 0.0 )
+                            /
+                            wdso->w0
+                        );
+    
+    cuscomplex  sf_12 = (
+                            sf0
+                            *
+                            sf2
+                            *
+                            kappa_1
+                            *
+                            sf3 
+                            *
+                            std::sqrt( wdso->k0 ) 
+                            *
+                            wave_vertical_profile_mod_fo( wdso->k0, input->water_depth, 0.0 )
+                            /
+                            wdso->w1
+                        );
+
+    cuscomplex  sf_21 = (
+                            -1.0
+                            *
+                            sf2
+                            *
+                            kappa_2
+                            *
+                            sf3
+                            *
+                            std::sqrt( wdso->k1 ) 
+                            *
+                            wave_vertical_profile_mod_fo( wdso->k1, input->water_depth, 0.0 )
+                            /
+                            wdso->w0
+                        );
+    
+    cuscomplex  sf_22 = (
+                            sf0
+                            *
+                            sf2
+                            *
+                            kappa_2
+                            *
+                            sf3
+                            *
+                            std::sqrt( wdso->k0) 
+                            *
+                            wave_vertical_profile_mod_fo( wdso->k0, input->water_depth, 0.0 )
+                            /
+                            wdso->w1
+                        );
+
+    svs_mult( forces_np, idf11, sf_11, idf11 );
+    svs_mult( forces_np, idf12, sf_12, idf12 );
+    svs_mult( forces_np, idf21, sf_21, idf21 );
+    svs_mult( forces_np, idf22, sf_22, idf22 );
+
+    // Add contributions from the different integrals to have the 
+    // comple far field FS contribution
+    clear_vector( forces_np, qtf_fs_force );
+    sv_add( forces_np, qtf_fs_force, idf11, qtf_fs_force );
+    sv_add( forces_np, qtf_fs_force, idf12, qtf_fs_force );
+    sv_add( forces_np, qtf_fs_force, idf21, qtf_fs_force );
+    sv_add( forces_np, qtf_fs_force, idf22, qtf_fs_force );
 
     // Delete local heap memory
     mkl_free( idf11 );
     mkl_free( idf12 );
     mkl_free( idf21 );
     mkl_free( idf22 );
+    mkl_free( th0_aux_force );
+    mkl_free( th0_lm1_force );
+    mkl_free( th0_l_force   );
+    mkl_free( th0_lp1_force );
+    mkl_free( th1_aux_force );
+    mkl_free( th1_lm1_force );
+    mkl_free( th1_l_force   );
+    mkl_free( th1_lp1_force );
+    mkl_free( vec_aux_force );
     delete wdso; 
 }
 
 
-cuscomplex  calculate_r1_integral(
+cuscomplex  calculate_r0_integral(
                                     cusfloat            R,
                                     WaveDispersionSO*   wdso,
                                     int                 l_order,
@@ -1012,7 +1246,7 @@ cuscomplex  calculate_r1_integral(
 }
 
 
-cuscomplex  calculate_r2_integral(
+cuscomplex  calculate_r1_integral(
                                     cusfloat            R,
                                     WaveDispersionSO*   wdso,
                                     int                 l_order,
@@ -1077,11 +1311,12 @@ cuscomplex  calculate_theta_integral(
                                         cusfloat    beta,
                                         int         l_order,
                                         int         qtf_type,
+                                        int         theta_type,
                                         cuscomplex* kochin_cos_pert_j,
                                         cuscomplex* kochin_sin_pert_j,
                                         cuscomplex* kochin_cos_rad_i,
-                                        cuscomplex* kochin_cos_rad_j,
                                         cuscomplex* kochin_sin_rad_i,
+                                        cuscomplex* kochin_cos_rad_j,
                                         cuscomplex* kochin_sin_rad_j,
                                         cuscomplex* body_force
                                     )
@@ -1127,7 +1362,11 @@ cuscomplex  calculate_theta_integral(
                         );
                 
                 // Get perturbation series coefficients
-                if ( qtf_type == 0 )
+                if ( 
+                        ( qtf_type == 0 ) 
+                        && 
+                        ( theta_type == 0 )
+                    )
                 {
                     cpm = std::conj( kochin_cos_pert_j[idx1] );
                     spm = std::conj( kochin_sin_pert_j[idx1] );
