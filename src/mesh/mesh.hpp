@@ -27,9 +27,11 @@ struct Mesh
 {
 private:
     // Define class attributes
-    bool    _is_source_nodes    = false;
-    int     valid_elem_type[2]  = { 3, 4 };
-    int     valid_elem_type_np  = 2;
+    cusfloat    _fs_radius          = 0.0;
+    bool        _is_fs_radius       = false;
+    bool        _is_source_nodes    = false;
+    int         valid_elem_type[2]  = { 3, 4 };
+    int         valid_elem_type_np  = 2;
 
     // Define class methods
     void    _calculate_bounding_box(
@@ -98,26 +100,34 @@ public:
         );
 
     // Define class methods
-    void    define_source_nodes(
-                                   int                 poly_order,
-                                   cusfloat*           cog
-                               );
+    void        calculate_fs_radius(
+                                        void
+                                    );
 
-    void    detect_wl_points(
-                                    cusfloat           wl_det_prec
-                            );
+    void        define_source_nodes(
+                                        int                 poly_order,
+                                        cusfloat*           cog
+                                   );
+
+    void        detect_wl_points(
+                                        cusfloat           wl_det_prec
+                                );
+
+    cusfloat    get_fs_radius(
+                                        void
+                                );
     
-    void    get_elem_nodes( 
-                                   int                 elem_num, 
-                                   int&                npe, 
-                                   cusfloat*           xn, 
-                                   cusfloat*           yn,
-                                   cusfloat*           zn
-                           );
-
-    void    set_all_panels_type(
-                                   int                 panel_type
+    void        get_elem_nodes( 
+                                        int                 elem_num, 
+                                        int&                npe, 
+                                        cusfloat*           xn, 
+                                        cusfloat*           yn,
+                                        cusfloat*           zn
                                );
+
+    void        set_all_panels_type(
+                                        int                 panel_type
+                                   );
     
 };
 

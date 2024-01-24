@@ -1,13 +1,16 @@
 
+// Include general usage libraries
+#include <cassert>
+
 // Include local modules
 #include "../math/shape_functions.hpp"
 #include "mesh.hpp"
 #include "../tools.hpp"
 
 
-void Mesh::_calculate_bounding_box(
-                                        void
-                                    )
+void        Mesh::_calculate_bounding_box(
+                                               void
+                                           )
 {
     // Restart bounding box values
     this->x_max = -1e302;
@@ -58,9 +61,58 @@ void Mesh::_calculate_bounding_box(
 }
 
 
-void Mesh::_create_panels(
-                                        cusfloat*   cog
-                        )
+void        Mesh::calculate_fs_radius(
+                                               void
+                                       )
+{
+    // Calculate mean point
+    cusfloat x_mean = 0.0;
+    cusfloat y_mean = 0.0;
+    cusfloat z_mean = 0.0;
+
+    for ( int i=0; i<this->nodes_np; i++ )
+    {
+        x_mean += this->x[i];
+        y_mean += this->y[i];
+        z_mean += this->z[i];
+    }
+
+    x_mean /= this->nodes_np;
+    y_mean /= this->nodes_np;
+    z_mean /= this->nodes_np;
+
+    // Calculate maximum distance from the mean position to get the radius
+    cusfloat ri         = 0.0;
+    this->_fs_radius    = 0.0;
+
+    for ( int i=0; i<this->nodes_np; i++ )
+    {
+        // Calculate distance from the FS centre to the 
+        // ith node
+        ri  = std::sqrt(
+                            pow2s( this->x[i] - x_mean )
+                            +
+                            pow2s( this->y[i] - y_mean )
+                            +
+                            pow2s( this->z[i] - z_mean )
+                        );
+
+        // Check if it is the maximum distance
+        if ( ri > this->_fs_radius )
+        {
+            this->_fs_radius = ri;
+        }
+
+    }
+
+    this->_is_fs_radius = true;
+
+}
+
+
+void        Mesh::_create_panels(
+                                               cusfloat*   cog
+                               )
 {
     // Create array to stogate the panels
     this->panels = new PanelGeom* [this->elems_np];
@@ -96,10 +148,10 @@ void Mesh::_create_panels(
 }
 
 
-void Mesh::define_source_nodes(
-                                        int         poly_order,
-                                        cusfloat*   cog
-                                )
+void        Mesh::define_source_nodes(
+                                               int         poly_order,
+                                               cusfloat*   cog
+                                       )
 {
     // Get nodes per element depending on the element type
     // and the order
@@ -207,9 +259,9 @@ void Mesh::define_source_nodes(
 }
 
 
-void Mesh::detect_wl_points(
-                                        cusfloat    wl_det_prec
-                            )
+void        Mesh::detect_wl_points(
+                                               cusfloat    wl_det_prec
+                                   )
 {
     // Loop over elements to check how many points they
     // have on the WL
@@ -306,13 +358,13 @@ void Mesh::detect_wl_points(
 }
 
 
-void Mesh::get_elem_nodes( 
-                                        int         elem_num, 
-                                        int&        npe, 
-                                        cusfloat*   xn, 
-                                        cusfloat*   yn,
-                                        cusfloat*   zn
-                        )
+void        Mesh::get_elem_nodes( 
+                                               int         elem_num, 
+                                               int&        npe, 
+                                               cusfloat*   xn, 
+                                               cusfloat*   yn,
+                                               cusfloat*   zn
+                               )
 {
     // Get nodes per element
     int elem_off = elem_num*this->enrl;
@@ -334,9 +386,19 @@ void Mesh::get_elem_nodes(
 }
 
 
-bool Mesh::_is_valid_type( 
-                                        int         elem_type 
-                        )
+cusfloat    Mesh::get_fs_radius(
+                                        void
+                                )
+{
+    assert( this->_is_fs_radius && "There is no FS radius loaded in Mesh class." );
+
+    return this->_fs_radius;
+}
+
+
+bool        Mesh::_is_valid_type( 
+                                               int         elem_type 
+                               )
 {
     bool is_valid = false;
     for ( int i=0; i<this->valid_elem_type_np; i++ )
@@ -352,9 +414,9 @@ bool Mesh::_is_valid_type(
 }
 
 
-void Mesh::_joint_meshes(
-                                        std::vector<Mesh*>  meshes
-                        )
+void        Mesh::_joint_meshes(
+                                               std::vector<Mesh*>  meshes
+                               )
 {
     // Get the cumulative number of elements and nodes
     std::vector<int> elems_np_cum;
@@ -437,10 +499,10 @@ void Mesh::_joint_meshes(
 }
 
 
-void Mesh::_load_poly_mesh( 
-                                        std::string file_path,
-                                        std::string body_name
-                        )
+void        Mesh::_load_poly_mesh( 
+                                               std::string file_path,
+                                               std::string body_name
+                               )
 {
     // Define auxiliar variable to help in the file parsing
     int                 a0                  = 0;
@@ -831,9 +893,9 @@ Mesh::~Mesh(
 }
 
 
-void Mesh::set_all_panels_type(
-                                        int panel_type
-                                )
+void        Mesh::set_all_panels_type(
+                                               int panel_type
+                                       )
 {
     this->panels_type = generate_empty_vector<int>( this->elems_np );
     for ( int i=0; i<this->elems_np; i++ )

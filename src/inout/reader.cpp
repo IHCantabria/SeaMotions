@@ -242,6 +242,10 @@ void read_body(
                                             body->cog,
                                             LID_PANEL_CODE
                                         );
+
+        // Calculate radius of the fs mesh
+        body->mesh_fs_qtf->calculate_fs_radius( );
+
         body->is_mesh_fs_qtf    = true;
     }
 
