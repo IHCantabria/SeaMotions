@@ -1313,11 +1313,9 @@ void    freq_domain_linear_solver(
                                                             input->angfreqs[i],
                                                             input->angfreqs[j],
                                                             QTF_DIFF_CODE,
-                                                            sim_data->qtf_diff_froude_krylov_fo_p0,
-                                                            sim_data->qtf_diff_body_force_p0,
-                                                            sim_data->qtf_diff_fs_near_field_p0,
-                                                            sim_data->qtf_diff_fs_far_field_p0,
-                                                            sim_data->qtf_diff_secord_force
+                                                            qtf_body_pot_gp,
+                                                            qtf_wl_vel_x_gp,
+                                                            sim_data
                                                         );
                     }
 

@@ -2,8 +2,6 @@
 // Include local modules
 #include "qtf_indirect_method.hpp"
 
-#include "../../containers/simulation_data.hpp"
-#include "../../containers/matlin_group.hpp"
 #include "froude_krylov.hpp"
 #include "../../green/kochin.hpp"
 #include "../../math/integration.hpp"
@@ -1452,26 +1450,26 @@ cuscomplex  calculate_theta_integral(
 
 
 void        calculate_secord_force_indirect(
-                                                    Input*      input,
-                                                    MeshGroup*  mesh_gp,
-                                                    cusfloat    ang_freq_i,
-                                                    cusfloat    ang_freq_j,
-                                                    int         qtf_type,
-                                                    cuscomplex* froude_krylov,
-                                                    cuscomplex* body_force,
-                                                    cuscomplex* fs_near_field,
-                                                    cuscomplex* fs_far_field,
-                                                    cuscomplex* secord_force_total
+                                                    Input*          input,
+                                                    MeshGroup*      mesh_gp,
+                                                    int             freq_pos_i,
+                                                    int             freq_pos_j,
+                                                    int             qtf_type,
+                                                    MLGCmpx*        body_gp,
+                                                    MLGCmpx*        wl_gp,
+                                                    SimulationData* sim_data
                                             )
 {
-    // Clear input data
-    int data_np = pow2s( input->heads_np ) * input->bodies_np * input->dofs_np;
+    // Get required fields data
+    cusfloat ang_freq_i = input->angfreqs[freq_pos_i];
+    cusfloat ang_freq_j = input->angfreqs[freq_pos_j];
 
-    clear_vector( data_np, froude_krylov        );
-    clear_vector( data_np, body_force           );
-    clear_vector( data_np, fs_near_field        );
-    clear_vector( data_np, fs_far_field         );
-    clear_vector( data_np, secord_force_total   );
+    // Clear input data
+    clear_vector( sim_data->qtf_np, sim_data->qtf_diff_froude_krylov_fo_p0  );
+    clear_vector( sim_data->qtf_np, sim_data->qtf_diff_body_force_p0        );
+    clear_vector( sim_data->qtf_np, sim_data->qtf_diff_fs_near_field_p0     );
+    clear_vector( sim_data->qtf_np, sim_data->qtf_diff_fs_far_field_p0      );
+    clear_vector( sim_data->qtf_np, sim_data->qtf_diff_secord_force         );
 
     // Calculate second order Froude-Krylov force
     calculate_froude_krylov_so(
@@ -1480,19 +1478,73 @@ void        calculate_secord_force_indirect(
                                     ang_freq_i,
                                     ang_freq_j,
                                     qtf_type,
-                                    froude_krylov
+                                    sim_data->qtf_diff_froude_krylov_fo_p0
                                 );
 
     // Calculate diffraction force due to body term
+    calculate_qtf_indirect_body_term(
+                                        input,
+                                        mesh_gp,
+                                        freq_pos_i,
+                                        freq_pos_j,
+                                        qtf_type,
+                                        sim_data,
+                                        body_gp,
+                                        wl_gp,
+                                        sim_data->qtf_diff_body_force_p0
+                                    );
 
     // Calculate diffraction force due to the near field free surface term
-
+    calculate_qtf_indirect_fs_near_term(
+                                            input,
+                                            mesh_gp,
+                                            freq_pos_i,
+                                            freq_pos_j,
+                                            qtf_type,
+                                            sim_data,
+                                            body_gp,
+                                            sim_data->qtf_diff_fs_near_field_p0
+                                        );
+    
     // Calculate diffraction force due to the far field free surface term
+    calculate_qtf_indirect_fs_far_term(
+                                            input,
+                                            mesh_gp,
+                                            freq_pos_i,
+                                            freq_pos_j,
+                                            qtf_type,
+                                            sim_data,
+                                            body_gp,
+                                            sim_data->qtf_diff_fs_far_field_p0
+                                        );
 
     // Sum-up contributions
-    sv_add( data_np, secord_force_total, froude_krylov, secord_force_total );
-    sv_add( data_np, secord_force_total, body_force,    secord_force_total );
-    sv_add( data_np, secord_force_total, fs_near_field, secord_force_total );
-    sv_add( data_np, secord_force_total, fs_far_field,  secord_force_total );
+    sv_add( 
+                sim_data->qtf_np, 
+                sim_data->qtf_diff_secord_force,
+                sim_data->qtf_diff_froude_krylov_fo_p0,
+                sim_data->qtf_diff_secord_force
+            );
+
+    sv_add( 
+                sim_data->qtf_np,
+                sim_data->qtf_diff_secord_force,
+                sim_data->qtf_diff_body_force_p0,
+                sim_data->qtf_diff_secord_force
+            );
+
+    sv_add( 
+                sim_data->qtf_np,
+                sim_data->qtf_diff_secord_force,
+                sim_data->qtf_diff_fs_near_field_p0,
+                sim_data->qtf_diff_secord_force
+            );
+    
+    sv_add( 
+                sim_data->qtf_np, 
+                sim_data->qtf_diff_secord_force, 
+                sim_data->qtf_diff_fs_far_field_p0,  
+                sim_data->qtf_diff_secord_force 
+            );
     
 }

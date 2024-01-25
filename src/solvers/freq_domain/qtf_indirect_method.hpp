@@ -3,6 +3,8 @@
 #define __qtf_indirect_method_hpp
 
 // Include local modules
+#include "../../containers/simulation_data.hpp"
+#include "../../containers/matlin_group.hpp"
 #include "../../inout/input.hpp"
 #include "../../mesh/mesh_group.hpp"
 #include "../../waves/wave_dispersion_so.hpp"
@@ -78,16 +80,14 @@ cuscomplex  calculate_theta_integral(
 
 
 void        calculate_secord_force_indirect(
-                                                    Input*      input,
-                                                    MeshGroup*  mesh_gp,
-                                                    cusfloat    ang_freq_i,
-                                                    cusfloat    ang_freq_j,
-                                                    int         qtf_type,
-                                                    cuscomplex* froude_krylov,
-                                                    cuscomplex* body_force,
-                                                    cuscomplex* fs_near_field,
-                                                    cuscomplex* fs_far_field,
-                                                    cuscomplex* secord_force_total
+                                                    Input*          input,
+                                                    MeshGroup*      mesh_gp,
+                                                    int             freq_pos_i,
+                                                    int             freq_pos_j,
+                                                    int             qtf_type,
+                                                    MLGCmpx*        body_gp,
+                                                    MLGCmpx*        wl_gp,
+                                                    SimulationData* sim_data
                                             );
 
 #endif
