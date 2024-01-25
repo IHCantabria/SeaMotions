@@ -17,39 +17,48 @@
 void    calculate_qtf_indirect_body_term(
                                             Input*          input,
                                             MeshGroup*      mesh_gp,
-                                            cusfloat        ang_freq_i,
-                                            cusfloat        ang_freq_j,
+                                            int             freq_pos_i,
+                                            int             freq_pos_j,
                                             int             qtf_type,
-                                            cuscomplex*     raos_i,
-                                            cuscomplex*     raos_j,
-                                            cuscomplex*     fluid_body_pot_raddif_i,
-                                            cuscomplex*     fluid_body_pot_raddif_j,
-                                            cuscomplex*     fluid_body_vel_raddif_x_i,
-                                            cuscomplex*     fluid_body_vel_raddif_y_i,
-                                            cuscomplex*     fluid_body_vel_raddif_z_i,
-                                            cuscomplex*     fluid_body_vel_raddif_x_j,
-                                            cuscomplex*     fluid_body_vel_raddif_y_j,
-                                            cuscomplex*     fluid_body_vel_raddif_z_j,
-                                            cuscomplex*     fluid_body_vel_total_x_i,
-                                            cuscomplex*     fluid_body_vel_total_y_i,
-                                            cuscomplex*     fluid_body_vel_total_z_i,
-                                            cuscomplex*     fluid_body_vel_total_x_j,
-                                            cuscomplex*     fluid_body_vel_total_y_j,
-                                            cuscomplex*     fluid_body_vel_total_z_j,
-                                            cuscomplex*     fluid_wl_pot_raddif_i,
-                                            cuscomplex*     fluid_wl_pot_raddif_j,
-                                            cuscomplex*     fluid_wl_vel_x_total_i,
-                                            cuscomplex*     fluid_wl_vel_y_total_i,
-                                            cuscomplex*     fluid_wl_vel_z_total_i,
-                                            cuscomplex*     fluid_wl_vel_x_total_j,
-                                            cuscomplex*     fluid_wl_vel_y_total_j,
-                                            cuscomplex*     fluid_wl_vel_z_total_j,
                                             SimulationData* sim_data,
                                             MLGCmpx*        body_gp,
                                             MLGCmpx*        wl_gp,
                                             cuscomplex*     qtf_body_force
                                         )
 {
+    // Get input data
+    cusfloat        ang_freq_i                  = input->angfreqs[freq_pos_i];
+    cusfloat        ang_freq_j                  = input->angfreqs[freq_pos_j];
+    cuscomplex*     raos_i                      = &( sim_data->raos[freq_pos_i*sim_data->wave_exc_np] );
+    cuscomplex*     raos_j                      = &( sim_data->raos[freq_pos_j*sim_data->wave_exc_np] );
+
+    cuscomplex*     fluid_body_pot_raddif_i     = &( sim_data->qtf_body_pot_raddif_freq[freq_pos_i*sim_data->qtf_body_raddif_np] );
+    cuscomplex*     fluid_body_pot_raddif_j     = &( sim_data->qtf_body_pot_raddif_freq[freq_pos_j*sim_data->qtf_body_raddif_np] );
+
+    cuscomplex*     fluid_body_vel_raddif_x_i   = &( sim_data->qtf_body_vel_x_raddif_freq[freq_pos_i*sim_data->qtf_body_raddif_np] );
+    cuscomplex*     fluid_body_vel_raddif_y_i   = &( sim_data->qtf_body_vel_y_raddif_freq[freq_pos_i*sim_data->qtf_body_raddif_np] );
+    cuscomplex*     fluid_body_vel_raddif_z_i   = &( sim_data->qtf_body_vel_z_raddif_freq[freq_pos_i*sim_data->qtf_body_raddif_np] );
+    cuscomplex*     fluid_body_vel_raddif_x_j   = &( sim_data->qtf_body_vel_x_raddif_freq[freq_pos_j*sim_data->qtf_body_raddif_np] );
+    cuscomplex*     fluid_body_vel_raddif_y_j   = &( sim_data->qtf_body_vel_y_raddif_freq[freq_pos_j*sim_data->qtf_body_raddif_np] );
+    cuscomplex*     fluid_body_vel_raddif_z_j   = &( sim_data->qtf_body_vel_z_raddif_freq[freq_pos_j*sim_data->qtf_body_raddif_np] );
+
+    cuscomplex*     fluid_body_vel_total_x_i    = &( sim_data->qtf_body_vel_x_total_freq[freq_pos_i*sim_data->qtf_body_heads_np] );
+    cuscomplex*     fluid_body_vel_total_y_i    = &( sim_data->qtf_body_vel_y_total_freq[freq_pos_i*sim_data->qtf_body_heads_np] );
+    cuscomplex*     fluid_body_vel_total_z_i    = &( sim_data->qtf_body_vel_z_total_freq[freq_pos_i*sim_data->qtf_body_heads_np] );
+    cuscomplex*     fluid_body_vel_total_x_j    = &( sim_data->qtf_body_vel_x_total_freq[freq_pos_j*sim_data->qtf_body_heads_np] );
+    cuscomplex*     fluid_body_vel_total_y_j    = &( sim_data->qtf_body_vel_y_total_freq[freq_pos_j*sim_data->qtf_body_heads_np] );
+    cuscomplex*     fluid_body_vel_total_z_j    = &( sim_data->qtf_body_vel_z_total_freq[freq_pos_j*sim_data->qtf_body_heads_np] );
+
+    cuscomplex*     fluid_wl_pot_raddif_i       = &( sim_data->qtf_wl_pot_raddif_freq[freq_pos_i*sim_data->qtf_wl_raddif_np] );
+    cuscomplex*     fluid_wl_pot_raddif_j       = &( sim_data->qtf_wl_pot_raddif_freq[freq_pos_j*sim_data->qtf_wl_raddif_np] );
+
+    cuscomplex*     fluid_wl_vel_x_total_i      = &( sim_data->qtf_wl_vel_x_total_freq[freq_pos_i*sim_data->qtf_wl_heads_np] );
+    cuscomplex*     fluid_wl_vel_y_total_i      = &( sim_data->qtf_wl_vel_y_total_freq[freq_pos_i*sim_data->qtf_wl_heads_np] );
+    cuscomplex*     fluid_wl_vel_z_total_i      = &( sim_data->qtf_wl_vel_z_total_freq[freq_pos_i*sim_data->qtf_wl_heads_np] );
+    cuscomplex*     fluid_wl_vel_x_total_j      = &( sim_data->qtf_wl_vel_x_total_freq[freq_pos_j*sim_data->qtf_wl_heads_np] );
+    cuscomplex*     fluid_wl_vel_y_total_j      = &( sim_data->qtf_wl_vel_y_total_freq[freq_pos_j*sim_data->qtf_wl_heads_np] );
+    cuscomplex*     fluid_wl_vel_z_total_j      = &( sim_data->qtf_wl_vel_z_total_freq[freq_pos_j*sim_data->qtf_wl_heads_np] );
+
     // Clear output results vector
     clear_vector( 
                     pow2s( input->heads_np ) * input->bodies_np * input->dofs_np,
