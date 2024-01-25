@@ -10,21 +10,20 @@
 #include "../../math/math_tools.hpp"
 #include "../../math/special_math.hpp"
 #include "../../waves/waves_common.hpp"
-#include "../../waves/wave_dispersion_so.hpp"
 #include "tools.hpp"
 
 
-void    calculate_qtf_indirect_body_term(
-                                            Input*          input,
-                                            MeshGroup*      mesh_gp,
-                                            int             freq_pos_i,
-                                            int             freq_pos_j,
-                                            int             qtf_type,
-                                            SimulationData* sim_data,
-                                            MLGCmpx*        body_gp,
-                                            MLGCmpx*        wl_gp,
-                                            cuscomplex*     qtf_body_force
-                                        )
+void        calculate_qtf_indirect_body_term(
+                                                    Input*          input,
+                                                    MeshGroup*      mesh_gp,
+                                                    int             freq_pos_i,
+                                                    int             freq_pos_j,
+                                                    int             qtf_type,
+                                                    SimulationData* sim_data,
+                                                    MLGCmpx*        body_gp,
+                                                    MLGCmpx*        wl_gp,
+                                                    cuscomplex*     qtf_body_force
+                                            )
 {
     // Get input data
     cusfloat        ang_freq_i                  = input->angfreqs[freq_pos_i];
@@ -573,16 +572,16 @@ void    calculate_qtf_indirect_body_term(
 }
 
 
-void    calculate_qtf_indirect_fs_near_term(
-                                                Input*          input,
-                                                MeshGroup*      mesh_gp,
-                                                int             freq_pos_i,
-                                                int             freq_pos_j,
-                                                int             qtf_type,
-                                                SimulationData* sim_data,
-                                                MLGCmpx*        body_gp,
-                                                cuscomplex*     qtf_fs_force
-                                            )
+void        calculate_qtf_indirect_fs_near_term(
+                                                    Input*          input,
+                                                    MeshGroup*      mesh_gp,
+                                                    int             freq_pos_i,
+                                                    int             freq_pos_j,
+                                                    int             qtf_type,
+                                                    SimulationData* sim_data,
+                                                    MLGCmpx*        body_gp,
+                                                    cuscomplex*     qtf_fs_force
+                                                )
 {
     // Get required fields
     cusfloat    ang_freq_i          = input->angfreqs[freq_pos_i];
@@ -826,16 +825,16 @@ void    calculate_qtf_indirect_fs_near_term(
 }
 
 
-void    calculate_qtf_indirect_fs_far_term(
-                                                Input*          input,
-                                                MeshGroup*      mesh_gp,
-                                                int             freq_pos_i,
-                                                int             freq_pos_j,
-                                                int             qtf_type,
-                                                SimulationData* sim_data,
-                                                MLGCmpx*        body_gp,
-                                                cuscomplex*     qtf_fs_force
-                                            )
+void        calculate_qtf_indirect_fs_far_term(
+                                                    Input*          input,
+                                                    MeshGroup*      mesh_gp,
+                                                    int             freq_pos_i,
+                                                    int             freq_pos_j,
+                                                    int             qtf_type,
+                                                    SimulationData* sim_data,
+                                                    MLGCmpx*        body_gp,
+                                                    cuscomplex*     qtf_fs_force
+                                                )
 {
     // Define local variables
     int         forces_np           = pow2s( input->heads_np ) * input->bodies_np * input->dofs_np;
@@ -1195,10 +1194,10 @@ void    calculate_qtf_indirect_fs_far_term(
 
 
 cuscomplex  calculate_r0_integral(
-                                    cusfloat            R,
-                                    WaveDispersionSO*   wdso,
-                                    int                 l_order,
-                                    int                 qtf_type
+                                                    cusfloat            R,
+                                                    WaveDispersionSO*   wdso,
+                                                    int                 l_order,
+                                                    int                 qtf_type
                                 )
 {
     // Calculate scaling factors
@@ -1256,10 +1255,10 @@ cuscomplex  calculate_r0_integral(
 
 
 cuscomplex  calculate_r1_integral(
-                                    cusfloat            R,
-                                    WaveDispersionSO*   wdso,
-                                    int                 l_order,
-                                    int                 qtf_type
+                                                    cusfloat            R,
+                                                    WaveDispersionSO*   wdso,
+                                                    int                 l_order,
+                                                    int                 qtf_type
                                 )
 {
     // Define scaling factors
@@ -1316,18 +1315,18 @@ cuscomplex  calculate_r1_integral(
 
 
 cuscomplex  calculate_theta_integral(
-                                        Input*      input,
-                                        cusfloat    beta,
-                                        int         l_order,
-                                        int         qtf_type,
-                                        int         theta_type,
-                                        cuscomplex* kochin_cos_pert_j,
-                                        cuscomplex* kochin_sin_pert_j,
-                                        cuscomplex* kochin_cos_rad_i,
-                                        cuscomplex* kochin_sin_rad_i,
-                                        cuscomplex* kochin_cos_rad_j,
-                                        cuscomplex* kochin_sin_rad_j,
-                                        cuscomplex* body_force
+                                                    Input*      input,
+                                                    cusfloat    beta,
+                                                    int         l_order,
+                                                    int         qtf_type,
+                                                    int         theta_type,
+                                                    cuscomplex* kochin_cos_pert_j,
+                                                    cuscomplex* kochin_sin_pert_j,
+                                                    cuscomplex* kochin_cos_rad_i,
+                                                    cuscomplex* kochin_sin_rad_i,
+                                                    cuscomplex* kochin_cos_rad_j,
+                                                    cuscomplex* kochin_sin_rad_j,
+                                                    cuscomplex* body_force
                                     )
 {
     // Clear incoming vector in order to avoid taking into account spurious data
@@ -1452,18 +1451,18 @@ cuscomplex  calculate_theta_integral(
 }
 
 
-void    calculate_secord_force_indirect(
-                                            Input*      input,
-                                            MeshGroup*  mesh_gp,
-                                            cusfloat    ang_freq_i,
-                                            cusfloat    ang_freq_j,
-                                            int         qtf_type,
-                                            cuscomplex* froude_krylov,
-                                            cuscomplex* body_force,
-                                            cuscomplex* fs_near_field,
-                                            cuscomplex* fs_far_field,
-                                            cuscomplex* secord_force_total
-                                        )
+void        calculate_secord_force_indirect(
+                                                    Input*      input,
+                                                    MeshGroup*  mesh_gp,
+                                                    cusfloat    ang_freq_i,
+                                                    cusfloat    ang_freq_j,
+                                                    int         qtf_type,
+                                                    cuscomplex* froude_krylov,
+                                                    cuscomplex* body_force,
+                                                    cuscomplex* fs_near_field,
+                                                    cuscomplex* fs_far_field,
+                                                    cuscomplex* secord_force_total
+                                            )
 {
     // Clear input data
     int data_np = pow2s( input->heads_np ) * input->bodies_np * input->dofs_np;
