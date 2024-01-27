@@ -48,14 +48,7 @@ void        calculate_qtf_indirect_body_term(
 
     cuscomplex*     fluid_wl_pot_raddif_i       = &( sim_data->qtf_wl_pot_raddif_freq[freq_pos_i*sim_data->qtf_wl_raddif_np] );
     cuscomplex*     fluid_wl_pot_raddif_j       = &( sim_data->qtf_wl_pot_raddif_freq[freq_pos_j*sim_data->qtf_wl_raddif_np] );
-
-    cuscomplex*     fluid_wl_vel_x_total_i      = &( sim_data->qtf_wl_vel_x_total_freq[freq_pos_i*sim_data->qtf_wl_heads_np] );
-    cuscomplex*     fluid_wl_vel_y_total_i      = &( sim_data->qtf_wl_vel_y_total_freq[freq_pos_i*sim_data->qtf_wl_heads_np] );
-    cuscomplex*     fluid_wl_vel_z_total_i      = &( sim_data->qtf_wl_vel_z_total_freq[freq_pos_i*sim_data->qtf_wl_heads_np] );
-    cuscomplex*     fluid_wl_vel_x_total_j      = &( sim_data->qtf_wl_vel_x_total_freq[freq_pos_j*sim_data->qtf_wl_heads_np] );
-    cuscomplex*     fluid_wl_vel_y_total_j      = &( sim_data->qtf_wl_vel_y_total_freq[freq_pos_j*sim_data->qtf_wl_heads_np] );
-    cuscomplex*     fluid_wl_vel_z_total_j      = &( sim_data->qtf_wl_vel_z_total_freq[freq_pos_j*sim_data->qtf_wl_heads_np] );
-
+    
     // Clear output results vector
     clear_vector( 
                     pow2s( input->heads_np ) * input->bodies_np * input->dofs_np,
@@ -1496,6 +1489,7 @@ void        calculate_secord_force_indirect(
     clear_vector( sim_data->qtf_np, sim_data->qtf_diff_secord_force         );
 
     // Calculate second order Froude-Krylov force
+    std::cout << "Calculating froude krylov..." << std::endl;
     calculate_froude_krylov_so(
                                     input,
                                     mesh_gp,
@@ -1506,6 +1500,7 @@ void        calculate_secord_force_indirect(
                                 );
 
     // Calculate diffraction force due to body term
+    std::cout << "Calculating body term..." << std::endl;
     calculate_qtf_indirect_body_term(
                                         input,
                                         mesh_gp,
@@ -1519,6 +1514,7 @@ void        calculate_secord_force_indirect(
                                     );
 
     // Calculate diffraction force due to the near field free surface term
+    std::cout << "Calculating FS term..." << std::endl;
     calculate_qtf_indirect_fs_near_term(
                                             input,
                                             mesh_gp,
@@ -1531,6 +1527,7 @@ void        calculate_secord_force_indirect(
                                         );
     
     // Calculate diffraction force due to the far field free surface term
+    std::cout << "Calculating FS far field term..." << std::endl;
     calculate_qtf_indirect_fs_far_term(
                                             input,
                                             mesh_gp,
@@ -1543,6 +1540,7 @@ void        calculate_secord_force_indirect(
                                         );
 
     // Sum-up contributions
+    std::cout << "Sum-up contributions..." << std::endl;
     sv_add( 
                 sim_data->qtf_np, 
                 sim_data->qtf_diff_secord_force,
