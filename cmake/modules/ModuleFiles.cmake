@@ -147,6 +147,8 @@ set(
         ${CMAKE_SOURCE_DIR}/src/interfaces/gwfdz_interface.cpp
         ${CMAKE_SOURCE_DIR}/src/interfaces/hmf_interface.hpp
         ${CMAKE_SOURCE_DIR}/src/interfaces/hmf_interface.cpp
+        ${CMAKE_SOURCE_DIR}/src/interfaces/kochin_interface.hpp
+        ${CMAKE_SOURCE_DIR}/src/interfaces/kochin_interface.cpp
     )
 
 # Pack math module files
