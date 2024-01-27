@@ -1229,15 +1229,27 @@ cuscomplex  calculate_r0_integral(
                                                     );
 
     // Calculate 0 to R numerical integral
+    auto        cos_kenel_fcn   =   [ alpha, beta, l_order ]
+                                    ( cusfloat x )
+                                    {
+                                        return besseljn_cos_kernel( alpha, beta, l_order, x );
+                                    };
+
+    auto        sin_kenel_fcn   =   [ alpha, beta, l_order ]
+                                    ( cusfloat x )
+                                    {
+                                        return besseljn_sin_kernel( alpha, beta, l_order, x );
+                                    };
+
     cusfloat    cos_value_num   = romberg_quadrature(
-                                                        besseljn_cos_kernel,
+                                                        cos_kenel_fcn,
                                                         0.0,
                                                         R,
                                                         1e-6
                                                     );
     
     cusfloat    sin_value_num   = romberg_quadrature(
-                                                        besseljn_sin_kernel,
+                                                        sin_kenel_fcn,
                                                         0.0,
                                                         R,
                                                         1e-6
@@ -1289,15 +1301,27 @@ cuscomplex  calculate_r1_integral(
                                                     );
 
     // Calculate 0 to R numerical integral
+    auto        cos_kenel_fcn   =   [ alpha, beta, l_order ]
+                                    ( cusfloat x )
+                                    {
+                                        return besseljn_cos_kernel( alpha, beta, l_order, x );
+                                    };
+
+    auto        sin_kenel_fcn   =   [ alpha, beta, l_order ]
+                                    ( cusfloat x )
+                                    {
+                                        return besseljn_sin_kernel( alpha, beta, l_order, x );
+                                    };
+    
     cusfloat    cos_value_num   = romberg_quadrature(
-                                                        besseljn_cos_kernel,
+                                                        cos_kenel_fcn,
                                                         0.0,
                                                         R,
                                                         1e-6
                                                     );
     
     cusfloat    sin_value_num   = romberg_quadrature(
-                                                        besseljn_sin_kernel,
+                                                        sin_kenel_fcn,
                                                         0.0,
                                                         R,
                                                         1e-6
