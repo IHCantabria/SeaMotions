@@ -349,9 +349,6 @@ SimulationData::~SimulationData(
             mkl_free( this->qtf_body_vel_z_total_freq );
             mkl_free( this->qtf_raos_freq             );
             mkl_free( this->qtf_wl_we_total_freq      );
-            mkl_free( this->qtf_body_vel_x_total_freq );
-            mkl_free( this->qtf_body_vel_y_total_freq );
-            mkl_free( this->qtf_body_vel_z_total_freq );
         }
     }
 
