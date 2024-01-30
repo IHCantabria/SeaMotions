@@ -84,70 +84,86 @@ void        calculate_kochin_coefficients(
 
 
 cusfloat    calculate_kochin_cosexp_t0(
-                                            cusfloat    th,
                                             cusfloat    beta,
                                             int         ln,
                                             int         m,
                                             int         n
                                         )
 {
-    cusfloat    a   = - std::sin( beta * ln - th * ( ln - m + n )  ) / ( ln - m + n );
-    cusfloat    b   = - std::sin( ln * ( beta - th ) + th * ( m + n ) ) / ( ln - m - n );
-    cusfloat    c   =   std::sin( ln * ( th - beta ) + th * ( m - n ) ) / ( ln + m - n );
-    cusfloat    d   =   std::sin( ln * ( th - beta ) + th * ( m + n ) ) / ( ln + m + n );
+    // Define interval bounds
+    cusfloat    th_0    = 0.0;
+    cusfloat    th_1    = 2 * PI;
 
-    return 0.25 * ( a + b + c + d );
+    // Calculate cosine term
+    cusfloat    t_cos   = std::cos( ln * beta ) * cos3_int_0_2PI( ln, m, n );
+
+    // Calculate sine term
+    cusfloat    t_sin   = std::sin( ln * beta ) * cos2sin_int_0_2PI( m, n, ln );
+
+    return ( t_cos + t_sin );
 }
 
 
 cusfloat    calculate_kochin_cosexp_t1(
-                                            cusfloat    th,
                                             cusfloat    beta,
                                             cusfloat    ln,
                                             cusfloat    m,
                                             cusfloat    n
                                         )
 {
-    cusfloat    a   = + std::cos( ln * ( beta - th ) + th * ( n - m ) ) / ( ln + m - n );
-    cusfloat    b   = - std::cos( beta * ln - th * ( ln - m + n ) ) / ( ln - m + n );
-    cusfloat    c   = + std::cos( ln * ( beta - th ) + th * ( m + n ) ) / ( ln - m - n );
-    cusfloat    d   = - std::cos( ln * ( th - beta ) + th * ( m + n ) ) / ( ln + m + n );
+    // Define interval bounds
+    cusfloat    th_0    = 0.0;
+    cusfloat    th_1    = 2 * PI;
 
-    return 0.25 * ( a + b + c + d );
+    // Calculate cosine term
+    cusfloat    t_cos   = std::cos( ln * beta ) * cos2sin_int_0_2PI( ln, m, n );
+
+    // Calculate sine term
+    cusfloat    t_sin   = std::sin( ln * beta ) * cossin2_int_0_2PI( m, ln, n );
+
+    return ( t_cos + t_sin );
 }
 
 
 cusfloat    calculate_kochin_cosexp_t2(
-                                            cusfloat    th,
                                             cusfloat    beta,
                                             cusfloat    ln,
                                             cusfloat    m,
                                             cusfloat    n
                                         )
 {
-    cusfloat    a   = - std::cos( ln * ( beta - th ) + th * ( n - m ) ) / ( ln + m - n );
-    cusfloat    b   = + std::cos( beta * ln - th * ( ln - m + n ) ) / ( ln - m + n );
-    cusfloat    c   = + std::cos( ln * ( beta - th ) + th * ( m + n ) ) / ( ln - m - n );
-    cusfloat    d   = - std::cos( ln * ( th - beta ) + th * ( m + n ) ) / ( ln + m + n );
+    // Define interval bounds
+    cusfloat    th_0    = 0.0;
+    cusfloat    th_1    = 2 * PI;
 
-    return 0.25 * ( a + b + c + d );
+    // Calculate cosine term
+    cusfloat    t_cos   = std::cos( ln * beta ) * cos2sin_int_0_2PI( ln, n, m );
+
+    // Calculate sine term
+    cusfloat    t_sin   = std::sin( ln * beta ) * cossin2_int_0_2PI( n, ln, m );
+
+    return ( t_cos + t_sin );
 }
 
 
 cusfloat    calculate_kochin_cosexp_t3(
-                                            cusfloat    th,
                                             cusfloat    beta,
                                             cusfloat    ln,
                                             cusfloat    m,
                                             cusfloat    n
                                         )
 {
-    cusfloat    a   = - std::sin( beta * ln - th * ( ln - m + n ) ) / ( ln - m + n );
-    cusfloat    b   = + std::sin( ln * ( beta - th ) + th * ( m + n ) ) / ( ln - m - n );
-    cusfloat    c   = + std::sin( ln * ( th - beta ) + th * ( m - n ) ) / ( ln + m - n );
-    cusfloat    d   = - std::sin( ln * ( th - beta ) + th * ( m + n ) ) / ( ln + m + n );
+    // Define interval bounds
+    cusfloat    th_0    = 0.0;
+    cusfloat    th_1    = 2 * PI;
 
-    return 0.25 * ( a + b + c + d );
+    // Calculate cosine term
+    cusfloat    t_cos   = std::cos( ln * beta ) * cossin2_int_0_2PI( ln, m, n );
+
+    // Calculate sine term
+    cusfloat    t_sin   = std::sin( ln * beta ) * sin3_int_0_2PI( ln, m, n);
+
+    return ( t_cos + t_sin );
 }
 
 

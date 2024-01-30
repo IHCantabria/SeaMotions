@@ -20,7 +20,6 @@ void        calculate_kochin_coefficients(
 
 
 cusfloat    calculate_kochin_cosexp_t0(
-                                            cusfloat            th,
                                             cusfloat            beta,
                                             int                 ln,
                                             int                 m,
@@ -29,7 +28,6 @@ cusfloat    calculate_kochin_cosexp_t0(
 
 
 cusfloat    calculate_kochin_cosexp_t1(
-                                            cusfloat            th,
                                             cusfloat            beta,
                                             cusfloat            ln,
                                             cusfloat            m,
@@ -38,7 +36,6 @@ cusfloat    calculate_kochin_cosexp_t1(
 
 
 cusfloat    calculate_kochin_cosexp_t2(
-                                            cusfloat            th,
                                             cusfloat            beta,
                                             cusfloat            ln,
                                             cusfloat            m,
@@ -47,7 +44,6 @@ cusfloat    calculate_kochin_cosexp_t2(
 
 
 cusfloat    calculate_kochin_cosexp_t3(
-                                            cusfloat            th,
                                             cusfloat            beta,
                                             cusfloat            ln,
                                             cusfloat            m,
