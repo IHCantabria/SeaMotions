@@ -1314,6 +1314,7 @@ void    freq_domain_linear_solver(
                                                             input->angfreqs[j],
                                                             QTF_DIFF_CODE,
                                                             qtf_body_pot_gp,
+                                                            qtf_fs_pot_gp,
                                                             qtf_wl_vel_x_gp,
                                                             sim_data
                                                         );
@@ -1619,9 +1620,6 @@ void    freq_domain_linear_solver(
         delete qtf_wl_vel_y_gp;
         delete qtf_wl_vel_z_gp;
     }
-    
-    // Delete mesh group data
-    delete mesh_gp;
 }
 
 
