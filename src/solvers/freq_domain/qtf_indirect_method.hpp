@@ -86,6 +86,7 @@ void        calculate_secord_force_indirect(
                                                     int             freq_pos_j,
                                                     int             qtf_type,
                                                     MLGCmpx*        body_gp,
+                                                    MLGCmpx*        fs_gp,
                                                     MLGCmpx*        wl_gp,
                                                     SimulationData* sim_data
                                             );

@@ -26,8 +26,8 @@ void        calculate_qtf_indirect_body_term(
     // Get input data
     cusfloat        ang_freq_i                  = input->angfreqs[freq_pos_i];
     cusfloat        ang_freq_j                  = input->angfreqs[freq_pos_j];
-    cuscomplex*     raos_i                      = &( sim_data->raos[freq_pos_i*sim_data->wave_exc_np] );
-    cuscomplex*     raos_j                      = &( sim_data->raos[freq_pos_j*sim_data->wave_exc_np] );
+    cuscomplex*     raos_i                      = &( sim_data->qtf_raos_freq[freq_pos_i*sim_data->wave_exc_np] );
+    cuscomplex*     raos_j                      = &( sim_data->qtf_raos_freq[freq_pos_j*sim_data->wave_exc_np] );
 
     cuscomplex*     fluid_body_pot_raddif_i     = &( sim_data->qtf_body_pot_raddif_freq[freq_pos_i*sim_data->qtf_body_raddif_np] );
     cuscomplex*     fluid_body_pot_raddif_j     = &( sim_data->qtf_body_pot_raddif_freq[freq_pos_j*sim_data->qtf_body_raddif_np] );
@@ -48,7 +48,7 @@ void        calculate_qtf_indirect_body_term(
 
     cuscomplex*     fluid_wl_pot_raddif_i       = &( sim_data->qtf_wl_pot_raddif_freq[freq_pos_i*sim_data->qtf_wl_raddif_np] );
     cuscomplex*     fluid_wl_pot_raddif_j       = &( sim_data->qtf_wl_pot_raddif_freq[freq_pos_j*sim_data->qtf_wl_raddif_np] );
-    
+
     // Clear output results vector
     clear_vector( 
                     pow2s( input->heads_np ) * input->bodies_np * input->dofs_np,
@@ -85,6 +85,8 @@ void        calculate_qtf_indirect_body_term(
     int         idx1_i                      = 0;
     int         idx1_j                      = 0;
     int         idx2                        = 0;
+    int         idx3_i                      = 0;
+    int         idx3_j                      = 0;
     cuscomplex  int_mod                     = 0.0;
     cuscomplex  jac_rot_i[9];               clear_vector( 9, jac_rot_i );
     cuscomplex  jac_rot_j[9];               clear_vector( 9, jac_rot_j );
@@ -153,9 +155,17 @@ void        calculate_qtf_indirect_body_term(
                         for ( int gpj=0; gpj<ngp; gpj++ )
                         {
                             // Get panel indexes
-                            idx1_b  = k * pow2s( ngp ) + gpi * ngp + gpj;
-                            idx1_i  = ih1 * body_gp->field_points_np + idx1_b;
-                            idx1_j  = ih2 * body_gp->field_points_np + idx1_b;
+                            idx1_b  =   k * pow2s( ngp ) + gpi * ngp + gpj;
+                            idx3_i  =   (
+                                            ih1 * ( input->bodies_np * input->dofs_np )
+                                            +
+                                            j * input->dofs_np
+                                        );
+                            idx3_j  =   (
+                                            ih2 * ( input->bodies_np * input->dofs_np )
+                                            +
+                                            j * input->dofs_np
+                                        );
 
                             // Calculate wave incident term
                             wave_inc[0] =   wave_potential_so_space_dx( 
@@ -193,10 +203,10 @@ void        calculate_qtf_indirect_body_term(
                             // Get RAO values for the current body
                             for ( int r=0; r<3; r++ )
                             {
-                                rao_rot_i[r]    = raos_i[idx1_i+3+r] * input->wave_amplitude;
-                                rao_rot_j[r]    = raos_j[idx1_j+3+r] * input->wave_amplitude;
-                                rao_trans_i[r]  = raos_i[idx1_i+r]   * input->wave_amplitude;
-                                rao_trans_j[r]  = raos_j[idx1_j+r]   * input->wave_amplitude;
+                                rao_rot_i[r]    = raos_i[idx3_i+3+r] * input->wave_amplitude;
+                                rao_rot_j[r]    = raos_j[idx3_j+3+r] * input->wave_amplitude;
+                                rao_trans_i[r]  = raos_i[idx3_i+r]   * input->wave_amplitude;
+                                rao_trans_j[r]  = raos_j[idx3_j+r]   * input->wave_amplitude;
                             }
 
                             // Calculate panel field points velocity
@@ -431,6 +441,15 @@ void        calculate_qtf_indirect_body_term(
                                                                                                                 gp.roots[gpj]
                                                                                                             );
 
+                                if ( 
+                                        ( std::isnan( int_mod.real( ) ) > 0 ) 
+                                        || 
+                                        ( std::isnan( int_mod.imag( ) ) > 0 )
+                                    )
+                                {
+                                    double a = 0;
+                                }
+
                                 // Get total force
                                 qtf_body_force[idx0+r] += cuscomplex( 0.0, w_ds * rho_w / 2.0 ) * int_mod;
                             }
@@ -547,6 +566,15 @@ void        calculate_qtf_indirect_body_term(
                             // Get gauss integral chunk value
                             int_mod = val_mod * gp.weights[gpi] * panel_k->len_wl / 2.0;
 
+                            if ( 
+                                        ( std::isnan( int_mod.real( ) ) > 0 ) 
+                                        || 
+                                        ( std::isnan( int_mod.imag( ) ) > 0 )
+                                    )
+                                {
+                                    double a = 0;
+                                }
+
                             // Add to QTF body force object and scale the gauss integral chunk value
                             qtf_body_force[idx0+r] += cuscomplex( 0.0, - w_ds * rho_w / 2.0 ) * int_mod;
                         }
@@ -570,7 +598,7 @@ void        calculate_qtf_indirect_fs_near_term(
                                                     int             freq_pos_j,
                                                     int             qtf_type,
                                                     SimulationData* sim_data,
-                                                    MLGCmpx*        body_gp,
+                                                    MLGCmpx*        fs_gp,
                                                     cuscomplex*     qtf_fs_force
                                                 )
 {
@@ -695,7 +723,7 @@ void        calculate_qtf_indirect_fs_near_term(
                         
                 
 
-                for ( int k=body_gp->field_points_cnp[j]/ngpf; k<body_gp->field_points_cnp[j+1]/ngpf; k++ )
+                for ( int k=fs_gp->field_points_cnp[j]/ngpf; k<fs_gp->field_points_cnp[j+1]/ngpf; k++ )
                 {
                     int_mod             = cuscomplex( 0.0, 0.0 );
                     panel_k             = mesh_gp->panels[k];
@@ -707,8 +735,8 @@ void        calculate_qtf_indirect_fs_near_term(
                         {
                             // Get panel indexes
                             idx1_b  = k * pow2s( ngp ) + gpi * ngp + gpj;
-                            idx1_i  = ih1 * body_gp->field_points_np + idx1_b;
-                            idx1_j  = ih2 * body_gp->field_points_np + idx1_b;
+                            idx1_i  = ih1 * fs_gp->field_points_np + idx1_b;
+                            idx1_j  = ih2 * fs_gp->field_points_np + idx1_b;
 
                             // Get total fluid velocity components
                             pot_fk_i        = pot_fk_freq_i[idx1_i];
@@ -776,11 +804,13 @@ void        calculate_qtf_indirect_fs_near_term(
                                                     sf * cuscomplex( 0.0, ang_freq_j ) * pot_pert_j * k2_i * pot_fk_i
                                                 );
 
+                            
+
                             // Loop over dofs to get the force for each 6 DOFs component
                             for ( int r=0; r<input->dofs_np; r++ )
                             {
                                 // Get index to access the radiation potential data
-                                idx2 =  r * body_gp->field_points_np + idx1_b;
+                                idx2 =  r * fs_gp->field_points_np + idx1_b;
 
                                 // Get raddiation fluid velocity components
                                 if ( qtf_type == 0 )
@@ -800,6 +830,15 @@ void        calculate_qtf_indirect_fs_near_term(
                                                                                                                 gp.roots[gpi],
                                                                                                                 gp.roots[gpj]
                                                                                                             );
+
+                                if ( 
+                                        ( std::isnan( int_mod.real( ) ) > 0 ) 
+                                        || 
+                                        ( std::isnan( int_mod.imag( ) ) > 0 )
+                                    )
+                                {
+                                    double a = 0;
+                                }
 
                                 // Get total force
                                 qtf_fs_force[idx0+r]    += cuscomplex( 0.0, w_ds * rho_w / grav_acc ) * psi_ds * int_mod;
@@ -1076,6 +1115,45 @@ void        calculate_qtf_indirect_fs_far_term(
 
                 svs_mult( forces_head_np, th1_l_force, r1, vec_aux_force );
                 sv_add( forces_head_np, vec_aux_force, &( idf22[idx0] ), &( idf22[idx0] ));
+
+                for ( int myIdx=0; myIdx<forces_head_np; myIdx++ )
+                {
+                    if ( 
+                            ( std::isnan( idf11[idx0+myIdx].real( ) ) > 0 ) 
+                            || 
+                            ( std::isnan( idf11[idx0+myIdx].imag( ) ) > 0 )
+                        )
+                    {
+                        double a = 0;
+                    }
+
+                    if ( 
+                            ( std::isnan( idf12[idx0+myIdx].real( ) ) > 0 ) 
+                            || 
+                            ( std::isnan( idf12[idx0+myIdx].imag( ) ) > 0 )
+                        )
+                    {
+                        double a = 0;
+                    }
+
+                    if ( 
+                            ( std::isnan( idf21[idx0+myIdx].real( ) ) > 0 ) 
+                            || 
+                            ( std::isnan( idf21[idx0+myIdx].imag( ) ) > 0 )
+                        )
+                    {
+                        double a = 0;
+                    }
+
+                    if ( 
+                            ( std::isnan( idf22[idx0+myIdx].real( ) ) > 0 ) 
+                            || 
+                            ( std::isnan( idf22[idx0+myIdx].imag( ) ) > 0 )
+                        )
+                    {
+                        double a = 0;
+                    }
+                }
 
                 // Roll theta values
                 copy_vector( forces_head_np, th0_l_force, th0_lm1_force );
@@ -1425,29 +1503,10 @@ cuscomplex  calculate_theta_integral(
                     }
 
                     // Calculate angular integrals
-                    t0_int  = (
-                                    calculate_kochin_cosexp_t0( 2*PI, beta, l_order, m, n )
-                                    -
-                                    calculate_kochin_cosexp_t0( 0.0, beta, l_order, m, n )
-                                );
-
-                    t1_int  = (
-                                    calculate_kochin_cosexp_t1( 2*PI, beta, l_order, m, n )
-                                    -
-                                    calculate_kochin_cosexp_t1( 0.0, beta, l_order, m, n )
-                                );
-
-                    t2_int  = (
-                                    calculate_kochin_cosexp_t2( 2*PI, beta, l_order, m, n )
-                                    -
-                                    calculate_kochin_cosexp_t2( 0.0, beta, l_order, m, n )
-                                );
-
-                    t3_int  = (
-                                    calculate_kochin_cosexp_t3( 2*PI, beta, l_order, m, n )
-                                    -
-                                    calculate_kochin_cosexp_t3( 0.0, beta, l_order, m, n )
-                                );
+                    t0_int  = calculate_kochin_cosexp_t0( beta, l_order, m, n );
+                    t1_int  = calculate_kochin_cosexp_t1( beta, l_order, m, n );
+                    t2_int  = calculate_kochin_cosexp_t2( beta, l_order, m, n );
+                    t3_int  = calculate_kochin_cosexp_t3( beta, l_order, m, n );
 
                     // Calculate body force
                     body_force[idx0] += (
@@ -1459,6 +1518,16 @@ cuscomplex  calculate_theta_integral(
                                             +
                                             spm * srn * t3_int
                                         );
+
+                    if ( 
+                            ( std::isnan( body_force[idx0].real( ) ) > 0 )
+                            ||
+                            ( std::isnan( body_force[idx0].imag( ) ) > 0 )
+                        )
+                    {
+                        double a = 0.0;
+                    }
+
                 }
             }
         }
@@ -1473,6 +1542,7 @@ void        calculate_secord_force_indirect(
                                                     int             freq_pos_j,
                                                     int             qtf_type,
                                                     MLGCmpx*        body_gp,
+                                                    MLGCmpx*        fs_gp,
                                                     MLGCmpx*        wl_gp,
                                                     SimulationData* sim_data
                                             )
@@ -1488,34 +1558,24 @@ void        calculate_secord_force_indirect(
     clear_vector( sim_data->qtf_np, sim_data->qtf_diff_fs_far_field_p0      );
     clear_vector( sim_data->qtf_np, sim_data->qtf_diff_secord_force         );
 
-    // Calculate second order Froude-Krylov force
-    std::cout << "Calculating froude krylov..." << std::endl;
-    calculate_froude_krylov_so(
-                                    input,
-                                    mesh_gp,
-                                    ang_freq_i,
-                                    ang_freq_j,
-                                    qtf_type,
-                                    sim_data->qtf_diff_froude_krylov_fo_p0
-                                );
-
-    // Calculate diffraction force due to body term
-    std::cout << "Calculating body term..." << std::endl;
-    calculate_qtf_indirect_body_term(
+    if ( 
+            ( ( qtf_type == 0 ) && ( freq_pos_i != freq_pos_j ) )
+            ||
+            ( qtf_type == 1 )
+        )
+    {
+        // Calculate second order Froude-Krylov force
+        calculate_froude_krylov_so(
                                         input,
                                         mesh_gp,
-                                        freq_pos_i,
-                                        freq_pos_j,
+                                        ang_freq_i,
+                                        ang_freq_j,
                                         qtf_type,
-                                        sim_data,
-                                        body_gp,
-                                        wl_gp,
-                                        sim_data->qtf_diff_body_force_p0
+                                        sim_data->qtf_diff_froude_krylov_fo_p0
                                     );
 
-    // Calculate diffraction force due to the near field free surface term
-    std::cout << "Calculating FS term..." << std::endl;
-    calculate_qtf_indirect_fs_near_term(
+        // Calculate diffraction force due to body term
+        calculate_qtf_indirect_body_term(
                                             input,
                                             mesh_gp,
                                             freq_pos_i,
@@ -1523,24 +1583,36 @@ void        calculate_secord_force_indirect(
                                             qtf_type,
                                             sim_data,
                                             body_gp,
-                                            sim_data->qtf_diff_fs_near_field_p0
-                                        );
-    
-    // Calculate diffraction force due to the far field free surface term
-    std::cout << "Calculating FS far field term..." << std::endl;
-    calculate_qtf_indirect_fs_far_term(
-                                            input,
-                                            mesh_gp,
-                                            freq_pos_i,
-                                            freq_pos_j,
-                                            qtf_type,
-                                            sim_data,
-                                            body_gp,
-                                            sim_data->qtf_diff_fs_far_field_p0
+                                            wl_gp,
+                                            sim_data->qtf_diff_body_force_p0
                                         );
 
+        // Calculate diffraction force due to the near field free surface term
+        calculate_qtf_indirect_fs_near_term(
+                                                input,
+                                                mesh_gp,
+                                                freq_pos_i,
+                                                freq_pos_j,
+                                                qtf_type,
+                                                sim_data,
+                                                fs_gp,
+                                                sim_data->qtf_diff_fs_near_field_p0
+                                            );
+        
+        // Calculate diffraction force due to the far field free surface term
+        calculate_qtf_indirect_fs_far_term(
+                                                input,
+                                                mesh_gp,
+                                                freq_pos_i,
+                                                freq_pos_j,
+                                                qtf_type,
+                                                sim_data,
+                                                fs_gp,
+                                                sim_data->qtf_diff_fs_far_field_p0
+                                            );
+    }
+
     // Sum-up contributions
-    std::cout << "Sum-up contributions..." << std::endl;
     sv_add( 
                 sim_data->qtf_np, 
                 sim_data->qtf_diff_secord_force,
