@@ -101,7 +101,25 @@ template<typename T>    inline  void        copy_vector(
                                                                         cuscomplex*     u,
                                                                         cuscomplex*     v
                                                         );
-        
+
+                                cusfloat    cos3_int_0_2PI( 
+                                                                        int m,
+                                                                        int n,
+                                                                        int p
+                                                        );
+
+                                cusfloat    cos2sin_int_0_2PI( 
+                                                                        int m,
+                                                                        int n,
+                                                                        int p
+                                                            );
+
+                                cusfloat    cossin2_int_0_2PI( 
+                                                                        int m,
+                                                                        int n,
+                                                                        int p
+                                                            );
+
 template<typename T>    inline  void        cross(
                                                                         T* u, 
                                                                         T* v, 
@@ -173,6 +191,17 @@ template<typename T>    inline  void        print_vector(
 template <typename T>   inline  int         sign(
                                                                         T val
                                                     );
+
+                                cusfloat    sin_alpha( 
+                                                                        int         alpha,
+                                                                        cusfloat    theta
+                                                    );
+
+                                cusfloat    sin3_int_0_2PI( 
+                                                                        int m,
+                                                                        int n,
+                                                                        int p
+                                                            );
         
 template<typename T>    inline  void        slice_vector(
                                                                         T* parent_vector, 

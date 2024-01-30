@@ -164,7 +164,121 @@ void    conj_vector(
 }
 
 
-cusfloat deg_to_rad(  cusfloat deg )
+cusfloat    cos_alpha(
+                        int         alpha,
+                        cusfloat    theta
+                    )
+{
+    cusfloat val = 0.0;
+
+    if ( alpha != 0 )
+    {
+        // Cast alpha value to cusfloat
+        cusfloat af = static_cast<cusfloat>( alpha );
+
+        // Evaluate primitive integral
+        val = std::cos( theta * alpha ) / alpha;
+    }
+    else
+    {
+        val = 0.0;
+    }
+
+    return 0.0;
+}
+
+
+cusfloat    cos3_int_0_2PI( 
+                            int m,
+                            int n,
+                            int p
+                        )
+{
+    // Define integral bounds
+    cusfloat    th_0    = 0.0;
+    cusfloat    th_1    = 2 * PI;
+
+    // Calculate the integral of the first term
+    int         alpha_0 = m - n - p;
+    cusfloat    t0      = sin_alpha( alpha_0, th_1 ) - sin_alpha( alpha_0, th_0 );
+
+    // Calculate the integral of the second term
+    int         alpha_1 = m + n - p;
+    cusfloat    t1      = sin_alpha( alpha_1, th_1 ) - sin_alpha( alpha_1, th_0 );
+
+    // Calculate the integral of the third term
+    int         alpha_2 = m - n + p;
+    cusfloat    t2      = sin_alpha( alpha_2, th_1 ) - sin_alpha( alpha_2, th_0 );
+
+    // Calculate the integral of the fourth term
+    int         alpha_3 = m + n + p;
+    cusfloat    t3      = sin_alpha( alpha_3, th_1 ) - sin_alpha( alpha_3, th_0 );
+
+    return 0.25 * ( t0 + t1 + t2 + t3 );
+}
+
+
+cusfloat    cos2sin_int_0_2PI( 
+                                int m,
+                                int n,
+                                int p
+                            )
+{
+    // Define integral bounds
+    cusfloat    th_0    = 0.0;
+    cusfloat    th_1    = 2 * PI;
+
+    // Calculate the integral of the first term
+    int         alpha_0 = m - n - p;
+    cusfloat    t0      = cos_alpha( alpha_0, th_1 ) - cos_alpha( alpha_0, th_0 );
+
+    // Calculate the integral of the second term
+    int         alpha_1 = m + n - p;
+    cusfloat    t1      = cos_alpha( alpha_1, th_1 ) - cos_alpha( alpha_1, th_0 );
+
+    // Calculate the integral of the third term
+    int         alpha_2 = m - n + p;
+    cusfloat    t2      = cos_alpha( alpha_2, th_1 ) - cos_alpha( alpha_2, th_0 );
+
+    // Calculate the integral of the fourth term
+    int         alpha_3 = m + n + p;
+    cusfloat    t3      = cos_alpha( alpha_3, th_1 ) - cos_alpha( alpha_3, th_0 );
+
+    return 0.25 * ( t0 + t1 - t2 - t3 );
+}
+
+
+cusfloat    cossin2_int_0_2PI( 
+                                int m,
+                                int n,
+                                int p
+                            )
+{
+    // Define integral bounds
+    cusfloat    th_0    = 0.0;
+    cusfloat    th_1    = 2 * PI;
+
+    // Calculate the integral of the first term
+    int         alpha_0 = m - n - p;
+    cusfloat    t0      = sin_alpha( alpha_0, th_1 ) - sin_alpha( alpha_0, th_0 );
+
+    // Calculate the integral of the second term
+    int         alpha_1 = m + n - p;
+    cusfloat    t1      = sin_alpha( alpha_1, th_1 ) - sin_alpha( alpha_1, th_0 );
+
+    // Calculate the integral of the third term
+    int         alpha_2 = m - n + p;
+    cusfloat    t2      = sin_alpha( alpha_2, th_1 ) - sin_alpha( alpha_2, th_0 );
+
+    // Calculate the integral of the fourth term
+    int         alpha_3 = m + n + p;
+    cusfloat    t3      = sin_alpha( alpha_3, th_1 ) - sin_alpha( alpha_3, th_0 );
+
+    return 0.25 * ( -t0 + t1 + t2 - t3 );
+}
+
+
+cusfloat    deg_to_rad(  cusfloat deg )
 {
     return deg*PI/180.0;
 }
@@ -182,23 +296,23 @@ signed long long factorial( int n )
 }
 
 
-cusfloat freq_to_angfreq( cusfloat freq )
+cusfloat    freq_to_angfreq( cusfloat freq )
 {
     return 2*PI*freq;
 }
 
 
-void newton_raphson(
-                        std::function<cusfloat(cusfloat)> f_def, 
-                        std::function<cusfloat(cusfloat)> f_der_def,
-                        cusfloat x0, 
-                        cusfloat fabs_tol, 
-                        cusfloat xrel_tol, 
-                        int max_iter, 
-                        bool verbose, 
-                        cusfloat &sol, 
-                        int &info
-                    )
+void        newton_raphson(
+                               std::function<cusfloat(cusfloat)> f_def, 
+                               std::function<cusfloat(cusfloat)> f_der_def,
+                               cusfloat x0, 
+                               cusfloat fabs_tol, 
+                               cusfloat xrel_tol, 
+                               int max_iter, 
+                               bool verbose, 
+                               cusfloat &sol, 
+                               int &info
+                           )
 {
     /**
      * @brief Newthon-Rapshon method to solve non-linear equations of the type x=T(x).
@@ -265,7 +379,62 @@ void newton_raphson(
 }
 
 
-cusfloat period_to_angfreq( cusfloat period )
+cusfloat    period_to_angfreq( cusfloat period )
 {
     return 2*PI/period;
+}
+
+
+cusfloat    sin_alpha( 
+                        int         alpha,
+                        cusfloat    theta
+                    )
+{
+    cusfloat val = 0.0;
+
+    if ( alpha != 0 )
+    {
+        // Cast alpha integer value to cusfloat
+        cusfloat af  = static_cast<cusfloat>( alpha );
+        
+        // Evaluate primitive integral 
+        val = std::sin( theta * af ) / af;
+    }
+    else
+    {
+        // Evaluate primitive integral
+        val = theta;
+    }
+
+    return val;
+}
+
+
+cusfloat    sin3_int_0_2PI( 
+                                int m,
+                                int n,
+                                int p
+                            )
+{
+    // Define integral bounds
+    cusfloat    th_0    = 0.0;
+    cusfloat    th_1    = 2 * PI;
+
+    // Calculate the integral of the first term
+    int         alpha_0 = m - n - p;
+    cusfloat    t0      = cos_alpha( alpha_0, th_1 ) - cos_alpha( alpha_0, th_0 );
+
+    // Calculate the integral of the second term
+    int         alpha_1 = m + n - p;
+    cusfloat    t1      = cos_alpha( alpha_1, th_1 ) - cos_alpha( alpha_1, th_0 );
+
+    // Calculate the integral of the third term
+    int         alpha_2 = m - n + p;
+    cusfloat    t2      = cos_alpha( alpha_2, th_1 ) - cos_alpha( alpha_2, th_0 );
+
+    // Calculate the integral of the fourth term
+    int         alpha_3 = m + n + p;
+    cusfloat    t3      = cos_alpha( alpha_3, th_1 ) - cos_alpha( alpha_3, th_0 );
+
+    return 0.25 * ( t0 - t1 - t2 + t3 );
 }
