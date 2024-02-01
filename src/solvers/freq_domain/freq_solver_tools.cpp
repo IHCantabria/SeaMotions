@@ -64,6 +64,12 @@ void    calculate_freq_domain_coeffs(
         fs_mesh         = new Mesh*[1];
         fs_mesh[0]      = input->bodies[0]->mesh_fs_qtf;
 
+        // Create partition circle water line if required
+        if ( input->out_qtf_so_model == 2 )
+        {
+            fs_mesh[0]->detect_pc_points( input->wl_det_prec );
+        }
+
         // Create mesh group
         mesh_fs_qtf_gp  = new MeshGroup(
                                             fs_mesh,
@@ -335,6 +341,10 @@ void    freq_domain_linear_solver(
     MatLinGroup<cuscomplex>*    qtf_fs_vel_x_gp     = nullptr;
     MatLinGroup<cuscomplex>*    qtf_fs_vel_y_gp     = nullptr;
     MatLinGroup<cuscomplex>*    qtf_fs_vel_z_gp     = nullptr;
+    MatLinGroup<cuscomplex>*    qtf_pc_pot_gp       = nullptr;
+    MatLinGroup<cuscomplex>*    qtf_pc_vel_x_gp     = nullptr;
+    MatLinGroup<cuscomplex>*    qtf_pc_vel_y_gp     = nullptr;
+    MatLinGroup<cuscomplex>*    qtf_pc_vel_z_gp     = nullptr;
     MatLinGroup<cuscomplex>*    qtf_wl_vel_x_gp     = nullptr;
     MatLinGroup<cuscomplex>*    qtf_wl_vel_y_gp     = nullptr;
     MatLinGroup<cuscomplex>*    qtf_wl_vel_z_gp     = nullptr;
@@ -464,7 +474,154 @@ void    freq_domain_linear_solver(
                                                                     false
                                                                 );
         }
-                            
+
+        // Define new fields to storage data for the direct QTF model
+        if ( input->out_qtf_so_model == 2 )
+        {
+            sim_data->add_qtf_direct_data(
+                                                mesh_gp->panels_raddif_tnp,
+                                                input->gauss_np_factor_2d( ),
+                                                mesh_fs_qtf_gp->panels_raddif_tnp,
+                                                input->gauss_np_factor_2d( ),
+                                                mesh_gp->panels_wl_tnp,
+                                                input->gauss_np_factor_1d( ),
+                                                mesh_fs_qtf_gp->panels_wl_tnp,
+                                                input->gauss_np_factor_1d( ),
+                                                input->angfreqs_np
+                                            );
+
+            qtf_fs_pot_gp           = new MatLinGroup<cuscomplex>(
+                                                                    mesh_fs_qtf_gp->panels_raddif_tnp * input->gauss_np_factor_2d( ),
+                                                                    ipm_cols_np,
+                                                                    mesh_fs_qtf_gp->meshes_np,
+                                                                    ( input->dofs_np + input->heads_np ),
+                                                                    0,
+                                                                    ( mesh_fs_qtf_gp->panels_raddif_tnp * input->gauss_np_factor_2d( ) ) - 1,
+                                                                    ipm_sc,
+                                                                    ipm_ed,
+                                                                    false
+                                                                );
+
+            qtf_fs_vel_x_gp         = new MatLinGroup<cuscomplex>(
+                                                                    mesh_fs_qtf_gp->panels_raddif_tnp * input->gauss_np_factor_2d( ),
+                                                                    ipm_cols_np,
+                                                                    mesh_fs_qtf_gp->meshes_np,
+                                                                    ( input->dofs_np + input->heads_np ),
+                                                                    0,
+                                                                    ( mesh_fs_qtf_gp->panels_raddif_tnp * input->gauss_np_factor_2d( ) ) - 1,
+                                                                    ipm_sc,
+                                                                    ipm_ed,
+                                                                    false
+                                                                );
+
+            qtf_fs_vel_y_gp         = new MatLinGroup<cuscomplex>(
+                                                                    mesh_fs_qtf_gp->panels_raddif_tnp * input->gauss_np_factor_2d( ),
+                                                                    ipm_cols_np,
+                                                                    mesh_fs_qtf_gp->meshes_np,
+                                                                    ( input->dofs_np + input->heads_np ),
+                                                                    0,
+                                                                    ( mesh_fs_qtf_gp->panels_raddif_tnp * input->gauss_np_factor_2d( ) ) - 1,
+                                                                    ipm_sc,
+                                                                    ipm_ed,
+                                                                    false
+                                                                );
+
+            qtf_fs_vel_z_gp         = new MatLinGroup<cuscomplex>(
+                                                                    mesh_fs_qtf_gp->panels_raddif_tnp * input->gauss_np_factor_2d( ),
+                                                                    ipm_cols_np,
+                                                                    mesh_fs_qtf_gp->meshes_np,
+                                                                    ( input->dofs_np + input->heads_np ),
+                                                                    0,
+                                                                    ( mesh_fs_qtf_gp->panels_raddif_tnp * input->gauss_np_factor_2d( ) ) - 1,
+                                                                    ipm_sc,
+                                                                    ipm_ed,
+                                                                    false
+                                                                );
+
+            qtf_pc_pot_gp           = new MatLinGroup<cuscomplex>(
+                                                                    mesh_fs_qtf_gp->panels_wl_tnp * input->gauss_np_factor_1d( ),
+                                                                    ipm_cols_np,
+                                                                    mesh_fs_qtf_gp->meshes_np,
+                                                                    ( input->dofs_np + input->heads_np ),
+                                                                    0,
+                                                                    ( mesh_fs_qtf_gp->panels_wl_tnp * input->gauss_np_factor_1d( ) ) - 1,
+                                                                    ipm_sc,
+                                                                    ipm_ed,
+                                                                    false
+                                                                );
+
+            qtf_pc_vel_x_gp         = new MatLinGroup<cuscomplex>(
+                                                                    mesh_fs_qtf_gp->panels_wl_tnp * input->gauss_np_factor_1d( ),
+                                                                    ipm_cols_np,
+                                                                    mesh_fs_qtf_gp->meshes_np,
+                                                                    ( input->dofs_np + input->heads_np ),
+                                                                    0,
+                                                                    ( mesh_fs_qtf_gp->panels_wl_tnp * input->gauss_np_factor_1d( ) ) - 1,
+                                                                    ipm_sc,
+                                                                    ipm_ed,
+                                                                    false
+                                                                );
+
+            qtf_pc_vel_y_gp         = new MatLinGroup<cuscomplex>(
+                                                                    mesh_fs_qtf_gp->panels_wl_tnp * input->gauss_np_factor_1d( ),
+                                                                    ipm_cols_np,
+                                                                    mesh_fs_qtf_gp->meshes_np,
+                                                                    ( input->dofs_np + input->heads_np ),
+                                                                    0,
+                                                                    ( mesh_fs_qtf_gp->panels_wl_tnp * input->gauss_np_factor_1d( ) ) - 1,
+                                                                    ipm_sc,
+                                                                    ipm_ed,
+                                                                    false
+                                                                );
+
+            qtf_pc_vel_z_gp         = new MatLinGroup<cuscomplex>(
+                                                                    mesh_fs_qtf_gp->panels_wl_tnp * input->gauss_np_factor_1d( ),
+                                                                    ipm_cols_np,
+                                                                    mesh_fs_qtf_gp->meshes_np,
+                                                                    ( input->dofs_np + input->heads_np ),
+                                                                    0,
+                                                                    ( mesh_fs_qtf_gp->panels_wl_tnp * input->gauss_np_factor_1d( ) ) - 1,
+                                                                    ipm_sc,
+                                                                    ipm_ed,
+                                                                    false
+                                                                );
+            
+            qtf_wl_vel_x_gp         = new MatLinGroup<cuscomplex>(
+                                                                    mesh_gp->panels_wl_tnp * input->gauss_np_factor_1d( ),
+                                                                    ipm_cols_np,
+                                                                    mesh_gp->meshes_np,
+                                                                    ( input->dofs_np + input->heads_np ),
+                                                                    0,
+                                                                    ( mesh_gp->panels_wl_tnp * input->gauss_np_factor_1d( ) ) - 1,
+                                                                    ipm_sc,
+                                                                    ipm_ed,
+                                                                    false
+                                                                );
+
+            qtf_wl_vel_y_gp         = new MatLinGroup<cuscomplex>(
+                                                                    mesh_gp->panels_wl_tnp * input->gauss_np_factor_1d( ),
+                                                                    ipm_cols_np,
+                                                                    mesh_gp->meshes_np,
+                                                                    ( input->dofs_np + input->heads_np ),
+                                                                    0,
+                                                                    ( mesh_gp->panels_wl_tnp * input->gauss_np_factor_1d( ) ) - 1,
+                                                                    ipm_sc,
+                                                                    ipm_ed,
+                                                                    false
+                                                                );
+
+            qtf_wl_vel_z_gp         = new MatLinGroup<cuscomplex>(
+                                                                    mesh_gp->panels_wl_tnp * input->gauss_np_factor_1d( ),
+                                                                    ipm_cols_np,
+                                                                    mesh_gp->meshes_np,
+                                                                    ( input->dofs_np + input->heads_np ),
+                                                                    0,
+                                                                    ( mesh_gp->panels_wl_tnp * input->gauss_np_factor_1d( ) ) - 1,
+                                                                    ipm_sc,
+                                                                    ipm_ed,
+                                                                    false
+                                                                );
+        }
     }
 
     /****************************************************************/
@@ -508,6 +665,102 @@ void    freq_domain_linear_solver(
                                                 qtf_body_pot_gp 
                                             );
 
+        define_gauss_points_diffrac_panels( 
+                                                input, 
+                                                mesh_fs_qtf_gp, 
+                                                qtf_fs_pot_gp 
+                                            );
+
+        define_gauss_points_diffrac_panels( 
+                                                input, 
+                                                mesh_fs_qtf_gp, 
+                                                qtf_fs_vel_x_gp 
+                                            );
+
+        define_gauss_points_diffrac_panels( 
+                                                input, 
+                                                mesh_fs_qtf_gp, 
+                                                qtf_fs_vel_y_gp 
+                                            );
+
+        define_gauss_points_diffrac_panels( 
+                                                input, 
+                                                mesh_fs_qtf_gp, 
+                                                qtf_fs_vel_z_gp 
+                                            );
+
+        define_gauss_points_wl(
+                                    input,
+                                    mesh_gp,
+                                    qtf_wl_vel_x_gp
+                                );
+
+        define_gauss_points_wl(
+                                    input,
+                                    mesh_gp,
+                                    qtf_wl_vel_y_gp
+                                );
+
+        define_gauss_points_wl(
+                                    input,
+                                    mesh_gp,
+                                    qtf_wl_vel_z_gp
+                                );
+    }
+
+    if ( input->out_qtf_so_model == 2)
+    {
+        // Define gauss points over the FS
+        define_gauss_points_diffrac_panels( 
+                                                input, 
+                                                mesh_fs_qtf_gp, 
+                                                qtf_fs_pot_gp 
+                                            );
+
+        define_gauss_points_diffrac_panels( 
+                                                input, 
+                                                mesh_fs_qtf_gp, 
+                                                qtf_fs_vel_x_gp 
+                                            );
+
+        define_gauss_points_diffrac_panels( 
+                                                input, 
+                                                mesh_fs_qtf_gp, 
+                                                qtf_fs_vel_y_gp 
+                                            );
+
+        define_gauss_points_diffrac_panels( 
+                                                input, 
+                                                mesh_fs_qtf_gp, 
+                                                qtf_fs_vel_z_gp 
+                                            );
+        
+        // Define WL points over the PC
+        define_gauss_points_wl(
+                                    input,
+                                    mesh_fs_qtf_gp,
+                                    qtf_pc_pot_gp
+                                );
+
+        define_gauss_points_wl(
+                                    input,
+                                    mesh_fs_qtf_gp,
+                                    qtf_pc_vel_x_gp
+                                );
+
+        define_gauss_points_wl(
+                                    input,
+                                    mesh_fs_qtf_gp,
+                                    qtf_pc_vel_y_gp
+                                );
+
+        define_gauss_points_wl(
+                                    input,
+                                    mesh_fs_qtf_gp,
+                                    qtf_pc_vel_z_gp
+                                );
+
+        // Define WL points over the body
         define_gauss_points_wl(
                                     input,
                                     mesh_gp,
@@ -649,12 +902,42 @@ void    freq_domain_linear_solver(
 
     if ( input->out_qtf_so_model == 1 )
     {
+        // Calculate potential over the body
         calculate_influence_potmat_steady(
                                                 input,
                                                 mesh_gp,
                                                 qtf_body_pot_gp
                                             );
 
+        // Calculate potential over the FS
+        calculate_influence_potmat_steady(
+                                                input,
+                                                mesh_fs_qtf_gp,
+                                                qtf_fs_pot_gp
+                                            );
+
+        // Calculate velocities over the FS
+        calculate_raddif_velocity_mat_steady(
+                                                input,
+                                                mesh_fs_qtf_gp,
+                                                qtf_fs_vel_x_gp,
+                                                qtf_fs_vel_y_gp,
+                                                qtf_fs_vel_z_gp
+                                            );
+
+        // Calculate velocities over the WL
+        calculate_raddif_velocity_mat_steady(
+                                                input,
+                                                mesh_gp,
+                                                qtf_wl_vel_x_gp,
+                                                qtf_wl_vel_y_gp,
+                                                qtf_wl_vel_z_gp
+                                            );
+    }
+
+    if ( input->out_qtf_so_model == 2 )
+    {
+        // Calcualte velocities over the FS
         calculate_influence_potmat_steady(
                                                 input,
                                                 mesh_fs_qtf_gp,
@@ -669,6 +952,23 @@ void    freq_domain_linear_solver(
                                                 qtf_fs_vel_z_gp
                                             );
 
+        // Calculate potential ove the PC
+        calculate_influence_potmat_steady(
+                                                input,
+                                                mesh_fs_qtf_gp,
+                                                qtf_pc_pot_gp
+                                            );
+
+        // Calculate velocities over the PC
+        calculate_raddif_velocity_mat_steady(
+                                                input,
+                                                mesh_gp,
+                                                qtf_pc_vel_x_gp,
+                                                qtf_pc_vel_y_gp,
+                                                qtf_pc_vel_z_gp
+                                            );
+        
+        // Calculate velocities over the Body WL
         calculate_raddif_velocity_mat_steady(
                                                 input,
                                                 mesh_gp,
@@ -884,9 +1184,9 @@ void    freq_domain_linear_solver(
                                     sim_data->intensities,
                                     sim_data->raos,
                                     qtf_wl_we_gp,
-                                    sim_data->mdrift_wl_we_fk,
-                                    sim_data->mdrift_wl_we_raddif,
-                                    sim_data->mdrift_wl_we_total
+                                    sim_data->mdrift_wl_pot_fk,
+                                    sim_data->mdrift_wl_pot_raddif,
+                                    sim_data->mdrift_wl_pot_total
                                 );
             
             // Calculate velocities over panels
@@ -956,7 +1256,7 @@ void    freq_domain_linear_solver(
                 calculate_relative_wave_elevation_lin(
                                                             input,
                                                             qtf_wl_we_gp,
-                                                            sim_data->mdrift_wl_we_total,
+                                                            sim_data->mdrift_wl_pot_total,
                                                             input->angfreqs[i],
                                                             sim_data->raos,
                                                             sim_data->mdrift_wl_rel_we
@@ -1159,7 +1459,7 @@ void    freq_domain_linear_solver(
                                                                 sim_data->mdrift_fs_vel_x_total,
                                                                 sim_data->mdrift_fs_vel_y_total,
                                                                 sim_data->mdrift_fs_vel_z_total,
-                                                                sim_data->mdrift_wl_we_raddif,
+                                                                sim_data->mdrift_wl_pot_raddif,
                                                                 sim_data->mdrift_wl_vel_x_total,
                                                                 sim_data->mdrift_wl_vel_y_total,
                                                                 sim_data->mdrift_wl_vel_z_total,
@@ -1168,6 +1468,182 @@ void    freq_domain_linear_solver(
                                                                 sim_data->mdrift_kochin_rad_cos,
                                                                 sim_data->mdrift_kochin_rad_sin
                                                             );
+                    }
+
+                    if ( input->out_qtf_so_model == 2 )
+                    {
+                        // Calculate potential field over the fs
+                        calculate_fields_lin(
+                                                input,
+                                                mpi_config,
+                                                mesh_fs_qtf_gp,
+                                                gwf_interf,
+                                                wave_potential_fo_space,
+                                                input->angfreqs[i],
+                                                sim_data->intensities,
+                                                sim_data->raos,
+                                                qtf_fs_pot_gp,
+                                                sim_data->mdrift_fs_pot_fk,
+                                                sim_data->mdrift_fs_pot_raddif,
+                                                sim_data->mdrift_fs_pot_total
+                                            );
+
+                        // Calculate velocities field over the free surface
+                        calculate_fields_lin(
+                                                input,
+                                                mpi_config,
+                                                mesh_fs_qtf_gp,
+                                                gwf_dx_interf,
+                                                wave_potential_fo_space_dx,
+                                                input->angfreqs[i],
+                                                sim_data->intensities,
+                                                sim_data->raos,
+                                                qtf_fs_vel_x_gp,
+                                                sim_data->mdrift_fs_vel_x_fk,
+                                                sim_data->mdrift_fs_vel_x_raddif,
+                                                sim_data->mdrift_fs_vel_x_total
+                                            );
+
+                        calculate_fields_lin(
+                                                input,
+                                                mpi_config,
+                                                mesh_fs_qtf_gp,
+                                                gwf_dy_interf,
+                                                wave_potential_fo_space_dy,
+                                                input->angfreqs[i],
+                                                sim_data->intensities,
+                                                sim_data->raos,
+                                                qtf_fs_vel_y_gp,
+                                                sim_data->mdrift_fs_vel_y_fk,
+                                                sim_data->mdrift_fs_vel_y_raddif,
+                                                sim_data->mdrift_fs_vel_y_total
+                                            );
+
+                        calculate_fields_lin(
+                                                input,
+                                                mpi_config,
+                                                mesh_fs_qtf_gp,
+                                                gwf_dz_interf,
+                                                wave_potential_fo_space_dz,
+                                                input->angfreqs[i],
+                                                sim_data->intensities,
+                                                sim_data->raos,
+                                                qtf_fs_vel_z_gp,
+                                                sim_data->mdrift_fs_vel_z_fk,
+                                                sim_data->mdrift_fs_vel_z_raddif,
+                                                sim_data->mdrift_fs_vel_z_total
+                                            );
+                        
+                        // Calculate potential field over the PC
+                        calculate_fields_lin(
+                                                input,
+                                                mpi_config,
+                                                mesh_gp,
+                                                gwf_dx_interf,
+                                                wave_potential_fo_space,
+                                                input->angfreqs[i],
+                                                sim_data->intensities,
+                                                sim_data->raos,
+                                                qtf_pc_pot_gp,
+                                                sim_data->mdrift_pc_pot_fk,
+                                                sim_data->mdrift_pc_pot_raddif,
+                                                sim_data->mdrift_pc_pot_total
+                                            );
+                        
+                        // Calculate velocities field over the PC
+                        calculate_fields_lin(
+                                                input,
+                                                mpi_config,
+                                                mesh_gp,
+                                                gwf_dx_interf,
+                                                wave_potential_fo_space_dx,
+                                                input->angfreqs[i],
+                                                sim_data->intensities,
+                                                sim_data->raos,
+                                                qtf_pc_vel_x_gp,
+                                                sim_data->mdrift_pc_vel_x_fk,
+                                                sim_data->mdrift_pc_vel_x_raddif,
+                                                sim_data->mdrift_pc_vel_x_total
+                                            );
+                        
+                        calculate_fields_lin(
+                                                input,
+                                                mpi_config,
+                                                mesh_gp,
+                                                gwf_dy_interf,
+                                                wave_potential_fo_space_dy,
+                                                input->angfreqs[i],
+                                                sim_data->intensities,
+                                                sim_data->raos,
+                                                qtf_pc_vel_y_gp,
+                                                sim_data->mdrift_pc_vel_y_fk,
+                                                sim_data->mdrift_pc_vel_y_raddif,
+                                                sim_data->mdrift_pc_vel_y_total
+                                            );
+
+                        calculate_fields_lin(
+                                                input,
+                                                mpi_config,
+                                                mesh_gp,
+                                                gwf_dz_interf,
+                                                wave_potential_fo_space_dz,
+                                                input->angfreqs[i],
+                                                sim_data->intensities,
+                                                sim_data->raos,
+                                                qtf_pc_vel_z_gp,
+                                                sim_data->mdrift_pc_vel_z_fk,
+                                                sim_data->mdrift_pc_vel_z_raddif,
+                                                sim_data->mdrift_pc_vel_z_total
+                                            );
+                        
+                        // Calculate velocities field over the WL
+                        calculate_fields_lin(
+                                                input,
+                                                mpi_config,
+                                                mesh_gp,
+                                                gwf_dx_interf,
+                                                wave_potential_fo_space_dx,
+                                                input->angfreqs[i],
+                                                sim_data->intensities,
+                                                sim_data->raos,
+                                                qtf_wl_vel_x_gp,
+                                                sim_data->mdrift_wl_vel_x_fk,
+                                                sim_data->mdrift_wl_vel_x_raddif,
+                                                sim_data->mdrift_wl_vel_x_total
+                                            );
+                        
+                        calculate_fields_lin(
+                                                input,
+                                                mpi_config,
+                                                mesh_gp,
+                                                gwf_dy_interf,
+                                                wave_potential_fo_space_dy,
+                                                input->angfreqs[i],
+                                                sim_data->intensities,
+                                                sim_data->raos,
+                                                qtf_wl_vel_y_gp,
+                                                sim_data->mdrift_wl_vel_y_fk,
+                                                sim_data->mdrift_wl_vel_y_raddif,
+                                                sim_data->mdrift_wl_vel_y_total
+                                            );
+
+                        calculate_fields_lin(
+                                                input,
+                                                mpi_config,
+                                                mesh_gp,
+                                                gwf_dz_interf,
+                                                wave_potential_fo_space_dz,
+                                                input->angfreqs[i],
+                                                sim_data->intensities,
+                                                sim_data->raos,
+                                                qtf_wl_vel_z_gp,
+                                                sim_data->mdrift_wl_vel_z_fk,
+                                                sim_data->mdrift_wl_vel_z_raddif,
+                                                sim_data->mdrift_wl_vel_z_total
+                                            );
+
+                        // Storage results
+                        sim_data->storage_qtf_direct_freq( i );
                     }
                 }
             }
@@ -1350,8 +1826,8 @@ void    freq_domain_linear_solver(
                                                 input,
                                                 mesh_gp,
                                                 QTF_DIFF_CODE,
-                                                &(sim_data->qtf_wl_we_total_freq[i*sim_data->qtf_wl_heads_np]),
-                                                &(sim_data->qtf_wl_we_total_freq[j*sim_data->qtf_wl_heads_np]),
+                                                &(sim_data->qtf_wl_rel_we_total_freq[i*sim_data->qtf_wl_heads_np]),
+                                                &(sim_data->qtf_wl_rel_we_total_freq[j*sim_data->qtf_wl_heads_np]),
                                                 &(sim_data->qtf_raos_freq[i*sim_data->wave_exc_np]),
                                                 &(sim_data->qtf_raos_freq[j*sim_data->wave_exc_np]),
                                                 &(sim_data->qtf_body_vel_x_total_freq[i*sim_data->qtf_body_heads_np]),
@@ -1430,8 +1906,8 @@ void    freq_domain_linear_solver(
                                                 input,
                                                 mesh_gp,
                                                 QTF_SUM_CODE,
-                                                &(sim_data->qtf_wl_we_total_freq[i*sim_data->qtf_wl_heads_np]),
-                                                &(sim_data->qtf_wl_we_total_freq[j*sim_data->qtf_wl_heads_np]),
+                                                &(sim_data->qtf_wl_rel_we_total_freq[i*sim_data->qtf_wl_heads_np]),
+                                                &(sim_data->qtf_wl_rel_we_total_freq[j*sim_data->qtf_wl_heads_np]),
                                                 &(sim_data->qtf_raos_freq[i*sim_data->wave_exc_np]),
                                                 &(sim_data->qtf_raos_freq[j*sim_data->wave_exc_np]),
                                                 &(sim_data->qtf_body_vel_x_total_freq[i*sim_data->qtf_body_heads_np]),
@@ -1616,6 +2092,21 @@ void    freq_domain_linear_solver(
         delete qtf_fs_vel_x_gp;
         delete qtf_fs_vel_y_gp;
         delete qtf_fs_vel_z_gp;
+        delete qtf_wl_vel_x_gp;
+        delete qtf_wl_vel_y_gp;
+        delete qtf_wl_vel_z_gp;
+    }
+
+    if ( input->out_qtf_so_model == 1 )
+    {
+        delete qtf_fs_pot_gp;
+        delete qtf_fs_vel_x_gp;
+        delete qtf_fs_vel_y_gp;
+        delete qtf_fs_vel_z_gp;
+        delete qtf_pc_pot_gp;
+        delete qtf_pc_vel_x_gp;
+        delete qtf_pc_vel_y_gp;
+        delete qtf_pc_vel_z_gp;
         delete qtf_wl_vel_x_gp;
         delete qtf_wl_vel_y_gp;
         delete qtf_wl_vel_z_gp;
