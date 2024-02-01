@@ -38,9 +38,9 @@ void    SimulationData::add_mean_drift_data(
         this->mdrift_body_vel_y_total       = generate_empty_vector<cuscomplex>( body_heads_np );
         this->mdrift_body_vel_z_total       = generate_empty_vector<cuscomplex>( body_heads_np );
         this->mdrift_wl_rel_we              = generate_empty_vector<cuscomplex>( wl_heads_np );
-        this->mdrift_wl_we_fk               = generate_empty_vector<cuscomplex>( wl_heads_np );
-        this->mdrift_wl_we_raddif           = generate_empty_vector<cuscomplex>( wl_raddif_np );
-        this->mdrift_wl_we_total            = generate_empty_vector<cuscomplex>( wl_heads_np );
+        this->mdrift_wl_pot_fk              = generate_empty_vector<cuscomplex>( wl_heads_np );
+        this->mdrift_wl_pot_raddif          = generate_empty_vector<cuscomplex>( wl_raddif_np );
+        this->mdrift_wl_pot_total           = generate_empty_vector<cuscomplex>( wl_heads_np );
     }
     this->_is_mdrift = true;
 }
@@ -70,7 +70,7 @@ void    SimulationData::add_qtf_base_data(
         this->qtf_body_vel_y_total_freq     = generate_empty_vector<cuscomplex>( body_heads_freq_np );
         this->qtf_body_vel_z_total_freq     = generate_empty_vector<cuscomplex>( body_heads_freq_np );
         this->qtf_raos_freq                 = generate_empty_vector<cuscomplex>( wex_freq_np );
-        this->qtf_wl_we_total_freq          = generate_empty_vector<cuscomplex>( wl_freqs_heads_np );
+        this->qtf_wl_rel_we_total_freq      = generate_empty_vector<cuscomplex>( wl_freqs_heads_np );
     }
     this->_is_qtf_base_freq = true;
 }
@@ -143,6 +143,112 @@ void    SimulationData::add_qtf_data(
 }
 
 
+void    SimulationData::add_qtf_direct_data(
+                                                int body_panels_tnp,
+                                                int body_gp_np,
+                                                int fs_panels_tnp,
+                                                int fs_gp_np,
+                                                int wl_panels_tnp,
+                                                int wl_gp_np,
+                                                int pc_panels_tnp,
+                                                int pc_gp_np,
+                                                int freqs_np
+                                            )
+{
+    assert( this->_is_qtf_base_freq && "It is required to load qtf base data prior to load qtf indirect data." );
+
+    int body_raddif_freq_np     = this->qtf_body_raddif_np * freqs_np;
+    int body_heads_freq_np      = this->qtf_body_heads_np * freqs_np;
+
+    this->qtf_fs_raddif_np      = this->get_raddif_np( fs_panels_tnp,  fs_gp_np );
+    this->qtf_fs_heads_np       = this->get_heads_np( fs_panels_tnp,  fs_gp_np );
+
+    this->qtf_pc_raddif_np      = this->get_raddif_np( pc_panels_tnp, pc_gp_np );
+    this->qtf_pc_heads_np       = this->get_heads_np( pc_panels_tnp, fs_gp_np );
+
+    int fs_freqs_raddif_freq_np = this->qtf_fs_raddif_np * freqs_np;
+    int fs_freqs_heads_freq_np  = this->qtf_fs_heads_np  * freqs_np;
+
+    this->qtf_kochin_heads_np   = this->heads_np * this->_input->bodies_np * this->_input->kochin_np;
+    this->qtf_kochin_rad_np     = this->dofs_np * this->_input->bodies_np * this->_input->kochin_np;
+    int kochin_heads_freq_np    = this->qtf_kochin_heads_np * freqs_np;
+    int kochin_rad_freq_np      = this->qtf_kochin_rad_np   * freqs_np;
+
+    int pc_heads_freq_np        = this->qtf_pc_heads_np * freqs_np;
+
+    int wl_freqs_raddif_np      = this->qtf_wl_raddif_np * freqs_np;
+    int wl_freqs_heads_np       = this->qtf_wl_heads_np * freqs_np;
+
+    int wex_freq_np             = this->wave_exc_np * freqs_np;
+
+    if ( this->_mpi_config->is_root( ) )
+    {
+        this->mdrift_fs_pot_fk              = generate_empty_vector<cuscomplex>( this->qtf_fs_heads_np );
+        this->mdrift_fs_pot_raddif          = generate_empty_vector<cuscomplex>( this->qtf_fs_raddif_np );
+        this->mdrift_fs_pot_total           = generate_empty_vector<cuscomplex>( this->qtf_fs_heads_np );
+        this->mdrift_fs_vel_x_fk            = generate_empty_vector<cuscomplex>( this->qtf_fs_heads_np );
+        this->mdrift_fs_vel_y_fk            = generate_empty_vector<cuscomplex>( this->qtf_fs_heads_np );
+        this->mdrift_fs_vel_z_fk            = generate_empty_vector<cuscomplex>( this->qtf_fs_heads_np );
+        this->mdrift_fs_vel_x_raddif        = generate_empty_vector<cuscomplex>( this->qtf_fs_raddif_np );
+        this->mdrift_fs_vel_y_raddif        = generate_empty_vector<cuscomplex>( this->qtf_fs_raddif_np );
+        this->mdrift_fs_vel_z_raddif        = generate_empty_vector<cuscomplex>( this->qtf_fs_raddif_np );
+        this->mdrift_fs_vel_x_total         = generate_empty_vector<cuscomplex>( this->qtf_fs_heads_np );
+        this->mdrift_fs_vel_y_total         = generate_empty_vector<cuscomplex>( this->qtf_fs_heads_np );
+        this->mdrift_fs_vel_z_total         = generate_empty_vector<cuscomplex>( this->qtf_fs_heads_np );
+
+        this->mdrift_kochin_pert_cos        = generate_empty_vector<cuscomplex>( this->qtf_kochin_heads_np );
+        this->mdrift_kochin_pert_sin        = generate_empty_vector<cuscomplex>( this->qtf_kochin_heads_np );
+        this->mdrift_kochin_rad_cos         = generate_empty_vector<cuscomplex>( this->qtf_kochin_rad_np );
+        this->mdrift_kochin_rad_sin         = generate_empty_vector<cuscomplex>( this->qtf_kochin_rad_np );
+
+        this->mdrift_pc_vel_x_fk            = generate_empty_vector<cuscomplex>( this->qtf_pc_heads_np );
+        this->mdrift_pc_vel_y_fk            = generate_empty_vector<cuscomplex>( this->qtf_pc_heads_np );
+        this->mdrift_pc_vel_z_fk            = generate_empty_vector<cuscomplex>( this->qtf_pc_heads_np );
+        this->mdrift_pc_vel_x_raddif        = generate_empty_vector<cuscomplex>( this->qtf_pc_raddif_np );
+        this->mdrift_pc_vel_y_raddif        = generate_empty_vector<cuscomplex>( this->qtf_pc_raddif_np );
+        this->mdrift_pc_vel_z_raddif        = generate_empty_vector<cuscomplex>( this->qtf_pc_raddif_np );
+        this->mdrift_pc_vel_x_total         = generate_empty_vector<cuscomplex>( this->qtf_pc_heads_np );
+        this->mdrift_pc_vel_y_total         = generate_empty_vector<cuscomplex>( this->qtf_pc_heads_np );
+        this->mdrift_pc_vel_z_total         = generate_empty_vector<cuscomplex>( this->qtf_pc_heads_np );
+
+        this->mdrift_wl_vel_x_fk            = generate_empty_vector<cuscomplex>( this->qtf_wl_heads_np );
+        this->mdrift_wl_vel_y_fk            = generate_empty_vector<cuscomplex>( this->qtf_wl_heads_np );
+        this->mdrift_wl_vel_z_fk            = generate_empty_vector<cuscomplex>( this->qtf_wl_heads_np );
+        this->mdrift_wl_vel_x_raddif        = generate_empty_vector<cuscomplex>( this->qtf_wl_raddif_np );
+        this->mdrift_wl_vel_y_raddif        = generate_empty_vector<cuscomplex>( this->qtf_wl_raddif_np );
+        this->mdrift_wl_vel_z_raddif        = generate_empty_vector<cuscomplex>( this->qtf_wl_raddif_np );
+        this->mdrift_wl_vel_x_total         = generate_empty_vector<cuscomplex>( this->qtf_wl_heads_np );
+        this->mdrift_wl_vel_y_total         = generate_empty_vector<cuscomplex>( this->qtf_wl_heads_np );
+        this->mdrift_wl_vel_z_total         = generate_empty_vector<cuscomplex>( this->qtf_wl_heads_np );
+
+        this->qtf_body_vel_x_fk_freq        = generate_empty_vector<cuscomplex>( body_heads_freq_np );
+        this->qtf_body_vel_y_fk_freq        = generate_empty_vector<cuscomplex>( body_heads_freq_np );
+        this->qtf_body_vel_z_fk_freq        = generate_empty_vector<cuscomplex>( body_heads_freq_np );
+
+        this->qtf_fs_pot_total_freq         = generate_empty_vector<cuscomplex>( fs_freqs_heads_freq_np );
+        this->qtf_fs_vel_x_total_freq       = generate_empty_vector<cuscomplex>( fs_freqs_raddif_freq_np );
+        this->qtf_fs_vel_y_total_freq       = generate_empty_vector<cuscomplex>( fs_freqs_raddif_freq_np );
+        this->qtf_fs_vel_z_total_freq       = generate_empty_vector<cuscomplex>( fs_freqs_raddif_freq_np );
+
+        this->qtf_kochin_pert_cos_freqs     = generate_empty_vector<cuscomplex>( kochin_heads_freq_np );
+        this->qtf_kochin_pert_sin_freqs     = generate_empty_vector<cuscomplex>( kochin_heads_freq_np );
+        this->qtf_kochin_rad_cos_freqs      = generate_empty_vector<cuscomplex>( kochin_rad_freq_np );
+        this->qtf_kochin_rad_sin_freqs      = generate_empty_vector<cuscomplex>( kochin_rad_freq_np );
+
+        this->qtf_pc_pot_total_freq         = generate_empty_vector<cuscomplex>( wl_freqs_heads_np );
+        this->qtf_pc_vel_x_total_freq       = generate_empty_vector<cuscomplex>( wl_freqs_heads_np );
+        this->qtf_pc_vel_y_total_freq       = generate_empty_vector<cuscomplex>( wl_freqs_heads_np );
+        this->qtf_pc_vel_z_total_freq       = generate_empty_vector<cuscomplex>( wl_freqs_heads_np );
+
+        this->qtf_wl_pot_total_freq         = generate_empty_vector<cuscomplex>( wl_freqs_heads_np );
+        this->qtf_wl_vel_x_total_freq       = generate_empty_vector<cuscomplex>( wl_freqs_heads_np );
+        this->qtf_wl_vel_y_total_freq       = generate_empty_vector<cuscomplex>( wl_freqs_heads_np );
+        this->qtf_wl_vel_z_total_freq       = generate_empty_vector<cuscomplex>( wl_freqs_heads_np );
+    }
+    this->_is_qtf_direct_freq = true;
+}
+
+
 void    SimulationData::add_qtf_indirect_data(
                                                 int body_panels_tnp,
                                                 int body_gp_np,
@@ -188,10 +294,12 @@ void    SimulationData::add_qtf_indirect_data(
         this->mdrift_fs_vel_x_total         = generate_empty_vector<cuscomplex>( this->qtf_fs_heads_np );
         this->mdrift_fs_vel_y_total         = generate_empty_vector<cuscomplex>( this->qtf_fs_heads_np );
         this->mdrift_fs_vel_z_total         = generate_empty_vector<cuscomplex>( this->qtf_fs_heads_np );
+
         this->mdrift_kochin_pert_cos        = generate_empty_vector<cuscomplex>( this->qtf_kochin_heads_np );
         this->mdrift_kochin_pert_sin        = generate_empty_vector<cuscomplex>( this->qtf_kochin_heads_np );
         this->mdrift_kochin_rad_cos         = generate_empty_vector<cuscomplex>( this->qtf_kochin_rad_np );
         this->mdrift_kochin_rad_sin         = generate_empty_vector<cuscomplex>( this->qtf_kochin_rad_np );
+
         this->mdrift_wl_vel_x_fk            = generate_empty_vector<cuscomplex>( this->qtf_wl_heads_np );
         this->mdrift_wl_vel_y_fk            = generate_empty_vector<cuscomplex>( this->qtf_wl_heads_np );
         this->mdrift_wl_vel_z_fk            = generate_empty_vector<cuscomplex>( this->qtf_wl_heads_np );
@@ -201,10 +309,12 @@ void    SimulationData::add_qtf_indirect_data(
         this->mdrift_wl_vel_x_total         = generate_empty_vector<cuscomplex>( this->qtf_wl_heads_np );
         this->mdrift_wl_vel_y_total         = generate_empty_vector<cuscomplex>( this->qtf_wl_heads_np );
         this->mdrift_wl_vel_z_total         = generate_empty_vector<cuscomplex>( this->qtf_wl_heads_np );
+
         this->qtf_body_pot_raddif_freq      = generate_empty_vector<cuscomplex>( body_raddif_freq_np );
         this->qtf_body_vel_x_raddif_freq    = generate_empty_vector<cuscomplex>( body_raddif_freq_np );
         this->qtf_body_vel_y_raddif_freq    = generate_empty_vector<cuscomplex>( body_raddif_freq_np );
         this->qtf_body_vel_z_raddif_freq    = generate_empty_vector<cuscomplex>( body_raddif_freq_np );
+
         this->qtf_fs_pot_fk_freq            = generate_empty_vector<cuscomplex>( fs_freqs_heads_freq_np );
         this->qtf_fs_pot_raddif_freq        = generate_empty_vector<cuscomplex>( fs_freqs_raddif_freq_np );
         this->qtf_fs_pot_total_freq         = generate_empty_vector<cuscomplex>( fs_freqs_heads_freq_np );
@@ -214,10 +324,12 @@ void    SimulationData::add_qtf_indirect_data(
         this->qtf_fs_vel_x_total_freq       = generate_empty_vector<cuscomplex>( fs_freqs_raddif_freq_np );
         this->qtf_fs_vel_y_total_freq       = generate_empty_vector<cuscomplex>( fs_freqs_raddif_freq_np );
         this->qtf_fs_vel_z_total_freq       = generate_empty_vector<cuscomplex>( fs_freqs_raddif_freq_np );
+
         this->qtf_kochin_pert_cos_freqs     = generate_empty_vector<cuscomplex>( kochin_heads_freq_np );
         this->qtf_kochin_pert_sin_freqs     = generate_empty_vector<cuscomplex>( kochin_heads_freq_np );
         this->qtf_kochin_rad_cos_freqs      = generate_empty_vector<cuscomplex>( kochin_rad_freq_np );
         this->qtf_kochin_rad_sin_freqs      = generate_empty_vector<cuscomplex>( kochin_rad_freq_np );
+
         this->qtf_wl_pot_raddif_freq        = generate_empty_vector<cuscomplex>( wl_freqs_raddif_np );
         this->qtf_wl_vel_x_total_freq       = generate_empty_vector<cuscomplex>( wl_freqs_heads_np );
         this->qtf_wl_vel_y_total_freq       = generate_empty_vector<cuscomplex>( wl_freqs_heads_np );
@@ -316,27 +428,27 @@ SimulationData::~SimulationData(
     {
         if ( this->_mpi_config->is_root( ) )
         {
-            mkl_free( this->mdrift );
-            mkl_free( this->mdrift_wl );
-            mkl_free( this->mdrift_bern );
-            mkl_free( this->mdrift_acc );
-            mkl_free( this->mdrift_mom );
-            mkl_free( this->mdrift_body_pot_fk     );
-            mkl_free( this->mdrift_body_pot_raddif );
-            mkl_free( this->mdrift_body_pot_total  );
-            mkl_free( this->mdrift_body_vel_x_fk );
-            mkl_free( this->mdrift_body_vel_y_fk );
-            mkl_free( this->mdrift_body_vel_z_fk );
-            mkl_free( this->mdrift_body_vel_x_raddif );
-            mkl_free( this->mdrift_body_vel_y_raddif );
-            mkl_free( this->mdrift_body_vel_z_raddif );
-            mkl_free( this->mdrift_body_vel_x_total );
-            mkl_free( this->mdrift_body_vel_y_total );
-            mkl_free( this->mdrift_body_vel_z_total );
-            mkl_free( this->mdrift_wl_rel_we );
-            mkl_free( this->mdrift_wl_we_fk );
-            mkl_free( this->mdrift_wl_we_raddif );
-            mkl_free( this->mdrift_wl_we_total );
+            mkl_free( this->mdrift                      );
+            mkl_free( this->mdrift_wl                   );
+            mkl_free( this->mdrift_bern                 );
+            mkl_free( this->mdrift_acc                  );
+            mkl_free( this->mdrift_mom                  );
+            mkl_free( this->mdrift_body_pot_fk          );
+            mkl_free( this->mdrift_body_pot_raddif      );
+            mkl_free( this->mdrift_body_pot_total       );
+            mkl_free( this->mdrift_body_vel_x_fk        );
+            mkl_free( this->mdrift_body_vel_y_fk        );
+            mkl_free( this->mdrift_body_vel_z_fk        );
+            mkl_free( this->mdrift_body_vel_x_raddif    );
+            mkl_free( this->mdrift_body_vel_y_raddif    );
+            mkl_free( this->mdrift_body_vel_z_raddif    );
+            mkl_free( this->mdrift_body_vel_x_total     );
+            mkl_free( this->mdrift_body_vel_y_total     );
+            mkl_free( this->mdrift_body_vel_z_total     );
+            mkl_free( this->mdrift_wl_rel_we            );
+            mkl_free( this->mdrift_wl_pot_fk            );
+            mkl_free( this->mdrift_wl_pot_raddif        );
+            mkl_free( this->mdrift_wl_pot_total         );
         }
     }
 
@@ -348,7 +460,7 @@ SimulationData::~SimulationData(
             mkl_free( this->qtf_body_vel_y_total_freq );
             mkl_free( this->qtf_body_vel_z_total_freq );
             mkl_free( this->qtf_raos_freq             );
-            mkl_free( this->qtf_wl_we_total_freq      );
+            mkl_free( this->qtf_wl_rel_we_total_freq  );
         }
     }
 
@@ -410,6 +522,63 @@ SimulationData::~SimulationData(
         }
     }
 
+    if ( this->_is_qtf_direct_freq )
+    {
+        mkl_free( this->mdrift_fs_pot_fk          );
+        mkl_free( this->mdrift_fs_pot_raddif      );
+        mkl_free( this->mdrift_fs_pot_total       );
+        mkl_free( this->mdrift_fs_vel_x_fk        );
+        mkl_free( this->mdrift_fs_vel_y_fk        );
+        mkl_free( this->mdrift_fs_vel_z_fk        );
+        mkl_free( this->mdrift_fs_vel_x_raddif    );
+        mkl_free( this->mdrift_fs_vel_y_raddif    );
+        mkl_free( this->mdrift_fs_vel_z_raddif    );
+        mkl_free( this->mdrift_fs_vel_x_total     );
+        mkl_free( this->mdrift_fs_vel_y_total     );
+        mkl_free( this->mdrift_fs_vel_z_total     );
+        mkl_free( this->mdrift_kochin_pert_cos    );
+        mkl_free( this->mdrift_kochin_pert_sin    );
+        mkl_free( this->mdrift_kochin_rad_cos     );
+        mkl_free( this->mdrift_kochin_rad_sin     );
+        mkl_free( this->mdrift_pc_vel_x_fk        );
+        mkl_free( this->mdrift_pc_vel_y_fk        );
+        mkl_free( this->mdrift_pc_vel_z_fk        );
+        mkl_free( this->mdrift_pc_vel_x_raddif    );
+        mkl_free( this->mdrift_pc_vel_y_raddif    );
+        mkl_free( this->mdrift_pc_vel_z_raddif    );
+        mkl_free( this->mdrift_pc_vel_x_total     );
+        mkl_free( this->mdrift_pc_vel_y_total     );
+        mkl_free( this->mdrift_pc_vel_z_total     );
+        mkl_free( this->mdrift_wl_vel_x_fk        );
+        mkl_free( this->mdrift_wl_vel_y_fk        );
+        mkl_free( this->mdrift_wl_vel_z_fk        );
+        mkl_free( this->mdrift_wl_vel_x_raddif    );
+        mkl_free( this->mdrift_wl_vel_y_raddif    );
+        mkl_free( this->mdrift_wl_vel_z_raddif    );
+        mkl_free( this->mdrift_wl_vel_x_total     );
+        mkl_free( this->mdrift_wl_vel_y_total     );
+        mkl_free( this->mdrift_wl_vel_z_total     );
+        mkl_free( this->qtf_body_vel_x_fk_freq    );
+        mkl_free( this->qtf_body_vel_y_fk_freq    );
+        mkl_free( this->qtf_body_vel_z_fk_freq    );
+        mkl_free( this->qtf_fs_pot_total_freq     );
+        mkl_free( this->qtf_fs_vel_x_total_freq   );
+        mkl_free( this->qtf_fs_vel_y_total_freq   );
+        mkl_free( this->qtf_fs_vel_z_total_freq   );
+        mkl_free( this->qtf_kochin_pert_cos_freqs );
+        mkl_free( this->qtf_kochin_pert_sin_freqs );
+        mkl_free( this->qtf_kochin_rad_cos_freqs  );  
+        mkl_free( this->qtf_kochin_rad_sin_freqs  );
+        mkl_free( this->qtf_pc_pot_total_freq     );
+        mkl_free( this->qtf_pc_vel_x_total_freq   );  
+        mkl_free( this->qtf_pc_vel_y_total_freq   );  
+        mkl_free( this->qtf_pc_vel_z_total_freq   );
+        mkl_free( this->qtf_wl_pot_total_freq     );
+        mkl_free( this->qtf_wl_vel_x_total_freq   );  
+        mkl_free( this->qtf_wl_vel_y_total_freq   );  
+        mkl_free( this->qtf_wl_vel_z_total_freq   );  
+    }
+
     if ( this->_is_qtf_indirect_freq )
     {
         mkl_free( this->mdrift_fs_pot_fk            );
@@ -468,7 +637,7 @@ void    SimulationData::storage_qtf_base_freq(
                                                 cuscomplex* qtf_body_vel_y_total,
                                                 cuscomplex* qtf_body_vel_z_total,
                                                 cuscomplex* raos,
-                                                cuscomplex* qtf_wl_we_total
+                                                cuscomplex* qtf_wl_rel_we_total
                                             )
 {
     if ( this->_mpi_config->is_root( ) )
@@ -501,9 +670,74 @@ void    SimulationData::storage_qtf_base_freq(
 
         for ( int i=0; i<this->qtf_wl_heads_np; i++ )
         {
-            idx1                                = idx0 + i;
-            this->qtf_wl_we_total_freq[idx1]    = qtf_wl_we_total[i];
+            idx1                                    = idx0 + i;
+            this->qtf_wl_rel_we_total_freq[idx1]    = qtf_wl_rel_we_total[i];
         }
+    }
+}
+
+
+void    SimulationData::storage_qtf_direct_freq(
+                                                    int         freq_num
+                                                )
+{
+    if ( this->_mpi_config->is_root( ) )
+    {
+        // Define local variables
+        int idx0    = 0;
+        int idx1    = 0;
+
+        // Storage body QTF total data
+        idx0        = freq_num * this->qtf_body_heads_np;
+        idx1        = 0;
+
+        for ( int i=0; i<this->qtf_body_heads_np; i++ )
+        {
+            idx1 = idx0 + i;
+            this->qtf_body_vel_x_fk_freq[idx1]      = this->mdrift_body_vel_x_fk[i];
+            this->qtf_body_vel_y_fk_freq[idx1]      = this->mdrift_body_vel_y_fk[i];
+            this->qtf_body_vel_z_fk_freq[idx1]      = this->mdrift_body_vel_z_fk[i];
+        }
+
+        // Storage free surface QTF total data
+        idx0        = freq_num * this->qtf_fs_heads_np;
+        idx1        = 0;
+
+        for ( int i=0; i<this->qtf_fs_heads_np; i++ )
+        {
+            idx1 = idx0 + i;
+            this->qtf_fs_pot_total_freq[idx1]       = this->mdrift_fs_pot_total[i];
+            this->qtf_fs_vel_x_total_freq[idx1]     = this->mdrift_fs_vel_x_total[i];
+            this->qtf_fs_vel_y_total_freq[idx1]     = this->mdrift_fs_vel_y_total[i];
+            this->qtf_fs_vel_z_total_freq[idx1]     = this->mdrift_fs_vel_z_total[i];
+        }
+
+        // Storage PC QTF total data
+        idx0        = freq_num * this->qtf_pc_heads_np;
+        idx1        = 0;
+
+        for ( int i=0; i<this->qtf_pc_heads_np; i++ )
+        {
+            idx1 = idx0 + i;
+            this->qtf_pc_pot_total_freq[idx1]       = this->mdrift_pc_pot_total[i];
+            this->qtf_pc_vel_x_total_freq[idx1]     = this->mdrift_pc_vel_x_total[i];
+            this->qtf_pc_vel_y_total_freq[idx1]     = this->mdrift_pc_vel_y_total[i];
+            this->qtf_pc_vel_z_total_freq[idx1]     = this->mdrift_pc_vel_z_total[i];
+        }
+
+        // Storage WL QTF total data
+        idx0        = freq_num * this->qtf_wl_heads_np;
+        idx1        = 0;
+
+        for ( int i=0; i<this->qtf_wl_heads_np; i++ )
+        {
+            idx1 = idx0 + i;
+            this->qtf_wl_pot_total_freq[idx1]       = this->mdrift_wl_pot_total[i];
+            this->qtf_wl_vel_x_total_freq[idx1]     = this->mdrift_wl_vel_x_total[i];
+            this->qtf_wl_vel_y_total_freq[idx1]     = this->mdrift_wl_vel_y_total[i];
+            this->qtf_wl_vel_z_total_freq[idx1]     = this->mdrift_wl_vel_z_total[i];
+        }
+
     }
 }
 
