@@ -28,6 +28,7 @@ public:
     cusfloat                local_to_global_mat[9];
     static constexpr int    MAX_PANEL_NODES         = 4;
     cusfloat                normal_vec[6]           = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+    cusfloat                normal_vec_wl[6]        = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
     int                     num_nodes               = 0;
     cusfloat                sysref_centre[3]        = { 0.0, 0.0, 0.0 };
     int                     type                    = 0;

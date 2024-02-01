@@ -58,6 +58,29 @@ void        Mesh::_calculate_bounding_box(
         }
     }
 
+    // Set as calculated magnitude
+    this->_is_bouding_box = true;
+
+}
+
+
+void        Mesh::_calculate_fs_centre(
+                                                void
+                                        )
+{
+    // Check if the mesh bounding box is available
+    if ( !this->_is_bouding_box )
+    {
+        this->_calculate_bounding_box( );
+    }
+
+    // Calculate free surface mesh centre
+    this->_fs_centre_x  = ( this->x_max + this->x_min ) / 2.0;
+    this->_fs_centre_y  = ( this->y_max + this->y_min ) / 2.0;
+
+
+    // Set as a calculated magnitudes
+    this->_is_fs_centre = true;
 }
 
 
@@ -66,20 +89,10 @@ void        Mesh::calculate_fs_radius(
                                        )
 {
     // Calculate mean point
-    cusfloat x_mean = 0.0;
-    cusfloat y_mean = 0.0;
-    cusfloat z_mean = 0.0;
-
-    for ( int i=0; i<this->nodes_np; i++ )
+    if ( !this->_is_fs_centre )
     {
-        x_mean += this->x[i];
-        y_mean += this->y[i];
-        z_mean += this->z[i];
+        this->_calculate_fs_centre( );
     }
-
-    x_mean /= this->nodes_np;
-    y_mean /= this->nodes_np;
-    z_mean /= this->nodes_np;
 
     // Calculate maximum distance from the mean position to get the radius
     cusfloat ri         = 0.0;
@@ -90,11 +103,9 @@ void        Mesh::calculate_fs_radius(
         // Calculate distance from the FS centre to the 
         // ith node
         ri  = std::sqrt(
-                            pow2s( this->x[i] - x_mean )
+                            pow2s( this->x[i] - this->_fs_centre_x )
                             +
-                            pow2s( this->y[i] - y_mean )
-                            +
-                            pow2s( this->z[i] - z_mean )
+                            pow2s( this->y[i] - this->_fs_centre_y )
                         );
 
         // Check if it is the maximum distance
@@ -105,6 +116,7 @@ void        Mesh::calculate_fs_radius(
 
     }
 
+    // Set as calculated magnitude
     this->_is_fs_radius = true;
 
 }
@@ -255,6 +267,132 @@ void        Mesh::define_source_nodes(
             }
         }
     }
+
+}
+
+
+void        Mesh::detect_pc_points(
+                                                cusfloat    wl_det_prec
+                                    )
+{
+    // Check if the free surface radius is calculated if not calculate it
+    if ( !this->_is_fs_radius )
+    {
+        this->calculate_fs_radius( );
+    }
+
+    // Loop over elements of the mesh to detect the most distanced ones
+    // of the centre of the free surface circle
+    int*        elems_wl        = generate_empty_vector<int>( this->elems_np * this->enrl );
+    int         global_index    = 0;
+    int         node_j          = 0;
+    cusfloat    r_diff          = 0.0;
+    cusfloat    x_diff          = 0.0;
+    cusfloat    y_diff          = 0.0;
+
+    for ( int i=0; i<this->elems_np; i++ )
+    {
+        global_index = i * this->enrl;
+        for ( int j=0; j<this->elems[global_index]; j++ )
+        {
+            // Get node number
+            node_j = this->elems[global_index+1+j];
+
+            // Calculate radius from the centre of the mesh to 
+            // the jth node
+            x_diff = this->x[node_j] - this->_fs_centre_x;
+            y_diff = this->y[node_j] - this->_fs_centre_y;
+            r_diff = std::sqrt( pow2s( x_diff ) + pow2s( y_diff ) );
+
+            // Check if the node is over the outter line of the free surface
+            // mesh
+            if ( std::abs( r_diff - this->_fs_radius ) < wl_det_prec )
+            {
+                elems_wl[global_index]                          += 1;
+                elems_wl[global_index+elems_wl[global_index]]   = node_j;
+            }
+        }
+    }
+
+    // Check for those elements that have two nodes on the water line
+    int         idx0    = 0;
+    int         idx1    = 0;
+    int         count   = 0;
+    cusfloat    n_mod   = 0.0;
+    PanelGeom*  panel_i;
+    cusfloat    xd_n    = 0.0;
+    cusfloat    yd_n    = 0.0;
+
+    for ( int i=0; i<this->elems_np; i++ )
+    {
+        global_index = i * this->enrl;
+        if ( elems_wl[global_index] > 2 )
+        {
+            std::stringstream ss;
+            ss << "ERROR - INPUT" << std::endl;
+            ss << "Element: " << i << " more than two nodes on the WL for the free surface mesh: " << elems_wl[global_index] << std::endl;
+            ss << "Nodes: " << elems_wl[global_index+1];
+            for ( int j=2; j<elems_wl[global_index]+1; j++ )
+            {
+                ss << " - " << elems_wl[global_index+j];
+            }
+            ss << std::endl;
+            throw std::runtime_error( ss.str( ).c_str( ) );
+        }
+
+        if ( elems_wl[global_index] == 2 )
+        {
+            panel_i                 = this->panels[i];
+            panel_i->is_wl_boundary = true;
+            for ( int j=1; j<elems_wl[global_index]+1; j++ )
+            {
+                node_j                  = elems_wl[global_index+j];
+                panel_i->wl_nodes[j-1]  = node_j;
+                panel_i->x_wl[j-1]      = this->x[node_j];
+                panel_i->y_wl[j-1]      = this->y[node_j];
+                panel_i->center_wl[0]   += this->x[node_j];
+                panel_i->center_wl[1]   += this->y[node_j];
+            }
+            panel_i->center_wl[0]       /= 2.0;
+            panel_i->center_wl[1]       /= 2.0;
+
+            xd_n                        = panel_i->center_wl[0] - this->_fs_centre_x;
+            yd_n                        = panel_i->center_wl[1] - this->_fs_centre_y;
+            n_mod                       = std::sqrt( pow2s( xd_n ) + pow2s( yd_n ) );
+            panel_i->normal_vec_wl[0]   = xd_n / n_mod;
+            panel_i->normal_vec_wl[1]   = yd_n / n_mod;
+            panel_i->normal_vec_wl[2]   = 0.0;
+
+            idx0                        = global_index+1;
+            idx1                        = global_index+2;
+            panel_i->len_wl             = std::sqrt(
+                                                        pow2s( this->x[elems_wl[idx1]] - this->x[elems_wl[idx0]] )
+                                                        +
+                                                        pow2s( this->y[elems_wl[idx1]] - this->y[elems_wl[idx0]] )
+                                                    );
+
+            count++;
+        }
+    }
+
+    // Create a list to pack all the panels that have boundary over the
+    // water line
+    this->panels_wl_np  = count;
+    this->panels_wl     = new PanelGeom*[count];
+
+    count = 0;
+    for ( int i=0; i<this->elems_np; i++ )
+    {
+        global_index = i * this->enrl;
+        if ( elems_wl[global_index] == 2 )
+        {
+            this->panels_wl[count] = this->panels[i];
+            count++;
+        }
+    }
+
+    // Delete heap memory allocated in the current method
+    mkl_free( elems_wl );
 
 }
 

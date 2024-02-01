@@ -27,7 +27,11 @@ struct Mesh
 {
 private:
     // Define class attributes
+    cusfloat    _fs_centre_x        = 0.0;
+    cusfloat    _fs_centre_y        = 0.0;
     cusfloat    _fs_radius          = 0.0;
+    bool        _is_bouding_box     = false;
+    bool        _is_fs_centre       = false;
     bool        _is_fs_radius       = false;
     bool        _is_source_nodes    = false;
     int         valid_elem_type[2]  = { 3, 4 };
@@ -37,6 +41,10 @@ private:
     void    _calculate_bounding_box(
                                         void
                                     );
+
+void        _calculate_fs_centre(
+                                        void
+                                );
     
     void    _create_panels(
                                         cusfloat*           cog
@@ -108,6 +116,10 @@ public:
                                         int                 poly_order,
                                         cusfloat*           cog
                                    );
+
+    void        detect_pc_points(
+                                        cusfloat            wl_det_prec
+                                );
 
     void        detect_wl_points(
                                         cusfloat           wl_det_prec
