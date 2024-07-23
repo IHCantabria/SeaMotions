@@ -226,6 +226,9 @@ cuscomplex  quadrature_panel(
                                                     gp
                                                 );
 
+    // Delete Gauss Points
+    delete gp;
+
     return int_value;
 }
 
