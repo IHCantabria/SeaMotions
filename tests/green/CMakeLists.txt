@@ -173,6 +173,7 @@ set(
         ${panel_geometry_src}
         ${green_module_files}
         ${math_module_files}
+        ${mesh_module_files}
         ${tools_module_files}
         ${waves_module_files}
     )
@@ -229,6 +230,7 @@ set(
         ${panel_geometry_src}
         ${green_module_files}
         ${math_module_files}
+        ${mesh_module_files}
         ${tools_module_files}
     )
 
@@ -286,3 +288,100 @@ add_test(
             COMMAND test_chebyshev_integraldb_cmd
             ${test_chebyshev_dbeval_args}
         )
+
+
+# Add test to check the integration of the potential along the panel
+set(
+        test_potential_panel_quad_src
+        potential_panel_quad_src.cpp
+        ${containers_module_files}
+        ${interfaces_module_files}
+        ${green_module_files}
+        ${math_module_files}
+        ${mesh_module_files}
+        ${tools_module_files}
+        ${waves_module_files}
+)
+
+add_executable(
+                    test_potential_panel_quad_cmd
+                    ${test_potential_panel_quad_src}
+                )
+set_mkl_lib_target( test_potential_panel_quad_cmd )
+
+
+# Add test to check the integrals database performance
+set(
+        test_integrals_performance_src
+        test_integrals_performance.cpp
+        ${containers_module_files}
+        ${green_module_files}
+        ${math_module_files}
+        ${mesh_module_files}
+        ${tools_module_files}
+)
+
+add_executable(
+                    test_integrals_performance_cmd
+                    ${test_integrals_performance_src}
+                )
+set_mkl_lib_target( test_integrals_performance_cmd )
+
+
+set(
+        test_steady_analytic_panel_src
+        test_steady_analytic_panels.cpp
+        ${containers_module_files}
+        ${green_module_files}
+        ${math_module_files}
+        ${mesh_module_files}
+        ${tools_module_files}
+)
+
+add_executable(
+                    test_steady_analytic_panels_cmd
+                    ${test_steady_analytic_panel_src}
+                )
+set_mkl_lib_target( test_steady_analytic_panels_cmd )
+
+
+# Define test to check the integration of the velocity
+# field along a panel
+set(
+        test_velocity_integration_src
+        test_velocity_integration.cpp
+        ../../src/config.hpp
+        ${containers_module_files}
+        ${green_module_files}
+        ${interfaces_module_files}
+        ${math_module_files}
+        ${mesh_module_files}
+        ${tools_module_files}
+        ${waves_module_files}
+)
+
+
+add_executable(
+                    test_velocity_integration_cmd
+                    ${test_velocity_integration_src}
+                )
+set_mkl_lib_target( test_velocity_integration_cmd )
+
+# Define Green R=0 test
+set(
+        test_green_r_zero_src
+        test_green_r_zero.cpp
+        ../../src/config.hpp
+        ${containers_module_files}
+        ${green_module_files}
+        ${math_module_files}
+        ${mesh_module_files}
+        ${tools_module_files}
+        ${waves_module_files}
+)
+
+add_executable(
+                    test_green_r_zero_cmd
+                    ${test_green_r_zero_src}
+                )
+set_mkl_lib_target( test_green_r_zero_cmd )
