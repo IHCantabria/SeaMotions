@@ -1,0 +1,25 @@
+/**** Body Description input file ****/
+0.0.0 		version - Program version
+/*************************************/
+/********** Mass Properties **********/
+/*************************************/
+1026020.0 		BodyMass	- [kg] 		- Mass of water displace by the body.
+0.0				COGX 		- [m] 		- Position of the centre of gravity along the X axis and w.r.t the centre of the global reference frame.
+0.0				COGY 		- [m] 		- Position of the centre of gravity along the Y axis and w.r.t the centre of the global reference frame.
+-5.0			COGZ 		- [m] 		- Position of the centre of gravity along the Z axis and w.r.t the centre of the global reference frame.
+true 			IBR 		- [bool] 	- Define Inertial By the Radius of gyration.
+0.0				IXX 		- [kg·m²] 	- Inertia w.r.t the X axis
+0.0 			IXY 		- [kg·m²] 	- Inertia w.r.t the XY plane
+0.0 			IXZ 		- [kg·m²] 	- Inertia w.r.t the XZ plane
+0.0 			IYY 		- [kg·m²] 	- Inertia w.r.t the Y axis
+0.0 			IYZ 		- [kg·m²] 	- Inertia w.r.t the YZ plane
+0.0 			IZZ 		- [kg·m²] 	- Inertia w.r.t the Z axis
+1.0				RXX 		- [m]		- Inertia radius w.r.t the X axis.
+1.0				RYY 		- [m]		- Inertia radius w.r.t the Y axis.
+1.0				RZZ 		- [m]		- Inertia radius w.r.t the Z axis.
+/*************************************/
+/********* Mesh Description **********/
+/*************************************/
+box 					BodyName	- [str] - Name of region containing the mesh for the body
+box_ELEM_5.poly 		MeshFile	- [str] - File name of the file containing the mesh description.
+0						LidType		- [-] 	- Type of Lid used to supress the irregular frequencies. ( 0: None - 1: From mesh file (It has to be named as BODYNAME_LID) ) 

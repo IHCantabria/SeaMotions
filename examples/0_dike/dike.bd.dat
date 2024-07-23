@@ -1,0 +1,16 @@
+/**** Body Description input file ****/
+0.0.0 		version - Program version
+/*************************************/
+/********** Mass Properties **********/
+/*************************************/
+1000 			BodyMass	- [kg] 	- Mass of water displace by the body.
+0.0				COGX 		- [m] 	- Position of the centre of gravity along the X axis and w.r.t the centre of the global reference frame.
+0.0				COGY 		- [m] 	- Position of the centre of gravity along the Y axis and w.r.t the centre of the global reference frame.
+0.0				COGZ 		- [m] 	- Position of the centre of gravity along the Z axis and w.r.t the centre of the global reference frame.
+1.0				RXX 		- [m]	- Inerta radius w.r.t to the X axis.
+1.0				RYY 		- [m]	- Inerta radius w.r.t to the Y axis.
+1.0				RZZ 		- [m]	- Inerta radius w.r.t to the Z axis.
+/*************************************/
+/********* Mesh Description **********/
+/*************************************/
+dike.poly 		MeshFile	- [str] - File name of the file containing the mesh description.

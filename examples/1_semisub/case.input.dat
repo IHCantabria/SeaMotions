@@ -1,0 +1,27 @@
+/******** SeaMotions input file *********/
+0.0.0 		version - Program version
+/*************************************/
+/********* Solver Controls ***********/
+/*************************************/
+0				PolyOrder 	- [-] 		- Polynomial order to interpolate the source distribution.
+/*************************************/
+/********** Body Definition **********/
+/*************************************/
+semisub.bd.dat	BodyFN 		- [str] 	- File name of the body description file
+/*************************************/
+/********* Site Conditions ***********/
+/*************************************/
+1026.02 		RhoW 		- [Kg/m³] 	- Water density
+9.81			GravAcc 	- [m/s²]	- Gravitation acceleration
+1000.0			WaterDepth  - [m] 		- Water depth at the bodies location
+/*************************************/
+/************ Headings ***************/
+/*************************************/
+deg 			HeadUnits 	- [str]		- Heading input units. Possible values are { deg: degrees | rad: radians }
+0,1, 2,3
+[5:0.5:7]
+/*************************************/
+/*********** Frequencies *************/
+/*************************************/
+freq 			FreqUnit	- [str]		- Frequencies input units. Possible values are { period: period [s] | freq: frequency [1/s] | angfreq: angular frequency [rad/s] }
+(0:0.25:2]

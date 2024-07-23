@@ -1,0 +1,41 @@
+/******** SeaMotions input file *********/
+0.0.0 		version - Program version
+/*************************************/
+/********* Solver Controls ***********/
+/*************************************/
+0				PolyOrder 	- [-] 		- Polynomial order to interpolate the source distribution.
+/*************************************/
+/********** Body Definition **********/
+/*************************************/
+cube_1.bd.dat		BodyFN 		- [str] 	- File name of the body description file
+cube_2.bd.dat		BodyFN 		- [str] 	- File name of the body description file
+/*************************************/
+/********** Output Channels **********/
+/*************************************/
+true 			OutDiffrac 	- [bool] 	- Output diffraction force
+true 			OutFK 		- [bool] 	- Output Froude-Krylov force
+true 			OutHydMech 	- [bool] 	- Output hydromechanic coefficients
+true 			OutHydStiff - [bool]	- Output hydrostatic stiffness
+false 			OutPress	- [bool] 	- Output pressure over panels
+false			OutMDrift 	- [bool] 	- Output mean drift
+false 			OutQTF 		- [bool]	- Output quadratic transfer functions
+true 			OutRAOs 	- [bool]	- Output response amplitude operator for all dofs of the bodies
+false 			OutSources	- [bool] 	- Output panel sources intensity
+true 			OutStMass 	- [bool]	- Output structural mass
+true 			OutWex 		- [bool]	- Output wave excitation forces
+/*************************************/
+/********* Site Conditions ***********/
+/*************************************/
+1026.02 		RhoW 		- [Kg/m³] 	- Water density
+9.81			GravAcc 	- [m/s²]	- Gravitation acceleration
+1000.0			WaterDepth  - [m] 		- Water depth at the bodies location
+/*************************************/
+/************ Headings ***************/
+/*************************************/
+deg 			HeadUnits 	- [str]		- Heading input units. Possible values are { deg: degrees | rad: radians }
+0
+/*************************************/
+/*********** Frequencies *************/
+/*************************************/
+period 			FreqUnit	- [str]		- Frequencies input units. Possible values are { period: period [s] | freq: frequency [1/s] | angfreq: angular frequency [rad/s] }
+62.0
