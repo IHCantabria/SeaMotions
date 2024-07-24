@@ -58,7 +58,7 @@ set( compile_option_flags ${PRECISION_FLAG} )
 if ( WIN32 )
     set( compile_option_flags /Wall /Wextra /EHsc )
 elseif ( UNIX )
-    set( compile_option_flags -Wall -Wextra -EHsc )
+    set( compile_option_flags -Wall -Wextra )
 endif()
 
 # Check for Debug or release build
