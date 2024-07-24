@@ -1341,7 +1341,7 @@ cuscomplex  calculate_r1_integral(
 }
 
 
-cuscomplex  calculate_theta_integral(
+void  		calculate_theta_integral(
                                                     Input*      input,
                                                     cusfloat    beta,
                                                     int         l_order,
