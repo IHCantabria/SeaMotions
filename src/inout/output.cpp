@@ -585,8 +585,8 @@ void    Output::save_hydromechanics_format(
     cusfloat*   amb = generate_empty_vector<cusfloat>( pow2s( this->_input->dofs_np ) );
 
     // Storage data into disk
-    hsize_t _ds_hm_ch[_DS_HM_NP]    = { 1, 1, 1, this->_input->dofs_np, this->_input->dofs_np };
-    hsize_t offset[_DS_HM_NP]       = { 0, 0, freq_index, 0, 0 };
+    hsize_t _ds_hm_ch[_DS_HM_NP]    = { 1, 1, 1, static_cast<hsize_t>( this->_input->dofs_np ), static_cast<hsize_t>( this->_input->dofs_np ) };
+    hsize_t offset[_DS_HM_NP]       = { 0, 0, static_cast<hsize_t>( freq_index ), 0, 0 };
 
     int index_global                = 0;
     int index_local                 = 0;
@@ -653,7 +653,7 @@ void    Output::save_hydstiffness(
 
     // Loop over bodies to storage hydrostatic stiffness data matrix
     hsize_t offset[_DS_MH_NP]       = { 0, 0, 0 };
-    hsize_t _ds_mh_ch[_DS_MH_NP]    = { 1, this->_input->dofs_np, this->_input->dofs_np };
+    hsize_t _ds_mh_ch[_DS_MH_NP]    = { 1, static_cast<hsize_t>( this->_input->dofs_np ), static_cast<hsize_t>( this->_input->dofs_np ) };
 
     for ( int i=0; i<this->_input->bodies_np; i++ )
     {
@@ -689,7 +689,7 @@ void    Output::save_structural_mass(
     // Storage structural mass matrix for all the bodies 
     // in the simulation
     hsize_t offset[_DS_MH_NP]       = { 0, 0, 0 };
-    hsize_t _ds_mh_ch[_DS_MH_NP]    = { 1, this->_input->dofs_np, this->_input->dofs_np };
+    hsize_t _ds_mh_ch[_DS_MH_NP]    = { 1, static_cast<hsize_t>( this->_input->dofs_np ), static_cast<hsize_t>( this->_input->dofs_np ) };
 
     for ( int i=0; i<this->_input->bodies_np; i++ )
     {
@@ -829,7 +829,14 @@ void    Output::save_qtf_format(
     }
 
     // Storage input data into disk
-    hsize_t _ds_qf_ch[_DS_QF_NP]    = { input->bodies_np, input->heads_np, input->heads_np, input->angfreqs_np, input->angfreqs_np, input->dofs_np };
+    hsize_t _ds_qf_ch[_DS_QF_NP]    = { 
+											static_cast<hsize_t>( input->bodies_np ), 
+											static_cast<hsize_t>( input->heads_np ), 
+											static_cast<hsize_t>( input->heads_np ), 
+											static_cast<hsize_t>( input->angfreqs_np ), 
+											static_cast<hsize_t>( input->angfreqs_np ), 
+											static_cast<hsize_t>( input->dofs_np )
+										};
     hsize_t offset[_DS_QF_NP]       = { 0, 0, 0, 0, 0, 0 };
 
     SAVE_DATASET_CHUNK(
@@ -881,9 +888,9 @@ void    Output::save_wave_exciting_format(
     cusfloat* data_pha = generate_empty_vector<cusfloat>( this->_input->dofs_np );
 
     // Storage input data into disk
-    hsize_t _ds_wx_ch[_DS_WX_NP]    = { 1, 1, 1, this->_input->dofs_np };
+    hsize_t _ds_wx_ch[_DS_WX_NP]    = { 1, 1, 1, static_cast<hsize_t>( this->_input->dofs_np ) };
     int     index                   = 0;
-    hsize_t offset[_DS_WX_NP]       = { 0, 0, freq_index, 0 };
+    hsize_t offset[_DS_WX_NP]       = { 0, 0, static_cast<hsize_t>( freq_index ), 0 };
 
     for ( int i=0; i<this->_input->heads_np; i++ )
     {
