@@ -104,7 +104,7 @@ void renew_stream(
 
 void squeeze_string( std::string& str )
 {
-    str.erase(std::remove_if(str.begin( ), str.end( ), std::isspace), str.end( ));
+    str.erase(std::remove_if(str.begin( ), str.end( ), static_cast<int(&)(int)>( std::isspace )), str.end( ));
 }
 
 
