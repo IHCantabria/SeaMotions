@@ -169,22 +169,21 @@ cusfloat    cos_alpha(
                         cusfloat    theta
                     )
 {
-    cusfloat val = 0.0;
-
+	cusfloat val = 0.0;
     if ( alpha != 0 )
     {
         // Cast alpha value to cusfloat
         cusfloat af = static_cast<cusfloat>( alpha );
 
         // Evaluate primitive integral
-        val = std::cos( theta * alpha ) / alpha;
+        val = std::cos( theta * af ) / af;
     }
     else
     {
         val = 0.0;
     }
 
-    return 0.0;
+    return val;
 }
 
 

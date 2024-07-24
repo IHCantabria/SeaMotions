@@ -281,6 +281,8 @@ cusfloat    besseljn_cos_int(
                         ( f1 * std::pow( beta + f1, nu ) )
                     );
     }
+	
+	return int_value;
 }
 
 
@@ -332,6 +334,8 @@ cusfloat    besseljn_sin_int(
                         ( f1 * std::pow( beta + f1, nu ) )
                     );
     }
+	
+	return int_value;
 }
 
 

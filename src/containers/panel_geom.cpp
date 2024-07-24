@@ -219,26 +219,9 @@ void PanelGeom::calculate_properties(
 
 void PanelGeom::calculate_source_nodes(
                                             int         poly_order,
-                                            cusfloat*   cog 
+                                            cusfloat*    
                                         )
 {
-    // Get number of sources per panel
-    int sources_np = 0;
-    if ( this->num_nodes == 3 )
-    {
-        sources_np = dofs_triangular_region( poly_order );
-    }
-    else if ( this->num_nodes == 4 )
-    {
-        sources_np = dofs_rectangular_region( poly_order );
-    }
-    else
-    {
-        std::cerr << "ERROR - PanelGeom" << std::endl;
-        std::cerr << "Not valid panel nodes number." << std::endl;
-        throw std::runtime_error( " " );
-    }
-
     // Define sources data
     if ( poly_order == 0 )
     {

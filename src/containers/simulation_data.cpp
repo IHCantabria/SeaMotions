@@ -144,12 +144,12 @@ void    SimulationData::add_qtf_data(
 
 
 void    SimulationData::add_qtf_direct_data(
-                                                int body_panels_tnp,
-                                                int body_gp_np,
+                                                int ,
+                                                int ,
                                                 int fs_panels_tnp,
                                                 int fs_gp_np,
-                                                int wl_panels_tnp,
-                                                int wl_gp_np,
+                                                int ,
+                                                int ,
                                                 int pc_panels_tnp,
                                                 int pc_gp_np,
                                                 int freqs_np
@@ -157,7 +157,6 @@ void    SimulationData::add_qtf_direct_data(
 {
     assert( this->_is_qtf_base_freq && "It is required to load qtf base data prior to load qtf indirect data." );
 
-    int body_raddif_freq_np     = this->qtf_body_raddif_np * freqs_np;
     int body_heads_freq_np      = this->qtf_body_heads_np * freqs_np;
 
     this->qtf_fs_raddif_np      = this->get_raddif_np( fs_panels_tnp,  fs_gp_np );
@@ -174,12 +173,7 @@ void    SimulationData::add_qtf_direct_data(
     int kochin_heads_freq_np    = this->qtf_kochin_heads_np * freqs_np;
     int kochin_rad_freq_np      = this->qtf_kochin_rad_np   * freqs_np;
 
-    int pc_heads_freq_np        = this->qtf_pc_heads_np * freqs_np;
-
-    int wl_freqs_raddif_np      = this->qtf_wl_raddif_np * freqs_np;
     int wl_freqs_heads_np       = this->qtf_wl_heads_np * freqs_np;
-
-    int wex_freq_np             = this->wave_exc_np * freqs_np;
 
     if ( this->_mpi_config->is_root( ) )
     {
@@ -250,19 +244,18 @@ void    SimulationData::add_qtf_direct_data(
 
 
 void    SimulationData::add_qtf_indirect_data(
-                                                int body_panels_tnp,
-                                                int body_gp_np,
+                                                int ,
+                                                int ,
                                                 int fs_panels_tnp,
                                                 int fs_gp_np,
-                                                int wl_panels_tnp,
-                                                int wl_gp_np,
+                                                int ,
+                                                int ,
                                                 int freqs_np
                                             )
 {
     assert( this->_is_qtf_base_freq && "It is required to load qtf base data prior to load qtf indirect data." );
 
     int body_raddif_freq_np     = this->qtf_body_raddif_np * freqs_np;
-    int body_heads_freq_np      = this->qtf_body_heads_np * freqs_np;
 
     this->qtf_fs_raddif_np      = this->get_raddif_np( fs_panels_tnp,  fs_gp_np );
     this->qtf_fs_heads_np       = this->get_heads_np( fs_panels_tnp,  fs_gp_np );
@@ -277,8 +270,6 @@ void    SimulationData::add_qtf_indirect_data(
 
     int wl_freqs_raddif_np      = this->qtf_wl_raddif_np * freqs_np;
     int wl_freqs_heads_np       = this->qtf_wl_heads_np * freqs_np;
-
-    int wex_freq_np             = this->wave_exc_np * freqs_np;
 
     if ( this->_mpi_config->is_root( ) )
     {

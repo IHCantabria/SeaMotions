@@ -90,10 +90,6 @@ cusfloat    calculate_kochin_cosexp_t0(
                                             int         n
                                         )
 {
-    // Define interval bounds
-    cusfloat    th_0    = 0.0;
-    cusfloat    th_1    = 2 * PI;
-
     // Calculate cosine term
     cusfloat    t_cos   = std::cos( ln * beta ) * cos3_int_0_2PI( ln, m, n );
 
@@ -111,10 +107,6 @@ cusfloat    calculate_kochin_cosexp_t1(
                                             cusfloat    n
                                         )
 {
-    // Define interval bounds
-    cusfloat    th_0    = 0.0;
-    cusfloat    th_1    = 2 * PI;
-
     // Calculate cosine term
     cusfloat    t_cos   = std::cos( ln * beta ) * cos2sin_int_0_2PI( ln, m, n );
 
@@ -132,10 +124,6 @@ cusfloat    calculate_kochin_cosexp_t2(
                                             cusfloat    n
                                         )
 {
-    // Define interval bounds
-    cusfloat    th_0    = 0.0;
-    cusfloat    th_1    = 2 * PI;
-
     // Calculate cosine term
     cusfloat    t_cos   = std::cos( ln * beta ) * cos2sin_int_0_2PI( ln, n, m );
 
@@ -153,10 +141,6 @@ cusfloat    calculate_kochin_cosexp_t3(
                                             cusfloat    n
                                         )
 {
-    // Define interval bounds
-    cusfloat    th_0    = 0.0;
-    cusfloat    th_1    = 2 * PI;
-
     // Calculate cosine term
     cusfloat    t_cos   = std::cos( ln * beta ) * cossin2_int_0_2PI( ln, m, n );
 
