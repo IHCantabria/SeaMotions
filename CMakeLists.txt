@@ -80,7 +80,12 @@ function(set_mkl_lib_target target)
     target_include_directories(${target} PUBLIC ${MKL_INCLUDE})
 
     # Add target libraries to link with
-    target_link_libraries(${target} PUBLIC mkl_intel_lp64_dll mkl_intel_thread_dll mkl_core_dll mkl_scalapack_lp64 mkl_blacs_intelmpi_lp64)
+	if ( WIN32 )
+		target_link_libraries(${target} PUBLIC mkl_intel_lp64_dll mkl_intel_thread_dll mkl_core_dll mkl_scalapack_lp64 mkl_blacs_intelmpi_lp64)
+	elseif ( UNIX )
+		target_link_libraries(${target} PUBLIC mkl_intel_lp64.so mkl_intel_thread.so mkl_core.so iomp5.so mkl_scalapack_lp64 mkl_blacs_intelmpi_lp64)
+	endif()
+    
 endfunction()
 
 
@@ -136,3 +141,42 @@ add_executable(
 set_mkl_lib_target( seamotions_freq )
 set_mpi_target( seamotions_freq )
 set_hdf5_target( seamotions_freq )
+
+set( INSTALL_PATH "${CMAKE_SOURCE_DIR}/bin/releases/seamotions_freq-${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}" )
+set( INSTALL_BIN_PATH ${INSTALL_PATH}/bin )
+
+if ( WIN32 )
+    install(
+            TARGETS seamotions_freq
+            CONFIGURATIONS Release
+            RUNTIME_DEPENDENCIES
+            DIRECTORIES ${DEPENDENCY_PATHS}
+            PRE_EXCLUDE_REGEXES "api-ms-" "ext-ms-" "hdf5" "mkl" "libmmd" "libomp" "svml" "libmpi"
+            DESTINATION ${INSTALL_BIN_PATH}
+            )
+    install(
+            DIRECTORY ${CMAKE_SOURCE_DIR}/bin/runtime_dlls
+            DESTINATION ${INSTALL_BIN_PATH}
+            FILES_MATCHING PATTERN "*.dll"
+            )
+    install(
+            FILES ${CMAKE_SOURCE_DIR}/bin/febos_ddm.bat
+            DESTINATION ${INSTALL_BIN_PATH}
+            )
+    install(
+            DIRECTORY ${CMAKE_SOURCE_DIR}/examples
+            DESTINATION ${INSTALL_PATH}
+            )
+elseif ( UNIX )
+    install(
+            TARGETS seamotions_freq
+            CONFIGURATIONS Release
+            RUNTIME_DEPENDENCIES
+            PRE_EXCLUDE_REGEXES "hdf5" "mkl" "libmmd" "libiomp5" "libmpi"
+            DESTINATION ${INSTALL_BIN_PATH}
+            )
+    install(
+            DIRECTORY ${CMAKE_SOURCE_DIR}/examples
+            DESTINATION ${INSTALL_PATH}
+            )
+endif ( )
