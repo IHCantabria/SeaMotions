@@ -1,9 +1,14 @@
 
 // Include general usage libraries
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
+
+
+template<class T>
+constexpr bool always_false = false;
 
 
 template<typename T>
@@ -72,9 +77,9 @@ inline std::string align_num(T number, int width, int precision, int align, int 
 
 
 template<typename T>
-inline  void    convert_number( std::string str, T& val )
+inline  void    convert_number( std::string , T& )
 {
-    static_assert( std::_Always_false<T>::value, "Not valid type!" );
+    static_assert( always_false<T>, "Not valid type!" );
 }
 
 
