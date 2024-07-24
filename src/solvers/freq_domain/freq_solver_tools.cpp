@@ -1755,10 +1755,6 @@ void    freq_domain_linear_solver(
     /****************************************************************/
     if ( input->out_qtf )
     {
-        // Define auxiliary data
-        int idx0 = 0;
-        int idx1 = 0;
-        
         // Loop over frequencies to get the second order force matrix matrix
         std::cout << "Calculating second order force..." << std::endl;
         for ( int i=0; i<input->angfreqs_np; i++ )

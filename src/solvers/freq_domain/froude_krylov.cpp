@@ -204,8 +204,6 @@ void    calculate_froude_krylov_so(
 
     // Loop around headings to get the Froude-Krylov force
     // for each of them
-    int         elem_end_pos    = 0;
-    int         elem_start_pos  = 0;
     int         index           = 0;
     int         index_1         = 0;
     cuscomplex  press_i         = cuscomplex( 0.0, 0.0 );

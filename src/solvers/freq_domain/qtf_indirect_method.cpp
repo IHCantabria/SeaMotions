@@ -441,15 +441,6 @@ void        calculate_qtf_indirect_body_term(
                                                                                                                 gp.roots[gpj]
                                                                                                             );
 
-                                if ( 
-                                        ( std::isnan( int_mod.real( ) ) > 0 ) 
-                                        || 
-                                        ( std::isnan( int_mod.imag( ) ) > 0 )
-                                    )
-                                {
-                                    double a = 0;
-                                }
-
                                 // Get total force
                                 qtf_body_force[idx0+r] += cuscomplex( 0.0, w_ds * rho_w / 2.0 ) * int_mod;
                             }
@@ -565,15 +556,6 @@ void        calculate_qtf_indirect_body_term(
 
                             // Get gauss integral chunk value
                             int_mod = val_mod * gp.weights[gpi] * panel_k->len_wl / 2.0;
-
-                            if ( 
-                                        ( std::isnan( int_mod.real( ) ) > 0 ) 
-                                        || 
-                                        ( std::isnan( int_mod.imag( ) ) > 0 )
-                                    )
-                                {
-                                    double a = 0;
-                                }
 
                             // Add to QTF body force object and scale the gauss integral chunk value
                             qtf_body_force[idx0+r] += cuscomplex( 0.0, - w_ds * rho_w / 2.0 ) * int_mod;
@@ -831,15 +813,6 @@ void        calculate_qtf_indirect_fs_near_term(
                                                                                                                 gp.roots[gpj]
                                                                                                             );
 
-                                if ( 
-                                        ( std::isnan( int_mod.real( ) ) > 0 ) 
-                                        || 
-                                        ( std::isnan( int_mod.imag( ) ) > 0 )
-                                    )
-                                {
-                                    double a = 0;
-                                }
-
                                 // Get total force
                                 qtf_fs_force[idx0+r]    += cuscomplex( 0.0, w_ds * rho_w / grav_acc ) * psi_ds * int_mod;
                             }
@@ -857,12 +830,12 @@ void        calculate_qtf_indirect_fs_near_term(
 
 void        calculate_qtf_indirect_fs_far_term(
                                                     Input*          input,
-                                                    MeshGroup*      mesh_gp,
+                                                    MeshGroup*      ,
                                                     int             freq_pos_i,
                                                     int             freq_pos_j,
                                                     int             qtf_type,
                                                     SimulationData* sim_data,
-                                                    MLGCmpx*        body_gp,
+                                                    MLGCmpx*        ,
                                                     cuscomplex*     qtf_fs_force
                                                 )
 {
@@ -1115,45 +1088,6 @@ void        calculate_qtf_indirect_fs_far_term(
 
                 svs_mult( forces_head_np, th1_l_force, r1, vec_aux_force );
                 sv_add( forces_head_np, vec_aux_force, &( idf22[idx0] ), &( idf22[idx0] ));
-
-                for ( int myIdx=0; myIdx<forces_head_np; myIdx++ )
-                {
-                    if ( 
-                            ( std::isnan( idf11[idx0+myIdx].real( ) ) > 0 ) 
-                            || 
-                            ( std::isnan( idf11[idx0+myIdx].imag( ) ) > 0 )
-                        )
-                    {
-                        double a = 0;
-                    }
-
-                    if ( 
-                            ( std::isnan( idf12[idx0+myIdx].real( ) ) > 0 ) 
-                            || 
-                            ( std::isnan( idf12[idx0+myIdx].imag( ) ) > 0 )
-                        )
-                    {
-                        double a = 0;
-                    }
-
-                    if ( 
-                            ( std::isnan( idf21[idx0+myIdx].real( ) ) > 0 ) 
-                            || 
-                            ( std::isnan( idf21[idx0+myIdx].imag( ) ) > 0 )
-                        )
-                    {
-                        double a = 0;
-                    }
-
-                    if ( 
-                            ( std::isnan( idf22[idx0+myIdx].real( ) ) > 0 ) 
-                            || 
-                            ( std::isnan( idf22[idx0+myIdx].imag( ) ) > 0 )
-                        )
-                    {
-                        double a = 0;
-                    }
-                }
 
                 // Roll theta values
                 copy_vector( forces_head_np, th0_l_force, th0_lm1_force );
@@ -1518,15 +1452,6 @@ cuscomplex  calculate_theta_integral(
                                             +
                                             spm * srn * t3_int
                                         );
-
-                    if ( 
-                            ( std::isnan( body_force[idx0].real( ) ) > 0 )
-                            ||
-                            ( std::isnan( body_force[idx0].imag( ) ) > 0 )
-                        )
-                    {
-                        double a = 0.0;
-                    }
 
                 }
             }
