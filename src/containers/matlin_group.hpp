@@ -8,6 +8,7 @@
 
 // Include local modules
 #include "../config.hpp"
+#include "../math/math_tools.hpp"
 #include "../tools.hpp"
 
 
