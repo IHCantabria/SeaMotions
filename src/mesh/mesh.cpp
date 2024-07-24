@@ -563,7 +563,7 @@ void        Mesh::_joint_meshes(
     elems_np_cum.push_back( 0 );
     nodes_np_cum.push_back( 0 );
 
-    for ( int i=0; i<meshes.size( ); i++ )
+    for ( int i=0; i<static_cast<int>( meshes.size( ) ); i++ )
     {
         elems_np_cum.push_back( 
                                     meshes[i]->elems_np 
@@ -584,7 +584,7 @@ void        Mesh::_joint_meshes(
     // to allocate space for all the elements in the mesh
     this->enrl = 0;
     this->mnpe = 0;
-    for ( int i=0; i<meshes.size( ); i++ )
+    for ( int i=0; i<static_cast<int>( meshes.size( ) ); i++ )
     {
         if (  meshes[i]->enrl > this->enrl)
         {
@@ -608,7 +608,7 @@ void        Mesh::_joint_meshes(
     int count_elems     = 0;
     int global_index    = 0;
     int local_index     = 0;
-    for ( int i=0; i<meshes.size( ); i++ )
+    for ( int i=0; i<static_cast<int>( meshes.size( ) ); i++ )
     {
         // Add elements
         for ( int j=0; j<meshes[i]->elems_np; j++ )
