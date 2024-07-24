@@ -87,7 +87,7 @@ void MatLinGroup<T>::_load_field_points(
     // Loop over lines to count the number of points
     int         count_lines = 0;
     std::string line( "" );
-    while getline( infile, line )
+    while ( getline( infile, line ) )
     {
         count_lines++;
     }
