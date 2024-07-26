@@ -79,6 +79,8 @@ bool is_empty_line( std::string line )
                     ||
                     c == '\t'
                     ||
+                    c == '\r'
+                    ||
                     c == '\n'
                 )
             )
