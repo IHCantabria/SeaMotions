@@ -15,6 +15,20 @@ Up to date
  
 ### Fixed
 
+## [1.0.11] - 2024-07-26
+
+First release version in Linux environment
+ 
+### Added
+ 
+### Changed
+ 
+### Fixed
+
+- Internal issues related to software compiling in linux environment
+- Code clean up of unsured variables
+- Kochin functions module dependency function cos_alpha.
+
 ## [1.0.0] - 2024-07-23
 
 This is the first production version of the software. The most relevant features implemented are:  
