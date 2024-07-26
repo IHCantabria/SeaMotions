@@ -14,3 +14,4 @@ build/
 libs/
 vtune/
 aux_data/
+bin/
