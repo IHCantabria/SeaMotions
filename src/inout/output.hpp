@@ -81,7 +81,8 @@ struct Output
 {
 private:
     // Define class attributes
-    hsize_t         _ds_fh[_DS_HF_NP]   = { 0 };
+    hsize_t         _ds_f[_DS_HF_NP]    = { 0 };
+    hsize_t         _ds_h[_DS_HF_NP]    = { 0 };
     hsize_t         _ds_hm[_DS_HM_NP]   = { 0, 0, 0, 0, 0 };
     hsize_t         _ds_mh[_DS_MH_NP]   = { 0, 0, 0 };
     hsize_t         _ds_qf[_DS_QF_NP]   = { 0, 0, 0, 0, 0, 0 };

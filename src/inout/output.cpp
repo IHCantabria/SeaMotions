@@ -31,7 +31,8 @@ Output::Output(
     /******************************************************/
 
     // Storage frequencies and headings datasets dimensions
-    this->_ds_fh[0]     = input->angfreqs_np;
+    this->_ds_f[0]      = input->angfreqs_np;
+    this->_ds_h[0]      = input->heads_np;
 
     // Storage structural mass and hydrostatic stiffness datasets dimensions
     this->_ds_mh[0]     = input->bodies_np;
@@ -146,7 +147,7 @@ Output::Output(
                         fid,
                         _DN_FREQS,
                         _DS_HF_NP,
-                        this->_ds_fh,
+                        this->_ds_f,
                         cusfloat_h5
                     );
 
@@ -155,7 +156,7 @@ Output::Output(
                         fid,
                         _DN_HEADS,
                         _DS_HF_NP,
-                        this->_ds_fh,
+                        this->_ds_h,
                         cusfloat_h5
                     );
 
@@ -535,8 +536,8 @@ void    Output::save_frequencies(
                             fid,
                             _DN_FREQS,
                             _DS_HF_NP,
-                            this->_ds_fh,
-                            this->_ds_fh,
+                            this->_ds_f,
+                            this->_ds_f,
                             offset_freqs,
                             freqs,
                             cusfloat_h5
@@ -560,8 +561,8 @@ void    Output::save_headings(
                             fid,
                             _DN_HEADS,
                             _DS_HF_NP,
-                            this->_ds_fh,
-                            this->_ds_fh,
+                            this->_ds_h,
+                            this->_ds_h,
                             offset_heads,
                             heads,
                             cusfloat_h5
