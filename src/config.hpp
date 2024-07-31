@@ -25,6 +25,7 @@ typedef std::complex<float> cuscomplex;
     #ifdef _HDF5_BUILD
     #include "H5Cpp.h"
     #define cusfloat_h5 H5::PredType::NATIVE_FLOAT
+    #define int_h5 H5::PredType::NATIVE_INT
     #endif
 
 constexpr int FLOATING_PRECISION = 32;
@@ -44,6 +45,7 @@ typedef std::complex<double> cuscomplex;
     #ifdef _HDF5_BUILD
     #include "H5Cpp.h"
     #define cusfloat_h5 H5::PredType::NATIVE_DOUBLE
+    #define int_h5 H5::PredType::NATIVE_INT
     #endif
 
 constexpr int FLOATING_PRECISION = 32;
