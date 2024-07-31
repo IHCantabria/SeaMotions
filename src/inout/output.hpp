@@ -16,6 +16,7 @@
 #define  _DN_DIFFRAC            "diffraction_force"
 #define  _DN_DIFFRAC_MAG        "diffraction_force_mag"
 #define  _DN_DIFFRAC_PHA        "diffraction_force_pha"
+#define  _DN_ELEMS              "elements"
 #define  _DN_FREQS              "frequencies"
 #define  _DN_FK                 "froude_krylov_force"
 #define  _DN_FK_MAG             "froude_krylov_force_mag"
@@ -37,6 +38,9 @@
 #define  _DN_MDRIFT_ACC_PHA     "mean_drift_acc_pha"
 #define  _DN_MDRIFT_MOM_MAG     "mean_drift_mom_mag"
 #define  _DN_MDRIFT_MOM_PHA     "mean_drift_mom_pha"
+#define  _DN_NODES_X            "nodes_x"
+#define  _DN_NODES_Y            "nodes_y"
+#define  _DN_NODES_Z            "nodes_z"
 #define  _DN_QTF_DIFF_MAG       "qtf_diff_mag"
 #define  _DN_QTF_DIFF_PHA       "qtf_diff_pha"
 #define  _DN_QTF_DIFF_ACC_MAG   "qtf_diff_acc_mag"
@@ -68,11 +72,14 @@
 #define  _DN_WEX                "wave_exciting"
 #define  _DN_WEX_MAG            "wave_exciting_mag"
 #define  _DN_WEX_PHA            "wave_exciting_pha"
+#define  _GN_MESH               "/mesh"
 
 // Define datasets shape length
+const hsize_t _DS_EL_NP = 2;
 const hsize_t _DS_HF_NP = 1;
 const hsize_t _DS_HM_NP = 5;
 const hsize_t _DS_MH_NP = 3;
+const hsize_t _DS_ND_NP = 1;
 const hsize_t _DS_QF_NP = 6;
 const hsize_t _DS_WX_NP = 4;
 
@@ -116,6 +123,10 @@ public:
                                             std::string channel_name,
                                             cusfloat*   added_mass
                                         );
+
+    void    save_mesh(
+                                            void
+                        );
 
     void    save_structural_mass( 
                                             void 

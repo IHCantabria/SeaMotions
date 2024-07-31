@@ -160,6 +160,12 @@ Output::Output(
                         cusfloat_h5
                     );
 
+    // Create group for the mesh
+    if ( this->_input->out_mesh )
+    {
+        H5::Group mesh_gp( fid.createGroup( _GN_MESH ) );
+    }
+
     // Create dataset for mean drift forces
     if ( input->is_calc_mdrift )
     {
@@ -671,6 +677,129 @@ void    Output::save_hydstiffness(
                             );
     }
 
+    // Close file unit
+    fid.close( );
+}
+
+
+void    Output::save_mesh(
+                                            void
+                            )
+{
+    // Open file unit
+    H5::H5File fid( this->_results_fipath.c_str( ), H5F_ACC_RDWR );
+
+    // Take the mesh group
+    H5::Group mesh_gp = fid.openGroup( _GN_MESH );
+
+    // Allocate mesh fields size matrixes
+    H5::DataSpace   attr_dataspace(H5S_SCALAR);
+    hsize_t         offset[_DS_MH_NP] = { 0, 0, 0 };
+    hsize_t         _ds_nd[_DS_ND_NP] = { 0 };
+    hsize_t         _ds_el[_DS_EL_NP] = { 0, 0 };
+
+    // Loop over bodies to storage the mesh
+    for ( int i=0; i<this->_input->bodies_np; i++ )
+    {
+        // Create group handle
+        H5::Group group_i( mesh_gp.createGroup( this->_input->bodies[i]->mesh_body_name.c_str( ) ) );
+
+        // Add body index as a group attribute
+        H5::Attribute   body_id_attr    = group_i.createAttribute( 
+                                                                    "body_index",
+                                                                    int_h5,
+                                                                    attr_dataspace
+                                                                );
+        body_id_attr.write( int_h5, &i );
+
+        // Define mesh fields size matrixes
+        _ds_nd[0] = this->_input->bodies[i]->mesh->nodes_np;
+        _ds_el[0] = this->_input->bodies[i]->mesh->elems_np;
+        _ds_el[1] = this->_input->bodies[i]->mesh->enrl;
+
+        // Create dataset for nodes and storage them
+        CREATE_DATASET(
+                            group_i,
+                            _DN_NODES_X,
+                            _DS_ND_NP,
+                            _ds_nd,
+                            cusfloat_h5
+                        );
+
+        CREATE_DATASET(
+                            group_i,
+                            _DN_NODES_Y,
+                            _DS_ND_NP,
+                            _ds_nd,
+                            cusfloat_h5
+                        );
+
+        CREATE_DATASET(
+                            group_i,
+                            _DN_NODES_Z,
+                            _DS_ND_NP,
+                            _ds_nd,
+                            cusfloat_h5
+                        );
+
+        SAVE_DATASET_CHUNK(
+                                group_i,
+                                _DN_NODES_X,
+                                _DS_ND_NP,
+                                _ds_nd,
+                                _ds_nd,
+                                offset,
+                                this->_input->bodies[i]->mesh->x,
+                                cusfloat_h5
+                            );
+
+        SAVE_DATASET_CHUNK(
+                                group_i,
+                                _DN_NODES_Y,
+                                _DS_ND_NP,
+                                _ds_nd,
+                                _ds_nd,
+                                offset,
+                                this->_input->bodies[i]->mesh->y,
+                                cusfloat_h5
+                            );
+
+        SAVE_DATASET_CHUNK(
+                                group_i,
+                                _DN_NODES_Z,
+                                _DS_ND_NP,
+                                _ds_nd,
+                                _ds_nd,
+                                offset,
+                                this->_input->bodies[i]->mesh->z,
+                                cusfloat_h5
+                            );
+
+        // Create dataset for elements and storage them
+        CREATE_DATASET(
+                            group_i,
+                            _DN_ELEMS,
+                            _DS_EL_NP,
+                            _ds_el,
+                            int_h5
+                        );
+
+        SAVE_DATASET_CHUNK(
+                                group_i,
+                                _DN_ELEMS,
+                                _DS_EL_NP,
+                                _ds_el,
+                                _ds_el,
+                                offset,
+                                this->_input->bodies[i]->mesh->elems,
+                                int_h5
+                            );
+
+        // Close group
+        group_i.close( );
+
+    }
+    
     // Close file unit
     fid.close( );
 }

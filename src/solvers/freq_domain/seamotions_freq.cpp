@@ -120,6 +120,12 @@ int main( int argc, char* argv[] )
             output->save_hydstiffness( hydrostatics );
         }
 
+        // Storage mesh
+        if (  input->out_mesh )
+        {
+            output->save_mesh( );
+        }
+
     }
 
     /*****************************************/

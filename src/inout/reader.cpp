@@ -418,6 +418,11 @@ void    read_case(
     read_signal     = _read_channel_value( infile, input->out_mdrift );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
+    // Read output flag for mesh
+    target_signal   = "OutMesh";
+    read_signal     = _read_channel_value( infile, input->out_mesh );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
     // Read output flag for quadratic transfer functions
     target_signal   = "OutQTF";
     read_signal     = _read_channel_value( infile, input->out_qtf );
