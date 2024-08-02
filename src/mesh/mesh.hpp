@@ -33,6 +33,7 @@ private:
     bool        _is_bouding_box     = false;
     bool        _is_fs_centre       = false;
     bool        _is_fs_radius       = false;
+    cusfloat    _is_move_f          = 0.0;
     bool        _is_source_nodes    = false;
     int         valid_elem_type[2]  = { 3, 4 };
     int         valid_elem_type_np  = 2;
@@ -94,6 +95,7 @@ public:
                                 std::string         file_path,
                                 std::string         body_name,
                                 cusfloat*           cog,
+                                bool                is_fix,
                                 int                 panel_type
         );
 

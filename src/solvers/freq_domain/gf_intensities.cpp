@@ -119,7 +119,11 @@ void    calculate_gf_intensity_sysmat(
             panel_j = mesh_gp->source_nodes[j]->panel;
             if ( panel_j->type == DIFFRAC_PANEL_CODE )
             {
-                sources_int[count] = mesh_gp->source_nodes[j]->normal_vec[i];
+                sources_int[count] = ( 
+                                            mesh_gp->source_nodes[j]->normal_vec[i]
+                                            *
+                                            mesh_gp->source_nodes[j]->panel->is_move_f
+                                        );
             }
             else if ( panel_j->type == LID_PANEL_CODE )
             {
@@ -127,7 +131,7 @@ void    calculate_gf_intensity_sysmat(
             }
             count++;
         }
-        }
+    }
 
     /***************************************/
     /****** Fill Wave Exciting RHS  ********/

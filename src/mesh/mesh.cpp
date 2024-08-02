@@ -153,6 +153,9 @@ void        Mesh::_create_panels(
         // Set panel type
         this->panels[i]->type = this->panels_type[i];
 
+        // Set panel movility
+        this->panels[i]->is_move_f = this->_is_move_f;
+
         // Calculate panel properties
         this->panels[i]->calculate_properties( cog );
 
@@ -961,9 +964,13 @@ Mesh::Mesh(
                                         std::string file_path,
                                         std::string body_name,
                                         cusfloat*   cog,
+                                        bool        is_fix,
                                         int         panel_type
             )
 {
+    // Storage the required input attributes
+    this->_is_move_f = static_cast<cusfloat>( !is_fix );
+
     // Load mesh
     this->_load_poly_mesh( file_path, body_name );
 

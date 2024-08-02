@@ -22,6 +22,7 @@ public:
     cusfloat                center[3]               = {0.0, 0.0, 0.0};
     cusfloat                center_wl[3]            = {0.0, 0.0, 0.0};
     cusfloat                global_to_local_mat[9];
+    cusfloat                is_move_f               = 0.0;
     bool                    is_wl_boundary          = false;
     cusfloat                len_wl                  = 0;
     cusfloat                length                  = 0.0;

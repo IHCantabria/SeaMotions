@@ -77,6 +77,18 @@ void read_body(
     CHECK_INPUT_FILE_VERSION( VERSION_LABEL, _version, file_path );
 
     //////////////////////////////////////////////
+    /*********** General Properties *************/
+    //////////////////////////////////////////////
+
+    // Skip header
+    _skip_header( infile, line_count, 3 );
+
+    // Read Is Fix
+    target_signal   = "IsFix";
+    read_signal     = _read_channel_value( infile, body->is_fix );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    //////////////////////////////////////////////
     /************* Mass Properties **************/
     //////////////////////////////////////////////
 
@@ -192,6 +204,7 @@ void read_body(
                                     mesh_fipath_.string( ),
                                     body->mesh_body_name,
                                     body->cog,
+                                    body->is_fix,
                                     DIFFRAC_PANEL_CODE                                
                                   );
     body->is_mesh   = true;
@@ -208,6 +221,7 @@ void read_body(
                                     mesh_fipath_.string( ),
                                     ss.str( ),
                                     body->cog,
+                                    false,
                                     LID_PANEL_CODE
                                 );
 
@@ -240,6 +254,7 @@ void read_body(
                                             mesh_fipath_.string( ),
                                             ss.str( ),
                                             body->cog,
+                                            body->is_fix,
                                             LID_PANEL_CODE
                                         );
 

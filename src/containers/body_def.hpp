@@ -14,9 +14,10 @@ struct BodyDef
 public:
     // Define class attributes
     cusfloat        cog[3]          = { 0.0, 0.0, 0.0 };
-    bool            is_mesh         = false;
     cusfloat        inertia[6]      = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
     bool            interia_by_rad  = false;
+    bool            is_fix          = false;
+    bool            is_mesh         = false;
     bool            is_mesh_fs_qtf  = false;
     int             lid_type        = 0;
     cusfloat        mass            = 0.0;
