@@ -15,6 +15,30 @@
 #include "wave_dispersion_so.hpp"
 
 
+cusfloat    cosh_cosh_factor( 
+                                            cusfloat k,
+                                            cusfloat h,
+                                            cusfloat z
+                            )
+{
+    cusfloat    kz  = k * z;
+    cusfloat    kh  = k * h;
+    return ( std::exp( kz ) + std::exp( -2.0 * kh ) * std::exp( -kz ) ) / ( 1.0 + std::exp( -2.0 * kh ) );
+}
+
+
+cusfloat    sinh_cosh_factor( 
+                                            cusfloat k,
+                                            cusfloat h,
+                                            cusfloat z
+                            )
+{
+    cusfloat    kz  = k * z;
+    cusfloat    kh  = k * h;
+    return ( std::exp( kz ) - std::exp( -2.0 * kh ) * std::exp( -kz ) ) / ( 1.0 + std::exp( -2.0 * kh ) );
+}
+
+
 cuscomplex  wave_potential_fo_space( 
                                             cusfloat aw,
                                             cusfloat w,
@@ -28,7 +52,7 @@ cuscomplex  wave_potential_fo_space(
                                     )
 {
     cuscomplex  exp_arg = cuscomplex( 0.0, k * ( x * std::cos( mu ) + y * std::sin( mu ) ) );
-    cusfloat    phi_0   = aw * g * std::cosh( k * ( h + z ) ) / w / std::cosh( k * h );
+    cusfloat    phi_0   = aw * g / w * cosh_cosh_factor( k, h, z );
     return cuscomplex( 0.0, -phi_0 ) * std::exp( exp_arg );
 }
 
@@ -46,7 +70,7 @@ cuscomplex  wave_potential_fo_space_dx(
                                         )
 {
     cuscomplex  exp_arg = cuscomplex( 0.0, k * ( x * std::cos( mu ) + y * std::sin( mu ) ) );
-    cusfloat    phi_0   = aw * g * std::cosh( k * ( h + z ) ) / w / std::cosh( k * h ) * k * std::cos( mu );
+    cusfloat    phi_0   = aw * g / w * cosh_cosh_factor( k, h, z ) * k * std::cos( mu );
     return phi_0 * std::exp( exp_arg );
 }
 
@@ -64,7 +88,7 @@ cuscomplex  wave_potential_fo_space_dy(
                                         )
 {
     cuscomplex  exp_arg = cuscomplex( 0.0, k * ( x * std::cos( mu ) + y * std::sin( mu ) ) );
-    cusfloat    phi_0   = aw * g * std::cosh( k * ( h + z ) ) / w / std::cosh( k * h ) * k * std::sin( mu );
+    cusfloat    phi_0   = aw * g / w * cosh_cosh_factor( k, h, z ) * k * std::sin( mu );
     return phi_0 * std::exp( exp_arg );
 }
 
@@ -82,7 +106,7 @@ cuscomplex  wave_potential_fo_space_dz(
                                         )
 {
     cuscomplex  exp_arg = cuscomplex( 0.0, k * ( x * std::cos( mu ) + y * std::sin( mu ) ) );
-    cusfloat    phi_0   = aw * g * k * std::sinh( k * ( h + z ) ) / w / std::cosh( k * h );
+    cusfloat    phi_0   = aw * g * k / w * sinh_cosh_factor( k, h, z );
     return cuscomplex( 0.0, -phi_0 ) * std::exp( exp_arg );
 }
 
