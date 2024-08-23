@@ -59,7 +59,7 @@ void    calculate_raddif_velocity_mat_steady(
         // Loop over rows to calcualte the influence of the panel
         // over each collocation point
         col_count = 0;
-        for ( int j=vel_x_gp->start_col; j<vel_x_gp->end_col; j++ )
+        for ( int j=vel_x_gp->start_col; j<vel_x_gp->end_col+1; j++ )
         {
             // Get pointer to ith panel
             panel_j         = mesh_gp->panels[j];
@@ -251,7 +251,7 @@ void    calculate_raddif_velocity_mat_steady_nlin(
                                                 &(vel_z_gp->field_points[3*i])
                                             );
 
-        for ( int j=vel_x_gp->start_col; j<vel_x_gp->end_col; j++ )
+        for ( int j=vel_x_gp->start_col; j<vel_x_gp->end_col+1; j++ )
         {
             // Compute steady and wave terms over the panel
             if ( 
@@ -387,7 +387,7 @@ void    calculate_raddif_velocity_mat_wave(
                                                 &(vel_z_gp->field_points[3*i])
                                             );
 
-        for ( int j=vel_x_gp->start_col; j<vel_x_gp->end_col; j++ )
+        for ( int j=vel_x_gp->start_col; j<vel_x_gp->end_col+1; j++ )
         {
             // Compute steady and wave terms over the panel
             if ( 

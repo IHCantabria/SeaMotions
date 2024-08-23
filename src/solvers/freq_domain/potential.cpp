@@ -60,7 +60,7 @@ void    calculate_influence_potmat_steady(
             field_point_5[1]    = pot_gp->field_points[3*i+1];
             field_point_5[2]    = pot_gp->field_points[3*i+2] + 4.0 * input->water_depth;
 
-            for ( int j=pot_gp->start_col; j<pot_gp->end_col; j++ )
+            for ( int j=pot_gp->start_col; j<pot_gp->end_col+1; j++ )
             {
                 // Compute steady and wave terms over the panel
                 if ( 
@@ -158,7 +158,7 @@ void    calculate_influence_potmat_steady(
                                                     mesh_gp->panels[i]->center
                                                 );
 
-            for ( int j=pot_gp->start_col; j<pot_gp->end_col; j++ )
+            for ( int j=pot_gp->start_col; j<pot_gp->end_col+1; j++ )
             {
                 // Change source point
                 green_interf_steady->set_source(
@@ -213,7 +213,7 @@ void    calculate_influence_potmat_steady(
 //                                                 &(pot_gp->field_points[3*i])
 //                                             );
 
-//         for ( int j=pot_gp->start_col; j<pot_gp->end_col; j++ )
+//         for ( int j=pot_gp->start_col; j<pot_gp->end_col+1; j++ )
 //         {
 //             // Change source point
 //             green_interf_wave->set_source(

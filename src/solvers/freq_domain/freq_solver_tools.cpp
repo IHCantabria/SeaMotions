@@ -259,12 +259,9 @@ void    freq_domain_linear_solver(
     int         ipm_sc          = 0;
     int         ipm_ed          = 0;
 
-    mpi_config->get_1d_bounds( 
-                                mesh_gp->panels_tnp, 
-                                ipm_sc, 
-                                ipm_ed 
-                            );
-    ipm_cols_np = ipm_ed - ipm_sc;
+    ipm_sc      = scl->start_col - 1;
+    ipm_ed      = ipm_sc + scl->num_cols_local - 1;
+    ipm_cols_np = scl->num_cols_local;
     std::cout << "Staring MatLinGroup..." << std::endl;
     MatLinGroup<cuscomplex>*    potpanel_lin_gp = new MatLinGroup<cuscomplex>(
                                                                                 mesh_gp->panels_raddif_tnp,
@@ -1755,299 +1752,301 @@ void    freq_domain_linear_solver(
     /****************************************************************/
     if ( input->out_qtf )
     {
-        // Loop over frequencies to get the second order force matrix matrix
-        std::cout << "Calculating second order force..." << std::endl;
-        for ( int i=0; i<input->angfreqs_np; i++ )
+        if ( mpi_config->is_root( ) )
         {
-            for ( int j=0; j<input->angfreqs_np; j++ )
+            // Loop over frequencies to get the second order force matrix matrix
+            for ( int i=0; i<input->angfreqs_np; i++ )
             {
-                if ( i != j )
+                for ( int j=0; j<input->angfreqs_np; j++ )
                 {
-                    std::cout << "i: " << i << " - j: " << j << " - ang_freq_i: " << input->angfreqs[i];
-                    std::cout << " - ang_freq_j: " << input->angfreqs[j] << std::endl;
-                    if ( input->out_qtf_so_model == 0 )
+                    if ( i != j )
                     {
-                        // Calculate second order force using Pinkster model
-                        calculate_pinkster(
-                                                input,
-                                                mpi_config,
-                                                mesh_gp,
-                                                input->angfreqs[i],
-                                                input->angfreqs[j],
-                                                sim_data->qtf_diff_secord_force
-                                            );
-                    }
-                    else if ( input->out_qtf_so_model == 1 )
-                    {
-                        calculate_secord_force_indirect(
-                                                            input,
-                                                            mesh_gp,
-                                                            input->angfreqs[i],
-                                                            input->angfreqs[j],
-                                                            QTF_DIFF_CODE,
-                                                            qtf_body_pot_gp,
-                                                            qtf_fs_pot_gp,
-                                                            qtf_wl_vel_x_gp,
-                                                            sim_data
-                                                        );
+                        std::cout << "i: " << i << " - j: " << j << " - ang_freq_i: " << input->angfreqs[i];
+                        std::cout << " - ang_freq_j: " << input->angfreqs[j] << " - Proc: " << mpi_config->proc_rank << "\n";
+                        if ( input->out_qtf_so_model == 0 )
+                        {
+                            // Calculate second order force using Pinkster model
+                            calculate_pinkster(
+                                                    input,
+                                                    mpi_config,
+                                                    mesh_gp,
+                                                    input->angfreqs[i],
+                                                    input->angfreqs[j],
+                                                    sim_data->qtf_diff_secord_force
+                                                );
+                        }
+                        else if ( input->out_qtf_so_model == 1 )
+                        {
+                            calculate_secord_force_indirect(
+                                                                input,
+                                                                mesh_gp,
+                                                                input->angfreqs[i],
+                                                                input->angfreqs[j],
+                                                                QTF_DIFF_CODE,
+                                                                qtf_body_pot_gp,
+                                                                qtf_fs_pot_gp,
+                                                                qtf_wl_vel_x_gp,
+                                                                sim_data
+                                                            );
+                        }
+
+                        // Distribute Pinkster force along the second order force
+                        // matrix format
+                        qtf_distribute_matrix_data(
+                                                        input,
+                                                        i,
+                                                        j,
+                                                        sim_data->qtf_diff_secord_force,
+                                                        sim_data->qtf_diff_freqs,
+                                                        1,
+                                                        0
+                                                    );
+                        if ( input->out_qtf_comp )
+                        {
+                            qtf_distribute_matrix_data(
+                                                        input,
+                                                        i,
+                                                        j,
+                                                        sim_data->qtf_diff_secord_force,
+                                                        sim_data->qtf_diff_secord_force_freqs,
+                                                        1,
+                                                        0
+                                                    );
+                        }
                     }
 
-                    // Distribute Pinkster force along the second order force
-                    // matrix format
+                    // Calculate QTF diff force terms
+                    calculate_qtf_terms_force(
+                                                    input,
+                                                    mesh_gp,
+                                                    QTF_DIFF_CODE,
+                                                    &(sim_data->qtf_wl_rel_we_total_freq[i*sim_data->qtf_wl_heads_np]),
+                                                    &(sim_data->qtf_wl_rel_we_total_freq[j*sim_data->qtf_wl_heads_np]),
+                                                    &(sim_data->qtf_raos_freq[i*sim_data->wave_exc_np]),
+                                                    &(sim_data->qtf_raos_freq[j*sim_data->wave_exc_np]),
+                                                    &(sim_data->qtf_body_vel_x_total_freq[i*sim_data->qtf_body_heads_np]),
+                                                    &(sim_data->qtf_body_vel_y_total_freq[i*sim_data->qtf_body_heads_np]),
+                                                    &(sim_data->qtf_body_vel_z_total_freq[i*sim_data->qtf_body_heads_np]),
+                                                    &(sim_data->qtf_body_vel_x_total_freq[j*sim_data->qtf_body_heads_np]),
+                                                    &(sim_data->qtf_body_vel_y_total_freq[j*sim_data->qtf_body_heads_np]),
+                                                    &(sim_data->qtf_body_vel_z_total_freq[j*sim_data->qtf_body_heads_np]),
+                                                    input->angfreqs[i],
+                                                    input->angfreqs[j],
+                                                    sim_data->qtf,
+                                                    sim_data->qtf_diff_wl,
+                                                    sim_data->qtf_diff_bern,
+                                                    sim_data->qtf_diff_acc,
+                                                    sim_data->qtf_diff_mom,
+                                                    qtf_wl_we_gp,
+                                                    vel_x_body_gp,
+                                                    true
+                                                );
+
                     qtf_distribute_matrix_data(
                                                     input,
                                                     i,
                                                     j,
-                                                    sim_data->qtf_diff_secord_force,
+                                                    sim_data->qtf,
                                                     sim_data->qtf_diff_freqs,
-                                                    1,
-                                                    0
+                                                    0,
+                                                    1
                                                 );
+
                     if ( input->out_qtf_comp )
                     {
                         qtf_distribute_matrix_data(
                                                     input,
                                                     i,
                                                     j,
-                                                    sim_data->qtf_diff_secord_force,
-                                                    sim_data->qtf_diff_secord_force_freqs,
-                                                    1,
+                                                    sim_data->qtf_diff_wl,
+                                                    sim_data->qtf_diff_wl_freqs,
+                                                    0,
+                                                    0
+                                                );
+                        
+                        qtf_distribute_matrix_data(
+                                                    input,
+                                                    i,
+                                                    j,
+                                                    sim_data->qtf_diff_bern,
+                                                    sim_data->qtf_diff_bern_freqs,
+                                                    0,
+                                                    0
+                                                );
+
+                        qtf_distribute_matrix_data(
+                                                    input,
+                                                    i,
+                                                    j,
+                                                    sim_data->qtf_diff_acc,
+                                                    sim_data->qtf_diff_acc_freqs,
+                                                    0,
+                                                    0
+                                                );
+
+                        qtf_distribute_matrix_data(
+                                                    input,
+                                                    i,
+                                                    j,
+                                                    sim_data->qtf_diff_mom,
+                                                    sim_data->qtf_diff_mom_freqs,
+                                                    0,
                                                     0
                                                 );
                     }
+
+                    // Calculate QTF sum force terms
+                    calculate_qtf_terms_force(
+                                                    input,
+                                                    mesh_gp,
+                                                    QTF_SUM_CODE,
+                                                    &(sim_data->qtf_wl_rel_we_total_freq[i*sim_data->qtf_wl_heads_np]),
+                                                    &(sim_data->qtf_wl_rel_we_total_freq[j*sim_data->qtf_wl_heads_np]),
+                                                    &(sim_data->qtf_raos_freq[i*sim_data->wave_exc_np]),
+                                                    &(sim_data->qtf_raos_freq[j*sim_data->wave_exc_np]),
+                                                    &(sim_data->qtf_body_vel_x_total_freq[i*sim_data->qtf_body_heads_np]),
+                                                    &(sim_data->qtf_body_vel_y_total_freq[i*sim_data->qtf_body_heads_np]),
+                                                    &(sim_data->qtf_body_vel_z_total_freq[i*sim_data->qtf_body_heads_np]),
+                                                    &(sim_data->qtf_body_vel_x_total_freq[j*sim_data->qtf_body_heads_np]),
+                                                    &(sim_data->qtf_body_vel_y_total_freq[j*sim_data->qtf_body_heads_np]),
+                                                    &(sim_data->qtf_body_vel_z_total_freq[j*sim_data->qtf_body_heads_np]),
+                                                    input->angfreqs[i],
+                                                    input->angfreqs[j],
+                                                    sim_data->qtf,
+                                                    sim_data->qtf_sum_wl,
+                                                    sim_data->qtf_sum_bern,
+                                                    sim_data->qtf_sum_acc,
+                                                    sim_data->qtf_sum_mom,
+                                                    qtf_wl_we_gp,
+                                                    vel_x_body_gp,
+                                                    true
+                                                );
+
+                    qtf_distribute_matrix_data(
+                                                    input,
+                                                    i,
+                                                    j,
+                                                    sim_data->qtf,
+                                                    sim_data->qtf_sum_freqs,
+                                                    0,
+                                                    1
+                                                );
+
+                    if ( input->out_qtf_comp )
+                    {
+                        qtf_distribute_matrix_data(
+                                                    input,
+                                                    i,
+                                                    j,
+                                                    sim_data->qtf_sum_wl,
+                                                    sim_data->qtf_sum_wl_freqs,
+                                                    0,
+                                                    0
+                                                );
+                        
+                        qtf_distribute_matrix_data(
+                                                    input,
+                                                    i,
+                                                    j,
+                                                    sim_data->qtf_sum_bern,
+                                                    sim_data->qtf_sum_bern_freqs,
+                                                    0,
+                                                    0
+                                                );
+
+                        qtf_distribute_matrix_data(
+                                                    input,
+                                                    i,
+                                                    j,
+                                                    sim_data->qtf_sum_acc,
+                                                    sim_data->qtf_sum_acc_freqs,
+                                                    0,
+                                                    0
+                                                );
+
+                        qtf_distribute_matrix_data(
+                                                    input,
+                                                    i,
+                                                    j,
+                                                    sim_data->qtf_sum_mom,
+                                                    sim_data->qtf_sum_mom_freqs,
+                                                    0,
+                                                    0
+                                                );
+                    }
+
                 }
-
-                // Calculate QTF diff force terms
-                calculate_qtf_terms_force(
-                                                input,
-                                                mesh_gp,
-                                                QTF_DIFF_CODE,
-                                                &(sim_data->qtf_wl_rel_we_total_freq[i*sim_data->qtf_wl_heads_np]),
-                                                &(sim_data->qtf_wl_rel_we_total_freq[j*sim_data->qtf_wl_heads_np]),
-                                                &(sim_data->qtf_raos_freq[i*sim_data->wave_exc_np]),
-                                                &(sim_data->qtf_raos_freq[j*sim_data->wave_exc_np]),
-                                                &(sim_data->qtf_body_vel_x_total_freq[i*sim_data->qtf_body_heads_np]),
-                                                &(sim_data->qtf_body_vel_y_total_freq[i*sim_data->qtf_body_heads_np]),
-                                                &(sim_data->qtf_body_vel_z_total_freq[i*sim_data->qtf_body_heads_np]),
-                                                &(sim_data->qtf_body_vel_x_total_freq[j*sim_data->qtf_body_heads_np]),
-                                                &(sim_data->qtf_body_vel_y_total_freq[j*sim_data->qtf_body_heads_np]),
-                                                &(sim_data->qtf_body_vel_z_total_freq[j*sim_data->qtf_body_heads_np]),
-                                                input->angfreqs[i],
-                                                input->angfreqs[j],
-                                                sim_data->qtf,
-                                                sim_data->qtf_diff_wl,
-                                                sim_data->qtf_diff_bern,
-                                                sim_data->qtf_diff_acc,
-                                                sim_data->qtf_diff_mom,
-                                                qtf_wl_we_gp,
-                                                vel_x_body_gp,
-                                                true
-                                            );
-
-                qtf_distribute_matrix_data(
-                                                input,
-                                                i,
-                                                j,
-                                                sim_data->qtf,
-                                                sim_data->qtf_diff_freqs,
-                                                0,
-                                                1
-                                            );
-
-                if ( input->out_qtf_comp )
-                {
-                    qtf_distribute_matrix_data(
-                                                input,
-                                                i,
-                                                j,
-                                                sim_data->qtf_diff_wl,
-                                                sim_data->qtf_diff_wl_freqs,
-                                                0,
-                                                0
-                                            );
-                    
-                    qtf_distribute_matrix_data(
-                                                input,
-                                                i,
-                                                j,
-                                                sim_data->qtf_diff_bern,
-                                                sim_data->qtf_diff_bern_freqs,
-                                                0,
-                                                0
-                                            );
-
-                    qtf_distribute_matrix_data(
-                                                input,
-                                                i,
-                                                j,
-                                                sim_data->qtf_diff_acc,
-                                                sim_data->qtf_diff_acc_freqs,
-                                                0,
-                                                0
-                                            );
-
-                    qtf_distribute_matrix_data(
-                                                input,
-                                                i,
-                                                j,
-                                                sim_data->qtf_diff_mom,
-                                                sim_data->qtf_diff_mom_freqs,
-                                                0,
-                                                0
-                                            );
-                }
-
-                // Calculate QTF sum force terms
-                calculate_qtf_terms_force(
-                                                input,
-                                                mesh_gp,
-                                                QTF_SUM_CODE,
-                                                &(sim_data->qtf_wl_rel_we_total_freq[i*sim_data->qtf_wl_heads_np]),
-                                                &(sim_data->qtf_wl_rel_we_total_freq[j*sim_data->qtf_wl_heads_np]),
-                                                &(sim_data->qtf_raos_freq[i*sim_data->wave_exc_np]),
-                                                &(sim_data->qtf_raos_freq[j*sim_data->wave_exc_np]),
-                                                &(sim_data->qtf_body_vel_x_total_freq[i*sim_data->qtf_body_heads_np]),
-                                                &(sim_data->qtf_body_vel_y_total_freq[i*sim_data->qtf_body_heads_np]),
-                                                &(sim_data->qtf_body_vel_z_total_freq[i*sim_data->qtf_body_heads_np]),
-                                                &(sim_data->qtf_body_vel_x_total_freq[j*sim_data->qtf_body_heads_np]),
-                                                &(sim_data->qtf_body_vel_y_total_freq[j*sim_data->qtf_body_heads_np]),
-                                                &(sim_data->qtf_body_vel_z_total_freq[j*sim_data->qtf_body_heads_np]),
-                                                input->angfreqs[i],
-                                                input->angfreqs[j],
-                                                sim_data->qtf,
-                                                sim_data->qtf_sum_wl,
-                                                sim_data->qtf_sum_bern,
-                                                sim_data->qtf_sum_acc,
-                                                sim_data->qtf_sum_mom,
-                                                qtf_wl_we_gp,
-                                                vel_x_body_gp,
-                                                true
-                                            );
-
-                qtf_distribute_matrix_data(
-                                                input,
-                                                i,
-                                                j,
-                                                sim_data->qtf,
-                                                sim_data->qtf_sum_freqs,
-                                                0,
-                                                1
-                                            );
-
-                if ( input->out_qtf_comp )
-                {
-                    qtf_distribute_matrix_data(
-                                                input,
-                                                i,
-                                                j,
-                                                sim_data->qtf_sum_wl,
-                                                sim_data->qtf_sum_wl_freqs,
-                                                0,
-                                                0
-                                            );
-                    
-                    qtf_distribute_matrix_data(
-                                                input,
-                                                i,
-                                                j,
-                                                sim_data->qtf_sum_bern,
-                                                sim_data->qtf_sum_bern_freqs,
-                                                0,
-                                                0
-                                            );
-
-                    qtf_distribute_matrix_data(
-                                                input,
-                                                i,
-                                                j,
-                                                sim_data->qtf_sum_acc,
-                                                sim_data->qtf_sum_acc_freqs,
-                                                0,
-                                                0
-                                            );
-
-                    qtf_distribute_matrix_data(
-                                                input,
-                                                i,
-                                                j,
-                                                sim_data->qtf_sum_mom,
-                                                sim_data->qtf_sum_mom_freqs,
-                                                0,
-                                                0
-                                            );
-                }
-
             }
-        }
 
-        // Save data into the disk file
-        output->save_qtf_format( 
-                                    "qtf_diff",
-                                    sim_data->qtf_diff_freqs
-                                );
-
-        output->save_qtf_format(
-                                    "qtf_sum",
-                                    sim_data->qtf_sum_freqs
-                                );
-
-        if ( input->out_qtf_comp )
-        {
-            // Storage QTF acceleration term
-            output->save_qtf_format(
-                                        "qtf_diff_acc",
-                                        sim_data->qtf_diff_acc_freqs
-                                    );
-            
-            output->save_qtf_format(
-                                        "qtf_sum_acc",
-                                        sim_data->qtf_sum_acc_freqs
+            // Save data into the disk file
+            output->save_qtf_format( 
+                                        "qtf_diff",
+                                        sim_data->qtf_diff_freqs
                                     );
 
-            // Storage QTF bernoulli term
             output->save_qtf_format(
-                                        "qtf_diff_bern",
-                                        sim_data->qtf_diff_bern_freqs
-                                    );
-            
-            output->save_qtf_format(
-                                        "qtf_sum_bern",
-                                        sim_data->qtf_sum_bern_freqs
+                                        "qtf_sum",
+                                        sim_data->qtf_sum_freqs
                                     );
 
-            // Storage QTF momentum term
-            output->save_qtf_format(
-                                        "qtf_diff_mom",
-                                        sim_data->qtf_diff_mom_freqs
-                                    );
-            
-            output->save_qtf_format(
-                                        "qtf_sum_mom",
-                                        sim_data->qtf_sum_mom_freqs
-                                    );
+            if ( input->out_qtf_comp )
+            {
+                // Storage QTF acceleration term
+                output->save_qtf_format(
+                                            "qtf_diff_acc",
+                                            sim_data->qtf_diff_acc_freqs
+                                        );
+                
+                output->save_qtf_format(
+                                            "qtf_sum_acc",
+                                            sim_data->qtf_sum_acc_freqs
+                                        );
 
-            // Storage QTF second order potential term
-            output->save_qtf_format(
-                                        "qtf_diff_sop",
-                                        sim_data->qtf_diff_secord_force_freqs
-                                    );
-            
-            output->save_qtf_format(
-                                        "qtf_sum_sop",
-                                        sim_data->qtf_sum_secord_force_freqs
-                                    );
+                // Storage QTF bernoulli term
+                output->save_qtf_format(
+                                            "qtf_diff_bern",
+                                            sim_data->qtf_diff_bern_freqs
+                                        );
+                
+                output->save_qtf_format(
+                                            "qtf_sum_bern",
+                                            sim_data->qtf_sum_bern_freqs
+                                        );
 
-            // Storage QTF wl term
-            output->save_qtf_format(
-                                        "qtf_diff_wl",
-                                        sim_data->qtf_diff_wl_freqs
-                                    );
-            
-            output->save_qtf_format(
-                                        "qtf_sum_wl",
-                                        sim_data->qtf_sum_wl_freqs
-                                    );
-            
+                // Storage QTF momentum term
+                output->save_qtf_format(
+                                            "qtf_diff_mom",
+                                            sim_data->qtf_diff_mom_freqs
+                                        );
+                
+                output->save_qtf_format(
+                                            "qtf_sum_mom",
+                                            sim_data->qtf_sum_mom_freqs
+                                        );
+
+                // Storage QTF second order potential term
+                output->save_qtf_format(
+                                            "qtf_diff_sop",
+                                            sim_data->qtf_diff_secord_force_freqs
+                                        );
+                
+                output->save_qtf_format(
+                                            "qtf_sum_sop",
+                                            sim_data->qtf_sum_secord_force_freqs
+                                        );
+
+                // Storage QTF wl term
+                output->save_qtf_format(
+                                            "qtf_diff_wl",
+                                            sim_data->qtf_diff_wl_freqs
+                                        );
+                
+                output->save_qtf_format(
+                                            "qtf_sum_wl",
+                                            sim_data->qtf_sum_wl_freqs
+                                        );
+                
+            }
         }
     }
 
