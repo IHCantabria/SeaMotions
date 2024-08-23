@@ -91,8 +91,8 @@ void        calculate_pinkster(
     // Calculate wave numbers difference and the equivalent angular frequency
     dk  = ki - kj;
     dkwij = k2w( dk, input->water_depth, input->grav_acc );
-
     // Calculate equivalent Froude-Krylov force for frequency difference
+    mpi_config->set_serial( );
     calculate_froude_krylov_fo(
                                 input,
                                 mpi_config,
@@ -100,6 +100,7 @@ void        calculate_pinkster(
                                 dkwij,
                                 froude_krylov
                             );
+    mpi_config->set_parallel( );
     
     // Calculate correction coefficients
     cij = 2 * ki * kj * wij * ( 1 + std::tanh( ki * h ) * std::tanh( kj * h ) ) / ang_freq_i / ang_freq_j;
