@@ -15,23 +15,31 @@ void    MpiConfig::get_1d_bounds(
                                     int&    end_pos
                                 )
 {
-    // Check if there is more processors than data
-    if ( this->procs_total > np )
+    if ( this->_is_parallel )
     {
-        std::cerr << "There is more processes available than ";
-        std::cerr << "data to distribute over them." << std::endl;
-        throw std::runtime_error( "" );
+        // Check if there is more processors than data
+        if ( this->procs_total > np )
+        {
+            std::cerr << "There is more processes available than ";
+            std::cerr << "data to distribute over them." << std::endl;
+            throw std::runtime_error( "" );
+        }
+
+        // Divide data in chunks
+        int chunk_size = 1 + ( ( np - 1 ) / this->procs_total );
+
+        // Set interval bounds
+        start_pos   = this->proc_rank * chunk_size;
+        end_pos     = ( this->proc_rank + 1 ) * chunk_size;
+
+        // Set limits to the upper bound
+        end_pos     = ( end_pos > np ) ? np : end_pos;
     }
-
-    // Divide data in chunks
-    int chunk_size = 1 + ( ( np - 1 ) / this->procs_total );
-
-    // Set interval bounds
-    start_pos   = this->proc_rank * chunk_size;
-    end_pos     = ( this->proc_rank + 1 ) * chunk_size;
-
-    // Set limits to the upper bound
-    end_pos     = ( end_pos > np ) ? np : end_pos;
+    else
+    {
+        start_pos   = 0;
+        end_pos     = np;
+    }
 }
 
 
@@ -52,4 +60,16 @@ MpiConfig::MpiConfig(
     this->proc_rank     = proc_rank_in;
     this->procs_total   = procs_total_in;
     this->proc_root     = proc_root_in;
+}
+
+
+void MpiConfig::set_parallel( void )
+{
+    this->_is_parallel = true;
+}
+
+
+void MpiConfig::set_serial( void )
+{
+    this->_is_parallel = false;
 }

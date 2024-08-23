@@ -8,6 +8,10 @@
 
 struct MpiConfig
 {
+private:
+    // Define class private attributes
+    bool        _is_parallel    = true;
+
 public:
     // Define class attributes
     MPI_Comm    mpi_comm;
@@ -33,6 +37,14 @@ public:
     bool    is_root(    
                             void 
                     );
+
+    void    set_parallel(
+                            void
+                        );
+
+    void    set_serial( 
+                            void 
+                        );
 
 };
 
