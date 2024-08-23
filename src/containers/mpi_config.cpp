@@ -6,6 +6,7 @@
 #include <cmath>
 
 // Include local modules
+#include "../config.hpp"
 #include "mpi_config.hpp"
 
 
@@ -26,7 +27,13 @@ void    MpiConfig::get_1d_bounds(
         }
 
         // Divide data in chunks
-        int chunk_size = 1 + ( ( np - 1 ) / this->procs_total );
+        int chunk_size = static_cast<int>( 
+                                            std::ceil( 
+                                                        static_cast<cusfloat>( np ) 
+                                                        / 
+                                                        static_cast<cusfloat>( this->procs_total ) 
+                                                    ) 
+                                        ) ;
 
         // Set interval bounds
         start_pos   = this->proc_rank * chunk_size;

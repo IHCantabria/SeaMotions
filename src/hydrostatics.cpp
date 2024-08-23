@@ -108,7 +108,7 @@ void Hydrostatics::_calculate(
     int     start_elem      = mpi_config->proc_rank * 0;
     int     last_elem       = mesh->elems_np;
     #else
-    int     elems_per_proc  = static_cast<int>( std::ceil( mesh->elems_np / mpi_config->procs_total ) );
+    int     elems_per_proc  = static_cast<int>( std::ceil( static_cast<cusfloat>( mesh->elems_np ) / static_cast<cusfloat>( mpi_config->procs_total ) ) );
     int     start_elem      = elems_per_proc * mpi_config->proc_rank;
     int     last_elem       = elems_per_proc * ( mpi_config->proc_rank + 1 );
     last_elem               = ( last_elem > mesh->elems_np ) ? mesh->elems_np: last_elem;
