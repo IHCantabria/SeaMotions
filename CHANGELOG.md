@@ -15,6 +15,29 @@ Up to date
  
 ### Fixed
 
+## [1.1.0] - 2024-08-26
+
+Reviewed code to work with OWC
+ 
+### Added
+
+- New output channel to storage the mesh in the output file.
+- Possibility to fix the body to earth coordinate system so
+  there is no contribution of the hydromechanic forces for 
+  this body
+ 
+### Changed
+
+- Serialized Froude-Krylov calculations inside QTF forces estimations
+- Reformulated Froude-Krylov potential and its derivatives to not 
+  use cosh formulation and to use exp formulation. It allows to have 
+  a more robust behaviour when big function arguments are used
+ 
+### Fixed
+
+- Problems with domain decomposition across processors
+- Problems related to the output file system
+
 ## [1.0.11] - 2024-07-26
 
 First release version in Linux environment
@@ -26,8 +49,8 @@ First release version in Linux environment
 ### Fixed
 
 - Internal issues related to software compiling in linux environment
-- Code clean up of unsured variables
-- Kochin functions module dependency function cos_alpha.
+- Code clean up of unused variables
+- Kochin functions module dependency function cos_alpha
 
 ## [1.0.0] - 2024-07-23
 
