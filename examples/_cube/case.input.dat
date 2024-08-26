@@ -1,13 +1,14 @@
 /******** SeaMotions input file *********/
-1.011 		version - Program version
+1.0.11 		version - Program version
 /*************************************/
 /********* Solver Controls ***********/
 /*************************************/
 true 			BlockAdapt 	- [-] 		- Block the adaptive quadrature adaption. It will be fixed to the GaussOrder value. No interal remeshing neither.
 true  			FastSolver  - [-] 		- Use fast solver for the solution. This solver uses constant sources, constant potential and constant pressure over panels
-1 				GaussOrder 	- [-] 		- Order to perform the numerical integration.
+2 				GaussOrder 	- [-] 		- Order to perform the numerical integration.
 1e-3 			GFDnAbsErr 	- [-] 		- Absolute error in green function normal derivative to stop the adaptive quadrature during integration
 1e-3 			GFDnRelErr 	- [-] 		- Relative error in green function normal derivative to stop the adaptive quadrature during integration
+30 				KochinNC	- [-] 		- Kotchin expansion series number of coefficients. This is used for the asymptotic far field integration.
 true 			LogSingAna	- [-] 		- Method to compute the logarithmic singularity { true: Analytic, false: Numerical} . It applies to the steady term of the Green function. Only for FastSolver=true
 0				PolyOrder 	- [-] 		- Polynomial order to interpolate the source distribution.
 1e-3 			PotAbsErr 	- [-] 		- Absolute error in potential magnitude to stop the adaptive quadrature during integration
@@ -19,7 +20,7 @@ true 			LogSingAna	- [-] 		- Method to compute the logarithmic singularity { tru
 /*************************************/
 /********** Body Definition **********/
 /*************************************/
-cube.bd.dat		BodyFN 		- [str] 	- File name of the body description file
+dike.bd.dat		BodyFN 		- [str] 	- File name of the body description file
 /*************************************/
 /********** Output Channels **********/
 /*************************************/
@@ -28,8 +29,10 @@ true 			OutFK 		- [bool] 	- Output Froude-Krylov force
 true 			OutHydMech 	- [bool] 	- Output hydromechanic coefficients
 true 			OutHydStiff - [bool]	- Output hydrostatic stiffness
 false 			OutPress	- [bool] 	- Output pressure over panels
-true			OutMDrift 	- [bool] 	- Output mean drift
+false			OutMDrift 	- [bool] 	- Output mean drift
+true 			OutMesh 	- [bool]	- Output mesh definition
 false 			OutQTF 		- [bool]	- Output quadratic transfer functions
+false 			OutQTFComp 	- [bool]	- Output quadratic transfer functions components
 true 			OutRAOs 	- [bool]	- Output response amplitude operator for all dofs of the bodies
 false 			OutSources	- [bool] 	- Output panel sources intensity
 true 			OutStMass 	- [bool]	- Output structural mass

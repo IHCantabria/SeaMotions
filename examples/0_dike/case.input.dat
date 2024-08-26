@@ -1,9 +1,22 @@
 /******** SeaMotions input file *********/
-1.011 		version - Program version
+1.0.11 		version - Program version
 /*************************************/
 /********* Solver Controls ***********/
 /*************************************/
+true 			BlockAdapt 	- [-] 		- Block the adaptive quadrature adaption. It will be fixed to the GaussOrder value. No interal remeshing neither.
+true  			FastSolver  - [-] 		- Use fast solver for the solution. This solver uses constant sources, constant potential and constant pressure over panels
+2 				GaussOrder 	- [-] 		- Order to perform the numerical integration.
+1e-3 			GFDnAbsErr 	- [-] 		- Absolute error in green function normal derivative to stop the adaptive quadrature during integration
+1e-3 			GFDnRelErr 	- [-] 		- Relative error in green function normal derivative to stop the adaptive quadrature during integration
+30 				KochinNC	- [-] 		- Kotchin expansion series number of coefficients. This is used for the asymptotic far field integration.
+true 			LogSingAna	- [-] 		- Method to compute the logarithmic singularity { true: Analytic, false: Numerical} . It applies to the steady term of the Green function. Only for FastSolver=true
 0				PolyOrder 	- [-] 		- Polynomial order to interpolate the source distribution.
+1e-3 			PotAbsErr 	- [-] 		- Absolute error in potential magnitude to stop the adaptive quadrature during integration
+1e-3 			PotRelErr 	- [-] 		- Relative error in potential magnitude to stop the adaptive quadrature during integration
+1e-3 			PressAbsErr - [Pa] 		- Absolute error in pressure magnitude to stop the adaptive quadrature during integration (Only applies for FastSolver=false)
+1e-3 			PressRelErr - [Pa] 		- Relative error in pressure magnitude to stop the adaptive quadrature during integration (Only applies for FastSolver=false)
+0 				QTFSOModel 	- [-] 		- Quadratic Transfer Functions potential second order model { 0: Pinkster - 1: Indirect - 2: Direct }
+1e-3 			WLDetPrec 	- [m] 		- Water line points detection precision.
 /*************************************/
 /********** Body Definition **********/
 /*************************************/
@@ -11,14 +24,19 @@ dike.bd.dat		BodyFN 		- [str] 	- File name of the body description file
 /*************************************/
 /********** Output Channels **********/
 /*************************************/
-false 			OutHydMech 	- [bool] 	- Output hydromechanic coefficients
+true 			OutDiffrac 	- [bool] 	- Output diffraction force
+true 			OutFK 		- [bool] 	- Output Froude-Krylov force
+true 			OutHydMech 	- [bool] 	- Output hydromechanic coefficients
+true 			OutHydStiff - [bool]	- Output hydrostatic stiffness
 false 			OutPress	- [bool] 	- Output pressure over panels
 false			OutMDrift 	- [bool] 	- Output mean drift
+true 			OutMesh 	- [bool]	- Output mesh definition
 false 			OutQTF 		- [bool]	- Output quadratic transfer functions
 false 			OutQTFComp 	- [bool]	- Output quadratic transfer functions components
-false 			OutRAOs 	- [bool]	- Output response amplitude operator for all dofs of the bodies
+true 			OutRAOs 	- [bool]	- Output response amplitude operator for all dofs of the bodies
 false 			OutSources	- [bool] 	- Output panel sources intensity
-false 			OutWex 		- [bool]	- Output wave excitation forces
+true 			OutStMass 	- [bool]	- Output structural mass
+true 			OutWex 		- [bool]	- Output wave excitation forces
 /*************************************/
 /********* Site Conditions ***********/
 /*************************************/
