@@ -189,12 +189,45 @@ Input::~Input( void )
 void Input::print( void )
 {
     std::cout << std::endl;
+    std::cout << "SOLVER CONTROLS: " << std::endl;
+    std::cout << " - Block Adaption: " << this->is_block_adaption << std::endl;
+    std::cout << " - Fast Solver: " << this->is_fast_solver << std::endl;
+    std::cout << " - Gauss Order: " << this->gauss_order << std::endl;
+    std::cout << " - GFDnAbsErr: " << this->gfdn_abs_err << std::endl;
+    std::cout << " - GFDnRelErr: " << this->gfdn_rel_err << std::endl;
+    std::cout << " - KochinNC: " << this->kochin_np << std::endl;
+    std::cout << " - LogSingAna: " << this->is_log_sin_ana << std::endl;
+    std::cout << " - PolyOrder: " << this->poly_order << std::endl;
+    std::cout << " - PotAbsErr: " << this->pot_abs_err << std::endl;
+    std::cout << " - PotRelErr: " << this->pot_rel_err << std::endl;
+    std::cout << " - PressAbsErr: " << this->press_abs_err << std::endl;
+    std::cout << " - PressRelErr: " << this->press_rel_err << std::endl;
+    std::cout << " - QTFSOModel: " << this->out_qtf_so_model << std::endl;
+    std::cout << " - WLDetPrec: " << this->wl_det_prec << std::endl;
+
+    std::cout << std::endl;
     std::cout << "BODY DEFINITION: " << std::endl;
     for ( int i=0; i<this->bodies_np; i++ )
     {
         std::cout << " - Body " << i << ": " << this->bodies_finame[i] << std::endl;
         this->bodies[i]->print( );
     }
+
+    std::cout << std::endl;
+    std::cout << "OUTPUT CHANNELS: " << std::endl;
+    std::cout << " - OutDiffrac: " << this->out_diffrac << std::endl;
+    std::cout << " - OutFK: " << this->out_fk << std::endl;
+    std::cout << " - OutHydMech: " << this->out_hydmech << std::endl;
+    std::cout << " - OutHydStiff: " << this->out_hydstiff << std::endl;
+    std::cout << " - OutPress: " << this->out_pressure << std::endl;
+    std::cout << " - OutMDrift: " << this->out_mdrift << std::endl;
+    std::cout << " - OutMesh: " << this->out_mesh << std::endl;
+    std::cout << " - OutQTF: " << this->out_qtf << std::endl;
+    std::cout << " - OutQTFComp: " << this->out_qtf_comp << std::endl;
+    std::cout << " - OutRAOs: " << this->out_raos << std::endl;
+    std::cout << " - OutSources: " << this->out_sources << std::endl;
+    std::cout << " - OutStMass: " << this->out_struct_mass << std::endl;
+    std::cout << " - OutWex: " << this->out_wex << std::endl;
 
     std::cout << std::endl;
     std::cout << "SITE CONDITIONS: " << std::endl;
