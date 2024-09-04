@@ -25,9 +25,11 @@ void    calculate_raos(
     clear_vector( input->bodies_np * input->dofs_np * input->heads_np, rao );
 
     // Fill in matrix system
-    int         index   = 0;
+    int         index       = 0;
+    cusfloat    is_fix_f    = 0.0;
     for ( int i=0; i<input->bodies_np; i++ )
     {
+        is_fix_f = static_cast<cusfloat>( !input->bodies[i]->is_fix );
         for ( int j=0; j<input->bodies_np; j++ )
         {
             for ( int k=0; k<input->dofs_np; k++ )
@@ -45,8 +47,8 @@ void    calculate_raos(
                                 m
                             );
                     sysmat[index] = cuscomplex( 
-                                                    -pow2s( ang_freq ) * ( structural_mass[index] + added_mass[index] ) + hydstiffness[index],
-                                                    - ang_freq * damping_rad[index]
+                                                    -pow2s( ang_freq ) * ( structural_mass[index] + added_mass[index] * is_fix_f ) + hydstiffness[index] * is_fix_f,
+                                                    - ang_freq * damping_rad[index] * is_fix_f
                                                 );
                 }
             }
@@ -71,6 +73,7 @@ void    calculate_raos(
     {
         for ( int j=0; j<input->bodies_np; j++ )
         {
+            is_fix_f = static_cast<cusfloat>( !input->bodies[j]->is_fix );
             for ( int k=0; k<input->dofs_np; k++ )
             {
                 index = (
@@ -80,7 +83,7 @@ void    calculate_raos(
                             +
                             k
                         );
-                rao[index] = wave_diffrac[index] + froude_krylov[index];
+                rao[index] = ( wave_diffrac[index] + froude_krylov[index] ) * is_fix_f;
             }
         }
     }
