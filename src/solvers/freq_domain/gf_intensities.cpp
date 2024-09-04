@@ -112,7 +112,7 @@ void    calculate_gf_intensity_sysmat(
 
     // Fill RHS vector
     count       = 0;
-    for ( int i=0; i< 6; i++ )
+    for ( int i=0; i<input->dofs_np; i++ )
     {
         for ( int j=scl->start_row_0; j<scl->end_row_0; j++ )
         {
