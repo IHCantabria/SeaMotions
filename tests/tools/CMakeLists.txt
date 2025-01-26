@@ -394,3 +394,18 @@ add_executable(
                 )
 set_mpi_target( test_scalapack_cmd )
 set_mkl_lib_target( test_scalapack_cmd )
+
+
+# Add test to check MklVector class
+set(
+        test_cusvector_src
+        test_cusvector.cpp
+        ${math_module_files}
+        ${tools_module_files}
+    )
+
+add_executable(
+                    test_cusvector_cmd
+                    ${test_cusvector_src}
+                )
+set_mkl_lib_target( test_cusvector_cmd )
