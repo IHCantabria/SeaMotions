@@ -48,7 +48,7 @@ typedef std::complex<double> cuscomplex;
     #define int_h5 H5::PredType::NATIVE_INT
     #endif
 
-constexpr int FLOATING_PRECISION = 32;
+constexpr int FLOATING_PRECISION = 64;
 constexpr cusfloat EPS_PRECISION = 1e-14;
 constexpr cusfloat EPS_PRECISION_ORDER = -14;
 #endif
