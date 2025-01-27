@@ -112,6 +112,34 @@ template<>
 inline const auto& lv_powx<std::complex<double>> = vzPowx;
 
 
+// Interface for Sqrt - Vector Sqrt
+template<typename T>
+inline const auto& lv_sqrt = vsSqrt;
+
+template<>
+inline const auto& lv_sqrt<float> = vsSqrt;
+
+template<>
+inline const auto& lv_sqrt<double> = vdSqrt;
+
+template<>
+inline const auto& lv_sqrt<std::complex<float>> = vcSqrt;
+
+template<>
+inline const auto& lv_sqrt<std::complex<double>> = vzSqrt;
+
+
+// Interface for Cbrt - Vector Cbrt
+template<typename T>
+inline const auto& lv_cbrt = vsCbrt;
+
+template<>
+inline const auto& lv_cbrt<float> = vsCbrt;
+
+template<>
+inline const auto& lv_cbrt<double> = vdCbrt;
+
+
 // Interface for cblas_dot - Dot product
 template<typename T>
 inline const auto& cblas_dot = cblas_sdot;
