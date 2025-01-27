@@ -27,6 +27,23 @@ template<>
 inline const auto& lv_add<std::complex<double>> = vzAdd;
 
 
+// Interface for vAdd - Vector addition
+template<typename T>
+inline const auto& lv_sub = vsSub;
+
+template<>
+inline const auto& lv_sub<float> = vsSub;
+
+template<>
+inline const auto& lv_sub<double> = vdSub;
+
+template<>
+inline const auto& lv_sub<std::complex<float>> = vcSub;
+
+template<>
+inline const auto& lv_sub<std::complex<double>> = vzSub;
+
+
 // Interface for cblas_dot - Dot product
 template<typename T>
 inline const auto& cblas_dot = cblas_sdot;
