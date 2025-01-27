@@ -223,11 +223,24 @@ template<typename T>    inline  void        svs_add(
                                                                         T s, 
                                                                         T* w
                                                     );
+
+template<typename T>    inline  void        sv_cbrt(
+                                                                        int n, 
+                                                                        T* u, 
+                                                                        T* w
+                                                    );
         
 template<typename T>    inline  void        sv_div(
                                                                         int n, 
                                                                         T* u, 
                                                                         T* v, 
+                                                                        T* w
+                                                    );
+
+template<typename T>    inline  void        svs_div(
+                                                                        int n,
+                                                                        T* u,
+                                                                        T s,
                                                                         T* w
                                                     );
 
@@ -269,10 +282,30 @@ template<typename T>    inline  void        svs_mult(
                                                                         T s, 
                                                                         T* w
                                                     );
+
+template<typename T>    inline  void        sv_pow(
+                                                                        int n,
+                                                                        T* u,
+                                                                        T* v,
+                                                                        T* w
+                                                    );
+
+template<typename T>    inline  void        svs_pow(
+                                                                        int n,
+                                                                        T* u,
+                                                                        T s,
+                                                                        T* w
+                                                    );
         
 template<typename T>    inline  void        sv_pow2(
                                                                         int n, 
                                                                         T* u, 
+                                                                        T* w
+                                                    );
+
+template<typename T>    inline  void        sv_pow3(
+                                                                        int n,
+                                                                        T* u,
                                                                         T* w
                                                     );
         

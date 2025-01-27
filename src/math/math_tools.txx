@@ -269,11 +269,31 @@ inline void svs_add(int n, T* u, T s, T* w)
 
 
 template<typename T>
+inline void sv_cbrt(int n, T* u, T* w)
+{
+    for (int i=0; i<n; i++)
+    {
+        w[i] = std::cbrt(u[i]);
+    }
+}
+
+
+template<typename T>
 inline void sv_div(int n, T* u, T* v, T* w)
 {
     for (int i=0; i<n; i++)
     {
         w[i] = u[i]/v[i];
+    }
+}
+
+
+template<typename T>
+inline void svs_div(int n, T* u, T s, T* w)
+{
+    for (int i=0; i<n; i++)
+    {
+        w[i] = u[i]/s;
     }
 }
 
@@ -357,6 +377,26 @@ inline void svs_mult(int n, T* u, T s, T* w)
 
 
 template<typename T>
+inline void sv_pow(int n, T* u, T* v, T* w)
+{
+    for (int i=0; i<n; i++)
+    {
+        w[i] = std::pow( u[i], v[i] );
+    }
+}
+
+
+template<typename T>
+inline void svs_pow(int n, T* u, T s, T* w)
+{
+    for (int i=0; i<n; i++)
+    {
+        w[i] = std::pow( u[i], s );
+    }
+}
+
+
+template<typename T>
 inline void sv_pow2(int n, T* u, T* w)
 {
     for (int i=0; i<n; i++)
@@ -367,11 +407,21 @@ inline void sv_pow2(int n, T* u, T* w)
 
 
 template<typename T>
+inline void sv_pow3(int n, T* u, T* w)
+{
+    for (int i=0; i<n; i++)
+    {
+        w[i] = u[i]*u[i]*u[i];
+    }
+}
+
+
+template<typename T>
 inline void sv_sqrt(int n, T* u, T* w)
 {
     for (int i=0; i<n; i++)
     {
-        w[i] = std::sqrt(u[i]);
+        w[i] = std::sqrt( u[i] );
     }
 }
 
