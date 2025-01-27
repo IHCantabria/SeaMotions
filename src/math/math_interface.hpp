@@ -78,6 +78,40 @@ template<>
 inline const auto& lv_div<std::complex<double>> = vzDiv;
 
 
+// Interface for vPow - Vector Power
+template<typename T>
+inline const auto& lv_pow = vsPow;
+
+template<>
+inline const auto& lv_pow<float> = vsPow;
+
+template<>
+inline const auto& lv_pow<double> = vdPow;
+
+template<>
+inline const auto& lv_pow<std::complex<float>> = vcPow;
+
+template<>
+inline const auto& lv_pow<std::complex<double>> = vzPow;
+
+
+// Interface for vPowx - Scalar Power
+template<typename T>
+inline const auto& lv_powx = vsPowx;
+
+template<>
+inline const auto& lv_powx<float> = vsPowx;
+
+template<>
+inline const auto& lv_powx<double> = vdPowx;
+
+template<>
+inline const auto& lv_powx<std::complex<float>> = vcPowx;
+
+template<>
+inline const auto& lv_powx<std::complex<double>> = vzPowx;
+
+
 // Interface for cblas_dot - Dot product
 template<typename T>
 inline const auto& cblas_dot = cblas_sdot;
