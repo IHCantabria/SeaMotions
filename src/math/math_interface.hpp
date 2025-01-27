@@ -27,7 +27,7 @@ template<>
 inline const auto& lv_add<std::complex<double>> = vzAdd;
 
 
-// Interface for vAdd - Vector addition
+// Interface for vSub - Vector substraction
 template<typename T>
 inline const auto& lv_sub = vsSub;
 
@@ -42,6 +42,40 @@ inline const auto& lv_sub<std::complex<float>> = vcSub;
 
 template<>
 inline const auto& lv_sub<std::complex<double>> = vzSub;
+
+
+// Interface for vMult - Vector multiplication
+template<typename T>
+inline const auto& lv_mult = vsMul;
+
+template<>
+inline const auto& lv_mult<float> = vsMul;
+
+template<>
+inline const auto& lv_mult<double> = vdMul;
+
+template<>
+inline const auto& lv_mult<std::complex<float>> = vcMul;
+
+template<>
+inline const auto& lv_mult<std::complex<double>> = vzMul;
+
+
+// Interface for vDiv - Vector division
+template<typename T>
+inline const auto& lv_div = vsDiv;
+
+template<>
+inline const auto& lv_div<float> = vsDiv;
+
+template<>
+inline const auto& lv_div<double> = vdDiv;
+
+template<>
+inline const auto& lv_div<std::complex<float>> = vcDiv;
+
+template<>
+inline const auto& lv_div<std::complex<double>> = vzDiv;
 
 
 // Interface for cblas_dot - Dot product
