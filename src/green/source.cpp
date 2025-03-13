@@ -229,7 +229,16 @@ void    calculate_source_velocity_newman(
         velocity_local[1] += delta_xi[i]/sides_len[i]*b;
 
     }
-    calculate_dipole_potential_kernel(panel, node_fieldp_mod, node_fieldp_dx, node_fieldp_dy, node_fieldp_dz, delta_xi, delta_eta, velocity_local[2]);
+
+    // Calculate Z local velocity
+    if ( std::abs( field_point_local[2] ) < 1e-3 )
+    {
+        velocity_local[2] = 0.0;
+    }
+    else
+    {
+        calculate_dipole_potential_kernel(panel, node_fieldp_mod, node_fieldp_dx, node_fieldp_dy, node_fieldp_dz, delta_xi, delta_eta, velocity_local[2]);
+    }
 
     // Convert back the velocity vector to global coordinates if the field
     // vector was given in that base
