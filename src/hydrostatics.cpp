@@ -494,14 +494,14 @@ void Hydrostatics::_calculate(
     this->hydstiffmat[26] = - this->grav_acc * this->rho_water * this->wl_area_mx;
 
     // K44 - Roll
-    this->hydstiffmat[21] = this->grav_acc * this->rho_water * ( this->wl_area_iyy + this->volume * ( this->cob[2] - this->cog[2] ) );
+    this->hydstiffmat[21] = this->grav_acc * this->rho_water * ( this->wl_area_ixx + this->volume * ( this->cob[2] - this->cog[2] ) );
 
     // K45 - K54 - Roll/Pitch
     this->hydstiffmat[22] = this->grav_acc * this->rho_water * this->wl_area_ixy;
     this->hydstiffmat[27] = this->grav_acc * this->rho_water * this->wl_area_ixy;
 
     // K55 - Pitch
-    this->hydstiffmat[28] = this->grav_acc * this->rho_water * ( this->wl_area_ixx + this->volume * ( this->cob[2] - this->cog[2] ) );
+    this->hydstiffmat[28] = this->grav_acc * this->rho_water * ( this->wl_area_iyy + this->volume * ( this->cob[2] - this->cog[2] ) );
 
     // K46 - K56 - Yaw
     this->hydstiffmat[23] = - this->grav_acc * this->rho_water * ( this->cob[0] - this->cog[0] ) * this->volume;
