@@ -1052,7 +1052,8 @@ void    freq_domain_linear_solver(
                                                 sim_data->panels_potential,
                                                 input->angfreqs[i],
                                                 sim_data->added_mass,
-                                                sim_data->damping_rad
+                                                sim_data->damping_rad,
+                                                sim_data->panels_pressure
                                             );
 
         // Calculate diffraction forces
@@ -1062,7 +1063,8 @@ void    freq_domain_linear_solver(
                                                 mesh_gp,
                                                 sim_data->panels_potential,
                                                 input->angfreqs[i],
-                                                sim_data->wave_diffrac
+                                                sim_data->wave_diffrac,
+                                                sim_data->panels_pressure
                                         );
         
         // Calculate Froude-Krylov forces
@@ -1646,6 +1648,51 @@ void    freq_domain_linear_solver(
             }
         }
 
+        // Gather sources
+        if ( input->out_sources )
+        {
+            MPI_Gather( 
+                            sim_data->intensities,
+                            scl->num_rows * ( input->dofs_np + input->heads_np ),
+                            mpi_cuscomplex,
+                            sim_data->intensities_p0,
+                            scl->num_rows * ( input->dofs_np + input->heads_np ),
+                            mpi_cuscomplex,
+                            mpi_config->proc_root,
+                            MPI_COMM_WORLD
+                        );
+        }
+
+        // Gather panels potential if any
+        if ( input->out_potential )
+        {
+            MPI_Gather( 
+                            sim_data->panels_potential,
+                            scl->num_rows * ( input->dofs_np + input->heads_np ),
+                            mpi_cuscomplex,
+                            sim_data->panels_potential_p0,
+                            scl->num_rows * ( input->dofs_np + input->heads_np ),
+                            mpi_cuscomplex,
+                            mpi_config->proc_root,
+                            MPI_COMM_WORLD
+                        );
+        }
+
+        // Gather panels pressure if any
+        if ( input->out_pressure )
+        {
+            MPI_Gather( 
+                            sim_data->panels_pressure,
+                            scl->num_rows * ( input->dofs_np + input->heads_np ),
+                            mpi_cuscomplex,
+                            sim_data->panels_pressure_p0,
+                            scl->num_rows * ( input->dofs_np + input->heads_np ),
+                            mpi_cuscomplex,
+                            mpi_config->proc_root,
+                            MPI_COMM_WORLD
+                        );
+        }
+
         // Output values to disk
         if ( mpi_config->is_root( ) )
         {
@@ -1698,6 +1745,36 @@ void    freq_domain_linear_solver(
                                                     _DN_RAO,
                                                     sim_data->raos
                                                 );
+            }
+
+        // Storage sources
+            if ( input->out_sources )
+            {
+                output->save_fields_data( 
+                                            i,
+                                            _DN_SRC_INT,
+                                            sim_data->intensities_p0
+                                        );
+            }
+
+            // Storage panels potential
+            if ( input->out_potential )
+            {
+                output->save_fields_data( 
+                                            i,
+                                            _DN_POT_INT,
+                                            sim_data->panels_potential_p0
+                                        );
+            }
+
+            // Storage panels pressure
+            if ( input->out_pressure )
+            {
+                output->save_fields_data( 
+                                            i,
+                                            _DN_PRESS_INT,
+                                            sim_data->panels_pressure_p0
+                                        );
             }
 
             if ( input->is_calc_mdrift )

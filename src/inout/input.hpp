@@ -45,6 +45,7 @@ public:
     bool                        out_fk              = false;
     bool                        out_hydmech         = false;
     bool                        out_hydstiff        = false;
+    bool                        out_potential       = false;
     bool                        out_pressure        = false;
     bool                        out_mdrift          = false;
     bool                        out_mesh            = false;

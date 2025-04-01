@@ -16,7 +16,8 @@ void    calculate_diffraction_forces_lin(
                                                 MeshGroup*      mesh_gp,
                                                 cuscomplex*     panel_pot,
                                                 cusfloat        w,
-                                                cuscomplex*     wave_diffrac
+                                                cuscomplex*     wave_diffrac,
+                                                cuscomplex*     panel_pressure
                                         );
 
 

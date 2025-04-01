@@ -10,7 +10,8 @@ void    calculate_diffraction_forces_lin(
                                                 MeshGroup*      mesh_gp,
                                                 cuscomplex*     panel_pot,
                                                 cusfloat        w,
-                                                cuscomplex*     wave_diffrac
+                                                cuscomplex*     wave_diffrac,
+                                                cuscomplex*     panels_pressure
                                         )
 {
     // Define local variables
@@ -50,23 +51,24 @@ void    calculate_diffraction_forces_lin(
                 for ( int ie=elem_start_pos; ie<elem_end_pos; ie++ )
                 {
                     // Integrate pressure over panel
-                    index_1             = (
-                                                input->dofs_np * mesh_gp->panels_tnp 
-                                                +
-                                                ih * mesh_gp->panels_tnp
-                                                +
-                                                mesh_gp->panels_cnp[ib]
-                                                +
-                                                ie
-                                            );
-                    press_i             = (
-                                                panel_pot[index_1]
-                                                *
-                                                mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->normal_vec[id]
-                                                *
-                                                mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->area
-                                            );
-                    wave_diffrac[index] += cuscomplex( 0.0, -w * rho_w ) * press_i;
+                    index_1                     = (
+                                                        input->dofs_np * mesh_gp->panels_tnp 
+                                                        +
+                                                        ih * mesh_gp->panels_tnp
+                                                        +
+                                                        mesh_gp->panels_cnp[ib]
+                                                        +
+                                                        ie
+                                                    );
+                    press_i                     = (
+                                                        panel_pot[index_1]
+                                                        *
+                                                        mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->normal_vec[id]
+                                                        *
+                                                        mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->area
+                                                    );
+                    wave_diffrac[index]         += cuscomplex( 0.0, -w * rho_w ) * press_i;
+                    panels_pressure[index_1]    = - cuscomplex( 0.0, 1.0 ) * rho_w * w * panel_pot[index_1] ;
                 }
             }
         }

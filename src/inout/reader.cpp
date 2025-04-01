@@ -423,6 +423,11 @@ void    read_case(
     read_signal     = _read_channel_value( infile, input->out_hydstiff );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
+    // Read output flag for potential over the panels
+    target_signal   = "OutPot";
+    read_signal     = _read_channel_value( infile, input->out_potential );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
     // Read output flag for pressure over the panels
     target_signal   = "OutPress";
     read_signal     = _read_channel_value( infile, input->out_pressure );

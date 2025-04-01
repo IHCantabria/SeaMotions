@@ -18,6 +18,13 @@ Output::Output(
     // Storage pointer to the input class instance
     this->_input = input;
 
+    // Calculate total number of panels
+    this->_total_panels_np = 0;
+    for ( int i=0; i<input->bodies_np; i++ )
+    {
+        this->_total_panels_np += input->bodies[i]->mesh->elems_np;
+    }
+
     // Generate output results file path
     std::filesystem::path _case_fopath( input->case_fopath );
     std::filesystem::path _results_finame( std::string( "results.hydb.h5" ) );
@@ -53,6 +60,11 @@ Output::Output(
     this->_ds_qf[3]   = input->angfreqs_np;
     this->_ds_qf[4]   = input->angfreqs_np;
     this->_ds_qf[5]   = input->dofs_np;
+
+    // Storage source intensity dataset dimensions
+    this->_ds_fd[0]   = input->angfreqs_np;
+    this->_ds_fd[1]   = input->dofs_np + input->heads_np;
+    this->_ds_fd[2]   = this->_total_panels_np;
 
     // Storage mean drift dataset dimensions for the ith body
     this->_ds_wx[0]    = input->heads_np;
@@ -253,6 +265,46 @@ Output::Output(
         }
     }
     
+    // Create dataset for panels pressure
+    if ( input->out_pressure )
+    {
+        CREATE_DATASET( 
+                            fid,
+                            _DN_PRESS_INT_MAG,
+                            _DS_FD_NP,
+                            this->_ds_fd,
+                            cusfloat_h5
+                        );
+
+        CREATE_DATASET( 
+                            fid,
+                            _DN_PRESS_INT_PHA,
+                            _DS_FD_NP,
+                            this->_ds_fd,
+                            cusfloat_h5
+                        );
+    }
+
+    // Create dataset for panels potential
+    if ( input->out_potential )
+    {
+        CREATE_DATASET( 
+                            fid,
+                            _DN_POT_INT_MAG,
+                            _DS_FD_NP,
+                            this->_ds_fd,
+                            cusfloat_h5
+                        );
+
+        CREATE_DATASET( 
+                            fid,
+                            _DN_POT_INT_PHA,
+                            _DS_FD_NP,
+                            this->_ds_fd,
+                            cusfloat_h5
+                        );
+    }
+
     // Create dataset for QTF frequency difference
     if ( input->out_qtf )
     {
@@ -488,6 +540,26 @@ Output::Output(
                             cusfloat_h5
                         );
         
+    }
+
+    // Create dataset for source intensities
+    if ( input->out_sources )
+    {
+        CREATE_DATASET( 
+                            fid,
+                            _DN_SRC_INT_MAG,
+                            _DS_FD_NP,
+                            this->_ds_fd,
+                            cusfloat_h5
+                        );
+
+        CREATE_DATASET( 
+                            fid,
+                            _DN_SRC_INT_PHA,
+                            _DS_FD_NP,
+                            this->_ds_fd,
+                            cusfloat_h5
+                        );
     }
 
     // Create dataset for structural mass
@@ -802,6 +874,74 @@ void    Output::save_mesh(
     
     // Close file unit
     fid.close( );
+}
+
+
+void    Output::save_fields_data(
+                                        int         freq_index,
+                                        std::string channel_name,
+                                        cuscomplex* field_data
+                                    )
+{
+    // Define datasets name
+    std::string _dn_mag = channel_name + std::string( "_mag" );
+    std::string _dn_pha = channel_name + std::string( "_pha" );
+
+    // Open file unit
+    H5::H5File fid( this->_results_fipath.c_str( ), H5F_ACC_RDWR );
+
+    // Allocate space for ith body data
+    cusfloat* data_mag = generate_empty_vector<cusfloat>( this->_total_panels_np );
+    cusfloat* data_pha = generate_empty_vector<cusfloat>( this->_total_panels_np );
+
+    // Storage data into disk
+    hsize_t _ds_fd_ch[_DS_FD_NP]    = { 1, 1, static_cast<hsize_t>( this->_total_panels_np ) };
+    hsize_t offset[_DS_FD_NP]       = { static_cast<hsize_t>( freq_index ), 0, 0 };
+    int index                       = 0;
+
+    for ( int i=0; i<( this->_input->dofs_np + this->_input->heads_np ); i++ )
+    {
+        // Transform complex values to amplitude and phase
+        for ( int j=0; j<this->_total_panels_np; j++ )
+        {
+            index       = i * this->_total_panels_np + j;
+            data_mag[j] = std::abs( field_data[index] );
+            data_pha[j] = std::atan2( field_data[index].imag( ), field_data[index].real( ) );
+        }
+        // Set offset values
+        offset[1] = i;
+
+        // Storage data
+        SAVE_DATASET_CHUNK(
+                                fid,
+                                _dn_mag,
+                                _DS_FD_NP,
+                                this->_ds_fd,
+                                _ds_fd_ch,
+                                offset,
+                                data_mag,
+                                cusfloat_h5
+                            );
+
+        SAVE_DATASET_CHUNK(
+                                fid,
+                                _dn_pha,
+                                _DS_FD_NP,
+                                this->_ds_fd,
+                                _ds_fd_ch,
+                                offset,
+                                data_pha,
+                                cusfloat_h5
+                            );
+    }
+
+    // Close file unit
+    fid.close( );
+
+    // Delete heap memory
+    mkl_free( data_mag );
+    mkl_free( data_pha );
+
 }
 
 

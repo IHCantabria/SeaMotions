@@ -11,7 +11,8 @@ void    calculate_hydromechanic_coeffs_lin(
                                                 cuscomplex*     panels_pot,
                                                 cusfloat        ang_freq,
                                                 cusfloat*       added_mass,
-                                                cusfloat*       damping_rad
+                                                cusfloat*       damping_rad,
+                                                cuscomplex*     panels_press
                                             )
 {
     // Define local variables
@@ -56,16 +57,17 @@ void    calculate_hydromechanic_coeffs_lin(
                     for ( int ie=elem_start_pos; ie<elem_end_pos; ie++ )
                     {
                         // Integrate pressure over panel
-                        index_1             = mesh_gp->panels_cnp[jb] + ie + mesh_gp->panels_tnp * id;
-                        press_i             = ( 
-                                                    panels_pot[index_1] 
-                                                    * 
-                                                    mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->normal_vec[jd] 
-                                                    * 
-                                                    mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->area
-                                                );
-                        added_mass[index]   -=  rho_w * press_i.real( );
-                        damping_rad[index]  -=  rho_w * ang_freq * press_i.imag( );
+                        index_1                 = mesh_gp->panels_cnp[jb] + ie + mesh_gp->panels_tnp * id;
+                        press_i                 = ( 
+                                                        panels_pot[index_1] 
+                                                        * 
+                                                        mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->normal_vec[jd] 
+                                                        * 
+                                                        mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->area
+                                                    );
+                        added_mass[index]       -=  rho_w * press_i.real( );
+                        damping_rad[index]      -=  rho_w * ang_freq * press_i.imag( );
+                        panels_press[index_1]   = - cuscomplex( 0.0, 1.0 ) * rho_w * ang_freq * panels_pot[index_1] ;
                     }
 
                 }

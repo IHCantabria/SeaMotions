@@ -374,6 +374,7 @@ SimulationData::SimulationData(
     this->raos              = generate_empty_vector<cuscomplex>( this->wave_exc_np );
     this->intensities       = generate_empty_vector<cuscomplex>( ( dofs_np_in + heads_np_in ) * rows_local_np );
     this->panels_potential  = generate_empty_vector<cuscomplex>( ( dofs_np_in + heads_np_in ) * rows_np );
+    this->panels_pressure   = generate_empty_vector<cuscomplex>( ( dofs_np_in + heads_np_in ) * rows_np );
     this->wave_diffrac      = generate_empty_vector<cuscomplex>( this->wave_exc_np );
 
     // Allocate space for variables used only on root processor
@@ -386,6 +387,21 @@ SimulationData::SimulationData(
         this->structural_mass_p0    = generate_empty_vector<cusfloat>( hydmech_np );
         this->wave_diffrac_p0       = generate_empty_vector<cuscomplex>( wave_exc_np );
         this->wave_exc_p0           = generate_empty_vector<cuscomplex>( wave_exc_np );
+
+        if ( this->_input->out_sources )
+        {
+            this->intensities_p0 = generate_empty_vector<cuscomplex>( rows_np * ( dofs_np + heads_np ) );
+        }
+
+        if ( this->_input->out_potential )
+        {
+            this->panels_potential_p0 = generate_empty_vector<cuscomplex>( rows_np * ( dofs_np + heads_np ) );
+        }
+
+        if ( this->_input->out_pressure )
+        {
+            this->panels_pressure_p0 = generate_empty_vector<cuscomplex>( rows_np * ( dofs_np + heads_np ) );
+        }
     }
 }
 
@@ -413,6 +429,21 @@ SimulationData::~SimulationData(
         mkl_free( this->structural_mass_p0 );
         mkl_free( this->wave_diffrac_p0 );
         mkl_free( this->wave_exc_p0 );
+
+        if ( this->_input->out_sources )
+        {
+            mkl_free( this->intensities_p0 );
+        }
+
+        if ( this->_input->out_potential )
+        {
+            mkl_free( this->panels_potential_p0 );
+        }
+
+        if ( this->_input->out_pressure )
+        {
+            mkl_free( this->panels_potential_p0 );
+        }
     }
 
     if ( this->_is_mdrift )

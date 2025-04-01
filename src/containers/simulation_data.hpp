@@ -33,6 +33,7 @@ public:
     int             hydmech_np                          = 0;
     cusfloat*       hydrostiff_p0                       = nullptr;
     cuscomplex*     intensities                         = nullptr;
+    cuscomplex*     intensities_p0                      = nullptr;
     
     cuscomplex*     mdrift                              = nullptr;
     cuscomplex*     mdrift_acc                          = nullptr;
@@ -93,6 +94,11 @@ public:
     cuscomplex*     mdrift_wl_vel_y_total               = nullptr;
     cuscomplex*     mdrift_wl_vel_z_total               = nullptr;
     cuscomplex*     mdrift_wl_we                        = nullptr;
+    cuscomplex*     panels_potential                    = nullptr;
+    cuscomplex*     panels_potential_p0                 = nullptr;
+    cuscomplex*     panels_pressure                     = nullptr;
+    cuscomplex*     panels_pressure_p0                  = nullptr;
+    cuscomplex*     potential_secord_force              = nullptr;
     cuscomplex*     qtf                                 = nullptr;
     int             qtf_body_heads_np                   = 0;
     cuscomplex*     qtf_body_pot_raddif_freq            = nullptr;
@@ -177,8 +183,6 @@ public:
     cuscomplex*     qtf_wl_vel_x_total_freq             = nullptr;
     cuscomplex*     qtf_wl_vel_y_total_freq             = nullptr;
     cuscomplex*     qtf_wl_vel_z_total_freq             = nullptr;
-    cuscomplex*     panels_potential                    = nullptr;
-    cuscomplex*     potential_secord_force              = nullptr;
     cuscomplex*     raos                                = nullptr;
     cusfloat*       structural_mass_p0                  = nullptr;
     cuscomplex*     sysmat                              = nullptr;

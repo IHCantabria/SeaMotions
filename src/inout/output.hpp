@@ -41,6 +41,12 @@
 #define  _DN_NODES_X            "nodes_x"
 #define  _DN_NODES_Y            "nodes_y"
 #define  _DN_NODES_Z            "nodes_z"
+#define  _DN_POT_INT            "potential"
+#define  _DN_POT_INT_MAG        "potential_mag"
+#define  _DN_POT_INT_PHA        "potential_pha"
+#define  _DN_PRESS_INT          "pressure"
+#define  _DN_PRESS_INT_MAG      "pressure_mag"
+#define  _DN_PRESS_INT_PHA      "pressure_pha"
 #define  _DN_QTF_DIFF_MAG       "qtf_diff_mag"
 #define  _DN_QTF_DIFF_PHA       "qtf_diff_pha"
 #define  _DN_QTF_DIFF_ACC_MAG   "qtf_diff_acc_mag"
@@ -68,6 +74,9 @@
 #define  _DN_RAO                "rao"
 #define  _DN_RAO_MAG            "rao_mag"
 #define  _DN_RAO_PHA            "rao_pha"
+#define  _DN_SRC_INT            "source_intensity"
+#define  _DN_SRC_INT_MAG        "source_intensity_mag"
+#define  _DN_SRC_INT_PHA        "source_intensity_pha"
 #define  _DN_STRUCT_MASS        "mass"
 #define  _DN_WEX                "wave_exciting"
 #define  _DN_WEX_MAG            "wave_exciting_mag"
@@ -76,6 +85,7 @@
 
 // Define datasets shape length
 const hsize_t _DS_EL_NP = 2;
+const hsize_t _DS_FD_NP = 3;
 const hsize_t _DS_HF_NP = 1;
 const hsize_t _DS_HM_NP = 5;
 const hsize_t _DS_MH_NP = 3;
@@ -89,6 +99,7 @@ struct Output
 private:
     // Define class attributes
     hsize_t         _ds_f[_DS_HF_NP]    = { 0 };
+    hsize_t         _ds_fd[_DS_FD_NP]   = { 0, 0, 0 };
     hsize_t         _ds_h[_DS_HF_NP]    = { 0 };
     hsize_t         _ds_hm[_DS_HM_NP]   = { 0, 0, 0, 0, 0 };
     hsize_t         _ds_mh[_DS_MH_NP]   = { 0, 0, 0 };
@@ -96,6 +107,7 @@ private:
     hsize_t         _ds_wx[_DS_WX_NP]   = { 0, 0, 0, 0 };
     Input*          _input              = nullptr;
     std::string     _results_fipath     = "";
+    int             _total_panels_np    = 0;
     
 public:
     // Define class attributes
@@ -127,6 +139,12 @@ public:
     void    save_mesh(
                                             void
                         );
+
+    void    save_fields_data(
+                                            int         freq_index,
+                                            std::string channel_name,
+                                            cuscomplex* source_intensity
+                                        );
 
     void    save_structural_mass( 
                                             void 

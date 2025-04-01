@@ -17,7 +17,8 @@ void    calculate_hydromechanic_coeffs_lin(
                                                 cuscomplex*     panels_pot,
                                                 cusfloat        ang_freq,
                                                 cusfloat*       added_mass,
-                                                cusfloat*       damping_rad
+                                                cusfloat*       damping_rad,
+                                                cuscomplex*     panels_pressure
                                             );
 
 
