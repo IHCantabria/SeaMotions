@@ -535,3 +535,18 @@ void PanelGeom::write(
     outfile.close( );
 
 }
+
+
+std::ostream& operator<< ( std::ostream& os, PanelGeom& panel )
+{
+    std::cout << "PANEL PROPERTIES:" << std::endl;
+    std::cout << " - PANEL COORDINATES: " << std::endl;
+    for ( int i=0; i<panel.num_nodes; i++ )
+    {
+        std::cout << "   -> X: " << panel.x[i] << " Y: " << panel.y[i] << " Z: " << panel.z[i] << std::endl;
+    }
+    std::cout << std::endl;
+
+    std::cout << " - NORMAL VECTOR:" << std::endl;
+    std::cout << "   -> X: " << panel.normal_vec[0] << " Y: " << panel.normal_vec[1] << " Z: " << panel.normal_vec[2] << std::endl;
+}

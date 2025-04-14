@@ -117,6 +117,8 @@ public:
     void    write( 
                                         std::string finame
                 );
+
+    friend std::ostream& operator<< ( std::ostream& os, PanelGeom& panel );
 };  
 
 #endif
