@@ -231,7 +231,7 @@ void    calculate_source_velocity_newman(
     }
 
     // Calculate Z local velocity
-    if ( std::abs( field_point_local[2] ) < 1e-3 )
+    if ( std::abs( field_point_local[2] ) < FIELD_POINT_LOCAL_TOL )
     {
         velocity_local[2] = 0.0;
     }

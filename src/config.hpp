@@ -53,6 +53,7 @@ constexpr cusfloat EPS_PRECISION = 1e-14;
 constexpr cusfloat EPS_PRECISION_ORDER = -14;
 #endif
 
-constexpr cusfloat ZEROTH_EPS = 1e-14;
+constexpr cusfloat ZEROTH_EPS               = 1E-14;
+constexpr cusfloat FIELD_POINT_LOCAL_TOL    = 1E-2;
 
 #endif
