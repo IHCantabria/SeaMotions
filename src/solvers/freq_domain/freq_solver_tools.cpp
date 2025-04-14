@@ -1663,31 +1663,15 @@ void    freq_domain_linear_solver(
                         );
         }
 
-        // Gather panels potential if any
-        if ( input->out_potential )
-        {
-            MPI_Gather( 
-                            sim_data->panels_potential,
-                            scl->num_rows * ( input->dofs_np + input->heads_np ),
-                            mpi_cuscomplex,
-                            sim_data->panels_potential_p0,
-                            scl->num_rows * ( input->dofs_np + input->heads_np ),
-                            mpi_cuscomplex,
-                            mpi_config->proc_root,
-                            MPI_COMM_WORLD
-                        );
-        }
-
         // Gather panels pressure if any
         if ( input->out_pressure )
         {
-            MPI_Gather( 
+            MPI_Reduce(
                             sim_data->panels_pressure,
-                            scl->num_rows * ( input->dofs_np + input->heads_np ),
-                            mpi_cuscomplex,
                             sim_data->panels_pressure_p0,
                             scl->num_rows * ( input->dofs_np + input->heads_np ),
                             mpi_cuscomplex,
+                            MPI_SUM,
                             mpi_config->proc_root,
                             MPI_COMM_WORLD
                         );
@@ -1763,7 +1747,7 @@ void    freq_domain_linear_solver(
                 output->save_fields_data( 
                                             i,
                                             _DN_POT_INT,
-                                            sim_data->panels_potential_p0
+                                            sim_data->panels_potential
                                         );
             }
 
