@@ -2,6 +2,7 @@
 *.obj
 *.exe
 *.pyc
+*.html
 advisor/
 /aux_tools/0_databases_abs_err
 /aux_tools/1_databases_rel_err
