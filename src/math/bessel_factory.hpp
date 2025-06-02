@@ -7,7 +7,10 @@
 
 
 // Define powers size
-constexpr std::size_t   NPOWER = 14;
+constexpr std::size_t   NPOWER  = 14;
+constexpr cusfloat      BRST    = 3.0;
+constexpr cusfloat      BRMI    = 3.75;
+constexpr cusfloat      BRMK    = 2.0;
 
 
 class BesselFactory
@@ -21,8 +24,156 @@ private:
     cusfloat _th0               = 0.0;
     cusfloat _th1               = 0.0;
     cusfloat _powers[NPOWER];
+    cusfloat _powers_modi[NPOWER];
+    cusfloat _powers_modk[NPOWER];
 
     // Define private methods
+    void _calculate_bessel_standard( const cusfloat x )
+    {
+        // Check branch selection 
+        if ( x < BRST )
+        {
+            // Calculate powers
+            this->_calculate_ascending_powers( x );
+
+            // Calculate first kind bessel functions
+            this->_calculate_j0_ascending( );
+            this->_calculate_j1_ascending( x );
+
+            // Calculate second king bessel functions
+            this->_calculate_y0_ascending( x );
+            this->_calculate_y1_ascending( x );
+
+            // Calculate struve functions
+            this->_calculate_struve0_ascending( );
+            this->_calculate_struve1_ascending( );
+        }
+        else
+        {
+            // Calculate powers
+            this->_calculate_inverse_powers( x );
+
+            // Calculate polynomial expansions
+            this->_calculate_polynomial_f0_th0( x );
+            this->_calculate_polynomial_f1_th1( x );
+            this->_calculate_rational_fraction_struve0( x );
+            this->_calculate_rational_fraction_struve1( );
+            
+            // Calculate first kind bessel functions
+            this->_calculate_j0_inverse( x );
+            this->_calculate_j1_inverse( x );
+
+            // Calculate second king bessel functions
+            this->_calculate_y0_inverse( x );
+            this->_calculate_y1_inverse( x );
+
+            // Calculate struve functions
+            this->_calculate_struve0_inverse( );
+            this->_calculate_struve1_inverse( );
+
+        }
+
+    }
+
+    void _calculate_bessel_modified( const cusfloat x )
+    {
+        // Calculate first order modified
+        if ( x < BRMI )
+        {
+            // Calculate ascending powers
+            this->_calculate_ascending_powers_modi( x );
+
+            // Calculate function values
+            this->_calculate_i0_ascending( );
+            this->_calculate_i1_ascending( x );
+
+        }
+        else
+        {
+            // Calculate inverse powers
+            this->_calculate_inverse_powers_modi( x );
+
+            // Calculate function values
+            this->_calculate_i0_inverse( x );
+            this->_calculate_i1_inverse( x );
+
+        }
+
+        // Calculate second order bessel modified
+        if ( x < BRMK )
+        {
+            // Calculate ascending powers
+            this->_calculate_ascending_powers_modk( x );
+
+            // Calculate function values
+            this->_calculate_k0_ascending( );
+            this->_calculate_k1_ascending( x );
+
+        }
+        else
+        {
+            // Calculate inverse powers
+            this->_calculate_inverse_powers_modk( x );
+
+            // Calculate function values
+            this->_calculate_k0_inverse( x );
+            this->_calculate_k1_inverse( x );
+
+        }
+
+    }
+
+    void _calculate_i0_ascending( void )
+    {
+        this->i0 = 1.0;
+        this->i0 += 3.5156229 * this->_powers_modi[2];
+        this->i0 += 3.0899424 * this->_powers_modi[4];
+        this->i0 += 1.2067492 * this->_powers_modi[6];
+        this->i0 += 0.2659732 * this->_powers_modi[8];
+        this->i0 += 0.0360768 * this->_powers_modi[10];
+        this->i0 += 0.0045813 * this->_powers_modi[12];
+    }
+
+    void _calculate_i0_inverse( const cusfloat x )
+    {
+        this->i0 = 0.39894228;
+        this->i0 += 0.01328592 * this->_powers_modi[1];
+        this->i0 += 0.00225319 * this->_powers_modi[2];
+        this->i0 -= 0.00157565 * this->_powers_modi[3];
+        this->i0 += 0.00916281 * this->_powers_modi[4];
+        this->i0 -= 0.02057706 * this->_powers_modi[5];
+        this->i0 += 0.02635537 * this->_powers_modi[6];
+        this->i0 -= 0.01647633 * this->_powers_modi[7];
+        this->i0 += 0.00392377 * this->_powers_modi[8];
+        this->i0 *= std::exp( x ) / std::sqrt( x );
+    }
+
+    void _calculate_i1_ascending( const cusfloat x )
+    {
+        this->i1 = 0.5;
+        this->i1 += 0.87890594 * this->_powers_modi[2];
+        this->i1 += 0.51498869 * this->_powers_modi[4];
+        this->i1 += 0.15084934 * this->_powers_modi[6];
+        this->i1 += 0.02658733 * this->_powers_modi[8];
+        this->i1 += 0.00301532 * this->_powers_modi[10];
+        this->i1 += 0.00032411 * this->_powers_modi[12];
+        this->i1 *= x;
+    }
+
+    void _calculate_i1_inverse( const cusfloat x )
+    {
+        this->i1 = 0.39894228;
+        this->i1 -= 0.03988024 * this->_powers_modi[1];
+        this->i1 -= 0.00362018 * this->_powers_modi[2];
+        this->i1 += 0.00163801 * this->_powers_modi[3];
+        this->i1 -= 0.01031555 * this->_powers_modi[4];
+        this->i1 += 0.02282967 * this->_powers_modi[5];
+        this->i1 -= 0.02895312 * this->_powers_modi[6];
+        this->i1 += 0.01787654 * this->_powers_modi[7];
+        this->i1 -= 0.00420059 * this->_powers_modi[8];
+        this->i1 *= std::exp( x ) / std::sqrt( x );
+    }
+
     void _calculate_j0_ascending( void )
     {
         this->j0 = 0.999999999;
@@ -54,6 +205,54 @@ private:
     void _calculate_j1_inverse( const cusfloat x )
     {
         this->j1 = 1 / std::sqrt( x ) * this->_f1 * std::cos( this->_th1 );
+    }
+
+    void _calculate_k0_ascending( void )
+    {
+        this->k0 = -std::log( this->_powers_modk[1] ) * this->i0;
+        this->k0 -= 0.57721566;
+        this->k0 += 0.42278420 * this->_powers_modk[2];
+        this->k0 += 0.23069756 * this->_powers_modk[4];
+        this->k0 += 0.03488590 * this->_powers_modk[6];
+        this->k0 += 0.00262698 * this->_powers_modk[8];
+        this->k0 += 0.00010750 * this->_powers_modk[10];
+        this->k0 += 0.00000740 * this->_powers_modk[12];
+    }
+
+    void _calculate_k0_inverse( const cusfloat x )
+    {
+        this->k0 = 1.25331414;
+        this->k0 -= 0.07832358 * this->_powers_modk[1];
+        this->k0 += 0.02189568 * this->_powers_modk[2];
+        this->k0 -= 0.01062446 * this->_powers_modk[3];
+        this->k0 += 0.00587872 * this->_powers_modk[4];
+        this->k0 -= 0.00251540 * this->_powers_modk[5];
+        this->k0 += 0.00053208 * this->_powers_modk[6];
+        this->k0 *= 1.0 / ( std::exp( x ) * std::sqrt( x ) );
+    }
+
+    void _calculate_k1_ascending( const cusfloat x )
+    {
+        this->k1 = x * std::log( this->_powers_modk[1] ) * this->i1 + 1.0;
+        this->k1 += 0.15443144 * this->_powers_modk[2];
+        this->k1 -= 0.67278579 * this->_powers_modk[4];
+        this->k1 -= 0.18156897 * this->_powers_modk[6];
+        this->k1 -= 0.01919402 * this->_powers_modk[8];
+        this->k1 -= 0.00110404 * this->_powers_modk[10];
+        this->k1 -= 0.00004686 * this->_powers_modk[12];
+        this->k1 /= x;
+    }
+
+    void _calculate_k1_inverse( const cusfloat x )
+    {
+        this->k1 = 1.25331414;
+        this->k1 += 0.23498619 * this->_powers_modk[1];
+        this->k1 -= 0.03655620 * this->_powers_modk[2];
+        this->k1 += 0.01504268 * this->_powers_modk[3];
+        this->k1 -= 0.00780353 * this->_powers_modk[4];
+        this->k1 += 0.00325614 * this->_powers_modk[5];
+        this->k1 -= 0.00068245 * this->_powers_modk[6];
+        this->k1 /= std::exp( x ) * std::sqrt( x );
     }
 
     void _calculate_y0_ascending( const cusfloat x )
@@ -100,7 +299,7 @@ private:
         this->struve0 -= 0.000876918 * this->_powers[11];
     }
 
-    void _calculate_struve0_inverse( const cusfloat x )
+    void _calculate_struve0_inverse( void )
     {
         this->struve0 = this->y0 + this->_sf0;
     }
@@ -115,7 +314,7 @@ private:
         this->struve1 -= 0.000207183 * this->_powers[12];
     }
 
-    void _calculate_struve1_inverse( const cusfloat x )
+    void _calculate_struve1_inverse( void )
     {
         this->struve1 = this->y1 + this->_sf1;
     }
@@ -156,7 +355,7 @@ private:
 
     void _calculate_ascending_powers( const cusfloat x )
     {
-        cusfloat pc = x / 3.0;
+        cusfloat pc = x / BRST;
 
         this->_powers[0] = 1.0;
         this->_powers[1] = pc;
@@ -167,9 +366,35 @@ private:
         }
     }
 
+    void _calculate_ascending_powers_modi( const cusfloat x )
+    {
+        cusfloat pc = x / BRMI;
+
+        this->_powers_modi[0] = 1.0;
+        this->_powers_modi[1] = pc;
+
+        for ( std::size_t i=2; i<NPOWER; i++ )
+        {
+            this->_powers_modi[i] = this->_powers_modi[i-1] * pc;
+        }
+    }
+
+    void _calculate_ascending_powers_modk( const cusfloat x )
+    {
+        cusfloat pc = x / BRMK;
+
+        this->_powers_modk[0] = 1.0;
+        this->_powers_modk[1] = pc;
+
+        for ( std::size_t i=2; i<NPOWER; i++ )
+        {
+            this->_powers_modk[i] = this->_powers_modk[i-1] * pc;
+        }
+    }
+
     void _calculate_inverse_powers( const cusfloat x )
     {
-        cusfloat pc = 3.0 / x;
+        cusfloat pc = BRST / x;
 
         this->_powers[0] = 1.0;
         this->_powers[1] = pc;
@@ -177,6 +402,32 @@ private:
         for ( std::size_t i=2; i<NPOWER; i++ )
         {
             this->_powers[i] = this->_powers[i-1] * pc;
+        }
+    }
+
+    void _calculate_inverse_powers_modi( const cusfloat x )
+    {
+        cusfloat pc = BRMI / x;
+
+        this->_powers_modi[0] = 1.0;
+        this->_powers_modi[1] = pc;
+
+        for ( std::size_t i=2; i<NPOWER; i++ )
+        {
+            this->_powers_modi[i] = this->_powers_modi[i-1] * pc;
+        }
+    }
+    
+    void _calculate_inverse_powers_modk( const cusfloat x )
+    {
+        cusfloat pc = BRMK / x;
+
+        this->_powers_modk[0] = 1.0;
+        this->_powers_modk[1] = pc;
+
+        for ( std::size_t i=2; i<NPOWER; i++ )
+        {
+            this->_powers_modk[i] = this->_powers_modk[i-1] * pc;
         }
     }
 
@@ -199,7 +450,7 @@ private:
 
     }
 
-    void _calculate_rational_fraction_struve1( const cusfloat x )
+    void _calculate_rational_fraction_struve1( void )
     {
         // Define local constans
         cusfloat a0 = 1.00000004;
@@ -220,8 +471,12 @@ private:
 
 public:
     // Define class public attributes
+    cusfloat i0         = 0.0;
+    cusfloat i1         = 0.0;
     cusfloat j0         = 0.0;
     cusfloat j1         = 0.0;
+    cusfloat k0         = 0.0;
+    cusfloat k1         = 0.0;
     cusfloat y0         = 0.0;
     cusfloat y1         = 0.0;
     cusfloat struve0    = 0.0;
@@ -233,50 +488,13 @@ public:
     // Define class methods
     void calculate_cheby( const cusfloat x )
     {
-        
-        // Check branch selection 
-        if ( x < 3 )
-        {
-            // Calculate powers
-            this->_calculate_ascending_powers( x );
+        this->_calculate_bessel_standard( x );
+    }
 
-            // Calculate first kind bessel functions
-            this->_calculate_j0_ascending( );
-            this->_calculate_j1_ascending( x );
-
-            // Calculate second king bessel functions
-            this->_calculate_y0_ascending( x );
-            this->_calculate_y1_ascending( x );
-
-            // Calculate struve functions
-            this->_calculate_struve0_ascending( );
-            this->_calculate_struve1_ascending( );
-        }
-        else
-        {
-            // Calculate powers
-            this->_calculate_inverse_powers( x );
-
-            // Calculate polynomial expansions
-            this->_calculate_polynomial_f0_th0( x );
-            this->_calculate_polynomial_f1_th1( x );
-            this->_calculate_rational_fraction_struve0( x );
-            this->_calculate_rational_fraction_struve1( x );
-            
-            // Calculate first kind bessel functions
-            this->_calculate_j0_inverse( x );
-            this->_calculate_j1_inverse( x );
-
-            // Calculate second king bessel functions
-            this->_calculate_y0_inverse( x );
-            this->_calculate_y1_inverse( x );
-
-            // Calculate struve functions
-            this->_calculate_struve0_inverse( x );
-            this->_calculate_struve0_inverse( x );
-
-        }
-
+    void calculate_series( const cusfloat x )
+    {
+        this->_calculate_bessel_standard( x );
+        this->_calculate_bessel_modified( x );
     }
 
 };
