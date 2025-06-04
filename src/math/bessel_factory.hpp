@@ -13,6 +13,11 @@ constexpr cusfloat      BRMI    = 3.75;
 constexpr cusfloat      BRMK    = 2.0;
 
 
+// Define macros to evaluate ascending and descending masks
+#define _ASDMASK( x ) ( 1 + x ) / 2.0
+#define _INVMASK( x ) ( 1 - x ) / 2.0
+
+
 class BesselFactory
 {
 private:
@@ -338,14 +343,14 @@ private:
 
     void _calculate_polynomial_f1_th1( const cusfloat x )
     {
-        this->_f1 += 0.79788459;
+        this->_f1 = 0.79788459;
         this->_f1 += 0.01662008 * this->_powers[2];
         this->_f1 -= 0.00187002 * this->_powers[4];
         this->_f1 += 0.00068519 * this->_powers[6];
         this->_f1 -= 0.00029440 * this->_powers[8];
         this->_f1 += 0.00006952 * this->_powers[10];
 
-        this->_th1 += x - 3.0*PI/4.0;
+        this->_th1 = x - 3.0*PI/4.0;
         this->_th1 += 0.12499895 * this->_powers[1];
         this->_th1 -= 0.00605240 * this->_powers[3];
         this->_th1 += 0.00135825 * this->_powers[5];
@@ -483,7 +488,7 @@ public:
     cusfloat struve1    = 0.0;
 
     // Define class constructors
-    BesselFactory( void) = default;
+    BesselFactory( void ) = default;
 
     // Define class methods
     void calculate_cheby( const cusfloat x )
@@ -493,6 +498,652 @@ public:
 
     void calculate_series( const cusfloat x )
     {
+        this->_calculate_bessel_standard( x );
+        this->_calculate_bessel_modified( x );
+    }
+
+};
+
+
+
+template<int N>
+class BesselFactoryVec
+{
+private:
+    // Define private attributes
+    MEMALINGR   cusfloat    _f0[N];
+    MEMALINGR   cusfloat    _f1[N];
+    MEMALINGR   cusfloat    _sf0[N];
+    MEMALINGR   cusfloat    _sf1[N];
+    MEMALINGR   cusfloat    _th0[N];
+    MEMALINGR   cusfloat    _th1[N];
+    MEMALINGR   int32_t     _mask_std[N];
+    MEMALINGR   int32_t     _mask_modi[N];
+    MEMALINGR   int32_t     _mask_modk[N];
+                int         _na = 0;
+                int         _ni = 0;
+    MEMALINGR   cusfloat    _powers[N*NPOWER];
+    MEMALINGR   cusfloat    _powers_inv[N*NPOWER];
+    MEMALINGR   cusfloat    _powers_modi[N*NPOWER];
+    MEMALINGR   cusfloat    _powers_modi_inv[N*NPOWER];
+    MEMALINGR   cusfloat    _powers_modk[N*NPOWER];
+    MEMALINGR   cusfloat    _powers_modk_inv[N*NPOWER];
+
+    // Define private methods
+    void _calculate_bessel_standard( cusfloat* x )
+    {
+        // Calculate base powers
+        this->_calculate_ascending_powers( x );
+        this->_calculate_inverse_powers( x );
+
+        // Calculate polynomial expansions
+        this->_calculate_polynomial_f0_th0( x );
+        this->_calculate_polynomial_f1_th1( x );
+        this->_calculate_rational_fraction_struve0( x );
+        this->_calculate_rational_fraction_struve1( );
+
+        // Calculate first kind bessel functions
+        this->_calculate_j0( x );
+        this->_calculate_j1( x );
+
+        // Calculate second king bessel functions
+        this->_calculate_y0( x );
+        this->_calculate_y1( x );
+
+        // Calculate struve functions
+        this->_calculate_struve0( x );
+        this->_calculate_struve1( x );
+
+    }
+
+    void _calculate_bessel_modified( cusfloat* x )
+    {
+        // Calculate powers
+        this->_calculate_ascending_powers_modi( x );
+        this->_calculate_ascending_powers_modk( x );
+        this->_calculate_inverse_powers_modi( x );
+        this->_calculate_inverse_powers_modk( x );
+
+        // Calculate first order modified
+        this->_calculate_i0( x );
+        this->_calculate_i1( x );
+
+        this->_calculate_k0( x );
+        this->_calculate_k1( x );
+
+    }
+
+    void _calculate_i0( cusfloat* x )
+    {
+        for ( int i=0; i<N; i++ )
+        {
+            this->i0[i] =   _ASDMASK( this->_mask_modi[i] )
+                            *
+                            (
+                                1.0
+                                + 3.5156229 * this->_powers_modi[2*N+i]
+                                + 3.0899424 * this->_powers_modi[4*N+i]
+                                + 1.2067492 * this->_powers_modi[6*N+i]
+                                + 0.2659732 * this->_powers_modi[8*N+i]
+                                + 0.0360768 * this->_powers_modi[10*N+i]
+                                + 0.0045813 * this->_powers_modi[12*N+i]
+                            )
+                            +
+                            _INVMASK( this->_mask_modi[i] )
+                            *
+                            (
+                                0.39894228
+                                + 0.01328592 * this->_powers_modi_inv[1*N+i]
+                                + 0.00225319 * this->_powers_modi_inv[2*N+i]
+                                - 0.00157565 * this->_powers_modi_inv[3*N+i]
+                                + 0.00916281 * this->_powers_modi_inv[4*N+i]
+                                - 0.02057706 * this->_powers_modi_inv[5*N+i]
+                                + 0.02635537 * this->_powers_modi_inv[6*N+i]
+                                - 0.01647633 * this->_powers_modi_inv[7*N+i]
+                                + 0.00392377 * this->_powers_modi_inv[8*N+i]
+                            ) * std::exp( x[i] ) / std::sqrt( x[i] );
+
+        }
+    }
+
+    void _calculate_i1( cusfloat* x )
+    {
+        for ( int i=0; i<N; i++ )
+        {
+            this->i1[i] =   _ASDMASK( this->_mask_modi[i] )
+                            *
+                            (
+                                0.5
+                                + 0.87890594 * this->_powers_modi[2*N+i]
+                                + 0.51498869 * this->_powers_modi[4*N+i]
+                                + 0.15084934 * this->_powers_modi[6*N+i]
+                                + 0.02658733 * this->_powers_modi[8*N+i]
+                                + 0.00301532 * this->_powers_modi[10*N+i]
+                                + 0.00032411 * this->_powers_modi[12*N+i]
+                            ) * x[i]
+                            +
+                            _INVMASK( this->_mask_modi[i] )
+                            *
+                            (
+                                0.39894228
+                                - 0.03988024 * this->_powers_modi_inv[1*N+i]
+                                - 0.00362018 * this->_powers_modi_inv[2*N+i]
+                                + 0.00163801 * this->_powers_modi_inv[3*N+i]
+                                - 0.01031555 * this->_powers_modi_inv[4*N+i]
+                                + 0.02282967 * this->_powers_modi_inv[5*N+i]
+                                - 0.02895312 * this->_powers_modi_inv[6*N+i]
+                                + 0.01787654 * this->_powers_modi_inv[7*N+i]
+                                - 0.00420059 * this->_powers_modi_inv[8*N+i]
+                                
+                            ) * std::exp( x[i] ) / std::sqrt( x[i] );
+
+        }
+    }
+
+    void _calculate_j0( cusfloat* x )
+    {
+        for ( int i=0; i<N; i++ )
+        {
+            this->j0[i] =  _ASDMASK( this->_mask_std[i] )
+                            * 
+                            (
+                                0.999999999
+                                - 2.249999879 * this->_powers[2*N+i]
+                                + 1.265623060 * this->_powers[4*N+i]
+                                - 0.316394552 * this->_powers[6*N+i]
+                                + 0.044460948 * this->_powers[8*N+i]
+                                - 0.003954479 * this->_powers[10*N+i]
+                                + 0.000212950 * this->_powers[12*N+i]
+                            )
+                            +
+                            _INVMASK( this->_mask_std[i] )
+                            *
+                            (
+                                1 / std::sqrt( x[i] ) * this->_f0[i] * std::cos( this->_th0[i] )
+                            );
+
+        }
+    }
+
+    void _calculate_j1( cusfloat* x )
+    {
+        for ( int i=0; i<N; i++ )
+        {
+            this->j1[i]     =   _ASDMASK( this->_mask_std[i] )
+                                *
+                                (
+                                    0.500000000
+                                    - 0.562499992 * this->_powers[2*N+i]
+                                    + 0.210937377 * this->_powers[4*N+i]
+                                    - 0.039550040 * this->_powers[6*N+i]
+                                    + 0.004447331 * this->_powers[8*N+i]
+                                    - 0.000330547 * this->_powers[10*N+i]
+                                    + 0.000015525 * this->_powers[12*N+i]
+                                ) * x[i]
+                                +
+                                _INVMASK( this->_mask_std[i] )
+                                *
+                                (
+                                    1 / std::sqrt( x[i] ) * this->_f1[i] * std::cos( this->_th1[i] )
+                                );
+
+        }
+    }
+
+    void _calculate_k0( cusfloat* x )
+    {
+        for ( int i=0; i<N; i++ )
+        {
+            this->k0[i]     =   _ASDMASK( this->_mask_modk[i] )
+                                *
+                                (
+                                    -std::log( this->_powers_modk[1*N+i] ) * this->i0[i]
+                                    - 0.57721566
+                                    + 0.42278420 * this->_powers_modk[2*N+i]
+                                    + 0.23069756 * this->_powers_modk[4*N+i]
+                                    + 0.03488590 * this->_powers_modk[6*N+i]
+                                    + 0.00262698 * this->_powers_modk[8*N+i]
+                                    + 0.00010750 * this->_powers_modk[10*N+i]
+                                    + 0.00000740 * this->_powers_modk[12*N+i]
+                                )
+                                *
+                                _INVMASK( this->_mask_modk[i] )
+                                *
+                                (
+                                    1.25331414
+                                    - 0.07832358 * this->_powers_modk_inv[1*N+i]
+                                    + 0.02189568 * this->_powers_modk_inv[2*N+i]
+                                    - 0.01062446 * this->_powers_modk_inv[3*N+i]
+                                    + 0.00587872 * this->_powers_modk_inv[4*N+i]
+                                    - 0.00251540 * this->_powers_modk_inv[5*N+i]
+                                    + 0.00053208 * this->_powers_modk_inv[6*N+i]
+
+                                ) * 1.0 / ( std::exp( x[i] ) * std::sqrt( x[i] ) );
+
+        }
+    }
+
+    void _calculate_k1( cusfloat* x )
+    {
+        for ( int i=0; i<N; i++ )
+        {
+            this->k1[i]     = 
+                                _ASDMASK( this->_mask_modk[i] )
+                                *
+                                (
+                                    x[i] * std::log( this->_powers_modk[1*N+i] ) * this->i1[i] + 1.0
+                                    + 0.15443144 * this->_powers_modk[2*N+i]
+                                    - 0.67278579 * this->_powers_modk[4*N+i]
+                                    - 0.18156897 * this->_powers_modk[6*N+i]
+                                    - 0.01919402 * this->_powers_modk[8*N+i]
+                                    - 0.00110404 * this->_powers_modk[10*N+i]
+                                    - 0.00004686 * this->_powers_modk[12*N+i]
+                                ) / x[i]
+                                *
+                                _INVMASK( this->_mask_modk[i] )
+                                *
+                                (
+                                    1.25331414
+                                    + 0.23498619 * this->_powers_modk_inv[1*N+i]
+                                    - 0.03655620 * this->_powers_modk_inv[2*N+i]
+                                    + 0.01504268 * this->_powers_modk_inv[3*N+i]
+                                    - 0.00780353 * this->_powers_modk_inv[4*N+i]
+                                    + 0.00325614 * this->_powers_modk_inv[5*N+i]
+                                    - 0.00068245 * this->_powers_modk_inv[6*N+i]
+                                ) / std::exp( x[i] ) * std::sqrt( x[i] );
+
+        }
+    }
+
+    void _calculate_y0( cusfloat* x )
+    {
+        for ( int i=0; i<N; i++ )
+        {
+            this->y0[i] =   _ASDMASK( this->_mask_std[i] )
+                            *
+                            (
+                                ( 2.0 / PI ) * std::log( x[i] / 2.0 ) * this->j0[i]
+                                + 0.367466907
+                                + 0.605593797 * this->_powers[2*N+i]
+                                - 0.743505078 * this->_powers[4*N+i]
+                                + 0.253005481 * this->_powers[6*N+i]
+                                - 0.042619616 * this->_powers[8*N+i]
+                                + 0.004285691 * this->_powers[10*N+i]
+                                - 0.000250716 * this->_powers[12*N+i]
+                            )
+                            +
+                            _INVMASK( this->_mask_std[i] )
+                            *
+                            (
+                                1.0 / std::sqrt( x[i] ) * this->_f0[i] * std::sin( this->_th0[i] )
+                            );
+        }
+    }
+
+    void _calculate_y1( cusfloat* x )
+    {
+        for ( int i=0; i<N; i++ )
+        {
+            this->y1[i] =   _ASDMASK( this->_mask_std[i] )
+                            *
+                            (
+                                ( 2.0 / PI ) * ( std::log( x[i] / 2.0 ) * this->j1[i] - 1 / x[i] )
+                                + 0.073735531 * this->_powers[1*N+i]
+                                + 0.722769344 * this->_powers[3*N+i]
+                                - 0.438896337 * this->_powers[5*N+i]
+                                + 0.104320251 * this->_powers[7*N+i]
+                                - 0.013637596 * this->_powers[9*N+i]
+                                + 0.001125970 * this->_powers[11*N+i]
+                                - 0.000056455 * this->_powers[13*N+i]
+                            )
+                            +
+                            _INVMASK( this->_mask_std[i] )
+                            *
+                            (
+                                1.0 / std::sqrt( x[i] ) * this->_f1[i] * std::sin( this->_th1[i] )
+                            );
+
+        }
+    }
+
+    void _calculate_struve0( cusfloat* x )
+    {
+        for ( int i=0; i<N; i++ )
+        {
+            this->struve0[i]    =   _ASDMASK( this->_mask_std[i] )
+                                    *
+                                    (
+                                        1.909859164  * this->_powers[1*N+i]
+                                        - 1.909855001 * this->_powers[3*N+i]
+                                        + 0.687514637 * this->_powers[5*N+i]
+                                        - 0.126164557 * this->_powers[7*N+i]
+                                        + 0.013828813 * this->_powers[9*N+i]
+                                        - 0.000876918 * this->_powers[11*N+i]
+                                    )
+                                    +
+                                    _INVMASK( this->_mask_std[i] )
+                                    *
+                                    (
+                                        this->y0[i] + this->_sf0[i]
+                                    );
+
+        }
+    }
+
+    void _calculate_struve1( cusfloat* x )
+    {
+        for ( int i=0; i<N; i++ )
+        {
+            this->struve1[i] =  _ASDMASK( this->_mask_std[i] )
+                                *
+                                (
+                                    1.909859286  * this->_powers[2*N+i]
+                                    - 1.145914713 * this->_powers[4*N+i]
+                                    + 0.294656958 * this->_powers[6*N+i]
+                                    - 0.042070508 * this->_powers[8*N+i]
+                                    + 0.003785727 * this->_powers[10*N+i]
+                                    - 0.000207183 * this->_powers[12*N+i]
+                                )
+                                +
+                                _INVMASK( this->_mask_std[i] )
+                                *
+                                (
+                                    this->y1[i] + this->_sf1[i]
+                                );
+
+        }
+    }
+
+    void _calculate_polynomial_f0_th0( cusfloat* x )
+    {
+        for ( int i=0; i<N; i++ )
+        {
+            this->_f0[i]    =   (
+                                    0.79788454
+                                    - 0.00553897 * this->_powers_inv[2*N+i]
+                                    + 0.00099336 * this->_powers_inv[4*N+i]
+                                    - 0.00044346 * this->_powers_inv[6*N+i]
+                                    + 0.00020445 * this->_powers_inv[8*N+i]
+                                    - 0.00004959 * this->_powers_inv[10*N+i]
+                                );
+    
+            this->_th0[i] =     (
+                                    x[i] - PI/4.0
+                                    - 0.04166592 * this->_powers_inv[1*N+i]
+                                    + 0.00239399 * this->_powers_inv[3*N+i]
+                                    - 0.00073984 * this->_powers_inv[5*N+i]
+                                    + 0.00031099 * this->_powers_inv[7*N+i]
+                                    - 0.00007605 * this->_powers_inv[9*N+i]
+                                );
+        }
+    }
+
+    void _calculate_polynomial_f1_th1( cusfloat* x )
+    {
+        for ( int i=0; i<N; i++ )
+        {
+            this->_f1[i]    =  (
+                                    0.79788459
+                                    + 0.01662008 * this->_powers_inv[2*N+i]
+                                    - 0.00187002 * this->_powers_inv[4*N+i]
+                                    + 0.00068519 * this->_powers_inv[6*N+i]
+                                    - 0.00029440 * this->_powers_inv[8*N+i]
+                                    + 0.00006952 * this->_powers_inv[10*N+i]
+                                );
+    
+            this->_th1[i]   =   (
+                                    x[i] - 3.0*PI/4.0
+                                    + 0.12499895 * this->_powers_inv[1*N+i]
+                                    - 0.00605240 * this->_powers_inv[3*N+i]
+                                    + 0.00135825 * this->_powers_inv[5*N+i]
+                                    - 0.00049616 * this->_powers_inv[7*N+i]
+                                    + 0.00011531 * this->_powers_inv[9*N+i]
+                                );
+
+        }
+    }
+
+    void _calculate_ascending_powers( cusfloat* x )
+    {
+        cusfloat pc[N];
+        for ( int i=0; i<N; i++ )
+        {
+            pc[i] = x[i] / BRST;
+        }
+
+        for ( int i=0; i<N; i++ )
+        {
+            this->_powers[i]        = 1.0;
+            this->_powers[1*N+i]    = pc[i];
+        }
+        
+        for ( std::size_t i=2; i<NPOWER; i++ )
+        {
+            for ( int j=0; j<N; j++ )
+            {
+                this->_powers[i*N+j] = this->_powers[(i-1)*N+j] * pc[j];
+            }
+        }
+    }
+
+    void _calculate_ascending_powers_modi( cusfloat* x )
+    {
+        cusfloat pc[N];
+        for ( int i=0; i<N; i++ )
+        {
+            pc[i] = x[i] / BRMI;
+        }
+
+        for ( int i=0; i<N; i++ )
+        {
+            this->_powers_modi[i]        = 1.0;
+            this->_powers_modi[1*N+i]    = pc[i];
+        }
+        
+        for ( std::size_t i=2; i<NPOWER; i++ )
+        {
+            for ( int j=0; j<N; j++ )
+            {
+                this->_powers_modi[i*N+j] = this->_powers_modi[(i-1)*N+j] * pc[j];
+            }
+        }
+    }
+
+    void _calculate_ascending_powers_modk( cusfloat* x )
+    {
+        cusfloat pc[N];
+        for ( int i=0; i<N; i++ )
+        {
+            pc[i] = x[i] / BRMK;
+        }
+
+        for ( int i=0; i<N; i++ )
+        {
+            this->_powers_modk[i]        = 1.0;
+            this->_powers_modk[1*N+i]    = pc[i];
+        }
+        
+        for ( std::size_t i=2; i<NPOWER; i++ )
+        {
+            for ( int j=0; j<N; j++ )
+            {
+                this->_powers_modk[i*N+j] = this->_powers_modk[(i-1)*N+j] * pc[j];
+            }
+        }
+    }
+
+    void _calculate_inverse_powers( cusfloat* x )
+    {
+        cusfloat pc[N];
+        for ( int i=0; i<N; i++ )
+        {
+            pc[i] = BRST / x[i];
+        }
+
+        for ( int i=0; i<N; i++ )
+        {
+            this->_powers_inv[i]        = 1.0;
+            this->_powers_inv[1*N+i]    = pc[i];
+        }
+        
+        for ( std::size_t i=2; i<NPOWER; i++ )
+        {
+            for ( int j=0; j<N; j++ )
+            {
+                this->_powers_inv[i*N+j] = this->_powers_inv[(i-1)*N+j] * pc[j];
+            }
+        }
+    }
+
+    void _calculate_inverse_powers_modi( cusfloat* x )
+    {
+        cusfloat pc[N];
+        for ( int i=0; i<N; i++ )
+        {
+            pc[i] = BRMI / x[i];
+        }
+
+        for ( int i=0; i<N; i++ )
+        {
+            this->_powers_modi_inv[i]        = 1.0;
+            this->_powers_modi_inv[1*N+i]    = pc[i];
+        }
+        
+        for ( std::size_t i=2; i<NPOWER; i++ )
+        {
+            for ( int j=0; j<N; j++ )
+            {
+                this->_powers_modi_inv[i*N+j] = this->_powers_modi_inv[(i-1)*N+j] * pc[j];
+            }
+        }
+    }
+    
+    void _calculate_inverse_powers_modk( cusfloat* x )
+    {
+        cusfloat pc[N];
+        for ( int i=0; i<N; i++ )
+        {
+            pc[i] = BRMK / x[i];
+        }
+
+        for ( int i=0; i<N; i++ )
+        {
+            this->_powers_modk_inv[i]        = 1.0;
+            this->_powers_modk_inv[1*N+i]    = pc[i];
+        }
+        
+        for ( std::size_t i=2; i<NPOWER; i++ )
+        {
+            for ( int j=0; j<N; j++ )
+            {
+                this->_powers_modk_inv[i*N+j] = this->_powers_modk_inv[(i-1)*N+j] * pc[j];
+            }
+        }
+    }
+
+    void _calculate_rational_fraction_struve0( cusfloat* x )
+    {
+        // Define local constans
+        cusfloat a0 = 0.99999906;
+        cusfloat a1 = 4.77228920;
+        cusfloat a2 = 3.85542044;
+        cusfloat a3 = 0.32303607;
+
+        cusfloat b1 = 4.88331068;
+        cusfloat b2 = 4.28957333;
+        cusfloat b3 = 0.52120508;
+
+        // Compute struve factor
+        cusfloat c0 = 0.0;
+        cusfloat c1 = 0.0;
+
+        for ( int i=0; i<N; i++ )
+        {
+            c0              = 2 * ( a0 + a1 * this->_powers_inv[2*N+i] +a2 * this->_powers_inv[4*N+i] + a3 * this->_powers_inv[6*N+i] );
+            c1              = PI * x[i] * ( 1 + b1 * this->_powers_inv[2*N+i] + b2 * this->_powers_inv[4*N+i] + b3 * this->_powers_inv[6*N+i] );
+            this->_sf0[i]   = c0 / c1;
+
+        }
+
+    }
+
+    void _calculate_rational_fraction_struve1( void )
+    {
+        // Define local constans
+        cusfloat a0 = 1.00000004;
+        cusfloat a1 = 3.92205313;
+        cusfloat a2 = 2.64893033;
+        cusfloat a3 = 0.27450895;
+
+        cusfloat b1 = 3.81095112;
+        cusfloat b2 = 2.26216956;
+        cusfloat b3 = 0.10885141;
+
+        // Compute struve factor
+        cusfloat c0 = 0.0;
+        cusfloat c1 = 0.0;
+        for ( int i=0; i<N; i++ )
+        {
+            c0              = 2 * ( a0 + a1 * this->_powers_inv[2*N+i] + a2 * this->_powers_inv[4*N+i] + a3 * this->_powers_inv[6*N+i] );
+            c1              = PI * ( 1 + b1 * this->_powers_inv[2*N+i] + b2 * this->_powers_inv[4*N+i] + b3 * this->_powers_inv[6*N+i] );
+            this->_sf1[i]   = c0 / c1;
+        }
+
+    }
+
+    void _distribute_data_standard( cusfloat* x )
+    {
+        for ( int i=0; i<N; i++ )
+        {
+            this->_mask_std[i] = ( x[i] < BRST ) ? 1: -1;
+        }
+    }
+
+    void _distribute_data_modified_i( cusfloat* x )
+    {
+        for ( int i=0; i<N; i++ )
+        {
+            this->_mask_modi[i] = ( x[i] < BRMI ) ? 1: -1;
+        }
+    }
+
+    void _distribute_data_modified_k( cusfloat* x )
+    {
+        for ( int i=0; i<N; i++ )
+        {
+            this->_mask_modk[i] = ( x[i] < BRMK ) ? 1: -1;
+        }
+    }
+
+public:
+    // Define class public attributes
+    cusfloat i0[N];
+    cusfloat i1[N];
+    cusfloat j0[N];
+    cusfloat j1[N];
+    cusfloat k0[N];
+    cusfloat k1[N];
+    cusfloat y0[N];
+    cusfloat y1[N];
+    cusfloat struve0[N];
+    cusfloat struve1[N];
+
+    // Define class constructors
+    BesselFactoryVec( void ) = default;
+
+    // Define class methods
+    void calculate_cheby( cusfloat* x )
+    {
+        this->_distribute_data_standard( x );
+        this->_calculate_bessel_standard( x );
+    }
+
+    void calculate_series( cusfloat* x )
+    {
+        this->_distribute_data_standard( x );
+        this->_distribute_data_modified_i( x );
+        this->_distribute_data_modified_k( x );
+
         this->_calculate_bessel_standard( x );
         this->_calculate_bessel_modified( x );
     }
