@@ -8,7 +8,7 @@ set(
         ${CMAKE_SOURCE_DIR}/src/containers/mpi_config.hpp
         ${CMAKE_SOURCE_DIR}/src/containers/mpi_config.cpp
         ${CMAKE_SOURCE_DIR}/src/containers/panel_geom.hpp
-        ${CMAKE_SOURCE_DIR}/src/containers/panel_geom.cpp
+        ${CMAKE_SOURCE_DIR}/src/containers/panel_geom.txx
         ${CMAKE_SOURCE_DIR}/src/containers/panel_geom_list.hpp
         ${CMAKE_SOURCE_DIR}/src/containers/performance_stats.hpp
         ${CMAKE_SOURCE_DIR}/src/containers/performance_stats.cpp
@@ -58,6 +58,8 @@ set(
         ${CMAKE_SOURCE_DIR}/src/green/inf_depth_coeffs/R11_dX.cpp
         ${CMAKE_SOURCE_DIR}/src/green/inf_depth_coeffs/R11.hpp
         ${CMAKE_SOURCE_DIR}/src/green/inf_depth_coeffs/R11.cpp
+        ${CMAKE_SOURCE_DIR}/src/green/inf_depth_coeffs/R44_dX.hpp
+        ${CMAKE_SOURCE_DIR}/src/green/inf_depth_coeffs/R44.hpp
         ${CMAKE_SOURCE_DIR}/src/green/inf_depth_coeffs/R11A_dX.hpp
         ${CMAKE_SOURCE_DIR}/src/green/inf_depth_coeffs/R11A_dX.cpp
         ${CMAKE_SOURCE_DIR}/src/green/inf_depth_coeffs/R11B_dX.hpp
@@ -79,6 +81,10 @@ set(
 # Pack green module files
 set(
         green_module_files
+        ${CMAKE_SOURCE_DIR}/src/green/chebyshev_evaluator_base.hpp
+        ${CMAKE_SOURCE_DIR}/src/green/chebyshev_evaluator_interface.hpp
+        ${CMAKE_SOURCE_DIR}/src/green/chebyshev_traits_macros.hpp
+        ${CMAKE_SOURCE_DIR}/src/green/chebyshev_traits.hpp
         ${CMAKE_SOURCE_DIR}/src/green/chebyshev_inf_depth.hpp
         ${CMAKE_SOURCE_DIR}/src/green/common.hpp
         ${CMAKE_SOURCE_DIR}/src/green/common.cpp
@@ -94,10 +100,14 @@ set(
         ${CMAKE_SOURCE_DIR}/src/green/pulsating_fin_depth_cheby.cpp
         ${CMAKE_SOURCE_DIR}/src/green/pulsating_inf_depth_cheby.hpp
         ${CMAKE_SOURCE_DIR}/src/green/pulsating_inf_depth_cheby.cpp
+        ${CMAKE_SOURCE_DIR}/src/green/pulsating_inf_depth_cheby_v2.hpp
+        ${CMAKE_SOURCE_DIR}/src/green/pulsating_inf_depth_cheby_v2.cpp
         ${CMAKE_SOURCE_DIR}/src/green/pulsating_inf_depth_series.hpp
         ${CMAKE_SOURCE_DIR}/src/green/pulsating_inf_depth_series.cpp
         ${CMAKE_SOURCE_DIR}/src/green/pulsating_inf_depth.hpp
         ${CMAKE_SOURCE_DIR}/src/green/pulsating_inf_depth.cpp
+        ${CMAKE_SOURCE_DIR}/src/green/pulsating_inf_depth_v2.hpp
+        ${CMAKE_SOURCE_DIR}/src/green/pulsating_inf_depth_v2.cpp
         ${CMAKE_SOURCE_DIR}/src/green/source.hpp
         ${CMAKE_SOURCE_DIR}/src/green/source.cpp
         ${green_findepth_coeffs_src}
@@ -156,8 +166,8 @@ set(
         math_module_files
         ${CMAKE_SOURCE_DIR}/src/math/chebyshev.hpp
         ${CMAKE_SOURCE_DIR}/src/math/chebyshev.cpp
+        ${CMAKE_SOURCE_DIR}/src/math/chebyshev.txx
         ${CMAKE_SOURCE_DIR}/src/math/cusvector.hpp
-        ${CMAKE_SOURCE_DIR}/src/math/cusvector.txx
         ${CMAKE_SOURCE_DIR}/src/math/euler_transforms.hpp
         ${CMAKE_SOURCE_DIR}/src/math/euler_transforms.txx
         ${CMAKE_SOURCE_DIR}/src/math/gauss.hpp
@@ -177,6 +187,7 @@ set(
         ${CMAKE_SOURCE_DIR}/src/math/special_math.cpp
         ${CMAKE_SOURCE_DIR}/src/math/topology.hpp
         ${CMAKE_SOURCE_DIR}/src/math/topology.cpp
+        ${CMAKE_SOURCE_DIR}/src/math/topology.txx
     )
 
 # Pack mesh module files
