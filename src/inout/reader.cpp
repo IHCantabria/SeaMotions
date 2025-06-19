@@ -221,7 +221,7 @@ void read_body(
                                     mesh_fipath_.string( ),
                                     ss.str( ),
                                     body->cog,
-                                    false,
+                                    body->is_fix,
                                     LID_PANEL_CODE
                                 );
 
@@ -232,7 +232,8 @@ void read_body(
 
         body->mesh  = new Mesh(
                                     meshes,
-                                    body->cog
+                                    body->cog,
+                                    body->is_fix
                                 );
 
         // Delete body and lid meshes
