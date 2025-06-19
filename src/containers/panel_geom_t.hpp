@@ -13,39 +13,41 @@ struct PanelGeomT
     
 private:
     // Define class attributes
-    bool                    _is_source_nodes        = false;
-    cusfloat*               _source_normal_vec      = nullptr;
-    cusfloat*               _source_positions       = nullptr;
+    bool                    _is_source_nodes                = false;
+    cusfloat*               _source_normal_vec              = nullptr;
+    cusfloat*               _source_positions               = nullptr;
 
 public:
     // Define class attributes
-    cusfloat                area                    = 0.0;
-    cusfloat                body_cog[3]             = { 0.0, 0.0, 0.0 };
-    cusfloat                center[3]               = {0.0, 0.0, 0.0};
-    cusfloat                center_wl[3]            = {0.0, 0.0, 0.0};
+    cusfloat                area                            = 0.0;
+    cusfloat                body_cog[3]                     = { 0.0, 0.0, 0.0 };
+    cusfloat                center[3]                       = {0.0, 0.0, 0.0};
+    cusfloat                center_wl[3]                    = {0.0, 0.0, 0.0};
     cusfloat                global_to_local_mat[9];
-    cusfloat                is_move_f               = 0.0;
-    bool                    is_wl_boundary          = false;
-    cusfloat                len_wl                  = 0;
-    cusfloat                length                  = 0.0;
+    cusfloat                gauss_points_global[3*NUM_GP2];
+    cusfloat                jac_det_gauss_points[NUM_GP2];
+    cusfloat                is_move_f                       = 0.0;
+    bool                    is_wl_boundary                  = false;
+    cusfloat                len_wl                          = 0;
+    cusfloat                length                          = 0.0;
     cusfloat                local_to_global_mat[9];
-    static constexpr int    MAX_PANEL_NODES         = 4;
-    cusfloat                normal_vec[6]           = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
-    cusfloat                normal_vec_wl[6]        = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
-    static constexpr int    num_nodes               = 0;
-    cusfloat                sysref_centre[3]        = { 0.0, 0.0, 0.0 };
-    int                     type                    = 0;
-    int                     wl_nodes[2]             = { 0, 0 };
+    static constexpr int    MAX_PANEL_NODES                 = 4;
+    cusfloat                normal_vec[6]                   = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+    cusfloat                normal_vec_wl[6]                = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+    static constexpr int    num_nodes                       = 0;
+    cusfloat                sysref_centre[3]                = { 0.0, 0.0, 0.0 };
+    int                     type                            = 0;
+    int                     wl_nodes[2]                     = { 0, 0 };
     cusfloat                x[MAX_PANEL_NODES];
-    cusfloat                x_wl[2]                 = { 0.0, 0.0 };
+    cusfloat                x_wl[2]                         = { 0.0, 0.0 };
     cusfloat                xl[MAX_PANEL_NODES];
     cusfloat                xlc[MAX_PANEL_NODES];
     cusfloat                y[MAX_PANEL_NODES];
-    cusfloat                y_wl[2]                 = { 0.0, 0.0 };
+    cusfloat                y_wl[2]                         = { 0.0, 0.0 };
     cusfloat                yl[MAX_PANEL_NODES];
     cusfloat                ylc[MAX_PANEL_NODES];
     cusfloat                z[MAX_PANEL_NODES];
-    cusfloat                z_wl[2]                 = { 0.0, 0.0 };
+    cusfloat                z_wl[2]                         = { 0.0, 0.0 };
     cusfloat                zl[MAX_PANEL_NODES];
     cusfloat                zlc[MAX_PANEL_NODES];
 
@@ -67,64 +69,69 @@ public:
 
     // Add method to calculate the geometric propertiess
     void    calculate_properties(       
-                                        cusfloat*   cog
+                                                    cusfloat*   cog
                                 );
 
     void    calculate_source_nodes(
-                                        int         poly_order,
-                                        cusfloat*   cog
+                                                    int         poly_order,
+                                                    cusfloat*   cog
                                     );
 
+    template<int NGP>
+    void    calculate_integration_properties(
+                                                    void
+                                        );
+
     void    get_node_position( 
-                                        int         num_node, 
-                                        cusfloat*   node_pos
+                                                    int         num_node, 
+                                                    cusfloat*   node_pos
                                );
 
     void    get_panel_xy_proj( 
-                                        PanelGeomT*  new_panel 
+                                                    PanelGeomT*  new_panel 
                             );
 
     void    get_source_nodes_data(
-                                        cusfloat*&  position,
-                                        cusfloat*&  normals_vec
+                                                    cusfloat*&  position,
+                                                    cusfloat*&  normals_vec
                                 );
 
     void    local_coords_from_z_proj(
-                                        cusfloat    x,
-                                        cusfloat    y,
-                                        cusfloat&   xi,
-                                        cusfloat&   eta
+                                                    cusfloat    x,
+                                                    cusfloat    y,
+                                                    cusfloat&   xi,
+                                                    cusfloat&   eta
                                     );
 
     void    get_node_local_position(   
-                                        int          num_node, 
-                                        cusfloat*    node_pos
+                                                    int          num_node, 
+                                                    cusfloat*    node_pos
                                    );
 
     void    get_node_local_position_c(   
-                                        int          num_node, 
-                                        cusfloat*    node_pos
+                                                    int          num_node, 
+                                                    cusfloat*    node_pos
                                     );
 
     int     is_inside(                  
-                                        cusfloat*   field_point
+                                                    cusfloat*   field_point
                         );
 
     void    local_to_global( 
-                                        cusfloat    xi, 
-                                        cusfloat    eta,
-                                        cusfloat*   global_pos
+                                                    cusfloat    xi, 
+                                                    cusfloat    eta,
+                                                    cusfloat*   global_pos
                                );
 
     template<int N>
     void local_to_global_vec( 
-                                        cusfloat*   xi, 
-                                        cusfloat*   eta,
-                                        cusfloat*   global_pos
+                                                    cusfloat*   xi, 
+                                                    cusfloat*   eta,
+                                                    cusfloat*   global_pos
                             );
 
     void    write( 
-                                        std::string finame
+                                                    std::string finame
                 );
 
     friend std::ostream& operator<< ( std::ostream& os, PanelGeomT& panel );

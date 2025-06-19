@@ -8,7 +8,7 @@
 #include "../math/math_tools.hpp"
 #include "../math/nonlinear_solvers_math.hpp"
 #include "../math/shape_functions.hpp"
-#include "../math/topology.hpp"
+#include "../math/topology_gauss.hpp"
 #include "panel_geom_t.hpp"
 
 
@@ -427,6 +427,87 @@ void PanelGeomT<NumNodes>::local_to_global(
     cblas_gemv<cusfloat>(CblasRowMajor, CblasNoTrans, 3, 3, 1.0, this->local_to_global_mat, 3, x2d, 1, 0, global_pos, 1);
 
     sv_add( 3, global_pos, this->sysref_centre, global_pos );
+
+}
+
+
+template<int NumNodes>
+template<int NGP>
+void PanelGeomT<NumNodes>::calculate_integration_properties( void )
+{
+    // Generate shape functions value container
+    cusfloat shape_fcn[NGP*NumNodes]; clear_vector( NGP*NumNodes, shape_fcn );
+
+    // Get shape functions value
+    shape_fcn_2d_gp<NumNodes, NGP>( shape_fcn );
+
+    // Get global coordinates
+    std::array<cusfloat, 3*NGP> x2d;
+    for ( int i=0; i<NGP; i++ )
+    {
+        x2d[3*i+0] = 0.0;
+        for ( int j=0; j<NumNodes; j++ )
+        {
+            x2d[3*i+0] += this->xl[j] * shape_fcn[i*NumNodes+j];
+        }
+
+        x2d[3*i+1] = 0.0;
+        for ( int j=0; j<NumNodes; j++ )
+        {
+            x2d[3*i+1] += this->yl[j] * shape_fcn[i*NumNodes+j];
+        }
+
+        x2d[3*i+2] = 0.0;
+    }
+
+    // Multiply transformation matrix with the multiple points
+    for ( int i=0; i<NGP; i++ )
+    {
+        this->gauss_points_global[i*NGP+0] = (
+                               this->local_to_global_mat[0] * x2d[i*NGP+0] 
+                               +
+                               this->local_to_global_mat[1] * x2d[i*NGP+1]
+                               +
+                               this->local_to_global_mat[2] * x2d[i*NGP+2]
+                            );
+    }
+    for ( int i=0; i<NGP; i++ )
+    {
+        this->gauss_points_global[i*NGP+1] = (
+                               this->local_to_global_mat[3] * x2d[i*NGP+0] 
+                               +
+                               this->local_to_global_mat[4] * x2d[i*NGP+1]
+                               +
+                               this->local_to_global_mat[5] * x2d[i*NGP+2]
+                            );
+    }
+    for ( int i=0; i<NGP; i++ )
+    {
+        this->gauss_points_global[i*NGP+2] = (
+                               this->local_to_global_mat[6] * x2d[i*NGP+0] 
+                               +
+                               this->local_to_global_mat[7] * x2d[i*NGP+1]
+                               +
+                               this->local_to_global_mat[8] * x2d[i*NGP+2]
+                            );
+    }
+
+    // Add centre of system reference
+    for ( int i=0; i<NGP; i++ )
+    {
+        this->gauss_points_global[i*NGP+0] += this->sysref_centre[0];
+    }
+    for ( int i=0; i<NGP; i++ )
+    {
+        this->gauss_points_global[i*NGP+1] += this->sysref_centre[1];
+    }
+    for ( int i=0; i<NGP; i++ )
+    {
+        this->gauss_points_global[i*NGP+2] += this->sysref_centre[2];
+    }
+
+    // Calculate jacobi determinant chunks
+    jacobi_det_2d_gp<NumNodes, NGP>( this->xl, this->yl, this->jac_det_gauss_points );
 
 }
 
