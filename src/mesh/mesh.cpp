@@ -987,9 +987,13 @@ Mesh::Mesh(
 
 Mesh::Mesh(
                                         std::vector<Mesh*>  meshes,
-                                        cusfloat*           cog
+                                        cusfloat*           cog,
+                                        bool                is_fix
             )
 {
+    // Storage the required input attributes
+    this->_is_move_f = static_cast<cusfloat>( !is_fix );
+
     // Joint input meshes in a single one
     this->_joint_meshes( meshes );
 

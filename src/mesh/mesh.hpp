@@ -101,7 +101,8 @@ public:
 
     Mesh(
                                 std::vector<Mesh*>  meshes,
-                                cusfloat*           cog
+                                cusfloat*           cog,
+                                bool                is_fix
 
         );
 
