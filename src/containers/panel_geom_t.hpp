@@ -57,6 +57,7 @@ public:
                                         cusfloat*   y_in,
                                         cusfloat*   z_in,
                                         int         type_in,
+                                        bool        is_move_in,
                                         cusfloat*   cog
                 );
     

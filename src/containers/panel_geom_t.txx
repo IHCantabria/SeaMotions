@@ -576,6 +576,7 @@ PanelGeomT<NumNodes>::PanelGeomT(
                                     cusfloat*   y_in,
                                     cusfloat*   z_in,
                                     int         type_in,
+                                    bool        is_move_in,
                                     cusfloat*   cog
                                 )
 {
@@ -589,6 +590,9 @@ PanelGeomT<NumNodes>::PanelGeomT(
 
     // Set panel type
     this->type = type_in;
+
+    // Set mobility attribute
+    this->is_move_f = is_move_in;
 
     // Calculate panel properties
     this->calculate_properties( cog );
