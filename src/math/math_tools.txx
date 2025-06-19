@@ -105,6 +105,16 @@ void copy_vector(int n, T* reference_vector, T* target_vector)
 }
 
 
+template<typename T, std::size_t N> 
+void  copy_vector( T* reference_vector, T* target_vector )
+{
+    for ( std::size_t i=0; i<N; i++ )
+    {
+        target_vector[i] = reference_vector[i];
+    }
+}
+
+
 template<typename T>
 inline void cross( T* u, T* v, T* w )
 {
