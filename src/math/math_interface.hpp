@@ -27,6 +27,73 @@ template<>
 inline const auto& lv_add<std::complex<double>> = vzAdd;
 
 
+// Interface for vCos - Vector addition
+template<typename T>
+inline const auto& lv_cos = vsCos;
+
+template<>
+inline const auto& lv_cos<float> = vsCos;
+
+template<>
+inline const auto& lv_cos<double> = vdCos;
+
+template<>
+inline const auto& lv_cos<std::complex<float>> = vcCos;
+
+template<>
+inline const auto& lv_cos<std::complex<double>> = vzCos;
+
+
+// Interface for vExp - Vector addition
+template<typename T>
+inline const auto& lv_exp = vsExp;
+
+template<>
+inline const auto& lv_exp<float> = vsExp;
+
+template<>
+inline const auto& lv_exp<double> = vdExp;
+
+template<>
+inline const auto& lv_exp<std::complex<float>> = vcExp;
+
+template<>
+inline const auto& lv_exp<std::complex<double>> = vzExp;
+
+// Interface for vLog - Vector addition
+template<typename T>
+inline const auto& lv_log = vsLn;
+
+template<>
+inline const auto& lv_log<float> = vsLn;
+
+template<>
+inline const auto& lv_log<double> = vdLn;
+
+template<>
+inline const auto& lv_log<std::complex<float>> = vcLn;
+
+template<>
+inline const auto& lv_log<std::complex<double>> = vzLn;
+
+
+// Interface for vSin - Vector addition
+template<typename T>
+inline const auto& lv_sin = vsSin;
+
+template<>
+inline const auto& lv_sin<float> = vsSin;
+
+template<>
+inline const auto& lv_sin<double> = vdSin;
+
+template<>
+inline const auto& lv_sin<std::complex<float>> = vcSin;
+
+template<>
+inline const auto& lv_sin<std::complex<double>> = vzSin;
+
+
 // Interface for vSub - Vector substraction
 template<typename T>
 inline const auto& lv_sub = vsSub;
