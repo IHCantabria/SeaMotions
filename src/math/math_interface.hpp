@@ -179,6 +179,17 @@ template<>
 inline const auto& lv_powx<std::complex<double>> = vzPowx;
 
 
+// Interface for vPow3o2 - Computes square root of the cube of each element
+template<typename T>
+inline const auto& lv_pow3o2 = vsPow3o2;
+
+template<>
+inline const auto& lv_pow3o2<float> = vsPow3o2;
+
+template<>
+inline const auto& lv_pow3o2<double> = vdPow3o2;
+
+
 // Interface for Sqrt - Vector Sqrt
 template<typename T>
 inline const auto& lv_sqrt = vsSqrt;
