@@ -9,13 +9,78 @@
 
 
 template<typename IDB>
-inline void fold_database( cusfloat H )
+inline void fold_database_1d( cusfloat H )
+{
+    // Check if z direction is log scaled
+    cusfloat Hreg = H;
+    if ( IDB::x_log_scale )
+    {
+        Hreg = std::log10( H );
+    }
+
+    // Check Z region bounds
+    if ( Hreg > IDB::x_max_global )
+    {
+        Hreg = IDB::x_max_global;
+    }
+
+    if ( Hreg < IDB::x_min_global )
+    {
+        Hreg = IDB::x_min_global;
+    }
+
+    // Get starting region position
+    std::size_t start_pos = 0;
+    for ( std::size_t i=0; i<IDB::intervals_np; i++ )
+    {
+        if (
+                ( IDB::x_min_region[i] < Hreg )
+                &&
+                ( IDB::x_max_region[i] > Hreg )
+            )
+        {
+            start_pos = i;
+            break;
+        }
+    }
+
+    // Calculate chebyshev polynomials
+    cusfloat    poly_h[ ( IDB::max_cheby_order + 1 ) ];
+    cusfloat    h_map = 2.0 * ( Hreg - IDB::x_min_region[start_pos] ) / IDB::dx_region[start_pos] - 1.0;
+    
+    chebyshev_poly_upto_order( IDB::blocks_max_cheby_order[start_pos], h_map, poly_h );
+
+    // Fold datase into a single scalar
+    std::size_t bs = IDB::blocks_start[start_pos];
+    std::size_t nt = IDB::blocks_coeffs_np[start_pos];
+    ChebyshevTraits<IDB>::coeffs = 0.0;
+    for ( std::size_t i=bs; i<bs+nt; i++ )
+    {
+        ChebyshevTraits<IDB>::coeffs += IDB::c[i] * poly_h[ IDB::ncx[i] ];
+    }
+
+}
+
+
+template<typename IDB>
+inline void fold_database_3d( cusfloat H )
 {
     // Check if z direction is log scaled
     cusfloat Hreg = H;
     if ( IDB::z_log_scale )
     {
         Hreg = std::log10( H );
+    }
+
+    // Check Z region bounds
+    if ( Hreg > IDB::z_max_global )
+    {
+        Hreg = IDB::z_max_global;
+    }
+
+    if ( Hreg < IDB::z_min_global )
+    {
+        Hreg = IDB::z_min_global;
     }
 
     // Get intersecting regions
