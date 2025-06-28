@@ -3,56 +3,56 @@
 
 // Include local modules
 #include "../../src/config.hpp"
-#include "./fin_depth_coeffs/L1.hpp"
 #include "chebyshev_traits.hpp"
 #include "../math/chebyshev.hpp"
 #include "../math/math_tools.hpp"
 
 
+template<typename IDB>
 inline void fold_database( cusfloat H )
 {
     // Check if z direction is log scaled
     cusfloat Hreg = H;
-    if ( L1C::z_log_scale )
+    if ( IDB::z_log_scale )
     {
         Hreg = std::log10( H );
     }
 
     // Get intersecting regions
-    cusfloat    x_min_ints[L1C::blocks_np];
-    cusfloat    x_max_ints[L1C::blocks_np];
-    cusfloat    y_min_ints[L1C::blocks_np];
-    cusfloat    y_max_ints[L1C::blocks_np];
-    cusfloat    z_min_ints[L1C::blocks_np];
-    cusfloat    z_max_ints[L1C::blocks_np];
-    cusfloat    dx_ints[L1C::blocks_np];
-    cusfloat    dy_ints[L1C::blocks_np];
-    cusfloat    dz_ints[L1C::blocks_np];
-    std::size_t blocks_start_ints[L1C::blocks_np];
-    std::size_t blocks_coeffs_np_ints[L1C::blocks_np];
-    std::size_t blocks_max_cheby_order_ints[L1C::blocks_np];
+    cusfloat    x_min_ints[IDB::blocks_np];
+    cusfloat    x_max_ints[IDB::blocks_np];
+    cusfloat    y_min_ints[IDB::blocks_np];
+    cusfloat    y_max_ints[IDB::blocks_np];
+    cusfloat    z_min_ints[IDB::blocks_np];
+    cusfloat    z_max_ints[IDB::blocks_np];
+    cusfloat    dx_ints[IDB::blocks_np];
+    cusfloat    dy_ints[IDB::blocks_np];
+    cusfloat    dz_ints[IDB::blocks_np];
+    std::size_t blocks_start_ints[IDB::blocks_np];
+    std::size_t blocks_coeffs_np_ints[IDB::blocks_np];
+    std::size_t blocks_max_cheby_order_ints[IDB::blocks_np];
 
     std::size_t count_ints = 0;
-    for ( std::size_t i=0; i<L1C::blocks_np; i++ )
+    for ( std::size_t i=0; i<IDB::blocks_np; i++ )
     {
         if (
-                ( L1C::z_min_region[i] < Hreg )
+                ( IDB::z_min_region[i] < Hreg )
                 &&
-                ( L1C::z_max_region[i] > Hreg )
+                ( IDB::z_max_region[i] > Hreg )
             )
         {
-            x_min_ints[count_ints]                  = L1C::x_min_region[i];
-            x_max_ints[count_ints]                  = L1C::x_max_region[i];
-            y_min_ints[count_ints]                  = L1C::y_min_region[i];
-            y_max_ints[count_ints]                  = L1C::y_max_region[i];
-            z_min_ints[count_ints]                  = L1C::z_min_region[i];
-            z_max_ints[count_ints]                  = L1C::z_max_region[i];
-            dx_ints[count_ints]                     = L1C::dx_region[i];
-            dy_ints[count_ints]                     = L1C::dy_region[i];
-            dz_ints[count_ints]                     = L1C::dz_region[i];
-            blocks_start_ints[count_ints]           = L1C::blocks_start[i];
-            blocks_coeffs_np_ints[count_ints]       = L1C::blocks_coeffs_np[i];
-            blocks_max_cheby_order_ints[count_ints] = L1C::blocks_max_cheby_order[i];
+            x_min_ints[count_ints]                  = IDB::x_min_region[i];
+            x_max_ints[count_ints]                  = IDB::x_max_region[i];
+            y_min_ints[count_ints]                  = IDB::y_min_region[i];
+            y_max_ints[count_ints]                  = IDB::y_max_region[i];
+            z_min_ints[count_ints]                  = IDB::z_min_region[i];
+            z_max_ints[count_ints]                  = IDB::z_max_region[i];
+            dx_ints[count_ints]                     = IDB::dx_region[i];
+            dy_ints[count_ints]                     = IDB::dy_region[i];
+            dz_ints[count_ints]                     = IDB::dz_region[i];
+            blocks_start_ints[count_ints]           = IDB::blocks_start[i];
+            blocks_coeffs_np_ints[count_ints]       = IDB::blocks_coeffs_np[i];
+            blocks_max_cheby_order_ints[count_ints] = IDB::blocks_max_cheby_order[i];
             // std::cout << count_ints << " " << i << std::endl;
             // std::cout << x_min_ints[count_ints] << std::endl;
             // std::cout << x_max_ints[count_ints] << std::endl;
@@ -64,8 +64,8 @@ inline void fold_database( cusfloat H )
         }
     }
 
-    // std::cout << "block_np: " << L1C::blocks_np;
-    // std::cout << "block_np_f: " << L1C::blocks_np_f;
+    // std::cout << "block_np: " << IDB::blocks_np;
+    // std::cout << "block_np_f: " << IDB::blocks_np_f;
     // std::cout << "count_ints: " << count_ints << std::endl;
     // std::cout << x_min_ints[0] << std::endl;
     // std::cout << x_max_ints[0] << std::endl;
@@ -73,13 +73,13 @@ inline void fold_database( cusfloat H )
     // std::cout << y_max_ints[0] << std::endl;
     // throw std::exception( );
 
-    for ( std::size_t i=0; i<L1C::blocks_np; i++ )
+    for ( std::size_t i=0; i<IDB::blocks_np; i++ )
     {
-        if ( std::abs( L1C::x_max_region[i] - L1C::x_min_region[i] ) < 1e-6 )
+        if ( std::abs( IDB::x_max_region[i] - IDB::x_min_region[i] ) < 1e-6 )
         {
             std::cout << "XMin and XMax are equal!!" << std::endl;
-            std::cout << "Index: " << i << " - XMin: " << L1C::x_min_region[i];
-            std::cout << " - XMax: " << L1C::x_max_region[i] << std::endl;
+            std::cout << "Index: " << i << " - XMin: " << IDB::x_min_region[i];
+            std::cout << " - XMax: " << IDB::x_max_region[i] << std::endl;
             throw std::exception();
         }
     }
@@ -98,8 +98,8 @@ inline void fold_database( cusfloat H )
     // }
 
     // Copy selected region to an intermediate vector for manipulation
-    int block_start_sel[L1C::blocks_np];
-    for ( int i=0; i<L1C::blocks_np; i++ )
+    int block_start_sel[IDB::blocks_np];
+    for ( int i=0; i<IDB::blocks_np; i++ )
     {
         block_start_sel[i] = static_cast<int>( blocks_start_ints[i] );
     }
@@ -120,18 +120,18 @@ inline void fold_database( cusfloat H )
     }
 
     // Discard repeated regions
-    cusfloat    x_min_rep[L1C::blocks_np_f];
-    cusfloat    x_max_rep[L1C::blocks_np_f];
-    cusfloat    y_min_rep[L1C::blocks_np_f];
-    cusfloat    y_max_rep[L1C::blocks_np_f];
-    cusfloat    z_min_rep[L1C::blocks_np_f];
-    cusfloat    z_max_rep[L1C::blocks_np_f];
-    cusfloat    dx_rep[L1C::blocks_np_f];
-    cusfloat    dy_rep[L1C::blocks_np_f];
-    cusfloat    dz_rep[L1C::blocks_np_f];
-    std::size_t blocks_start_rep[L1C::blocks_np_f];
-    std::size_t blocks_coeffs_np_rep[L1C::blocks_np_f];
-    std::size_t blocks_max_cheby_order_rep[L1C::blocks_np_f];
+    cusfloat    x_min_rep[IDB::blocks_np_f];
+    cusfloat    x_max_rep[IDB::blocks_np_f];
+    cusfloat    y_min_rep[IDB::blocks_np_f];
+    cusfloat    y_max_rep[IDB::blocks_np_f];
+    cusfloat    z_min_rep[IDB::blocks_np_f];
+    cusfloat    z_max_rep[IDB::blocks_np_f];
+    cusfloat    dx_rep[IDB::blocks_np_f];
+    cusfloat    dy_rep[IDB::blocks_np_f];
+    cusfloat    dz_rep[IDB::blocks_np_f];
+    std::size_t blocks_start_rep[IDB::blocks_np_f];
+    std::size_t blocks_coeffs_np_rep[IDB::blocks_np_f];
+    std::size_t blocks_max_cheby_order_rep[IDB::blocks_np_f];
 
     std::size_t count_rep = 0;
     for ( std::size_t i=0; i<count_ints; i++ )
@@ -152,7 +152,7 @@ inline void fold_database( cusfloat H )
             dz_rep[count_rep]                       = dz_ints[i];
             count_rep++;
 
-            if ( count_rep > L1C::blocks_np_f )
+            if ( count_rep > IDB::blocks_np_f )
             {
                 std::cout << "count_rep higher than blocks_np_f" << std::endl;
                 throw std::exception( );
@@ -161,10 +161,10 @@ inline void fold_database( cusfloat H )
     }
 
     // Generate folded coefficients
-    std::size_t blocks_start_fold[L1C::blocks_np_f];
-    std::size_t blocks_coeffs_np_fold[L1C::blocks_np_f];
-    std::size_t blocks_max_cheby_order_fold[L1C::blocks_np_f];
-    cusfloat    poly_h[ ( L1C::max_cheby_order + 1 ) ];
+    std::size_t blocks_start_fold[IDB::blocks_np_f];
+    std::size_t blocks_coeffs_np_fold[IDB::blocks_np_f];
+    std::size_t blocks_max_cheby_order_fold[IDB::blocks_np_f];
+    cusfloat    poly_h[ ( IDB::max_cheby_order + 1 ) ];
 
     cusfloat    h_map           = 0.0;
     std::size_t count_fold      = 0;
@@ -180,36 +180,36 @@ inline void fold_database( cusfloat H )
         chebyshev_poly_upto_order( blocks_max_cheby_order_rep[i], h_map, poly_h );
 
         // Fold third dimension
-        ChebyshevTraits<L1C>::coeffs[count_fold]    = L1C::c[blocks_start_rep[i]+0]*poly_h[L1C::ncz[blocks_start_rep[i]+0]];
-        ChebyshevTraits<L1C>::ncx[count_fold]       = L1C::ncx[blocks_start_rep[i]+0];
-        ChebyshevTraits<L1C>::ncy[count_fold]       = L1C::ncy[blocks_start_rep[i]+0];
+        ChebyshevTraits<IDB>::coeffs[count_fold]    = IDB::c[blocks_start_rep[i]+0]*poly_h[IDB::ncz[blocks_start_rep[i]+0]];
+        ChebyshevTraits<IDB>::ncx[count_fold]       = IDB::ncx[blocks_start_rep[i]+0];
+        ChebyshevTraits<IDB>::ncy[count_fold]       = IDB::ncy[blocks_start_rep[i]+0];
         local_count                                 = 1;
-        max_cheby_xy                                = std::max( L1C::ncx[blocks_start_rep[i]+0], L1C::ncy[blocks_start_rep[i]+0] );
+        max_cheby_xy                                = std::max( IDB::ncx[blocks_start_rep[i]+0], IDB::ncy[blocks_start_rep[i]+0] );
         for ( std::size_t j=1; j<blocks_coeffs_np_rep[i]; j++ )
         {
-            std::cout << "ncx: " << L1C::ncx[blocks_start_rep[i]+j-1] << " - " << L1C::ncx[blocks_start_rep[i]+j];
-            std::cout << " - ncy: " << L1C::ncy[blocks_start_rep[i]+j-1] << " - " << L1C::ncy[blocks_start_rep[i]+j] << std::endl;
+            std::cout << "ncx: " << IDB::ncx[blocks_start_rep[i]+j-1] << " - " << IDB::ncx[blocks_start_rep[i]+j];
+            std::cout << " - ncy: " << IDB::ncy[blocks_start_rep[i]+j-1] << " - " << IDB::ncy[blocks_start_rep[i]+j] << std::endl;
             if ( 
-                    ( L1C::ncx[blocks_start_rep[i]+j-1] != L1C::ncx[blocks_start_rep[i]+j] )
+                    ( IDB::ncx[blocks_start_rep[i]+j-1] != IDB::ncx[blocks_start_rep[i]+j] )
                     ||
-                    ( L1C::ncy[blocks_start_rep[i]+j-1] != L1C::ncy[blocks_start_rep[i]+j] )
+                    ( IDB::ncy[blocks_start_rep[i]+j-1] != IDB::ncy[blocks_start_rep[i]+j] )
                 )
             {
-                std::cout << "Last Coeffcient Value: " << ChebyshevTraits<L1C>::coeffs[count_fold] << std::endl;
+                std::cout << "Last Coeffcient Value: " << ChebyshevTraits<IDB>::coeffs[count_fold] << std::endl;
                 // Start new coefficient
                 count_fold++;
                 local_count++;
-                ChebyshevTraits<L1C>::coeffs[count_fold]    = L1C::c[blocks_start_rep[i]+j]*poly_h[L1C::ncz[blocks_start_rep[i]+j]];
-                ChebyshevTraits<L1C>::ncx[count_fold]       = L1C::ncx[blocks_start_rep[i]+j];
-                ChebyshevTraits<L1C>::ncy[count_fold]       = L1C::ncy[blocks_start_rep[i]+j];
+                ChebyshevTraits<IDB>::coeffs[count_fold]    = IDB::c[blocks_start_rep[i]+j]*poly_h[IDB::ncz[blocks_start_rep[i]+j]];
+                ChebyshevTraits<IDB>::ncx[count_fold]       = IDB::ncx[blocks_start_rep[i]+j];
+                ChebyshevTraits<IDB>::ncy[count_fold]       = IDB::ncy[blocks_start_rep[i]+j];
             }
             else
             {
-                ChebyshevTraits<L1C>::coeffs[count_fold]    += L1C::c[blocks_start_rep[i]+j]*poly_h[L1C::ncz[blocks_start_rep[i]+j]];
+                ChebyshevTraits<IDB>::coeffs[count_fold]    += IDB::c[blocks_start_rep[i]+j]*poly_h[IDB::ncz[blocks_start_rep[i]+j]];
             }
 
-            max_cheby_xy = std::max( max_cheby_xy, L1C::ncx[blocks_start_rep[i]+j] );
-            max_cheby_xy = std::max( max_cheby_xy, L1C::ncy[blocks_start_rep[i]+j] );
+            max_cheby_xy = std::max( max_cheby_xy, IDB::ncx[blocks_start_rep[i]+j] );
+            max_cheby_xy = std::max( max_cheby_xy, IDB::ncy[blocks_start_rep[i]+j] );
             
         }
         // Storage previous results
@@ -242,8 +242,8 @@ inline void fold_database( cusfloat H )
     }
 
     // Redistribute 
-    cusfloat    dx      = ( L1C::x_max_global - L1C::x_min_global ) / L1C::intervals_np;
-    cusfloat    dy      = ( L1C::y_max_global - L1C::y_min_global ) / L1C::intervals_np;
+    cusfloat    dx      = ( IDB::x_max_global - IDB::x_min_global ) / IDB::intervals_np;
+    cusfloat    dy      = ( IDB::y_max_global - IDB::y_min_global ) / IDB::intervals_np;
     int         index   = 0;
     cusfloat    xi      = 0.0;
     cusfloat    yi      = 0.0;
@@ -255,14 +255,14 @@ inline void fold_database( cusfloat H )
     //     std::cout << " - z: " << z_min_rep[i] << " - " << z_max_rep[i] << std::endl;
     // }
 
-    for ( int i=0; i<L1C::intervals_np; i++ )
+    for ( int i=0; i<IDB::intervals_np; i++ )
     {
-        for ( int j=0; j<L1C::intervals_np; j++ )
+        for ( int j=0; j<IDB::intervals_np; j++ )
         {
             // Calculate region properties
-            index   = i * L1C::intervals_np + j;
-            xi      = L1C::x_min_global + dx * ( 2 * i + 1 ) / 2.0;
-            yi      = L1C::y_min_global + dy * ( 2 * j + 1 ) / 2.0;
+            index   = i * IDB::intervals_np + j;
+            xi      = IDB::x_min_global + dx * ( 2 * i + 1 ) / 2.0;
+            yi      = IDB::y_min_global + dy * ( 2 * j + 1 ) / 2.0;
             
             // Find region in between the folded ones
             bool is_found = false;
@@ -274,15 +274,15 @@ inline void fold_database( cusfloat H )
                         ( yi > y_min_rep[k] && yi < y_max_rep[k] )
                     )
                 {
-                    ChebyshevTraits<L1C>::blocks_start[index]           = blocks_start_fold[k];
-                    ChebyshevTraits<L1C>::blocks_coeffs_np[index]       = blocks_coeffs_np_fold[k];
-                    ChebyshevTraits<L1C>::blocks_max_cheby_order[index] = blocks_max_cheby_order_fold[k];
-                    ChebyshevTraits<L1C>::x_min_region[index]           = x_min_rep[k];
-                    ChebyshevTraits<L1C>::x_max_region[index]           = x_max_rep[k];
-                    ChebyshevTraits<L1C>::dx_region[index]              = dx_rep[k];
-                    ChebyshevTraits<L1C>::y_min_region[index]           = y_min_rep[k];
-                    ChebyshevTraits<L1C>::y_max_region[index]           = y_max_rep[k];
-                    ChebyshevTraits<L1C>::dy_region[index]              = dy_rep[k];
+                    ChebyshevTraits<IDB>::blocks_start[index]           = blocks_start_fold[k];
+                    ChebyshevTraits<IDB>::blocks_coeffs_np[index]       = blocks_coeffs_np_fold[k];
+                    ChebyshevTraits<IDB>::blocks_max_cheby_order[index] = blocks_max_cheby_order_fold[k];
+                    ChebyshevTraits<IDB>::x_min_region[index]           = x_min_rep[k];
+                    ChebyshevTraits<IDB>::x_max_region[index]           = x_max_rep[k];
+                    ChebyshevTraits<IDB>::dx_region[index]              = dx_rep[k];
+                    ChebyshevTraits<IDB>::y_min_region[index]           = y_min_rep[k];
+                    ChebyshevTraits<IDB>::y_max_region[index]           = y_max_rep[k];
+                    ChebyshevTraits<IDB>::dy_region[index]              = dy_rep[k];
                     is_found                                            = true;
                 }
             }
