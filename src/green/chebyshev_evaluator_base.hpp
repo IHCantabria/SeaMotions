@@ -8,6 +8,15 @@
 #include "../math/math_tools.hpp"
 
 
+/**************************************/
+/******* Define Module Macros *********/
+/**************************************/
+#define MAP_LOOP(x)                                                                                         \
+for (std::size_t i = 0; i < N; i++) {                                                                       \
+    x##m[i] = 2.0 * (x##s[i] - Derived::x##_min_region[nt[i]]) / Derived::d##x##_region[nt[i]] - 1.0;       \
+}                                                                                                           \
+
+
 template<typename Derived, std::size_t N>
 struct ChebyshevEvaluatorBaseVector
 {
@@ -15,8 +24,8 @@ struct ChebyshevEvaluatorBaseVector
     {
         for ( std::size_t i=0; i<N; i++ )
         {
-            xs[i] = std::max( std::min( xs[i], Derived::x_max ), Derived::x_min );
-            ys[i] = std::max( std::min( ys[i], Derived::x_max ), Derived::x_min );
+            xs[i] = std::max( std::min( xs[i], Derived::x_max_global ), Derived::x_min_global );
+            ys[i] = std::max( std::min( ys[i], Derived::y_max_global ), Derived::x_min_global );
         }
     }
 
@@ -28,7 +37,7 @@ struct ChebyshevEvaluatorBaseVector
             if ( start_pos[0] != start_pos[i] )
             {
                 is_single = false;
-                break
+                break;
             }
         }
 
@@ -38,17 +47,48 @@ struct ChebyshevEvaluatorBaseVector
     static void evaluate( cusfloat* x, cusfloat* y, cusfloat* result )
     {
         // Check scaling of input variables if any
-        cusfloat xs[N]; copy_vector<N>( x, xs );
-        cusfloat ys[N]; copy_vector<N>( y, ys );
+        cusfloat xs[N]; copy_vector<cusfloat, N>( x, xs );
+        cusfloat ys[N]; copy_vector<cusfloat, N>( y, ys );
         scale( xs, ys );
 
+        std::cout << "SCALE:" << std::endl;
+        for ( std::size_t i=0; i<N; i++ )
+        {
+            std::cout << "Index: " << i;
+            std::cout << " - xs: " << xs[i];
+            std::cout << " - ys: " << ys[i] << std::endl;
+        }
+
         // Check boundaries
-        check_boundaries( x, y )
+        check_boundaries( xs, ys );
 
         // Get starting position
         std::size_t start_pos[N];
         std::size_t block_size[N];
-        get_block_props( xs, ys, start_pos, block_size );
+        std::size_t nt[N];
+        get_block_props( xs, ys, start_pos, block_size, nt );
+
+        std::cout << "BLOCK PROPERTIES" << std::endl;
+        for ( std::size_t i=0; i<N; i++ )
+        {
+            std::cout << "Index: " << i;
+            std::cout << " - StartPos: " << start_pos[i];
+            std::cout << " - BlockSize: " << block_size[i];
+            std::cout << " - Nt: " << nt[i] << std::endl;
+        }
+
+        std::cout << "Derived Coeffs:" << std::endl;
+        for ( int i=0; i<5; i++ )
+        {
+            std::cout << "Index: " << i << " - Coeffs: " << Derived::coeffs[i] << std::endl;
+        }
+
+        // Map coordinates
+        cusfloat xm[N];
+        cusfloat ym[N];
+        
+        MAP_LOOP( x )
+        MAP_LOOP( y )
         
         // Check if all the input points are in the same block
         bool is_single_block = check_single_block( start_pos );
@@ -56,48 +96,58 @@ struct ChebyshevEvaluatorBaseVector
         // Evaluate chebyshev polynomials
         if ( is_single_block )
         {
-            evaluate_chebyshev_polynomials_vector_2d<Derived::max_cheby_order, N>( 
-                                                                                &(Derived::coeffs[start_pos[0]]), 
-                                                                                &(Derived::ncx[start_pos[0]]),
-                                                                                &(Derived::ncy[start_pos[0]]),
-                                                                                block_size[0],
-                                                                                xs,
-                                                                                ys,
-                                                                                result
-                                                                            );
+            // evaluate_chebyshev_polynomials_2d_vector<Derived::max_cheby_order, N>( 
+            //                                                                     &(Derived::coeffs[start_pos[0]]), 
+            //                                                                     &(Derived::ncx[start_pos[0]]),
+            //                                                                     &(Derived::ncy[start_pos[0]]),
+            //                                                                     block_size[0],
+            //                                                                     xm,
+            //                                                                     ym,
+            //                                                                     result
+            //                                                                 );
+            evaluate_chebyshev_polynomials_2d_vector_t<Derived, N>( 
+                                                                        start_pos[0],
+                                                                        block_size[0],
+                                                                        xm,
+                                                                        ym,
+                                                                        result
+                                                                    );
         }
         else
         {
             for ( std::size_t i=0; i<N; i++ )
             {
-                evaluate_chebyshev_polynomials_2d<Derived::max_cheby_order>( 
-                                                                                &(Derived::coeffs[start_pos[i]]), 
-                                                                                &(Derived::ncx[start_pos[i]]),
-                                                                                &(Derived::ncy[start_pos[i]]),
-                                                                                block_size[i],
-                                                                                xs[i],
-                                                                                ys[i],
-                                                                                &(result[i])
-                                                                            );
+                evaluate_chebyshev_polynomials_2d_t<Derived>( 
+                                                                start_pos[i],
+                                                                block_size[i],
+                                                                xm[i],
+                                                                ym[i],
+                                                                result[i]
+                                                            );
             }
         }
 
     }
 
-    static void get_block_props( cusfloat* xs, cusfloat* ys, std::size_t* sp, std::size_t* bd )
+    static void get_block_props( cusfloat* xs, cusfloat* ys, std::size_t* sp, std::size_t* bd, std::size_t* ntv )
     {
-        for ( int i=0; i<N; i++ )
+        constexpr cusfloat dx = ( Derived::x_max_global - Derived::x_min_global ) / Derived::intervals_np;
+        constexpr cusfloat dy = ( Derived::y_max_global - Derived::y_min_global ) / Derived::intervals_np;
+        for ( std::size_t i=0; i<N; i++ )
         {
             // Estimate interval hash
-            int nx = static_cast<int>( std::floor( xs[i] / Derived::dx ) );
-            int ny = static_cast<int>( std::floor( ys[i] / Derived::dy ) );
-            int nt = nx * Derived::intervals_np + ny;
+            std::size_t nx = static_cast<std::size_t>( std::floor( ( xs[i] - Derived::x_min_global ) / dx ) );
+            std::size_t ny = static_cast<std::size_t>( std::floor( ( ys[i] - Derived::y_min_global ) / dy ) );
+            std::size_t nt = nx * Derived::intervals_np + ny;
     
             // Get starting position
-            sp[i] = Derived::block_start[nt];
+            sp[i] = Derived::blocks_start[nt];
     
             // Get block dimensions;
             bd[i] = Derived::blocks_coeffs_np[nt];
+
+            // Storage position in virtual grid
+            ntv[i] = nt;
         }
     }
 
@@ -172,7 +222,7 @@ struct ChebyshevEvaluatorBase
         cusfloat result = 0.0;
         // std::cout << "Evaluate chebyshev: " << xs << " " << ys << std::endl;
         // std::cout << "Evaluate chebyshev: " << xsm << " " << ysm << std::endl;
-        evaluate_chebyshev_polynomials_2d<Derived::max_cheby_order>( 
+        evaluate_chebyshev_polynoials_2d<Derived::max_cheby_order>( 
                                                                         &(Derived::coeffs[start_pos]), 
                                                                         &(Derived::ncx[start_pos]),
                                                                         &(Derived::ncy[start_pos]),
