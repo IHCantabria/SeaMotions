@@ -41,6 +41,41 @@ void evaluate_chebyshev_polynomials_2d_vector(
 }
 
 
+template<typename Derived, const std::size_t N>
+void evaluate_chebyshev_polynomials_2d_vector_t( 
+                                                    const std::size_t   sp,
+                                                    const std::size_t   np,
+                                                    const std::size_t   nt,
+                                                    const std::size_t   n,
+                                                    cusfloat*           x,
+                                                    cusfloat*           y,
+                                                    cusfloat*           result
+                                                )
+{
+    // Reset to zero in order to spurious values
+    for ( std::size_t i=0; i<n; i++ )
+    {
+        result[i] = 0.0;
+    }
+
+    // Get chebyshev values up to the maximum order
+    static cusfloat poly_x[ N * ( Derived::max_cheby_order + 1 ) ];
+    static cusfloat poly_y[ N * ( Derived::max_cheby_order + 1 ) ];
+
+    chebyshev_poly_upto_order( n, Derived::blocks_max_cheby_order[nt], x, poly_x );
+    chebyshev_poly_upto_order( n, Derived::blocks_max_cheby_order[nt], y, poly_y );
+
+    // Loop over chebyshev coefficients and their corresponding orders
+    for ( std::size_t i=0; i<static_cast<std::size_t>( np ); i++ )
+    {
+        for ( std::size_t j=0; j<n; j++ )
+        {
+            result[j] += Derived::coeffs[sp+i] * poly_x[ Derived::ncx[sp+i]*n + j ] * poly_y[ Derived::ncy[sp+i]*n + j ];
+        }
+    }
+}
+
+
 template<const std::size_t max_cheby_order>
 void evaluate_chebyshev_polynomials_2d( 
                                             const cusfloat*     coeffs, 
@@ -57,23 +92,51 @@ void evaluate_chebyshev_polynomials_2d(
     result = 0.0;
 
     // Get chebyshev values up to the maximum order
-    static cusfloat poly_x[ ( max_cheby_order + 1 ) ];
-    static cusfloat poly_y[ ( max_cheby_order + 1 ) ];
+    cusfloat poly_x[ ( max_cheby_order + 1 ) ];
+    cusfloat poly_y[ ( max_cheby_order + 1 ) ];
 
     // std::cout << "chebyshev_poly_upto_order" << std::endl;
     chebyshev_poly_upto_order<max_cheby_order>( x, poly_x, count );
     chebyshev_poly_upto_order<max_cheby_order>( y, poly_y, count );
 
     // Loop over chebyshev coefficients and their corresponding orders
-    // std::cout << "Loop" << std::endl;
     count++;
     for ( std::size_t i=0; i<np; i++ )
     {
-        // std::cout << "i: " << i  << "coeff: " << coeffs[i] << " - ncx: " << ncx[i] << " - nxy: " << ncy[i] <<  " - poly_x: " << poly_x[ ncx[i] ] << " - poly_y: " << poly_y[ ncy[i] ] << std::endl;
         result += coeffs[i] * poly_x[ ncx[i] ] * poly_y[ ncy[i] ];
         count++;
     }
-    // std::cout << "Loop -> Done!" << std::endl;
+
+}
+
+
+template<typename Derived>
+void evaluate_chebyshev_polynomials_2d_t( 
+                                            const std::size_t   sp,
+                                            const std::size_t   np,
+                                            const std::size_t   nt,
+                                            cusfloat            x,
+                                            cusfloat            y,
+                                            cusfloat&           result
+                                        )
+{
+    // Reset to zero in order to spurious values
+    result = 0.0;
+
+    // Get chebyshev values up to the maximum order
+    cusfloat poly_x[ ( Derived::max_cheby_order + 1 ) ];
+    cusfloat poly_y[ ( Derived::max_cheby_order + 1 ) ];
+
+    // std::cout << "chebyshev_poly_upto_order" << std::endl;
+    chebyshev_poly_upto_order( Derived::blocks_max_cheby_order[nt], x, poly_x );
+    chebyshev_poly_upto_order( Derived::blocks_max_cheby_order[nt], x, poly_y );
+    
+    // Loop over chebyshev coefficients and their corresponding orders
+    for ( std::size_t i=0; i<np; i++ )
+    {
+        result += Derived::coeffs[sp+i] * poly_x[ Derived::ncx[sp+i] ] * poly_y[ Derived::ncy[sp+i] ];
+    }
+    
 }
 
 
@@ -116,30 +179,88 @@ void chebyshev_poly_upto_order( cusfloat* x, cusfloat* results )
 
 
 template<const std::size_t max_order>
-void chebyshev_poly_upto_order( cusfloat x, cusfloat* results, std::size_t& count )
+void chebyshev_poly_upto_order( cusfloat x, cusfloat* results )
 {
     if constexpr( max_order == 0 )
     {
         results[0] = 1.0;
-        count++;
         return;
     }
     if constexpr( max_order == 1 )
     {
         results[0]  = 1.0;
         results[1]  = x;
-        count += 2;
         return;
     }
 
     results[0]  = 1.0;
     results[1]  = x;
-    count += 2;
 
     for ( std::size_t i = 2; i <= max_order; i++ )
     {
         results[i]  = 2.0 * x * results[(i-1)] - results[(i-2)]; // Recurrence relation
-        count++;
+    }
+
+}
+
+
+inline void chebyshev_poly_upto_order( const std::size_t n, const std::size_t max_order, cusfloat* x, cusfloat* results )
+{
+    if ( max_order == 0 )
+    {
+        for ( std::size_t i=0; i<n; i++ )
+        {
+            results[i] = 1.0;
+        }
+        return;
+    }
+    if ( max_order == 1 )
+    {
+        for ( std::size_t i=0; i<n; i++ )
+        {
+            results[i]              = 1.0;
+            results[max_order*n+i]  = x[i];
+        }
+        return;
+    }
+
+    for ( std::size_t i=0; i<n; i++ )
+    {
+        results[i]      = 1.0;
+        results[n+i]    = x[i];
+    }
+
+    for ( std::size_t i = 2; i <= max_order; i++ )
+    {
+        for ( std::size_t j=0; j<n; j++ )
+        {
+            results[i*n+j]  = 2.0 * x[j] * results[(i-1)*n+j] - results[(i-2)*n+j]; // Recurrence relation
+        }
+    }
+
+}
+
+
+inline void chebyshev_poly_upto_order( std::size_t max_order, cusfloat x, cusfloat* results )
+{
+    if ( max_order == 0 )
+    {
+        results[0] = 1.0;
+        return;
+    }
+    if ( max_order == 1 )
+    {
+        results[0]  = 1.0;
+        results[1]  = x;
+        return;
+    }
+
+    results[0]  = 1.0;
+    results[1]  = x;
+
+    for ( std::size_t i = 2; i <= max_order; i++ )
+    {
+        results[i]  = 2.0 * x * results[(i-1)] - results[(i-2)]; // Recurrence relation
     }
 
 }
