@@ -12,7 +12,7 @@
 /******* Define Module Macros *********/
 /**************************************/
 #define MAP_LOOP(x)                                                                                         \
-for (std::size_t i = 0; i < N; i++) {                                                                       \
+for (std::size_t i = 0; i < n; i++) {                                                                       \
     x##m[i] = 2.0 * (x##s[i] - Derived::x##_min_region[nt[i]]) / Derived::d##x##_region[nt[i]] - 1.0;       \
 }                                                                                                           \
 
@@ -20,19 +20,19 @@ for (std::size_t i = 0; i < N; i++) {                                           
 template<typename Derived, std::size_t N>
 struct ChebyshevEvaluatorBaseVector
 {
-    static void check_boundaries( cusfloat* xs, cusfloat* ys )
+    static void check_boundaries( const std::size_t n, cusfloat* xs, cusfloat* ys )
     {
-        for ( std::size_t i=0; i<N; i++ )
+        for ( std::size_t i=0; i<n; i++ )
         {
             xs[i] = std::max( std::min( xs[i], Derived::x_max_global ), Derived::x_min_global );
             ys[i] = std::max( std::min( ys[i], Derived::y_max_global ), Derived::x_min_global );
         }
     }
 
-    static bool check_single_block( std::size_t* start_pos )
+    static bool check_single_block( const std::size_t n, std::size_t* start_pos )
     {
         bool is_single = true;
-        for ( std::size_t i=1; i<N; i++ )
+        for ( std::size_t i=1; i<n; i++ )
         {
             if ( start_pos[0] != start_pos[i] )
             {
@@ -44,15 +44,15 @@ struct ChebyshevEvaluatorBaseVector
         return is_single;
     }
 
-    static void evaluate( cusfloat* x, cusfloat* y, cusfloat* result )
+    static void evaluate( const std::size_t n, cusfloat* x, cusfloat* y, cusfloat* result )
     {
         // Check scaling of input variables if any
-        cusfloat xs[N]; copy_vector<cusfloat, N>( x, xs );
-        cusfloat ys[N]; copy_vector<cusfloat, N>( y, ys );
-        scale( xs, ys );
+        cusfloat xs[N]; copy_vector( n, x, xs );
+        cusfloat ys[N]; copy_vector( n, y, ys );
+        scale( n, xs, ys );
 
         std::cout << "SCALE:" << std::endl;
-        for ( std::size_t i=0; i<N; i++ )
+        for ( std::size_t i=0; i<n; i++ )
         {
             std::cout << "Index: " << i;
             std::cout << " - xs: " << xs[i];
@@ -60,16 +60,16 @@ struct ChebyshevEvaluatorBaseVector
         }
 
         // Check boundaries
-        check_boundaries( xs, ys );
+        check_boundaries( n, xs, ys );
 
         // Get starting position
         std::size_t start_pos[N];
         std::size_t block_size[N];
         std::size_t nt[N];
-        get_block_props( xs, ys, start_pos, block_size, nt );
+        get_block_props( n, xs, ys, start_pos, block_size, nt );
 
         std::cout << "BLOCK PROPERTIES" << std::endl;
-        for ( std::size_t i=0; i<N; i++ )
+        for ( std::size_t i=0; i<n; i++ )
         {
             std::cout << "Index: " << i;
             std::cout << " - StartPos: " << start_pos[i];
@@ -91,7 +91,7 @@ struct ChebyshevEvaluatorBaseVector
         MAP_LOOP( y )
         
         // Check if all the input points are in the same block
-        bool is_single_block = check_single_block( start_pos );
+        bool is_single_block = check_single_block( n, start_pos );
 
         // Evaluate chebyshev polynomials
         if ( is_single_block )
@@ -108,6 +108,8 @@ struct ChebyshevEvaluatorBaseVector
             evaluate_chebyshev_polynomials_2d_vector_t<Derived, N>( 
                                                                         start_pos[0],
                                                                         block_size[0],
+                                                                        nt[0],
+                                                                        n,
                                                                         xm,
                                                                         ym,
                                                                         result
@@ -115,11 +117,12 @@ struct ChebyshevEvaluatorBaseVector
         }
         else
         {
-            for ( std::size_t i=0; i<N; i++ )
+            for ( std::size_t i=0; i<n; i++ )
             {
                 evaluate_chebyshev_polynomials_2d_t<Derived>( 
                                                                 start_pos[i],
                                                                 block_size[i],
+                                                                nt[i],
                                                                 xm[i],
                                                                 ym[i],
                                                                 result[i]
@@ -129,11 +132,11 @@ struct ChebyshevEvaluatorBaseVector
 
     }
 
-    static void get_block_props( cusfloat* xs, cusfloat* ys, std::size_t* sp, std::size_t* bd, std::size_t* ntv )
+    static void get_block_props( const std::size_t n, cusfloat* xs, cusfloat* ys, std::size_t* sp, std::size_t* bd, std::size_t* ntv )
     {
         constexpr cusfloat dx = ( Derived::x_max_global - Derived::x_min_global ) / Derived::intervals_np;
         constexpr cusfloat dy = ( Derived::y_max_global - Derived::y_min_global ) / Derived::intervals_np;
-        for ( std::size_t i=0; i<N; i++ )
+        for ( std::size_t i=0; i<n; i++ )
         {
             // Estimate interval hash
             std::size_t nx = static_cast<std::size_t>( std::floor( ( xs[i] - Derived::x_min_global ) / dx ) );
@@ -151,11 +154,11 @@ struct ChebyshevEvaluatorBaseVector
         }
     }
 
-    static void scale( cusfloat* xs, cusfloat* ys )
+    static void scale( const std::size_t n, cusfloat* xs, cusfloat* ys )
     {
         if constexpr( Derived::x_log_scale )
         {
-            for ( std::size_t i=0; i<N; i++ )
+            for ( std::size_t i=0; i<n; i++ )
             {
                 xs[i] = std::log10( xs[i] );
             }
@@ -163,7 +166,7 @@ struct ChebyshevEvaluatorBaseVector
 
         if constexpr( Derived::y_log_scale )
         {
-            for ( std::size_t i=0; i<N; i++ )
+            for ( std::size_t i=0; i<n; i++ )
             {
                 ys = std::log10( ys );
             }
