@@ -53,7 +53,12 @@ constexpr cusfloat  EPS_PRECISION       = 1e-14;
 constexpr cusfloat  EPS_PRECISION_ORDER = -14;
 #endif
 
+#define MEMALINGR alignas(32)
+
 constexpr cusfloat ZEROTH_EPS               = 1E-14;
 constexpr cusfloat FIELD_POINT_LOCAL_TOL    = 1E-2;
+constexpr int      NUM_GP                   = 4;
+constexpr int      NUM_GP2                  = NUM_GP*NUM_GP;
+constexpr int      NUM_GP3                  = NUM_GP2*NUM_GP;
 
 #endif
