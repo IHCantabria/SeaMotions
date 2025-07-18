@@ -4,6 +4,20 @@
 // Include local modules
 #include "../../src/config.hpp"
 #include "chebyshev_traits.hpp"
+#include "../green/fin_depth_coeffs/L1.hpp"
+#include "../green/fin_depth_coeffs/L1_dA.hpp"
+#include "../green/fin_depth_coeffs/L1_dB.hpp"
+#include "../green/fin_depth_coeffs/L2.hpp"
+#include "../green/fin_depth_coeffs/L3.hpp"
+#include "../green/fin_depth_coeffs/L3_dA.hpp"
+#include "../green/fin_depth_coeffs/L3_dB.hpp"
+#include "../green/fin_depth_coeffs/M1.hpp"
+#include "../green/fin_depth_coeffs/M1_dA.hpp"
+#include "../green/fin_depth_coeffs/M1_dB.hpp"
+#include "../green/fin_depth_coeffs/M2.hpp"
+#include "../green/fin_depth_coeffs/M3.hpp"
+#include "../green/fin_depth_coeffs/M3_dA.hpp"
+#include "../green/fin_depth_coeffs/M3_dB.hpp"
 #include "../math/chebyshev.hpp"
 #include "../math/math_tools.hpp"
 
@@ -19,15 +33,7 @@ inline void fold_database_1d( cusfloat H )
     }
 
     // Check Z region bounds
-    if ( Hreg > IDB::x_max_global )
-    {
-        Hreg = IDB::x_max_global;
-    }
-
-    if ( Hreg < IDB::x_min_global )
-    {
-        Hreg = IDB::x_min_global;
-    }
+    Hreg = std::min( std::max( Hreg, IDB::x_min_global + 1E-6 ), IDB::x_max_global - 1E-6 );
 
     // Get starting region position
     std::size_t start_pos = 0;
@@ -65,6 +71,7 @@ inline void fold_database_1d( cusfloat H )
 template<typename IDB>
 inline void fold_database_3d( cusfloat H )
 {
+    // std::cout << "Here!" << std::endl;
     // Check if z direction is log scaled
     cusfloat Hreg = H;
     if ( IDB::z_log_scale )
@@ -73,15 +80,22 @@ inline void fold_database_3d( cusfloat H )
     }
 
     // Check Z region bounds
-    if ( Hreg > IDB::z_max_global )
-    {
-        Hreg = IDB::z_max_global;
-    }
+    Hreg = std::min( std::max( Hreg, IDB::z_min_global + 1E-6 ), IDB::z_max_global - 1E-6 );
+    // if ( Hreg > IDB::z_max_global )
+    // {
+    //     Hreg = IDB::z_max_global - 1E-4;
+    // }
 
-    if ( Hreg < IDB::z_min_global )
-    {
-        Hreg = IDB::z_min_global;
-    }
+    // if ( Hreg < IDB::z_min_global )
+    // {
+    //     Hreg = IDB::z_min_global + 1E-4;
+    // }
+
+    // std::cout << "IDB::z_min_global: " << IDB::z_min_global << std::endl;
+    // std::cout << "IDB::z_max_global: " << IDB::z_max_global << std::endl;
+    // std::cout << "Hreg: " << Hreg << std::endl;
+    // std::cout << "Hreg: " << IDB::z_min_region[0] << std::endl;
+    // std::cout << "Hreg: " << ( Hreg >= IDB::z_min_region[0] )  << std::endl;
 
     // Get intersecting regions
     cusfloat    x_min_ints[IDB::blocks_np];
@@ -98,12 +112,14 @@ inline void fold_database_3d( cusfloat H )
     std::size_t blocks_max_cheby_order_ints[IDB::blocks_np];
 
     std::size_t count_ints = 0;
+    // std::cout << "IDB::blocks_np: " << IDB::blocks_np << std::endl;
     for ( std::size_t i=0; i<IDB::blocks_np; i++ )
     {
+        // std::cout << "Z region: " << IDB::z_min_region[i] << " - " << IDB::z_max_region[i] << " - " << Hreg << std::endl;
         if (
-                ( IDB::z_min_region[i] < Hreg )
+                ( Hreg > IDB::z_min_region[i] )
                 &&
-                ( IDB::z_max_region[i] > Hreg )
+                ( Hreg < IDB::z_max_region[i] )
             )
         {
             x_min_ints[count_ints]                  = IDB::x_min_region[i];
@@ -124,13 +140,14 @@ inline void fold_database_3d( cusfloat H )
             // std::cout << y_min_ints[count_ints] << std::endl;
             // std::cout << y_max_ints[count_ints] << std::endl;
             // std::cout << z_min_ints[count_ints] << std::endl;
+            // std::cout << "--------------------" << std::endl;
             // throw std::exception( );
             count_ints++;
         }
     }
 
-    // std::cout << "block_np: " << IDB::blocks_np;
-    // std::cout << "block_np_f: " << IDB::blocks_np_f;
+    // std::cout << "block_np: " << IDB::blocks_np << std::endl;
+    // std::cout << "block_np_f: " << IDB::blocks_np_f << std::endl;
     // std::cout << "count_ints: " << count_ints << std::endl;
     // std::cout << x_min_ints[0] << std::endl;
     // std::cout << x_max_ints[0] << std::endl;
@@ -250,17 +267,45 @@ inline void fold_database_3d( cusfloat H )
         ChebyshevTraits<IDB>::ncy[count_fold]       = IDB::ncy[blocks_start_rep[i]+0];
         local_count                                 = 1;
         max_cheby_xy                                = std::max( IDB::ncx[blocks_start_rep[i]+0], IDB::ncy[blocks_start_rep[i]+0] );
+        // for ( std::size_t j=1; j<blocks_coeffs_np_rep[i]; j++ )
+        // {
+        //     // std::cout << "ncx: " << IDB::ncx[blocks_start_rep[i]+j-1] << " - " << IDB::ncx[blocks_start_rep[i]+j];
+        //     // std::cout << " - ncy: " << IDB::ncy[blocks_start_rep[i]+j-1] << " - " << IDB::ncy[blocks_start_rep[i]+j] << std::endl;
+        //     if ( 
+        //             ( IDB::ncx[blocks_start_rep[i]+j-1] != IDB::ncx[blocks_start_rep[i]+j] )
+        //             ||
+        //             ( IDB::ncy[blocks_start_rep[i]+j-1] != IDB::ncy[blocks_start_rep[i]+j] )
+        //         )
+        //     {
+        //         // std::cout << "Last Coeffcient Value: " << ChebyshevTraits<IDB>::coeffs[count_fold] << std::endl;
+        //         // Start new coefficient
+        //         count_fold++;
+        //         local_count++;
+        //         ChebyshevTraits<IDB>::coeffs[count_fold]    = IDB::c[blocks_start_rep[i]+j]*poly_h[IDB::ncz[blocks_start_rep[i]+j]];
+        //         ChebyshevTraits<IDB>::ncx[count_fold]       = IDB::ncx[blocks_start_rep[i]+j];
+        //         ChebyshevTraits<IDB>::ncy[count_fold]       = IDB::ncy[blocks_start_rep[i]+j];
+        //     }
+        //     else
+        //     {
+        //         ChebyshevTraits<IDB>::coeffs[count_fold]    += IDB::c[blocks_start_rep[i]+j]*poly_h[IDB::ncz[blocks_start_rep[i]+j]];
+        //     }
+
+        //     max_cheby_xy = std::max( max_cheby_xy, IDB::ncx[blocks_start_rep[i]+j] );
+        //     max_cheby_xy = std::max( max_cheby_xy, IDB::ncy[blocks_start_rep[i]+j] );
+            
+        // }
+
         for ( std::size_t j=1; j<blocks_coeffs_np_rep[i]; j++ )
         {
-            std::cout << "ncx: " << IDB::ncx[blocks_start_rep[i]+j-1] << " - " << IDB::ncx[blocks_start_rep[i]+j];
-            std::cout << " - ncy: " << IDB::ncy[blocks_start_rep[i]+j-1] << " - " << IDB::ncy[blocks_start_rep[i]+j] << std::endl;
+            // std::cout << "ncx: " << IDB::ncx[blocks_start_rep[i]+j-1] << " - " << IDB::ncx[blocks_start_rep[i]+j];
+            // std::cout << " - ncy: " << IDB::ncy[blocks_start_rep[i]+j-1] << " - " << IDB::ncy[blocks_start_rep[i]+j] << std::endl;
             if ( 
                     ( IDB::ncx[blocks_start_rep[i]+j-1] != IDB::ncx[blocks_start_rep[i]+j] )
                     ||
                     ( IDB::ncy[blocks_start_rep[i]+j-1] != IDB::ncy[blocks_start_rep[i]+j] )
                 )
             {
-                std::cout << "Last Coeffcient Value: " << ChebyshevTraits<IDB>::coeffs[count_fold] << std::endl;
+                // std::cout << "Last Coeffcient Value: " << ChebyshevTraits<IDB>::coeffs[count_fold] << std::endl;
                 // Start new coefficient
                 count_fold++;
                 local_count++;
@@ -272,11 +317,13 @@ inline void fold_database_3d( cusfloat H )
             {
                 ChebyshevTraits<IDB>::coeffs[count_fold]    += IDB::c[blocks_start_rep[i]+j]*poly_h[IDB::ncz[blocks_start_rep[i]+j]];
             }
+            // std::cout << "count_fold: " << count_fold << " | " << ChebyshevTraits<IDB>::coeffs[count_fold] << " | " << IDB::c[blocks_start_rep[i]+j] <<  " | " << poly_h[IDB::ncz[blocks_start_rep[i]+j]]  << std::endl;
 
             max_cheby_xy = std::max( max_cheby_xy, IDB::ncx[blocks_start_rep[i]+j] );
             max_cheby_xy = std::max( max_cheby_xy, IDB::ncy[blocks_start_rep[i]+j] );
             
         }
+
         // Storage previous results
         blocks_start_fold[i]            = start_pos;
         blocks_coeffs_np_fold[i]        = local_count;
@@ -285,26 +332,26 @@ inline void fold_database_3d( cusfloat H )
         start_pos                       = count_fold;
     }
 
-    std::cout << "BLOCK_START_FOLD:" << std::endl;
-    for ( std::size_t i=0; i<count_rep; i++ )
-    {
-        std::cout << "Index: " << i;
-        std::cout << " - " << blocks_start_fold[i] << std::endl;
-    }
+    // std::cout << "BLOCK_START_FOLD:" << std::endl;
+    // for ( std::size_t i=0; i<count_rep; i++ )
+    // {
+    //     std::cout << "Index: " << i;
+    //     std::cout << " - " << blocks_start_fold[i] << std::endl;
+    // }
 
-    std::cout << "BLOCK_COEFFS_NP_FOLD:" << std::endl;
-    for ( std::size_t i=0; i<count_rep; i++ )
-    {
-        std::cout << "Index: " << i;
-        std::cout << " - " << blocks_coeffs_np_fold[i] << std::endl;
-    }
+    // std::cout << "BLOCK_COEFFS_NP_FOLD:" << std::endl;
+    // for ( std::size_t i=0; i<count_rep; i++ )
+    // {
+    //     std::cout << "Index: " << i;
+    //     std::cout << " - " << blocks_coeffs_np_fold[i] << std::endl;
+    // }
 
-    std::cout << "MAX_CHEBY_ORDER_FOLD:" << std::endl;
-    for ( std::size_t i=0; i<count_rep; i++ )
-    {
-        std::cout << "Index: " << i;
-        std::cout << " - " << blocks_max_cheby_order_fold[i] << std::endl;
-    }
+    // std::cout << "MAX_CHEBY_ORDER_FOLD:" << std::endl;
+    // for ( std::size_t i=0; i<count_rep; i++ )
+    // {
+    //     std::cout << "Index: " << i;
+    //     std::cout << " - " << blocks_max_cheby_order_fold[i] << std::endl;
+    // }
 
     // Redistribute 
     cusfloat    dx      = ( IDB::x_max_global - IDB::x_min_global ) / IDB::intervals_np;
@@ -357,4 +404,72 @@ inline void fold_database_3d( cusfloat H )
             }
         }
     }
+}
+
+
+inline void fold_database( cusfloat H )
+{
+    
+    if ( H > 1.0 )
+    {
+        // Fold L3 integral family
+        double a = 0.0;
+        std::cout << "L3C";
+        fold_database_3d<L3C>( H );
+        std::cout << " --> Done!" << std::endl;
+        std::cout << "L3_dAC";
+        fold_database_3d<L3_dAC>( H );
+        std::cout << " --> Done!" << std::endl;
+        std::cout << "L3_dBC";
+        fold_database_3d<L3_dBC>( H );
+        std::cout << " --> Done!" << std::endl;
+
+        // Fold M3 integral family
+        std::cout << "M3C";
+        fold_database_3d<M3C>( H );
+        std::cout << " --> Done!" << std::endl;
+        std::cout << "M3_dAC";
+        fold_database_3d<M3_dAC>( H );
+        std::cout << " --> Done!" << std::endl;
+        std::cout << "M3_dBC";
+        fold_database_3d<M3_dBC>( H );
+        std::cout << " --> Done!" << std::endl;
+
+    }
+    else
+    {
+        // Fold L1 integral family
+        std::cout << "L1C";
+        fold_database_3d<L1C>( H );
+        std::cout << " --> Done!" << std::endl;
+        std::cout << "L1_dAC";
+        fold_database_3d<L1_dAC>( H );
+        std::cout << " --> Done!" << std::endl;
+        std::cout << "L1_dBC";
+        fold_database_3d<L1_dBC>( H );
+        std::cout << " --> Done!" << std::endl;
+        
+        // Fold L2 integral family
+        std::cout << "L2C";
+        fold_database_1d<L2C>( H );
+        std::cout << " --> Done!" << std::endl;
+
+        // Fold M1 integral family
+        std::cout << "M1C";
+        fold_database_3d<M1C>( H );
+        std::cout << " --> Done!" << std::endl;
+        std::cout << "M1_dAC";
+        fold_database_3d<M1_dAC>( H );
+        std::cout << " --> Done!" << std::endl;
+        std::cout << "M1_dBC";
+        fold_database_3d<M1_dBC>( H );
+        std::cout << " --> Done!" << std::endl;
+        
+        // Fold M2 integral family
+        std::cout << "M2C";
+        fold_database_1d<M2C>( H );
+        std::cout << " --> Done!" << std::endl;
+    }
+    
+    
 }
