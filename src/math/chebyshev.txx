@@ -129,7 +129,7 @@ void evaluate_chebyshev_polynomials_2d_t(
 
     // std::cout << "chebyshev_poly_upto_order" << std::endl;
     chebyshev_poly_upto_order( Derived::blocks_max_cheby_order[nt], x, poly_x );
-    chebyshev_poly_upto_order( Derived::blocks_max_cheby_order[nt], x, poly_y );
+    chebyshev_poly_upto_order( Derived::blocks_max_cheby_order[nt], y, poly_y );
     
     // Loop over chebyshev coefficients and their corresponding orders
     for ( std::size_t i=0; i<np; i++ )
