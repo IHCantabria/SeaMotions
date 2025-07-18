@@ -95,6 +95,16 @@ void clear_vector( int n, T* vec )
     }
 }
 
+
+template<typename T, std::size_t N>
+void clear_vector( T* vec )
+{
+    for ( std::size_t i=0; i<N; i++ )
+    {
+        vec[i] = 0.0;
+    }
+}
+
 template<typename T>
 void copy_vector(int n, T* reference_vector, T* target_vector)
 {

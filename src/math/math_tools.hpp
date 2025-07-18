@@ -21,6 +21,12 @@ const cusfloat EULERGAMMA = 0.577215664901533;
 
 
 //////////////////////////////////////////////
+////////// MACRO DEFINITION BLOCK ////////////
+//////////////////////////////////////////////
+#define POW2S(x) ((x)*(x))
+
+
+//////////////////////////////////////////////
 /////// FUNCTION DEFINITION BLOCK ////////////
 //////////////////////////////////////////////
                                             cusfloat    angfreq_to_freq( 
@@ -87,6 +93,10 @@ template<typename T>                inline  int         assert_vector_equality(
         
 template<typename T>                inline  void        clear_vector(                    
                                                                                     int n, 
+                                                                                    T* vec 
+                                                                    );
+
+template<typename T, std::size_t N> inline  void        clear_vector(                    
                                                                                     T* vec 
                                                                     );
         
