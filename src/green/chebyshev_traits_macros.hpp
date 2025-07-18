@@ -46,6 +46,7 @@ struct ChebyshevTraits<NS>                                                      
     static constexpr            int             max_cheby_order             = NS::max_cheby_order;              \
     static constexpr const      std::size_t*    blocks_start                = NS::blocks_start;                 \
     static constexpr const      std::size_t*    blocks_coeffs_np            = NS::blocks_coeffs_np;             \
+    static constexpr const      std::size_t*    blocks_max_cheby_order      = NS::blocks_max_cheby_order;       \
     static constexpr            bool            fcn_log_scale               = NS::fcn_log_scale;                \
     static constexpr            bool            x_log_scale                 = NS::x_log_scale;                  \
     static constexpr            cusfloat        x_max_global                = NS::x_max_global;                 \
