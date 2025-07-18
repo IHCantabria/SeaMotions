@@ -2,6 +2,8 @@
 #ifndef __chebyshev_evaluator_base_hpp
 #define __chebyshev_evaluator_base_hpp
 
+#include <iomanip>
+
 // Include local modules
 #include "../config.hpp"
 #include "../math/chebyshev.hpp"
@@ -22,10 +24,12 @@ struct ChebyshevEvaluatorBaseVector
 {
     static void check_boundaries( const std::size_t n, cusfloat* xs, cusfloat* ys )
     {
+        // std::cout << "BOUNDARIES: " << std::endl;
         for ( std::size_t i=0; i<n; i++ )
         {
             xs[i] = std::max( std::min( xs[i], Derived::x_max_global ), Derived::x_min_global );
             ys[i] = std::max( std::min( ys[i], Derived::y_max_global ), Derived::x_min_global );
+            // std::cout << "Index: " << i << " - xs: " << xs[i] << " - ys: " << ys[i] << std::endl;
         }
     }
 
@@ -51,13 +55,13 @@ struct ChebyshevEvaluatorBaseVector
         cusfloat ys[N]; copy_vector( n, y, ys );
         scale( n, xs, ys );
 
-        std::cout << "SCALE:" << std::endl;
-        for ( std::size_t i=0; i<n; i++ )
-        {
-            std::cout << "Index: " << i;
-            std::cout << " - xs: " << xs[i];
-            std::cout << " - ys: " << ys[i] << std::endl;
-        }
+        // std::cout << "SCALE:" << std::endl;
+        // for ( std::size_t i=0; i<n; i++ )
+        // {
+        //     std::cout << "Index: " << i;
+        //     std::cout << " - xs: " << xs[i];
+        //     std::cout << " - ys: " << ys[i] << std::endl;
+        // }
 
         // Check boundaries
         check_boundaries( n, xs, ys );
@@ -68,20 +72,39 @@ struct ChebyshevEvaluatorBaseVector
         std::size_t nt[N];
         get_block_props( n, xs, ys, start_pos, block_size, nt );
 
-        std::cout << "BLOCK PROPERTIES" << std::endl;
-        for ( std::size_t i=0; i<n; i++ )
-        {
-            std::cout << "Index: " << i;
-            std::cout << " - StartPos: " << start_pos[i];
-            std::cout << " - BlockSize: " << block_size[i];
-            std::cout << " - Nt: " << nt[i] << std::endl;
-        }
+        // std::cout << "BLOCK PROPERTIES" << std::endl;
+        // for ( std::size_t i=0; i<n; i++ )
+        // {
+        //     std::cout << "Index: " << i;
+        //     std::cout << " - StartPos: " << start_pos[i];
+        //     std::cout << " - BlockSize: " << block_size[i];
+        //     std::cout << " - Nt: " << nt[i] << std::endl;
 
-        std::cout << "Derived Coeffs:" << std::endl;
-        for ( int i=0; i<5; i++ )
-        {
-            std::cout << "Index: " << i << " - Coeffs: " << Derived::coeffs[i] << std::endl;
-        }
+        //     std::size_t index = 0;
+        //     std::cout << "\t\tBlock Number: " << nt[i];
+        //     std::cout << "\t\t -> NP: " << block_size[i] << std::endl;
+        //     std::cout << "\t\t -> XMin: " << Derived::x_min_region[nt[i]] << " - XMax: " << Derived::x_max_region[nt[i]] << std::endl;
+        //     std::cout << "\t\t -> YMin: " << Derived::y_min_region[nt[i]] << " - YMax: " << Derived::y_max_region[nt[i]] << std::endl;
+        //     std::cout << "\t\t -> Coeffs: " << std::endl;
+        //     for ( std::size_t j=0; j<block_size[i]; j++ )
+        //     {
+        //         index = start_pos[i];
+        //         std::cout << "\t\t\t\t\tC[ " << j << " ]: " << Derived::coeffs[index+j] << std::endl;
+        //     }
+        //     std::cout << "\t\t -> NCX: " << std::endl;
+        //     for ( std::size_t j=0; j<block_size[i]; j++ )
+        //     {
+        //         index = start_pos[i];
+        //         std::cout << "\t\t\t\t\tNCX[ " << j << " ]: " << Derived::ncx[index+j] << std::endl;
+        //     }
+        //     std::cout << "\t\t -> NCY: " << std::endl;
+        //     for ( std::size_t j=0; j<block_size[i]; j++ )
+        //     {
+        //         index = start_pos[i];
+        //         std::cout << "\t\t\t\t\tNCY[ " << j << " ]: " << Derived::ncy[index+j] << std::endl;
+        //     }
+        // }
+
 
         // Map coordinates
         cusfloat xm[N];
@@ -89,9 +112,19 @@ struct ChebyshevEvaluatorBaseVector
         
         MAP_LOOP( x )
         MAP_LOOP( y )
+
+        // std::cout << "MAP:" << std::endl;
+        // for ( std::size_t i=0; i<n; i++ )
+        // {
+        //     std::cout << "Index: " << i;
+        //     std::cout << std::setprecision( 15 ) << " - xm: " << xm[i];
+        //     std::cout << std::setprecision( 15 ) << " - ym: " << ym[i] << std::endl;
+        // }
         
         // Check if all the input points are in the same block
         bool is_single_block = check_single_block( n, start_pos );
+        // std::cout << "Is single block: " << is_single_block << std::endl;
+        // is_single_block = true;
 
         // Evaluate chebyshev polynomials
         if ( is_single_block )
@@ -139,9 +172,11 @@ struct ChebyshevEvaluatorBaseVector
         for ( std::size_t i=0; i<n; i++ )
         {
             // Estimate interval hash
-            std::size_t nx = static_cast<std::size_t>( std::floor( ( xs[i] - Derived::x_min_global ) / dx ) );
-            std::size_t ny = static_cast<std::size_t>( std::floor( ( ys[i] - Derived::y_min_global ) / dy ) );
-            std::size_t nt = nx * Derived::intervals_np + ny;
+            std::size_t nx  = static_cast<std::size_t>( std::floor( ( xs[i] - Derived::x_min_global ) / dx ) );
+            std::size_t ny  = static_cast<std::size_t>( std::floor( ( ys[i] - Derived::y_min_global ) / dy ) );
+            nx              = std::min( nx, static_cast<std::size_t>( Derived::intervals_np ) - 1 );
+            ny              = std::min( ny, static_cast<std::size_t>( Derived::intervals_np ) - 1 );
+            std::size_t nt  = nx * Derived::intervals_np + ny;
     
             // Get starting position
             sp[i] = Derived::blocks_start[nt];
@@ -168,7 +203,7 @@ struct ChebyshevEvaluatorBaseVector
         {
             for ( std::size_t i=0; i<n; i++ )
             {
-                ys = std::log10( ys );
+                ys[i] = std::log10( ys[i] );
             }
         }
     }
