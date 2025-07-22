@@ -723,7 +723,7 @@ private:
                                     + 0.00010750 * this->_powers_modk[10*N+i]
                                     + 0.00000740 * this->_powers_modk[12*N+i]
                                 )
-                                *
+                                +
                                 _INVMASK( this->_mask_modk[i] )
                                 *
                                 (
@@ -755,7 +755,7 @@ private:
                                     - 0.00110404 * this->_powers_modk[10*N+i]
                                     - 0.00004686 * this->_powers_modk[12*N+i]
                                 ) * this->_x_inv[i]
-                                *
+                                +
                                 _INVMASK( this->_mask_modk[i] )
                                 *
                                 (
@@ -1421,7 +1421,7 @@ private:
                                     + 0.00010750 * this->_powers_modk[10*n+i]
                                     + 0.00000740 * this->_powers_modk[12*n+i]
                                 )
-                                *
+                                +
                                 _INVMASK( this->_mask_modk[i] )
                                 *
                                 (
@@ -1432,8 +1432,7 @@ private:
                                     + 0.00587872 * this->_powers_modk_inv[4*n+i]
                                     - 0.00251540 * this->_powers_modk_inv[5*n+i]
                                     + 0.00053208 * this->_powers_modk_inv[6*n+i]
-                                ) / ( this->_fcn_expx[i] * this->_fcn_sqrtx_inv[i] );
-
+                                ) * this->_fcn_sqrtx_inv[i] / this->_fcn_expx[i];
         }
     }
 
@@ -1453,7 +1452,7 @@ private:
                                     - 0.00110404 * this->_powers_modk[10*n+i]
                                     - 0.00004686 * this->_powers_modk[12*n+i]
                                 ) * this->_x_inv[i]
-                                *
+                                +
                                 _INVMASK( this->_mask_modk[i] )
                                 *
                                 (
@@ -1464,7 +1463,7 @@ private:
                                     - 0.00780353 * this->_powers_modk_inv[4*n+i]
                                     + 0.00325614 * this->_powers_modk_inv[5*n+i]
                                     - 0.00068245 * this->_powers_modk_inv[6*n+i]
-                                ) / ( this->_fcn_expx[i] * this->_fcn_sqrtx_inv[i] );
+                                ) * this->_fcn_sqrtx_inv[i] / this->_fcn_expx[i];
 
         }
     }
@@ -1881,7 +1880,7 @@ public:
     cusfloat struve1[N];
 
     // Define class constructors
-    BesselFactoryVec( void ) = default;
+    BesselFactoryVecUpTo( ) = default;
 
     // Define class methods
     void calculate_cheby( int n, cusfloat* x )
@@ -1898,6 +1897,27 @@ public:
 
         this->_calculate_bessel_standard( n, x );
         this->_calculate_bessel_modified( n, x );
+    }
+
+    void calculate_modified( int n, cusfloat* x )
+    {
+        // Check limits
+        cusfloat xl[N];
+        for ( int i=0; i<n; i++ )
+        {
+            xl[i] = std::min( x[i], 50.0 );
+        }
+
+        // Pre-calcualte modified bessel function paramets
+        this->_distribute_data_modified_i( n, xl );
+        this->_distribute_data_modified_k( n, xl );
+
+        // Calculate auxiliar function. In this case is included the "standard ones" also
+        // beacause some of them are appearing in modified bessel formulations
+        this->_calculate_standard_aux_fcns( n, xl );
+
+        // Calculate modified bessel function values
+        this->_calculate_bessel_modified( n, xl );
     }
 
 };
