@@ -55,10 +55,11 @@ constexpr cusfloat  EPS_PRECISION_ORDER = -14;
 
 #define MEMALINGR alignas(32)
 
-constexpr cusfloat ZEROTH_EPS               = 1E-14;
-constexpr cusfloat FIELD_POINT_LOCAL_TOL    = 1E-2;
-constexpr int      NUM_GP                   = 4;
-constexpr int      NUM_GP2                  = NUM_GP*NUM_GP;
-constexpr int      NUM_GP3                  = NUM_GP2*NUM_GP;
+constexpr cusfloat  ZEROTH_EPS              = 1E-14;
+constexpr cusfloat  FIELD_POINT_LOCAL_TOL   = 1E-2;
+constexpr int       NUM_GP                  = 4;                // Number of Gauss Points used for numerical integration
+constexpr int       NUM_GP2                 = NUM_GP*NUM_GP;    // Squared number of gauss points ( just for convenience along the code )
+constexpr int       NUM_GP3                 = NUM_GP2*NUM_GP;   // Cubic number of gauss points ( just for convenience along the code )
+constexpr int       NUM_KN                  = 30;               // Maximum number of imaginary wave number roots used in the john series expansion
 
 #endif
