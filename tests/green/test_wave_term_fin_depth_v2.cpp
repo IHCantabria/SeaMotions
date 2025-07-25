@@ -142,7 +142,7 @@ struct RefData
 };
 
 
-template<int fnc_type>
+template<int fnc_type, int mode_f, int mode_dfdr, int mode_dfdz>
 bool launch_integral(
                         std::string file_path, 
                         std::string function_type,
@@ -164,25 +164,26 @@ bool launch_integral(
 
     // Loop over refence data to check over all parameter
     // space
-    cusfloat        Avec[N];
-    cuscomplex      Gp;
-    cuscomplex      G[N];
-    cuscomplex      G_dr[N];
-    cuscomplex      G_dz[N];
-    cusfloat        zvec[N];
-    cusfloat        zetavec[N];
-    cuscomplex      jc, jr;
-    cusfloat        nu = 0.0;
-    constexpr int   num_kn = 30;
-    int             rd_index = 0;
-    cusfloat        w = 0.0;
+    cusfloat            Avec[N];
+    cuscomplex          Gp;
+    cuscomplex          G[N];
+    cuscomplex          G_dr[N];
+    cuscomplex          G_dz[N];
+    cusfloat            zvec[N];
+    cusfloat            zetavec[N];
+    cuscomplex          jc, jr;
+    cusfloat            nu = 0.0;
+    constexpr int       num_kn = 30;
+    int                 rd_index = 0;
+    cusfloat            w = 0.1;
+    WaveDispersionFONK  wave_data(w, h, g);
+
     for (int i=0; i<ref_data.num_H; i++)
     {
         // Calculate dependent variables on H parameter
         nu = ref_data.H[i]/h;
         w = std::sqrt(nu*g);
-        WaveDispersionFO wave_data(w, num_kn, h, g);
-        wave_data.calculate_john_terms();
+        wave_data.update_full( w, h, g );
 
         // Fold integrals coefficients
         if constexpr( fnc_type == 1 )
@@ -218,13 +219,13 @@ bool launch_integral(
                 if constexpr( fnc_type == 0)
                 {
                     Gp = john_series(Avec[0], zvec[0], zetavec[0], h , wave_data);
-                    john_series<N>( N, Avec, zvec, zetavec, h, bessel_factory, wave_data, G, G_dr, G_dz );
+                    john_series<N, mode_f, mode_dfdr, mode_dfdz>( Avec, zvec, zetavec, h, bessel_factory, wave_data, G, G_dr, G_dz );
 
                     // std::cout << "G: " << G[0] << " - Gp: " << Gp << std::endl;
                 }
                 else
                 {
-                    wave_term_fin_depth_integral<N>( N, Avec, zvec, zetavec, h, bessel_factory, wave_data, G, G_dr, G_dz );
+                    wave_term_integral<N, mode_f, mode_dfdr, mode_dfdz>( Avec, zvec, zetavec, h, bessel_factory, wave_data, G, G_dr, G_dz );
                 }
                 // custom_template<N>( Avec );
 
@@ -306,31 +307,31 @@ int main(int argc, char* argv[])
     // Launch test to check the John eigenfunction
     // expansion
     std::cout << "here" << std::endl;
-    pass = launch_integral<0>(
-                                file_path_john, 
-                                "G",
-                                0
-                            );
+    pass = launch_integral<0, G_ON, DGDR_OFF, DGDZ_OFF>(
+                                                            file_path_john, 
+                                                            "G",
+                                                            0
+                                                        );
     if (!pass)
     {
         return 1;
     }
 
-    pass = launch_integral<0>(
-                                file_path_john_dr, 
-                                "dG_dr",
-                                1
-                            );
+    pass = launch_integral<0, G_OFF, DGDR_ON, DGDZ_OFF>(
+                                                            file_path_john_dr, 
+                                                            "dG_dr",
+                                                            1
+                                                        );
     if (!pass)
     {
         return 1;
     }
 
-    pass = launch_integral<0>(
-                                file_path_john_dz,
-                                "dG_dz",
-                                2
-                            );
+    pass = launch_integral<0, G_OFF, DGDR_OFF, DGDZ_ON>(
+                                                            file_path_john_dz,
+                                                            "dG_dz",
+                                                            2
+                                                        );
     if (!pass)
     {
         return 1;
@@ -338,31 +339,31 @@ int main(int argc, char* argv[])
 
     // Launch test to check the Green function
     // integral approximation method
-    pass = launch_integral<1>(
-                                file_path_Gint, 
-                                "G_integral",
-                                0
-                            );
+    pass = launch_integral<1, G_ON, DGDR_OFF, DGDZ_OFF>(
+                                                            file_path_Gint, 
+                                                            "G_integral",
+                                                            0
+                                                        );
     if (!pass)
     {
         return 1;
     }
 
-    pass = launch_integral<1>(
-                                file_path_Gint_dr, 
-                                "G_integral_dr",
-                                1
-                            );
+    pass = launch_integral<1, G_OFF, DGDR_ON, DGDZ_OFF>(
+                                                            file_path_Gint_dr, 
+                                                            "G_integral_dr",
+                                                            1
+                                                        );
     if (!pass)
     {
         return 1;
     }
 
-    pass = launch_integral<1>(
-                                file_path_Gint_dz, 
-                                "G_integral_dz",
-                                2
-                            );
+    pass = launch_integral<1, G_OFF, DGDR_OFF, DGDZ_ON>(
+                                                            file_path_Gint_dz, 
+                                                            "G_integral_dz",
+                                                            2
+                                                        );
     if (!pass)
     {
         return 1;
