@@ -156,6 +156,20 @@ T* generate_empty_vector(int size)
 
 
 template<typename T>
+T l2_norm( int n, T* x, T* y )
+{
+    T diff  = 0.0;
+    T sum   = 0.0;
+    for ( int i=0; i<n, i++ )
+    {
+        diff    = x[i] - y[i];
+        sum     += diff * diff;
+    }
+    return std::sqrt( sum );
+}
+
+
+template<typename T>
 inline T pow2s(T x)
 {
     return x*x;

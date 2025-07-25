@@ -163,6 +163,12 @@ template<typename T>                        inline  T*  generate_empty_vector(
                                                                                     int size
                                                                             );
 
+template<typename T>                        inline  T   l2_norm( 
+                                                                                    int N,
+                                                                                    T* x,
+                                                                                    T* y
+                                                                );
+
                                             void        newton_raphson(
                                                                                     std::function<cusfloat(cusfloat)> f_def, 
                                                                                     std::function<cusfloat(cusfloat)> f_der_def,
