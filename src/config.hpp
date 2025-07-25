@@ -55,11 +55,19 @@ constexpr cusfloat  EPS_PRECISION_ORDER = -14;
 
 #define MEMALINGR alignas(32)
 
-constexpr cusfloat  ZEROTH_EPS              = 1E-14;
+constexpr int       G_ON                    = 1;                // Flag used as template argument to SET the calculation of the potential green function
+constexpr int       G_OFF                   = 0;                // Flag used as template argument to NOT SET the calculation of the potential green function
+constexpr int       DGDR_ON                 = 1;                // Flag used as template argument to SET the calculation of the derivative of the potential green function with respect to the horizontal radius
+constexpr int       DGDR_OFF                = 0;                // Flag used as template argument to NOT SET the calculation of the derivative of the potential green function with respect to the horizontal radius
+constexpr int       DGDZ_ON                 = 1;                // Flag used as template argument to SET the calculation of the derivative of the potential green function with respect to the vertical coordinate
+constexpr int       DGDZ_OFF                = 0;                // Flag used as template argument to NOT SET the calculation of the derivative of the potential green function with respect to the vertical coordinate
 constexpr cusfloat  FIELD_POINT_LOCAL_TOL   = 1E-2;
 constexpr int       NUM_GP                  = 4;                // Number of Gauss Points used for numerical integration
 constexpr int       NUM_GP2                 = NUM_GP*NUM_GP;    // Squared number of gauss points ( just for convenience along the code )
 constexpr int       NUM_GP3                 = NUM_GP2*NUM_GP;   // Cubic number of gauss points ( just for convenience along the code )
 constexpr int       NUM_KN                  = 30;               // Maximum number of imaginary wave number roots used in the john series expansion
+constexpr int       STATIC_LOOP_ON          = 0;                // Flag used as template argument to set that the bounds of the internal loops of the calling function are known at compile time
+constexpr int       STATIC_LOOP_OFF         = 0;                // Flag used as template argument to set that the bounds of the internal loops of the calling function are not known at compile time
+constexpr cusfloat  ZEROTH_EPS              = 1E-14;
 
 #endif
