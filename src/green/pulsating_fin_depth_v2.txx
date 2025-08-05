@@ -9,6 +9,7 @@
 
 // Include local modules
 #include "../config.hpp"
+#include "../static_tools.hpp"
 #include "../math/math_interface.hpp"
 #include "../math/math_tools.hpp"
 #include "../math/special_math.hpp"
@@ -38,9 +39,9 @@ void         Fxy(
     // Fit in bounds X value
     cusfloat XB[N];
     cusfloat YB[N];
-    STATIC_LOOP( n, N, XB[i] = X[i]; )
-    STATIC_LOOP( n, N, YB[i] = Y[i]; )
-    R11CEV<N>::check_boundaries_raw( n, XB, YB );
+    STATIC_COPY( n, N, X, XB )
+    STATIC_COPY( n, N, Y, YB )
+    R11CEV<N, mode_loop>::check_boundaries_raw( n, XB, YB );
 
     // Calculate Bessel functions
     bessel_factory.calculate_cheby( n, XB );
@@ -58,8 +59,8 @@ void         Fxy(
     lv_exp<cusfloat>( n, EXPY, EXPY );
 
     // Calculate Chebyshev expansions
-    STATIC_COND( ONLY_FCN or ONLY_FCNDZ,        R11CEV<N>::evaluate( n, XB, YB, results );        )
-    STATIC_COND( ONLY_FCNDR,                    R11_dXCEV<N>::evaluate( n, XB, YB, results_dx );  )
+    STATIC_COND( ONLY_FCN or ONLY_FCNDZ,        (R11CEV<N, mode_loop>::evaluate( n, XB, YB, results ));        )
+    STATIC_COND( ONLY_FCNDR,                    (R11_dXCEV<N, mode_loop>::evaluate( n, XB, YB, results_dx ));  )
 
     // Add Bessel functions contribution
     STATIC_LOOP( n, N, STATIC_COND( ONLY_FCN or ONLY_FCNDZ,    results[i]      *= - 2.0;           ) )
@@ -90,9 +91,9 @@ void         G1_Hlt1(
     STATIC_COND( ONLY_FCNDZ,    STATIC_CLEAR( n, N, results_db  ) )
 
     // Calculate L1 integral using chebyshev expansions
-    STATIC_COND( ONLY_FCN,      L1CEV<N>::evaluate( n, A, B, results );         )
-    STATIC_COND( ONLY_FCNDR,    L1_dACEV<N>::evaluate( n, A, B, results_da );   )
-    STATIC_COND( ONLY_FCNDZ,    L1_dBCEV<N>::evaluate( n, A, B, results_db );   )
+    STATIC_COND( ONLY_FCN,      (L1CEV<N, mode_loop>::evaluate( n, A, B, results ));         )
+    STATIC_COND( ONLY_FCNDR,    (L1_dACEV<N, mode_loop>::evaluate( n, A, B, results_da ));   )
+    STATIC_COND( ONLY_FCNDZ,    (L1_dBCEV<N, mode_loop>::evaluate( n, A, B, results_db ));   )
 
     // Add L2 integral scalar contribution
     STATIC_LOOP( n, N, STATIC_COND( ONLY_FCN, results[i] += ChebyshevTraits<L2C>::coeffs; ) )
@@ -130,9 +131,9 @@ void         G1_Hgt1(
     lv_sqrt<cusfloat>( n, BM, BMM );
     
     // Calculate L3 using chebyshev expansion
-    STATIC_COND( ONLY_FCN,      L3CEV<N>::evaluate( n, A, B, results );         )
-    STATIC_COND( ONLY_FCNDR,    L3_dACEV<N>::evaluate( n, A, B, results_da );   )
-    STATIC_COND( ONLY_FCNDZ,    L3_dBCEV<N>::evaluate( n, A, B, results_db );   )
+    STATIC_COND( ONLY_FCN,      (L3CEV<N, mode_loop>::evaluate( n, A, B, results ));         )
+    STATIC_COND( ONLY_FCNDR,    (L3_dACEV<N, mode_loop>::evaluate( n, A, B, results_da ));   )
+    STATIC_COND( ONLY_FCNDZ,    (L3_dBCEV<N, mode_loop>::evaluate( n, A, B, results_db ));   )
 
     // Substract auxiliar variables
     STATIC_LOOP( n, N, STATIC_COND( ONLY_FCN,      results[i]      -= 2.0 / BPM[i];                            ) )
@@ -161,9 +162,9 @@ void         G2_Hlt1(
     STATIC_COND( ONLY_FCNDZ,    STATIC_CLEAR( n, N, results_db  ) )
 
     // Calculate M1 integral using chebyshev expansions
-    STATIC_COND( ONLY_FCN,      M1CEV<N>::evaluate( n, A, B, results );         )
-    STATIC_COND( ONLY_FCNDR,    M1_dACEV<N>::evaluate( n, A, B, results_da );   )
-    STATIC_COND( ONLY_FCNDZ,    M1_dBCEV<N>::evaluate( n, A, B, results_db );   )
+    STATIC_COND( ONLY_FCN,      (M1CEV<N, mode_loop>::evaluate( n, A, B, results ));         )
+    STATIC_COND( ONLY_FCNDR,    (M1_dACEV<N, mode_loop>::evaluate( n, A, B, results_da ));   )
+    STATIC_COND( ONLY_FCNDZ,    (M1_dBCEV<N, mode_loop>::evaluate( n, A, B, results_db ));   )
 
     // Add M2 integral scalar contribution
     STATIC_LOOP( n, N, STATIC_COND( ONLY_FCN,  results[i] += ChebyshevTraits<M2C>::coeffs; ) )
@@ -196,9 +197,9 @@ void         G2_Hgt1(
     lv_sqrt<cusfloat>( n, BP, BPM );
     
     // Calculate L3 using chebyshev expansion
-    STATIC_COND( ONLY_FCN,      M3CEV<N>::evaluate( n, A, B, results );          )
-    STATIC_COND( ONLY_FCNDR,    M3_dACEV<N>::evaluate( n, A, B, results_da );    )
-    STATIC_COND( ONLY_FCNDZ,    M3_dBCEV<N>::evaluate( n, A, B, results_db );    )
+    STATIC_COND( ONLY_FCN,      (M3CEV<N, mode_loop>::evaluate( n, A, B, results ));          )
+    STATIC_COND( ONLY_FCNDR,    (M3_dACEV<N, mode_loop>::evaluate( n, A, B, results_da ));    )
+    STATIC_COND( ONLY_FCNDZ,    (M3_dBCEV<N, mode_loop>::evaluate( n, A, B, results_db ));    )
 
     // Substract auxiliar variables
     STATIC_LOOP( n, N, STATIC_COND( ONLY_FCN,      results[i]      -= 2.0 / BPM[i];                            ) )
