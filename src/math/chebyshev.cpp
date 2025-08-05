@@ -5,6 +5,7 @@
 // Include local modules
 #include "../config.hpp"
 #include "math_tools.hpp"
+#include "chebyshev.hpp"
 
 
 cusfloat chebyshev_poly(int n, cusfloat x)
