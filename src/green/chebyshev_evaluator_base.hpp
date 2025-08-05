@@ -33,6 +33,43 @@ struct ChebyshevEvaluatorBaseVector
         }
     }
 
+    static void check_boundaries_raw( const std::size_t n, cusfloat* xs, cusfloat* ys )
+    {
+        cusfloat x_min_global_raw = 0.0;
+        cusfloat x_max_global_raw = 0.0;
+        cusfloat y_min_global_raw = 0.0;
+        cusfloat y_max_global_raw = 0.0;
+        if constexpr( Derived::x_log_scale )
+        {
+            x_min_global_raw = std::pow( 10, Derived::x_min_global );
+            x_max_global_raw = std::pow( 10, Derived::x_max_global );
+        }
+        else
+        {
+            y_min_global_raw = Derived::x_min_global;
+            y_max_global_raw = Derived::x_max_global;
+        }
+
+        if constexpr( Derived::y_log_scale )
+        {
+            y_min_global_raw = std::pow( 10, Derived::y_min_global );
+            y_max_global_raw = std::pow( 10, Derived::y_max_global );
+        }
+        else
+        {
+            y_min_global_raw = Derived::y_min_global;
+            y_max_global_raw = Derived::y_max_global;
+        }
+
+        // std::cout << "BOUNDARIES: " << std::endl;
+        for ( std::size_t i=0; i<n; i++ )
+        {
+            xs[i] = std::max( std::min( xs[i], x_max_global_raw ), x_min_global_raw );
+            ys[i] = std::max( std::min( ys[i], y_max_global_raw ), y_min_global_raw );
+            // std::cout << "Index: " << i << " - xs: " << xs[i] << " - ys: " << ys[i] << std::endl;
+        }
+    }
+
     static bool check_single_block( const std::size_t n, std::size_t* start_pos )
     {
         bool is_single = true;
