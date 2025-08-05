@@ -25,11 +25,11 @@ inline  void    jacobi_det_2d_gp(
      */
 
     // Calculate jacobi matrix
-    static cusfloat jac_mat[4*NGP];
+    static cusfloat jac_mat[4*NGP*NGP];
     jacobi_mat_2d_gp<NV,NGP>( xn, yn, jac_mat );
 
     // Calculate the determinant
-    for ( int i=0; i<NGP; i++ )
+    for ( int i=0; i<NGP*NGP; i++ )
     {
         jac_det[i] = jac_mat[4*i+0] * jac_mat[4*i+3] - jac_mat[4*i+1] * jac_mat[4*i+2];
     }
@@ -57,16 +57,16 @@ inline  void    jacobi_mat_2d_gp(
      * 
      */
     // Get shape functions derivative values for the required points
-    static cusfloat  dNdxi[NV*NGP]  = { };
-    static cusfloat  dNdeta[NV*NGP] = { };
+    static cusfloat  dNdxi[NV*NGP*NGP]  = { };
+    static cusfloat  dNdeta[NV*NGP*NGP] = { };
     
     shape_fcn_der_2d_gp<NV, NGP>( dNdxi, dNdeta );
 
     // Calculate jacobi matrix entries    
-    JACMAT2D_DOT_PRODUCT( jac_mat[0], xn, dNdxi, NGP, NV )
-    JACMAT2D_DOT_PRODUCT( jac_mat[1], xn, dNdeta, NGP, NV )
-    JACMAT2D_DOT_PRODUCT( jac_mat[2], yn, dNdxi, NGP, NV )
-    JACMAT2D_DOT_PRODUCT( jac_mat[3], yn, dNdeta, NGP, NV )
+    JACMAT2D_DOT_PRODUCT( jac_mat[0], xn, dNdxi, NGP*NGP, NV )
+    JACMAT2D_DOT_PRODUCT( jac_mat[1], xn, dNdeta, NGP*NGP, NV )
+    JACMAT2D_DOT_PRODUCT( jac_mat[2], yn, dNdxi, NGP*NGP, NV )
+    JACMAT2D_DOT_PRODUCT( jac_mat[3], yn, dNdeta, NGP*NGP, NV )
 
 }
 
@@ -91,7 +91,7 @@ inline  void    shape_fcn_2d_gp(
     // Switch in between elements type
     if ( constexpr( NV == 3 ) )
     {
-        for ( int i=0; i<NGP; i++ )
+        for ( int i=0; i<NGP*NGP; i++ )
         {
             N[3*i+0] = ( 1 - GaussPointsT<1,NGP>::roots_x[i] ) * ( 1 - GaussPointsT<1,NGP>::roots_y[i] ) / 4.0;
             N[3*i+1] = ( 1 + GaussPointsT<1,NGP>::roots_x[i] ) * ( 1 - GaussPointsT<1,NGP>::roots_y[i] ) / 4.0;
@@ -101,7 +101,7 @@ inline  void    shape_fcn_2d_gp(
 
     if ( constexpr( NV == 4 ) )
     {
-        for ( int i=0; i<NGP; i++ )
+        for ( int i=0; i<NGP*NGP; i++ )
         {
             N[4*i+0] = ( 1 - GaussPointsT<1,NGP>::roots_x[i] ) * ( 1 - GaussPointsT<1,NGP>::roots_y[i] ) / 4.0;
             N[4*i+1] = ( 1 + GaussPointsT<1,NGP>::roots_x[i] ) * ( 1 - GaussPointsT<1,NGP>::roots_y[i] ) / 4.0;
@@ -160,7 +160,7 @@ inline  void    shape_fcn_deta_2d_gp(
     // Switch in between elements type
     if ( constexpr( NV == 3 ) )
     {
-        for ( int i=0; i<NGP; i++ )
+        for ( int i=0; i<NGP*NGP; i++ )
         {
             N[3*i+0] = -( 1 - GaussPointsT<1,NGP>::roots_x[i] ) / 4.0;
             N[3*i+1] = -( 1 + GaussPointsT<1,NGP>::roots_x[i] ) / 4.0;
@@ -171,7 +171,7 @@ inline  void    shape_fcn_deta_2d_gp(
     // Calculate shape function values for rectangular regions
     if ( constexpr( NV == 4 ) )
     {
-        for ( int i=0; i<NGP; i++ )
+        for ( int i=0; i<NGP*NGP; i++ )
         {
             N[4*i+0] = -( 1 - GaussPointsT<1,NGP>::roots_x[i] ) / 4.0;
             N[4*i+1] = -( 1 + GaussPointsT<1,NGP>::roots_x[i] ) / 4.0;
@@ -198,7 +198,7 @@ inline  void    shape_fcn_dxi_2d_gp(
     // Calculate shape function values for simplex regions
     if ( constexpr( NV == 3 ) )
     {
-        for ( int i=0; i<NGP; i++ )
+        for ( int i=0; i<NGP*NGP; i++ )
         {
             N[3*i+0] = -( 1 - GaussPointsT<1,NGP>::roots_y[i] ) / 4.0;
             N[3*i+1] =  ( 1 - GaussPointsT<1,NGP>::roots_y[i] ) / 4.0;
@@ -209,7 +209,7 @@ inline  void    shape_fcn_dxi_2d_gp(
     // Calculate shape function values for rectangular regions
     if ( constexpr( NV == 4 ) )
     {
-        for ( int i=0; i<NGP; i++ )
+        for ( int i=0; i<NGP*NGP; i++ )
         {
             N[4*i+0] = -( 1 - GaussPointsT<1,NGP>::roots_y[i] ) / 4.0;
             N[4*i+1] =  ( 1 - GaussPointsT<1,NGP>::roots_y[i] ) / 4.0;
