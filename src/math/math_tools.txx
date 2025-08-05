@@ -160,7 +160,7 @@ T l2_norm( int n, T* x, T* y )
 {
     T diff  = 0.0;
     T sum   = 0.0;
-    for ( int i=0; i<n, i++ )
+    for ( int i=0; i<n; i++ )
     {
         diff    = x[i] - y[i];
         sum     += diff * diff;
