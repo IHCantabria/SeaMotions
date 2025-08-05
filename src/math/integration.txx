@@ -3,6 +3,7 @@
 #include "../config.hpp"
 #include "../containers/panel_geom_list.hpp"
 #include "gauss.hpp"
+#include "gauss_t.hpp"
 #include "topology.hpp"
 #include "../mesh/tools.hpp"
 
@@ -10,10 +11,10 @@
 using namespace std::literals::complex_literals;
 
 
-template<typename T>   
+template<typename T, typename U>   
 inline cuscomplex   _adaptive_quadrature_panel(
-                                                    PanelGeom*      panel,
-                                                    T               target_fcn,
+                                                    T*              panel,
+                                                    U               target_fcn,
                                                     cuscomplex      prev_int,
                                                     cusfloat        abs_tol,
                                                     cusfloat        rel_tol,
@@ -105,10 +106,10 @@ inline cuscomplex   _adaptive_quadrature_panel(
 }
 
 
-template<typename T>   
+template<typename T, typename U>   
 inline cuscomplex adaptive_quadrature_panel(
-                                                    PanelGeom*      panel,
-                                                    T               target_fcn,
+                                                    T*              panel,
+                                                    U               target_fcn,
                                                     cusfloat        abs_tol,
                                                     cusfloat        rel_tol,
                                                     bool            block_adaption,
@@ -209,10 +210,10 @@ inline cuscomplex adaptive_quadrature_panel(
 }
 
 
-template<typename T>
+template<typename T, typename U>
 cuscomplex  quadrature_panel(
-                                PanelGeom*  panel,
-                                T           target_fcn,
+                                T*          panel,
+                                U           target_fcn,
                                 int         gp_order
                             )
 {
@@ -233,10 +234,10 @@ cuscomplex  quadrature_panel(
 }
 
 
-template<typename T>
+template<typename T, typename U>
 cuscomplex  quadrature_panel(
-                                PanelGeom*      panel,
-                                T               target_fcn,
+                                T*              panel,
+                                U               target_fcn,
                                 GaussPoints*    gp
                             )
 {
@@ -279,6 +280,44 @@ cuscomplex  quadrature_panel(
     }
 
     return int_value;
+}
+
+
+template<typename T, typename U, auto Kernel, int NGP>
+void        quadrature_panel_t(
+                                        T*                  panel,
+                                        U                   target_fcn,
+                                        cuscomplex&         result_G,
+                                        cuscomplex&         result_G_dn
+                                    )
+{
+    // Calculate function value
+    target_fcn.template operator()<Kernel>( 
+                                                panel->xl, 
+                                                panel->yl, 
+                                                panel->gauss_points_global_x, 
+                                                panel->gauss_points_global_y, 
+                                                panel->gauss_points_global_z
+                                            );
+
+    result_G    = 0.0;
+    result_G_dn = 0.0;
+    for ( int i=0; i<NGP*NGP; i++ )
+    {
+        // result_G += gp->weights[i]*gp->weights[j]*fcn_val*
+        // result_G += ( 
+        //                 GaussPointsT<2,NGP>::weights_x[i] 
+        //                 * 
+        //                 GaussPointsT<2,NGP>::weights_y[i]
+        //                 *
+        //                 G[i]
+        //                 *
+        //                 panel->jac_det_gauss_points[i]
+        //             );
+        GAUSS_2D_LOOP( result_G,    target_fcn.G       );
+        GAUSS_2D_LOOP( result_G_dn, target_fcn.dG_dn   );
+    }
+
 }
 
 
