@@ -35,34 +35,41 @@ void         Fxy(
     STATIC_COND( ONLY_FCNDR,    STATIC_CLEAR( n, N, results_dx  ) )
     STATIC_COND( ONLY_FCNDZ,    STATIC_CLEAR( n, N, results_dy  ) )
 
+    // Fit in bounds X value
+    cusfloat XB[N];
+    cusfloat YB[N];
+    STATIC_LOOP( n, N, XB[i] = X[i]; )
+    STATIC_LOOP( n, N, YB[i] = Y[i]; )
+    R11CEV<N>::check_boundaries_raw( n, XB, YB );
+
     // Calculate Bessel functions
-    bessel_factory.calculate_cheby( n, X );
+    bessel_factory.calculate_cheby( n, XB );
 
     // Calculate auxiliar variables
     cusfloat SQRT[N];
     cusfloat EXPY[N];
     cusfloat XINV[N];
 
-    STATIC_LOOP( n, N, SQRT[i] = pow2s( X[i] ) + pow2s( Y[i] ); )
-    STATIC_LOOP( n, N, EXPY[i] = -Y[i]; )
-    STATIC_LOOP( n, N, XINV[i] = 1.0 / X[i]; )
+    STATIC_LOOP( n, N, SQRT[i] = pow2s( XB[i] ) + pow2s( YB[i] ); )
+    STATIC_LOOP( n, N, EXPY[i] = -YB[i]; )
+    STATIC_LOOP( n, N, XINV[i] = 1.0 / XB[i]; )
 
     lv_sqrt<cusfloat>( n, SQRT, SQRT );
     lv_exp<cusfloat>( n, EXPY, EXPY );
 
     // Calculate Chebyshev expansions
-    STATIC_COND( ONLY_FCN or ONLY_FCNDZ,        R11CEV<N>::evaluate( n, X, Y, results );        )
-    STATIC_COND( ONLY_FCNDR,                    R11_dXCEV<N>::evaluate( n, X, Y, results_dx );  )
+    STATIC_COND( ONLY_FCN or ONLY_FCNDZ,        R11CEV<N>::evaluate( n, XB, YB, results );        )
+    STATIC_COND( ONLY_FCNDR,                    R11_dXCEV<N>::evaluate( n, XB, YB, results_dx );  )
 
     // Add Bessel functions contribution
-    STATIC_LOOP( n, N, STATIC_COND( ONLY_FCN or ONLY_FCNDZ,    results[i]      *= -2.0;           ) )
+    STATIC_LOOP( n, N, STATIC_COND( ONLY_FCN or ONLY_FCNDZ,    results[i]      *= - 2.0;           ) )
     STATIC_LOOP( n, N, STATIC_COND( ONLY_FCNDR,                results_dx[i]   *= -2.0 * XINV[i]; ) )
     
     STATIC_LOOP( n, N, STATIC_COND( ONLY_FCN or ONLY_FCNDZ,    results[i]      -= PI * EXPY[i] * ( bessel_factory.struve0[i] + bessel_factory.y0[i] ); ) )
     STATIC_LOOP( n, N, STATIC_COND( ONLY_FCNDR,                results_dx[i]   += 2.0 * XINV[i] * Y[i] / SQRT[i];                                      ) )
 
     STATIC_LOOP( n, N, STATIC_COND( ONLY_FCNDR,                results_dx[i]   += PI * EXPY[i] * ( bessel_factory.y1[i] + bessel_factory.struve1[i] - 2.0 / PI );   ) )
-    STATIC_LOOP( n, N, STATIC_COND( ONLY_FCNDZ,                results_dy[i]    = results[i] - 2.0 / SQRT[i];                                                       ) )
+    STATIC_LOOP( n, N, STATIC_COND( ONLY_FCNDZ,                results_dy[i]    = - results[i] - 2.0 / SQRT[i];                                                       ) )
 
 }
 
@@ -873,6 +880,9 @@ void        wave_term_integral(
     cusfloat v4[N];
     cusfloat v5[N];
 
+    cusfloat sg_z_p_zeta[N];
+    cusfloat sg_z_m_zeta[N];
+
     // Calculate exponential terms expansion parameters
     for ( std::size_t i=0; i<N; i++ )
     {
@@ -884,6 +894,13 @@ void        wave_term_integral(
         v4[i] = zeta[i] - z[i] + 2*h;
         v5[i] = z[i] + zeta[i] + 4*h;
 
+    }
+
+    // Calculate sign( z - zeta ) for dB case
+    for ( std::size_t i=0; i<N; i++ )
+    {
+        sg_z_p_zeta[i] = sign( z[i] + zeta[i] );
+        sg_z_m_zeta[i] = sign( z[i] - zeta[i] );
     }
 
     // Calculate integrals expansion hyperparameters
@@ -998,7 +1015,7 @@ void        wave_term_integral(
     {
         STATIC_COND( ONLY_FCN,      G_real[i]       = res_fcn0[i];      )
         STATIC_COND( ONLY_FCNDR,    G_dr_real[i]    = res_fcn0_da[i];   )
-        STATIC_COND( ONLY_FCNDZ,    G_dz_real[i]    = res_fcn0_db[i];   )
+        STATIC_COND( ONLY_FCNDZ,    G_dz_real[i]    = res_fcn0_db[i] * sg_z_m_zeta[i];   )
     }
 
     for ( std::size_t i=0; i<b1_lt1_count; i++ )
@@ -1028,7 +1045,7 @@ void        wave_term_integral(
     {
         STATIC_COND( ONLY_FCN,      G_real[b1_gt1_pos[i]]       += nu * res_fxy_bgt1[i];        )
         STATIC_COND( ONLY_FCNDR,    G_dr_real[b1_gt1_pos[i]]    += nu2 * res_fxy_bgt1_dx[i];    )
-        STATIC_COND( ONLY_FCNDZ,    G_dz_real[b1_gt1_pos[i]]    += nu2 * res_fxy_bgt1_dy[i];    )
+        STATIC_COND( ONLY_FCNDZ,    G_dz_real[b1_gt1_pos[i]]    += nu2 * res_fxy_bgt1_dy[i] * sg_z_p_zeta[i];    )
     }
 
     // Calculate exponential terms for imaginary part
@@ -1065,7 +1082,7 @@ void        wave_term_integral(
     {
         STATIC_COND( ONLY_FCN, G[i]    = cuscomplex( G_real[i], k0nu * expsum[i] * j0_vec[i] ); )
         STATIC_COND( ONLY_FCNDR, G_dr[i] = cuscomplex( G_dr_real[i], -k0nu * expsum[i] * j1_vec[i] * k0 ); )
-        STATIC_COND( ONLY_FCNDZ, G_dz[i] = cuscomplex( G_dz_real[i], -k0nu * expsum[i] * j0_vec[i] * k0 ); )
+        STATIC_COND( ONLY_FCNDZ, G_dz[i] = cuscomplex( G_dz_real[i], -k0nu * expsum_dz[i] * j0_vec[i] * k0 ); )
     }
 
 }
