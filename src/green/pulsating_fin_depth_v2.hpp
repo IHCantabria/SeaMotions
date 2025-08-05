@@ -12,14 +12,7 @@
 
 
 // Define module macros
-#define IS_STATIC_LOOP                          mode_loop == 0
-#define LOOP_DEF( N, code_block )               for ( std::size_t i=0; i<N; i++ ){ code_block }
-#define STATIC_CLEAR( n, N, vec )               if constexpr( IS_STATIC_LOOP ) { (clear_vector<cusfloat, N>( vec )); } else { (clear_vector<cusfloat>( n, vec )); }
-#define STATIC_COND( cond, code_block )         if constexpr( cond ) { code_block }
-#define STATIC_LOOP( n, N, code_block )         if constexpr( IS_STATIC_LOOP ) { LOOP_DEF( N, code_block ) } else { LOOP_DEF( n, code_block ) }
-#define ONLY_FCN                                mode_f == 1
-#define ONLY_FCNDR                              mode_dfdr == 1
-#define ONLY_FCNDZ                              mode_dfdz == 1
+
 
 // Define module constants
 #define     GREEN_ZEROTH_DR     1e-4
@@ -190,8 +183,9 @@ inline cuscomplex  john_series(
                         + exp(-k0*v5)
                         + exp(-k0*v6)
                     );
-    cusfloat c_real = -wave_data.k0nu*expsum;
-    cuscomplex sol = c_real*(bessely0(k0r)-besselj0(k0r)*1i);
+    cusfloat    c_real = -wave_data.k0nu*expsum;
+    cuscomplex  sol( bessely0(k0r), -besselj0(k0r) );
+                sol = c_real*sol;
 
     // Calculate imag root series part
     cusfloat c_imag = 0.0;
