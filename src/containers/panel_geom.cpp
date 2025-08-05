@@ -499,6 +499,9 @@ PanelGeom::PanelGeom(
 
     // Calculate panel properties
     this->calculate_properties( cog );
+
+    // Calculate integral properties
+    this->calculate_integration_properties<NUM_GP>( );
 }
 
 
@@ -539,14 +542,16 @@ void PanelGeom::write(
 
 std::ostream& operator<< ( std::ostream& os, PanelGeom& panel )
 {
-    std::cout << "PANEL PROPERTIES:" << std::endl;
-    std::cout << " - PANEL COORDINATES: " << std::endl;
+    os << "PANEL PROPERTIES:" << std::endl;
+    os << " - PANEL COORDINATES: " << std::endl;
     for ( int i=0; i<panel.num_nodes; i++ )
     {
-        std::cout << "   -> X: " << panel.x[i] << " Y: " << panel.y[i] << " Z: " << panel.z[i] << std::endl;
+        os << "   -> X: " << panel.x[i] << " Y: " << panel.y[i] << " Z: " << panel.z[i] << std::endl;
     }
-    std::cout << std::endl;
+    os << std::endl;
 
-    std::cout << " - NORMAL VECTOR:" << std::endl;
-    std::cout << "   -> X: " << panel.normal_vec[0] << " Y: " << panel.normal_vec[1] << " Z: " << panel.normal_vec[2] << std::endl;
+    os << " - NORMAL VECTOR:" << std::endl;
+    os << "   -> X: " << panel.normal_vec[0] << " Y: " << panel.normal_vec[1] << " Z: " << panel.normal_vec[2] << std::endl;
+
+    return os;
 }

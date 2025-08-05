@@ -1,6 +1,5 @@
 
-#ifndef __panel_geom_hpp
-#define __panel_geom_hpp
+#pragma once
 
 // Include local modules
 #include "../config.hpp"
@@ -22,6 +21,10 @@ public:
     cusfloat                center[3]               = {0.0, 0.0, 0.0};
     cusfloat                center_wl[3]            = {0.0, 0.0, 0.0};
     cusfloat                global_to_local_mat[9];
+    cusfloat                gauss_points_global_x[NUM_GP2];
+    cusfloat                gauss_points_global_y[NUM_GP2];
+    cusfloat                gauss_points_global_z[NUM_GP2];
+    cusfloat                jac_det_gauss_points[NUM_GP2];
     cusfloat                is_move_f               = 0.0;
     bool                    is_wl_boundary          = false;
     cusfloat                len_wl                  = 0;
@@ -64,6 +67,9 @@ public:
                 );
 
     // Add method to calculate the geometric propertiess
+    template<int NGP>
+    void    calculate_integration_properties( void );
+
     void    calculate_properties(       
                                         cusfloat*   cog
                                 );
@@ -121,4 +127,5 @@ public:
     friend std::ostream& operator<< ( std::ostream& os, PanelGeom& panel );
 };  
 
-#endif
+// Include template definitions
+#include "panel_geom.txx"
