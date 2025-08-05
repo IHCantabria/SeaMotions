@@ -6,6 +6,7 @@
 
 // Include local modules
 #include "../config.hpp"
+#include "../static_tools.hpp"
 #include "../math/chebyshev.hpp"
 #include "../math/math_tools.hpp"
 
@@ -13,83 +14,59 @@
 /**************************************/
 /******* Define Module Macros *********/
 /**************************************/
-#define MAP_LOOP(x)                                                                                         \
-for (std::size_t i = 0; i < n; i++) {                                                                       \
-    x##m[i] = 2.0 * (x##s[i] - Derived::x##_min_region[nt[i]]) / Derived::d##x##_region[nt[i]] - 1.0;       \
-}                                                                                                           \
+#define MAP_LOOP(x) STATIC_LOOP( n, N, x##m[i] = 2.0 * (x##s[i] - Derived::x##_min_region[nt[i]]) / Derived::d##x##_region[nt[i]] - 1.0; )                                                                                                          \
 
 
-template<typename Derived, std::size_t N>
+template<typename Derived, std::size_t N, int mode_loop>
 struct ChebyshevEvaluatorBaseVector
 {
     static void check_boundaries( const std::size_t n, cusfloat* xs, cusfloat* ys )
     {
-        // std::cout << "BOUNDARIES: " << std::endl;
-        for ( std::size_t i=0; i<n; i++ )
-        {
-            xs[i] = std::max( std::min( xs[i], Derived::x_max_global ), Derived::x_min_global );
-            ys[i] = std::max( std::min( ys[i], Derived::y_max_global ), Derived::x_min_global );
-            // std::cout << "Index: " << i << " - xs: " << xs[i] << " - ys: " << ys[i] << std::endl;
-        }
+        STATIC_LOOP( n, N, xs[i] = std::max( std::min( xs[i], Derived::x_max_global ), Derived::x_min_global ); )
+        STATIC_LOOP( n, N, ys[i] = std::max( std::min( ys[i], Derived::y_max_global ), Derived::x_min_global ); )
     }
 
     static void check_boundaries_raw( const std::size_t n, cusfloat* xs, cusfloat* ys )
     {
-        cusfloat x_min_global_raw = 0.0;
-        cusfloat x_max_global_raw = 0.0;
-        cusfloat y_min_global_raw = 0.0;
-        cusfloat y_max_global_raw = 0.0;
-        if constexpr( Derived::x_log_scale )
-        {
-            x_min_global_raw = std::pow( 10, Derived::x_min_global );
-            x_max_global_raw = std::pow( 10, Derived::x_max_global );
-        }
-        else
-        {
-            y_min_global_raw = Derived::x_min_global;
-            y_max_global_raw = Derived::x_max_global;
-        }
+        // Declare local variables
+        cusfloat x_min = 0.0, x_max = 0.0;
+        cusfloat y_min = 0.0, y_max = 0.0;
 
-        if constexpr( Derived::y_log_scale )
-        {
-            y_min_global_raw = std::pow( 10, Derived::y_min_global );
-            y_max_global_raw = std::pow( 10, Derived::y_max_global );
-        }
-        else
-        {
-            y_min_global_raw = Derived::y_min_global;
-            y_max_global_raw = Derived::y_max_global;
-        }
+        // Check for scales
+        STATIC_COND_2( Derived::x_log_scale, x_min = std::pow( 10, Derived::x_min_global );, x_min = Derived::x_min_global; )
+        STATIC_COND_2( Derived::x_log_scale, x_max = std::pow( 10, Derived::x_max_global );, x_max = Derived::x_max_global; )
+        STATIC_COND_2( Derived::y_log_scale, y_min = std::pow( 10, Derived::y_min_global );, y_min = Derived::y_min_global; )
+        STATIC_COND_2( Derived::y_log_scale, y_max = std::pow( 10, Derived::y_max_global );, y_max = Derived::y_max_global; )
 
-        // std::cout << "BOUNDARIES: " << std::endl;
-        for ( std::size_t i=0; i<n; i++ )
-        {
-            xs[i] = std::max( std::min( xs[i], x_max_global_raw ), x_min_global_raw );
-            ys[i] = std::max( std::min( ys[i], y_max_global_raw ), y_min_global_raw );
-            // std::cout << "Index: " << i << " - xs: " << xs[i] << " - ys: " << ys[i] << std::endl;
-        }
+        // Apply boundaries
+        STATIC_LOOP( n, N, xs[i] = std::max( std::min( xs[i], x_max ), x_min ); )
+        STATIC_LOOP( n, N, ys[i] = std::max( std::min( ys[i], y_max ), y_min ); )
     }
 
     static bool check_single_block( const std::size_t n, std::size_t* start_pos )
     {
         bool is_single = true;
-        for ( std::size_t i=1; i<n; i++ )
-        {
-            if ( start_pos[0] != start_pos[i] )
-            {
-                is_single = false;
-                break;
-            }
-        }
+        STATIC_LOOP( n-1, N-1, 
+                                {
+                                    if ( start_pos[0] != start_pos[i+1] )
+                                    {
+                                        is_single = false;
+                                        break;
+                                    }
+                                }
+                    )
 
         return is_single;
     }
 
     static void evaluate( const std::size_t n, cusfloat* x, cusfloat* y, cusfloat* result )
     {
+        // Declare local variables
+        cusfloat xs[N], ys[N];
+        STATIC_COPY( n, N, x, xs );
+        STATIC_COPY( n, N, y, ys );
+        
         // Check scaling of input variables if any
-        cusfloat xs[N]; copy_vector( n, x, xs );
-        cusfloat ys[N]; copy_vector( n, y, ys );
         scale( n, xs, ys );
 
         // std::cout << "SCALE:" << std::endl;
@@ -144,8 +121,7 @@ struct ChebyshevEvaluatorBaseVector
 
 
         // Map coordinates
-        cusfloat xm[N];
-        cusfloat ym[N];
+        cusfloat xm[N], ym[N];
         
         MAP_LOOP( x )
         MAP_LOOP( y )
@@ -175,15 +151,15 @@ struct ChebyshevEvaluatorBaseVector
             //                                                                     ym,
             //                                                                     result
             //                                                                 );
-            evaluate_chebyshev_polynomials_2d_vector_t<Derived, N>( 
-                                                                        start_pos[0],
-                                                                        block_size[0],
-                                                                        nt[0],
-                                                                        n,
-                                                                        xm,
-                                                                        ym,
-                                                                        result
-                                                                    );
+            evaluate_chebyshev_polynomials_2d_vector_t<Derived, N, mode_loop>( 
+                                                                                start_pos[0],
+                                                                                block_size[0],
+                                                                                nt[0],
+                                                                                n,
+                                                                                xm,
+                                                                                ym,
+                                                                                result
+                                                                            );
         }
         else
         {
@@ -204,45 +180,34 @@ struct ChebyshevEvaluatorBaseVector
 
     static void get_block_props( const std::size_t n, cusfloat* xs, cusfloat* ys, std::size_t* sp, std::size_t* bd, std::size_t* ntv )
     {
-        constexpr cusfloat dx = ( Derived::x_max_global - Derived::x_min_global ) / Derived::intervals_np;
-        constexpr cusfloat dy = ( Derived::y_max_global - Derived::y_min_global ) / Derived::intervals_np;
-        for ( std::size_t i=0; i<n; i++ )
-        {
-            // Estimate interval hash
-            std::size_t nx  = static_cast<std::size_t>( std::floor( ( xs[i] - Derived::x_min_global ) / dx ) );
-            std::size_t ny  = static_cast<std::size_t>( std::floor( ( ys[i] - Derived::y_min_global ) / dy ) );
-            nx              = std::min( nx, static_cast<std::size_t>( Derived::intervals_np ) - 1 );
-            ny              = std::min( ny, static_cast<std::size_t>( Derived::intervals_np ) - 1 );
-            std::size_t nt  = nx * Derived::intervals_np + ny;
-    
-            // Get starting position
-            sp[i] = Derived::blocks_start[nt];
-    
-            // Get block dimensions;
-            bd[i] = Derived::blocks_coeffs_np[nt];
+        constexpr   cusfloat    dx          = ( Derived::x_max_global - Derived::x_min_global ) / Derived::intervals_np;
+        constexpr   cusfloat    dy          = ( Derived::y_max_global - Derived::y_min_global ) / Derived::intervals_np;
 
-            // Storage position in virtual grid
-            ntv[i] = nt;
-        }
+        STATIC_LOOP(  n, N,
+                            {
+                                // Estimate interval hash
+                                std::size_t nx  = static_cast<std::size_t>( std::floor( ( xs[i] - Derived::x_min_global ) / dx ) );
+                                std::size_t ny  = static_cast<std::size_t>( std::floor( ( ys[i] - Derived::y_min_global ) / dy ) );
+                                nx              = std::min( nx, static_cast<std::size_t>( Derived::intervals_np ) - 1 );
+                                ny              = std::min( ny, static_cast<std::size_t>( Derived::intervals_np ) - 1 );
+                                std::size_t nt  = nx * Derived::intervals_np + ny;
+                        
+                                // Get starting position
+                                sp[i] = Derived::blocks_start[nt];
+                        
+                                // Get block dimensions;
+                                bd[i] = Derived::blocks_coeffs_np[nt];
+                        
+                                // Storage position in virtual grid
+                                ntv[i] = nt;
+                            }
+                    )
     }
 
     static void scale( const std::size_t n, cusfloat* xs, cusfloat* ys )
     {
-        if constexpr( Derived::x_log_scale )
-        {
-            for ( std::size_t i=0; i<n; i++ )
-            {
-                xs[i] = std::log10( xs[i] );
-            }
-        }
-
-        if constexpr( Derived::y_log_scale )
-        {
-            for ( std::size_t i=0; i<n; i++ )
-            {
-                ys[i] = std::log10( ys[i] );
-            }
-        }
+        STATIC_COND( Derived::x_log_scale, STATIC_LOOP( n, N, xs[i] = std::log10( xs[i] ); ) )
+        STATIC_COND( Derived::y_log_scale, STATIC_LOOP( n, N, ys[i] = std::log10( ys[i] ); ) )
     }
 };
 
