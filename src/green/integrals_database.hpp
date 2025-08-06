@@ -414,61 +414,34 @@ inline void fold_database( cusfloat H )
     {
         // Fold L3 integral family
         double a = 0.0;
-        std::cout << "L3C";
         fold_database_3d<L3C>( H );
-        std::cout << " --> Done!" << std::endl;
-        std::cout << "L3_dAC";
         fold_database_3d<L3_dAC>( H );
-        std::cout << " --> Done!" << std::endl;
-        std::cout << "L3_dBC";
         fold_database_3d<L3_dBC>( H );
-        std::cout << " --> Done!" << std::endl;
 
         // Fold M3 integral family
-        std::cout << "M3C";
         fold_database_3d<M3C>( H );
-        std::cout << " --> Done!" << std::endl;
-        std::cout << "M3_dAC";
         fold_database_3d<M3_dAC>( H );
-        std::cout << " --> Done!" << std::endl;
-        std::cout << "M3_dBC";
         fold_database_3d<M3_dBC>( H );
-        std::cout << " --> Done!" << std::endl;
 
     }
     else
     {
         // Fold L1 integral family
-        std::cout << "L1C";
         fold_database_3d<L1C>( H );
-        std::cout << " --> Done!" << std::endl;
-        std::cout << "L1_dAC";
         fold_database_3d<L1_dAC>( H );
-        std::cout << " --> Done!" << std::endl;
-        std::cout << "L1_dBC";
         fold_database_3d<L1_dBC>( H );
-        std::cout << " --> Done!" << std::endl;
         
         // Fold L2 integral family
-        std::cout << "L2C";
         fold_database_1d<L2C>( H );
-        std::cout << " --> Done!" << std::endl;
 
         // Fold M1 integral family
-        std::cout << "M1C";
         fold_database_3d<M1C>( H );
-        std::cout << " --> Done!" << std::endl;
-        std::cout << "M1_dAC";
         fold_database_3d<M1_dAC>( H );
-        std::cout << " --> Done!" << std::endl;
-        std::cout << "M1_dBC";
         fold_database_3d<M1_dBC>( H );
-        std::cout << " --> Done!" << std::endl;
         
         // Fold M2 integral family
-        std::cout << "M2C";
         fold_database_1d<M2C>( H );
-        std::cout << " --> Done!" << std::endl;
+        
     }
     
     
