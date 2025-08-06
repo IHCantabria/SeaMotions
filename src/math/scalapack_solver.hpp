@@ -93,9 +93,6 @@ void ScalapackSolver<T>::GenerateRhsComm(void)
     // layout configured for Scalapack Solver in this class
     MKL_INT new_ranks[num_procs_row];
     new_ranks[0] = this->proc_root;
-    std::cout << "proc_root: " << this->proc_root << std::endl;
-    std::cout << "Rank[0]: " << new_ranks[0] << std::endl;
-
 
     // Construct a group containing all of the prime ranks in world_group
     MPI_Group_incl(world_group, num_procs_row, new_ranks, &rhs_group);
