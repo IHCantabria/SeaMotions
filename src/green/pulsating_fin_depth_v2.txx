@@ -20,7 +20,7 @@
 using namespace std::literals::complex_literals;
 
 
-template<std::size_t N, int mode_loop, int mode_f, int mode_dfdr, int mode_dfdz>
+template<std::size_t N, int mode_loop, int mode_f, int mode_dfdr, int mode_dfdz, int mode_fslid>
 void         Fxy(
                                                 const std::size_t           n,
                                                 cusfloat*                   X,
@@ -50,13 +50,21 @@ void         Fxy(
     cusfloat SQRT[N];
     cusfloat EXPY[N];
     cusfloat XINV[N];
+    cusfloat LOG_SQRT[N];
 
     STATIC_LOOP( n, N, SQRT[i] = pow2s( XB[i] ) + pow2s( YB[i] ); )
     STATIC_LOOP( n, N, EXPY[i] = -YB[i]; )
     STATIC_LOOP( n, N, XINV[i] = 1.0 / XB[i]; )
-
+    
     lv_sqrt<cusfloat>( n, SQRT, SQRT );
     lv_exp<cusfloat>( n, EXPY, EXPY );
+    
+    // Calculate auxiliar variables in case of lid panel
+    // STATIC_COND( IS_LID_PANEL,  );
+
+    STATIC_LOOP( n, N, STATIC_COND( IS_LID_PANEL, LOG_SQRT[i] = SQRT[i] + YB[i]; ) )
+
+    STATIC_COND( IS_LID_PANEL, lv_log<cusfloat>( n, LOG_SQRT, LOG_SQRT ); );
 
     // Calculate Chebyshev expansions
     STATIC_COND( ONLY_FCN or ONLY_FCNDZ,        (R11CEV<N, mode_loop>::evaluate( n, XB, YB, results ));        )
@@ -67,11 +75,13 @@ void         Fxy(
     STATIC_LOOP( n, N, STATIC_COND( ONLY_FCNDR,                results_dx[i]   *= -2.0 * XINV[i]; ) )
     
     STATIC_LOOP( n, N, STATIC_COND( ONLY_FCN or ONLY_FCNDZ,    results[i]      -= PI * EXPY[i] * ( bessel_factory.struve0[i] + bessel_factory.y0[i] ); ) )
-    STATIC_LOOP( n, N, STATIC_COND( ONLY_FCNDR,                results_dx[i]   += 2.0 * XINV[i] * Y[i] / SQRT[i];                                      ) )
+    STATIC_LOOP( n, N, STATIC_COND( ONLY_FCNDR,                results_dx[i]   += 2.0 * XINV[i] * YB[i] / SQRT[i];                                      ) )
 
     STATIC_LOOP( n, N, STATIC_COND( ONLY_FCNDR,                results_dx[i]   += PI * EXPY[i] * ( bessel_factory.y1[i] + bessel_factory.struve1[i] - 2.0 / PI );   ) )
     STATIC_LOOP( n, N, STATIC_COND( ONLY_FCNDZ,                results_dy[i]    = - results[i] - 2.0 / SQRT[i];                                                       ) )
 
+    // Remove singular value if panel LID
+    STATIC_LOOP( n, N, STATIC_COND( IS_LID_PANEL,              results[i]      -= 2.0 * ( LOG2_GAMMA - LOG_SQRT[i] ); ) )
 }
 
 
@@ -820,7 +830,7 @@ void        wave_term_fin_depth_integral(
 }
 
 
-template<std::size_t N, int mode_f, int mode_dfdr, int mode_dfdz>
+template<std::size_t N, int mode_f, int mode_dfdr, int mode_dfdz, int mode_fslid>
 void        wave_term_integral(
                                                 cusfloat*                   R,
                                                 cusfloat*                   z,
@@ -977,13 +987,13 @@ void        wave_term_integral(
         else if ( b1_lt1_count < 1 )
         {
             G2_Hgt1<N, STATIC_LOOP_ON, mode_f, mode_dfdr, mode_dfdz>( N, A_gt1, b1_gt1, res_fcn1_bgt1, res_fcn1_bgt1_da, res_fcn1_bgt1_db );
-            Fxy<N, STATIC_LOOP_ON, mode_f, mode_dfdr, mode_dfdz>( N, X_gt1, Y_gt1, bessel_factory, res_fxy_bgt1, res_fxy_bgt1_dx, res_fxy_bgt1_dy );
+            Fxy<N, STATIC_LOOP_ON, mode_f, mode_dfdr, mode_dfdz, mode_fslid>( N, X_gt1, Y_gt1, bessel_factory, res_fxy_bgt1, res_fxy_bgt1_dx, res_fxy_bgt1_dy );
         }
         else
         {
             G1_Hgt1<N, STATIC_LOOP_OFF, mode_f, mode_dfdr, mode_dfdz>( b1_lt1_count, A_lt1, b1_lt1, res_fcn1_blt1, res_fcn1_blt1_da, res_fcn1_blt1_db );
             G2_Hgt1<N, STATIC_LOOP_OFF, mode_f, mode_dfdr, mode_dfdz>( b1_gt1_count, A_gt1, b1_gt1, res_fcn1_bgt1, res_fcn1_bgt1_da, res_fcn1_bgt1_db );
-            Fxy<N, STATIC_LOOP_OFF, mode_f, mode_dfdr, mode_dfdz>( b1_gt1_count, X_gt1, Y_gt1, bessel_factory, res_fxy_bgt1, res_fxy_bgt1_dx, res_fxy_bgt1_dy );
+            Fxy<N, STATIC_LOOP_OFF, mode_f, mode_dfdr, mode_dfdz, mode_fslid>( b1_gt1_count, X_gt1, Y_gt1, bessel_factory, res_fxy_bgt1, res_fxy_bgt1_dx, res_fxy_bgt1_dy );
         }
     }
     else
@@ -997,13 +1007,13 @@ void        wave_term_integral(
         else if ( b1_lt1_count < 1 )
         {
             G2_Hlt1<N, STATIC_LOOP_ON, mode_f, mode_dfdr, mode_dfdz>( N, A_gt1, b1_gt1, res_fcn1_bgt1, res_fcn1_bgt1_da, res_fcn1_bgt1_db );
-            Fxy<N, STATIC_LOOP_ON, mode_f, mode_dfdr, mode_dfdz>( N, X_gt1, Y_gt1, bessel_factory, res_fxy_bgt1, res_fxy_bgt1_dx, res_fxy_bgt1_dy );
+            Fxy<N, STATIC_LOOP_ON, mode_f, mode_dfdr, mode_dfdz, mode_fslid>( N, X_gt1, Y_gt1, bessel_factory, res_fxy_bgt1, res_fxy_bgt1_dx, res_fxy_bgt1_dy );
         }
         else
         {
             G1_Hlt1<N, STATIC_LOOP_OFF, mode_f, mode_dfdr, mode_dfdz>( b1_lt1_count, A_lt1, b1_lt1, res_fcn1_blt1, res_fcn1_blt1_da, res_fcn1_blt1_db );
             G2_Hlt1<N, STATIC_LOOP_OFF, mode_f, mode_dfdr, mode_dfdz>( b1_gt1_count, A_gt1, b1_gt1, res_fcn1_bgt1, res_fcn1_bgt1_da, res_fcn1_bgt1_db );
-            Fxy<N, STATIC_LOOP_OFF, mode_f, mode_dfdr, mode_dfdz>( b1_gt1_count, X_gt1, Y_gt1, bessel_factory, res_fxy_bgt1, res_fxy_bgt1_dx, res_fxy_bgt1_dy );
+            Fxy<N, STATIC_LOOP_OFF, mode_f, mode_dfdr, mode_dfdz, mode_fslid>( b1_gt1_count, X_gt1, Y_gt1, bessel_factory, res_fxy_bgt1, res_fxy_bgt1_dx, res_fxy_bgt1_dy );
         }
     }
 
@@ -1049,6 +1059,13 @@ void        wave_term_integral(
         STATIC_COND( ONLY_FCNDZ,    G_dz_real[b1_gt1_pos[i]]    += nu2 * res_fxy_bgt1_dy[i] * sg_z_p_zeta[i];    )
     }
 
+    // for ( std::size_t i=0; i<N; i++ )
+    // {
+    //     STATIC_COND( ONLY_FCN,      G_real[i]       = nu * res_fxy_bgt1[i];        )
+    //     STATIC_COND( ONLY_FCNDR,    G_dr_real[i]    = nu2 * res_fxy_bgt1_dx[i];    )
+    //     STATIC_COND( ONLY_FCNDZ,    G_dz_real[i]    = nu2 * res_fxy_bgt1_dy[i] * sg_z_p_zeta[i];    )
+    // }
+
     // Calculate exponential terms for imaginary part
     cusfloat expsum[N], expsum_dz[N];
     cusfloat c0 = 0.0, c1 = 0.0, c2 = 0.0, c3 = 0.0;
@@ -1081,10 +1098,22 @@ void        wave_term_integral(
     // Calculate green function values
     for ( std::size_t i=0; i<N; i++ )
     {
-        STATIC_COND( ONLY_FCN, G[i]    = cuscomplex( G_real[i], k0nu * expsum[i] * j0_vec[i] ); )
-        STATIC_COND( ONLY_FCNDR, G_dr[i] = cuscomplex( G_dr_real[i], -k0nu * expsum[i] * j1_vec[i] * k0 ); )
-        STATIC_COND( ONLY_FCNDZ, G_dz[i] = cuscomplex( G_dz_real[i], -k0nu * expsum_dz[i] * j0_vec[i] * k0 ); )
+        STATIC_COND( ONLY_FCNDR, G_dr_real[i] = ( R[i] < 1e-4 ) ? 0.0 : G_dr_real[i]; )
     }
+
+    for ( std::size_t i=0; i<N; i++ )
+    {
+        STATIC_COND( ONLY_FCN, G[i]      = cuscomplex( G_real[i], k0nu * expsum[i] * j0_vec[i]               ); )
+        STATIC_COND( ONLY_FCNDR, G_dr[i] = cuscomplex( G_dr_real[i], -k0nu * expsum[i] * j1_vec[i] * k0      ); )
+        STATIC_COND( ONLY_FCNDZ, G_dz[i] = cuscomplex( G_dz_real[i], -k0nu * expsum_dz[i] * j0_vec[i] * k0   ); )
+    }
+
+    // for ( std::size_t i=0; i<N; i++ )
+    // {
+    //     STATIC_COND( ONLY_FCN, G[i]         = cuscomplex( G_real[i],    2.0 * PI * nu * std::exp( -nu * v2[i] ) * j0_vec[i]             ); )
+    //     STATIC_COND( ONLY_FCNDR, G_dr[i]    = cuscomplex( G_dr_real[i], -2.0 * PI * pow2s( nu ) * std::exp( -nu * v2[i] ) * j1_vec[i]   ); )
+    //     STATIC_COND( ONLY_FCNDZ, G_dz[i]    = cuscomplex( G_dz_real[i], 2.0 * PI * pow2s( nu ) * std::exp( -nu * v2[i] ) * j0_vec[i]    ); )
+    // }
 
 }
 
