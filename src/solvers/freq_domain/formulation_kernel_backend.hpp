@@ -2,14 +2,14 @@
 #pragma once
 
 // Include local modules
-#include "../../src/containers/matlin_group.hpp"
-#include "../../src/containers/mpi_config.hpp"
-#include "../../src/containers/simulation_data.hpp"
-#include "../../src/inout/input.hpp"
-#include "../../src/interfaces/gwfcns_interface_t.hpp"
-#include "../../src/math/scalapack_solver.hpp"
-#include "../../src/mesh/mesh_group.hpp"
-#include "../../src/static_tools.hpp"
+#include "../../containers/matlin_group.hpp"
+#include "../../containers/mpi_config.hpp"
+#include "../../containers/simulation_data.hpp"
+#include "../../inout/input.hpp"
+#include "../../interfaces/gwfcns_interface_t.hpp"
+#include "../../math/scalapack_solver.hpp"
+#include "../../mesh/mesh_group.hpp"
+#include "../../static_tools.hpp"
 
 // Declare auxiliary macros
 #define COL_MAJOR_INDEX( index, row_count, col_count, num_rows_local ) index_cm = col_count * num_rows_local + row_count;
@@ -21,7 +21,7 @@ struct FormulationKernelBackend
 {
 private:
     // Declare private variables
-    GWFcnsInterfaceT<N*N>   _gwfcns_interf          = nullptr;  // Wave part functor interface used for the integration over the panel by using Gauss Points
+    GWFcnsInterfaceT<N*N>   _gwfcns_interf;                     // Wave part functor interface used for the integration over the panel by using Gauss Points
     Input*                  _input                  = nullptr;  // Input system to have access to the case configuration
     int                     _is_condition_number    = false;    // Switch to enable or disable the computation of the Condition number of the system matrixes for all the available formulations
     MeshGroup*              _mesh_gp                = nullptr;  // Mesh group describing the target case topology
@@ -77,4 +77,4 @@ public:
 };
 
 // Include class method definitions
-#include "formulation_kernel_backend.hpp"
+#include "formulation_kernel_backend.txx"

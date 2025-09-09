@@ -21,6 +21,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_steady_matrixes( void )
     const int   ndim                    = 3;
     cusfloat    field_point_i[ndim];    clear_vector( ndim, field_point_i );
     PanelGeom*  panel_i                 = nullptr;
+    PanelGeom*  panel_mirror_i          = nullptr;
     cusfloat    vel_0[ndim];            clear_vector( ndim, vel_0 );
     cusfloat    vel_1[ndim];            clear_vector( ndim, vel_1 );
     cusfloat    vel_2[ndim];            clear_vector( ndim, vel_2 );
@@ -51,7 +52,8 @@ void FormulationKernelBackend<N, mode_pf>::_build_steady_matrixes( void )
     for ( int i=this->_solver->start_col_0; i<this->_solver->end_col_0; i++ )
     {
         // Get pointer to ith panel
-        panel_i = this->_mesh_gp->panels[i];
+        panel_i         = this->_mesh_gp->panels[i];
+        panel_mirror_i  = this->_mesh_gp->panels_mirror[i];
 
         // Loop over rows to calcualte the influence of the panel
         // over each collocation point
@@ -75,11 +77,11 @@ void FormulationKernelBackend<N, mode_pf>::_build_steady_matrixes( void )
             pot_3       = 0.0;
             pot_4       = 0.0;
             pot_5       = 0.0;
-            pot_term    = 0.0
+            pot_term    = 0.0;
             
             // Calcualte velocity corresponding to the r0 source
             calculate_source_newman(
-                                        this->_mesh_gp->panels[i],
+                                        panel_i,
                                         &(field_points[3*j]), 
                                         0,
                                         0, 
@@ -92,7 +94,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_steady_matrixes( void )
             field_point_i[1]    =   field_points[3*j+1];
             field_point_i[2]    =   field_points[3*j+2] + 2 * this->_input->water_depth;
             calculate_source_newman(
-                                        this->_mesh_gp->panels_mirror[i],
+                                        panel_mirror_i,
                                         field_point_i, 
                                         0,
                                         0, 
@@ -105,7 +107,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_steady_matrixes( void )
             field_point_i[1]    =   field_points[3*j+1];
             field_point_i[2]    =   field_points[3*j+2];
             calculate_source_newman(
-                                        this->_mesh_gp->panels_mirror[i],
+                                        panel_mirror_i,
                                         field_point_i, 
                                         0,
                                         0, 
@@ -118,7 +120,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_steady_matrixes( void )
             field_point_i[1]    =   field_points[3*j+1];
             field_point_i[2]    =   field_points[3*j+2] + 2.0 * this->_input->water_depth;
             calculate_source_newman(
-                                        this->_mesh_gp->panels[i],
+                                        panel_i,
                                         field_point_i, 
                                         0,
                                         0, 
@@ -131,7 +133,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_steady_matrixes( void )
             field_point_i[1]    =   field_points[3*j+1];
             field_point_i[2]    =   -field_points[3*j+2] + 2.0 * this->_input->water_depth;
             calculate_source_newman(
-                                        this->_mesh_gp->panels_mirror[i],
+                                        panel_mirror_i,
                                         field_point_i, 
                                         0,
                                         0, 
@@ -144,7 +146,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_steady_matrixes( void )
             field_point_i[1]    =   field_points[3*j+1];
             field_point_i[2]    =   field_points[3*j+2] + 4.0 * this->_input->water_depth;
             calculate_source_newman(
-                                        this->_mesh_gp->panels_mirror[i],
+                                        panel_mirror_i,
                                         field_point_i, 
                                         0,
                                         0, 
@@ -206,6 +208,9 @@ void FormulationKernelBackend<N, mode_pf>::_build_steady_matrixes( void )
 
     // Delete heap memory associated to this block of code
     mkl_free( field_points );
+
+    // Synchronize processes progress status
+    MPI_Barrier( MPI_COMM_WORLD );
 }
 
 
@@ -218,10 +223,10 @@ void FormulationKernelBackend<N, mode_pf>::_build_rhs(
     int         col_count   = 0;
     int         dofs_offset = this->_input->dofs_np * this->_pot_gp->sysmat_nrows;
     int         index       = 0;
-    int         index_cm    = 0;
     int         index_rm    = 0;
     PanelGeom*  panel_j     = nullptr;
     int         row_count   = 0;
+    SourceNode* source_i    = nullptr;
     cuscomplex  wave_dx     = cuscomplex( 0.0, 0.0 );
     cuscomplex  wave_dy     = cuscomplex( 0.0, 0.0 );
     cuscomplex  wave_dz     = cuscomplex( 0.0, 0.0 );
@@ -237,10 +242,11 @@ void FormulationKernelBackend<N, mode_pf>::_build_rhs(
     {
         for ( int i=this->_solver->start_col_0; i<this->_solver->end_col_0; i++ )
         {
-            row_count = 0;
+            source_i    = this->_mesh_gp->source_nodes[i];
+            row_count   = 0;
             for ( int j=this->_solver->start_row_0; j<this->_solver->end_row_0; j++ )
             {
-                ROW_MAJOR_INDEX( index_rm, row_count, col_count, scl->num_cols_local )
+                ROW_MAJOR_INDEX( index_rm, row_count, col_count, this->_solver->num_cols_local )
 
                 if ( source_i->panel->type == DIFFRAC_PANEL_CODE )
                 {
@@ -251,7 +257,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_rhs(
                                                         this->_mesh_gp->source_nodes[i]->normal_vec[id]
                                                         *
                                                         this->_mesh_gp->source_nodes[i]->panel->is_move_f
-                                                    ) * this->pot_gp->sysmat[index_rm];
+                                                    ) * this->_pot_gp->sysmat[index_rm];
                     }
     
                     for ( int id=0; id<this->_input->heads_np; id++ )
@@ -294,7 +300,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_rhs(
                                                                     );
                         
                         // Calculate normal derivative of the wave flow velocities for the jth panel
-                        index                   = dofs_offset + id * potential_mlg->sysmat_nrows + j; 
+                        index                   = dofs_offset + id * this->_pf_gp->sysmat_nrows + j; 
                         this->_ppf_rhs[index]   += -(
                                                         wave_dx * this->_mesh_gp->source_nodes[i]->normal_vec[0]
                                                         +
@@ -313,17 +319,18 @@ void FormulationKernelBackend<N, mode_pf>::_build_rhs(
             col_count++;
     
         }
+
+        // Sum up contributions along processors
+        MPI_Allreduce(
+                            this->_ppf_rhs,
+                            this->_pf_gp->field_values,
+                            this->_pf_gp->sysmat_nrows * ( this->_input->dofs_np + this->_input->heads_np ),
+                            mpi_cuscomplex,
+                            MPI_SUM,
+                            MPI_COMM_WORLD
+                        );
     }
 
-    // Sum up contributions along processors
-    MPI_Allreduce(
-                        this->_ppf_rhs,
-                        this->_pf_gp->field_values,
-                        this->_pf_gp->sysmat_nrows * ( this->_input->dofs_np + this->_input->heads_np ),
-                        mpi_cuscomplex,
-                        MPI_SUM,
-                        MPI_COMM_WORLD
-                    );
 
     // Calculate source formulation rhs
     for ( int i=0; i<this->_input->dofs_np; i++ )
@@ -354,7 +361,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_rhs(
         for ( int j=this->_solver->start_row_0; j<this->_solver->end_row_0; j++ )
         {
             panel_j = this->_mesh_gp->source_nodes[j]->panel;
-            index   = dofs_offset + i * potential_mlg->sysmat_nrows + j; 
+            index   = dofs_offset + i * this->_sf_gp->sysmat_nrows + j; 
             if ( panel_j->type == DIFFRAC_PANEL_CODE )
             {
                 // Get wave potential derivatives for the panel
@@ -410,6 +417,10 @@ void FormulationKernelBackend<N, mode_pf>::_build_rhs(
             
         }
     }
+
+    // Synchronize processes progress status
+    MPI_Barrier( MPI_COMM_WORLD );
+
 }
 
 
@@ -420,10 +431,10 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
                                                                 )
 {
     // Clean system matrixes
-    this->_sf_gp->clear_sysmat( );
-    this->_pf_gp->clear_sysmat( );
-    this->_pot_gp->clear_sysmat( );
-    this->_pot_gp->clear_field_values( );
+                            this->_sf_gp->clear_sysmat( );
+    STATIC_COND( ONLY_PF,   this->_pf_gp->clear_sysmat( ); )
+                            this->_pot_gp->clear_sysmat( );
+                            this->_pot_gp->clear_field_values( );
     
     // Declare local variables
     int         col_count               = 0;
@@ -444,14 +455,13 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
     cuscomplex  wave_fcn_dn_pf_value    = cuscomplex( 0.0, 0.0 );
     
     // Calculate wave dependent parameters
-    cusfloat    k                       = w2k( w, this->_input->water_depth, this->_input->grav_acc );
     cusfloat    nu                      = pow2s( w ) / this->_input->grav_acc;
-
+    
     for ( int i=this->_solver->start_col_0; i<this->_solver->end_col_0; i++ )
     {
         // Get memory address of the ith panel
         source_i = this->_mesh_gp->source_nodes[i];
-        gwf_interf.set_source_i( source_i, 1.0 );
+        this->_gwfcns_interf.set_source_i( source_i, 1.0 );
 
         // Loop over rows to calcualte the influence of the panel
         // over each collocation point
@@ -460,7 +470,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
         {
             // Get memory address of the panel jth
             panel_j = this->_mesh_gp->source_nodes[j]->panel;
-            gwf_interf.set_source_j( mesh_gp->source_nodes[j] );
+            this->_gwfcns_interf.set_source_j( this->_mesh_gp->source_nodes[j] );
             
             // Calculate distance in between field point and source
             distn   =  std::sqrt( 
@@ -489,7 +499,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
                                             NUM_GP
                                         >( 
                                             source_i->panel, 
-                                            gwf_interf, 
+                                            this->_gwfcns_interf, 
                                             wave_fcn_value,
                                             wave_fcn_dn_sf_value,
                                             wave_fcn_dn_pf_value
@@ -509,7 +519,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
                                             NUM_GP
                                         >( 
                                             source_i->panel, 
-                                            gwf_interf, 
+                                            this->_gwfcns_interf, 
                                             wave_fcn_value,
                                             wave_fcn_dn_sf_value,
                                             wave_fcn_dn_pf_value
@@ -537,7 +547,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
                                             NUM_GP
                                         >( 
                                             source_i->panel, 
-                                            gwf_interf, 
+                                            this->_gwfcns_interf, 
                                             wave_fcn_value,
                                             wave_fcn_dn_sf_value,
                                             wave_fcn_dn_pf_value
@@ -552,7 +562,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
                                             NUM_GP
                                         >( 
                                             source_i->panel, 
-                                            gwf_interf, 
+                                            this->_gwfcns_interf, 
                                             wave_fcn_value,
                                             wave_fcn_dn_sf_value,
                                             wave_fcn_dn_pf_value
@@ -587,11 +597,12 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
             // Advance row count
             row_count++;
         }
-
+        
         // Advance column count
         col_count++;
 
     }
+    MPI_Barrier( MPI_COMM_WORLD );
 
 }
 
@@ -677,16 +688,14 @@ FormulationKernelBackend<N, mode_pf>::FormulationKernelBackend(
     STATIC_COND( ONLY_PF, this->_ppf_rhs  = generate_empty_vector<cuscomplex>( this->_pot_gp->sysmat_nrows * ( this->_input->dofs_np + this->_input->heads_np ) ); )
 
     // Allocate space for the wave part integration interface functor
-    this->_gwfcns_interf = new GWFcnsInterfaceT<N*N> (
-                                                            this->_mesh_gp->source_nodes[0],
-                                                            this->_mesh_gp->source_nodes[0],
-                                                            this->_input->angfreqs[0],
-                                                            this->_input->water_depth,
-                                                            this->_input->grav_acc
-                                                        );
+    this->_gwfcns_interf.initialize(
+                                        this->_input->angfreqs[0],
+                                        this->_input->water_depth,
+                                        this->_input->grav_acc
+                                    );
     
     // Launch object initialization
-    this->_initialize( )
+    this->_initialize( );
 }
 
 
@@ -696,9 +705,8 @@ FormulationKernelBackend<N, mode_pf>::~FormulationKernelBackend( )
     delete this->_solver;
     delete this->_sf_gp;
     delete this->_pot_gp;
-    delete this->_gwfcns_interf;
 
-    STATIC_COND( ONLY_PF, this->_pf_gp );
+    STATIC_COND( ONLY_PF, delete this->_pf_gp; );
 }
 
 
@@ -711,7 +719,7 @@ void FormulationKernelBackend<N, mode_pf>::solve( cusfloat w )
     fold_database( H );
 
     // Update integration functor to ne new frequency
-    this->_gwfcns_interf->set_ang_freq( w );
+    this->_gwfcns_interf.set_ang_freq( w );
 
     // Re-calculate wave dependent system matrix term
     MPI_TIME_EXEC(  this->_build_wave_matrixes( w );, this->exec_time_build_wave )
@@ -740,7 +748,7 @@ void FormulationKernelBackend<N, mode_pf>::solve( cusfloat w )
     STATIC_COND(    
                     ONLY_PF, 
                     MPI_TIME_EXEC( 
-                                    ( this->_solver->solve( this->_pf_gp->sysmat, this->_pf_gp->field_values ) );, 
+                                    ( this->_solver->Solve( this->_pf_gp->sysmat, this->_pf_gp->field_values ) );, 
                                     this->exec_time_solve_pf 
                                 ) 
                 )
@@ -808,31 +816,25 @@ void FormulationKernelBackend<N, mode_pf>::solve( cusfloat w )
 
     // Calculate potential values through the source formulation if 
     // potential formulation was not enabled
-    if constexpr( !ONLY_PF )
+    if constexpr( !(ONLY_PF) )
     {
         // Calculate potentials for each chunk of the matrix along the processors
         calculate_fields_raddif_lin(
                                         this->_input,
-                                        sim_data->intensities,
+                                        this->_sf_gp->field_values,
                                         this->_pot_gp
                                     );
-        
-        // Clear potentials vector to prevent adding residual values
-        clear_vector( 
-                        this->_pot_gp->field_values_np,
-                        sim_data->panels_potential
-                    );
-                                    
+
         // Sum contributions from each processor and distribute accordingly
         MPI_Allreduce(
+                        MPI_IN_PLACE,
                         this->_pot_gp->field_values,
-                        sim_data->panels_potential,
                         this->_pot_gp->field_values_np,
                         mpi_cuscomplex,
                         MPI_SUM,
                         MPI_COMM_WORLD
                     );
-    
+        
     }
 
 }
@@ -854,15 +856,15 @@ void FormulationKernelBackend<N, mode_pf>::update_results( SimulationData* sim_d
                                     this->_pf_gp->field_values_np, 
                                     this->_pf_gp->field_values,
                                     sim_data->panels_potential
-                                ) 
+                                );
                 )
-
+    
     STATIC_COND( 
-                    !ONLY_PF, 
+                    !(ONLY_PF), 
                     copy_vector( 
                                     this->_pot_gp->field_values_np, 
                                     this->_pot_gp->field_values,
                                     sim_data->panels_potential
-                                ) 
+                                );
                 )
 }
