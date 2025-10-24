@@ -1524,15 +1524,18 @@ def fit_residual_dGdt( folder_path: str, show_figs=False, is_square_ref=True, sh
     ref_level.add_data( *fit_integral_2d( fit_function, fit_props, show_figs=show_figs ) )
 
     y_levels = np.array( [ -4.0, -3.0, -2.0, -1.0, np.log10( 0.9998 ) ] )
+    y_tol_f  = np.array( [  1.0,  1.0,  1.0,  1.0] )
     for i in range( fit_props.x_hpatch_np ):
         for j in range( fit_props.y_hpatch_np ):
-            fit_props_i         = copy.copy( ref_level.fit_props )
-            fit_props_i.x_max   = ( i + 1 )
-            fit_props_i.x_min   = i
-            fit_props_i.y_max   = y_levels[j+1]
-            fit_props_i.y_min   = y_levels[j]
+            fit_props_i                 = copy.copy( ref_level.fit_props )
+            fit_props_i.x_max           = ( i + 1 )
+            fit_props_i.x_min           = i
+            fit_props_i.y_max           = y_levels[j+1]
+            fit_props_i.y_min           = y_levels[j]
+            fit_props_i.cheby_abs_tol_f = fit_props.cheby_abs_tol_f * y_tol_f[j]
+            fit_props_i.cheby_rel_tol_f = fit_props.cheby_rel_tol_f * y_tol_f[j]
             
-            ref_level_i         = RefLevel( fit_props_i, parent=ref_level )
+            ref_level_i                 = RefLevel( fit_props_i, parent=ref_level )
 
             # Create first fit to feed root refinement level
             ref_level_i.add_data( *fit_integral_2d( fit_function, fit_props_i, show_figs=show_figs ) )
@@ -1548,7 +1551,7 @@ def fit_residual_dGdt( folder_path: str, show_figs=False, is_square_ref=True, sh
     ref_level.set_start_index( 0 )
 
     # Plot results summary
-    ref_level.show_summary( folder_path )
+    ref_level.show_summary( folder_path, log_scale=True )
 
     print( ref_level )
 
@@ -1617,15 +1620,18 @@ def fit_residual_dGdtx( folder_path: str, show_figs=False, is_square_ref=True, s
     ref_level.add_data( *fit_integral_2d( fit_function, fit_props, show_figs=show_figs ) )
 
     y_levels = np.array( [ -4.0, -3.0, -2.0, -1.0, np.log10( 0.9998 ) ] )
+    y_tol_f  = np.array( [  1.0,  1.0,  1.0,  1.0] )
     for i in range( fit_props.x_hpatch_np ):
         for j in range( fit_props.y_hpatch_np ):
-            fit_props_i         = copy.copy( ref_level.fit_props )
-            fit_props_i.x_max   = ( i + 1 )
-            fit_props_i.x_min   = i
-            fit_props_i.y_max   = y_levels[j+1]
-            fit_props_i.y_min   = y_levels[j]
+            fit_props_i                 = copy.copy( ref_level.fit_props )
+            fit_props_i.x_max           = ( i + 1 )
+            fit_props_i.x_min           = i
+            fit_props_i.y_max           = y_levels[j+1]
+            fit_props_i.y_min           = y_levels[j]
+            fit_props_i.cheby_abs_tol_f = fit_props.cheby_abs_tol_f * y_tol_f[j]
+            fit_props_i.cheby_rel_tol_f = fit_props.cheby_rel_tol_f * y_tol_f[j]
             
-            ref_level_i         = RefLevel( fit_props_i, parent=ref_level )
+            ref_level_i                 = RefLevel( fit_props_i, parent=ref_level )
 
             # Create first fit to feed root refinement level
             ref_level_i.add_data( *fit_integral_2d( fit_function, fit_props_i, show_figs=show_figs ) )
@@ -1641,7 +1647,7 @@ def fit_residual_dGdtx( folder_path: str, show_figs=False, is_square_ref=True, s
     ref_level.set_start_index( 0 )
 
     # Plot results summary
-    ref_level.show_summary( folder_path )
+    ref_level.show_summary( folder_path, log_scale=True )
 
     print( ref_level )
 
@@ -1710,15 +1716,18 @@ def fit_residual_dGdtxx( folder_path: str, show_figs=False, is_square_ref=True, 
     ref_level.add_data( *fit_integral_2d( fit_function, fit_props, show_figs=show_figs ) )
 
     y_levels = np.array( [ -4.0, -3.0, -2.0, -1.0, np.log10( 0.9998 ) ] )
+    y_tol_f  = np.array( [  1.0,  1.0,  1.0,  1.0] )
     for i in range( fit_props.x_hpatch_np ):
         for j in range( fit_props.y_hpatch_np ):
-            fit_props_i         = copy.copy( ref_level.fit_props )
-            fit_props_i.x_max   = ( i + 1 )
-            fit_props_i.x_min   = i
-            fit_props_i.y_max   = y_levels[ j + 1 ]
-            fit_props_i.y_min   = y_levels[ j ]
+            fit_props_i                 = copy.copy( ref_level.fit_props )
+            fit_props_i.x_max           = ( i + 1 )
+            fit_props_i.x_min           = i
+            fit_props_i.y_max           = y_levels[ j + 1 ]
+            fit_props_i.y_min           = y_levels[ j ]
+            fit_props_i.cheby_abs_tol_f = fit_props.cheby_abs_tol_f * y_tol_f[j]
+            fit_props_i.cheby_rel_tol_f = fit_props.cheby_rel_tol_f * y_tol_f[j]
             
-            ref_level_i         = RefLevel( fit_props_i, parent=ref_level )
+            ref_level_i                 = RefLevel( fit_props_i, parent=ref_level )
 
             # Create first fit to feed root refinement level
             ref_level_i.add_data( *fit_integral_2d( fit_function, fit_props_i, show_figs=show_figs ) )
@@ -1734,7 +1743,7 @@ def fit_residual_dGdtxx( folder_path: str, show_figs=False, is_square_ref=True, 
     ref_level.set_start_index( 0 )
 
     # Plot results summary
-    ref_level.show_summary( folder_path )
+    ref_level.show_summary( folder_path, log_scale=True )
 
     print( ref_level )
 
@@ -1804,15 +1813,18 @@ def fit_residual_dGdtt( folder_path: str, show_figs=False, is_square_ref=True, s
     ref_level.add_data( *fit_integral_2d( fit_function, fit_props, show_figs=show_figs ) )
 
     y_levels = np.array( [ -4.0, -3.0, -2.0, -1.0, np.log10( 0.9998 ) ] )
+    y_tol_f  = np.array( [  1.0,  1.0,  1.0,  1.0] )
     for i in range( fit_props.x_hpatch_np ):
         for j in range( fit_props.y_hpatch_np ):
-            fit_props_i         = copy.copy( ref_level.fit_props )
-            fit_props_i.x_max   = ( i + 1 )
-            fit_props_i.x_min   = i
-            fit_props_i.y_max   = y_levels[j+1]
-            fit_props_i.y_min   = y_levels[j]
+            fit_props_i                 = copy.copy( ref_level.fit_props )
+            fit_props_i.x_max           = ( i + 1 )
+            fit_props_i.x_min           = i
+            fit_props_i.y_max           = y_levels[j+1]
+            fit_props_i.y_min           = y_levels[j]
+            fit_props_i.cheby_abs_tol_f = fit_props.cheby_abs_tol_f * y_tol_f[j]
+            fit_props_i.cheby_rel_tol_f = fit_props.cheby_rel_tol_f * y_tol_f[j]
             
-            ref_level_i         = RefLevel( fit_props_i, parent=ref_level )
+            ref_level_i                 = RefLevel( fit_props_i, parent=ref_level )
 
             # Create first fit to feed root refinement level
             ref_level_i.add_data( *fit_integral_2d( fit_function, fit_props_i, show_figs=show_figs ) )
@@ -1828,7 +1840,7 @@ def fit_residual_dGdtt( folder_path: str, show_figs=False, is_square_ref=True, s
     ref_level.set_start_index( 0 )
 
     # Plot results summary
-    ref_level.show_summary( folder_path )
+    ref_level.show_summary( folder_path, log_scale=True )
 
     print( ref_level )
 
@@ -1897,15 +1909,18 @@ def fit_residual_dGdttx( folder_path: str, show_figs=False, is_square_ref=True, 
     ref_level.add_data( *fit_integral_2d( fit_function, fit_props, show_figs=show_figs ) )
 
     y_levels = np.array( [ -4.0, -3.0, -2.0, -1.0, np.log10( 0.9998 ) ] )
+    y_tol_f  = np.array( [  1.0,  1.0,  1.0,  1.0] )
     for i in range( fit_props.x_hpatch_np ):
         for j in range( fit_props.y_hpatch_np ):
-            fit_props_i         = copy.copy( ref_level.fit_props )
-            fit_props_i.x_max   = ( i + 1 )
-            fit_props_i.x_min   = i
-            fit_props_i.y_max   = y_levels[ j + 1 ]
-            fit_props_i.y_min   = y_levels[ j ]
+            fit_props_i                 = copy.copy( ref_level.fit_props )
+            fit_props_i.x_max           = ( i + 1 )
+            fit_props_i.x_min           = i
+            fit_props_i.y_max           = y_levels[ j + 1 ]
+            fit_props_i.y_min           = y_levels[ j ]
+            fit_props_i.cheby_abs_tol_f = fit_props.cheby_abs_tol_f * y_tol_f[j]
+            fit_props_i.cheby_rel_tol_f = fit_props.cheby_rel_tol_f * y_tol_f[j]
             
-            ref_level_i         = RefLevel( fit_props_i, parent=ref_level )
+            ref_level_i                 = RefLevel( fit_props_i, parent=ref_level )
 
             # Create first fit to feed root refinement level
             ref_level_i.add_data( *fit_integral_2d( fit_function, fit_props_i, show_figs=show_figs ) )
@@ -1921,7 +1936,7 @@ def fit_residual_dGdttx( folder_path: str, show_figs=False, is_square_ref=True, 
     ref_level.set_start_index( 0 )
 
     # Plot results summary
-    ref_level.show_summary( folder_path )
+    ref_level.show_summary( folder_path, log_scale=True )
 
     print( ref_level )
 
@@ -1994,15 +2009,18 @@ def fit_residual_dGdttxx( folder_path: str, show_figs=True, is_square_ref=True, 
     ref_level.add_data( *fit_integral_2d( fit_function, fit_props, show_figs=show_figs ) )
 
     y_levels = np.array( [ -4.0, -3.0, -2.0, -1.0, np.log10( 0.9998 ) ] )
+    y_tol_f  = np.array( [  1.0,  1.0,  1.0,  1.0] )
     for i in range( fit_props.x_hpatch_np ):
         for j in range( fit_props.y_hpatch_np ):
-            fit_props_i         = copy.copy( ref_level.fit_props )
-            fit_props_i.x_max   = ( i + 1 )
-            fit_props_i.x_min   = i
-            fit_props_i.y_max   = y_levels[ j + 1 ]
-            fit_props_i.y_min   = y_levels[ j ]
+            fit_props_i                 = copy.copy( ref_level.fit_props )
+            fit_props_i.x_max           = ( i + 1 )
+            fit_props_i.x_min           = i
+            fit_props_i.y_max           = y_levels[ j + 1 ]
+            fit_props_i.y_min           = y_levels[ j ]
+            fit_props_i.cheby_abs_tol_f = fit_props.cheby_abs_tol_f * y_tol_f[j]
+            fit_props_i.cheby_rel_tol_f = fit_props.cheby_rel_tol_f * y_tol_f[j]
             
-            ref_level_i         = RefLevel( fit_props_i, parent=ref_level )
+            ref_level_i                 = RefLevel( fit_props_i, parent=ref_level )
 
             # Create first fit to feed root refinement level
             ref_level_i.add_data( *fit_integral_2d( fit_function, fit_props_i, show_figs=show_figs ) )
@@ -2018,7 +2036,7 @@ def fit_residual_dGdttxx( folder_path: str, show_figs=True, is_square_ref=True, 
     ref_level.set_start_index( 0 )
 
     # Plot results summary
-    ref_level.show_summary( folder_path )
+    ref_level.show_summary( folder_path, log_scale=True )
 
     print( ref_level )
 
@@ -2714,9 +2732,9 @@ def plot_residual_function( beta: np.ndarray, mu: np.ndarray, data_raw: np.ndarr
 
 
 if __name__ == "__main__":
-    # generate_dGdt( )
+    generate_dGdt( )
     generate_dGdtx( )
-    # generate_dGdtxx( )
-    # generate_dGdtt( )
-    # generate_dGdttx( )
-    # generate_dGdttxx( )
+    generate_dGdtxx( )
+    generate_dGdtt( )
+    generate_dGdttx( )
+    generate_dGdttxx( )
