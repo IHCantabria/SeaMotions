@@ -39,6 +39,16 @@ void    calculate_source_velocity_newman(
                                         );
 
 
+void    calculate_source_newman(
+                                            PanelGeom*      panel, 
+                                            cusfloat*       field_point, 
+                                            int             fp_local_flag,
+                                            int             multipole_flag, 
+                                            cusfloat        *velocity,
+                                            cusfloat&       phi
+                                        );
+
+
 void    calculate_source_potential_hess(
                                             PanelGeom*      panel,
                                             cusfloat*       field_point,
