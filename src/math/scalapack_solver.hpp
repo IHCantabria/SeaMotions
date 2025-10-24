@@ -1,6 +1,5 @@
 
-#ifndef scalapack_solver_hpp__
-#define scalapack_solver_hpp__
+#pragma once
 
 // Include general usage libraries
 #include <iostream>
@@ -28,6 +27,7 @@ public:
     MPI_Group   global_comm_gp;
     MKL_INT     iam = -1;
     MKL_INT     info;
+    MKL_INT*    ipiv = nullptr;
     MKL_INT     izero = 0;
     char        layout='R'; // Block cyclic, Row major processor mapping
     MKL_INT     lddA;
@@ -57,6 +57,8 @@ public:
     MKL_INT     zero = 0;
 
     // Declare Constructors
+    ScalapackSolver( ) = default;
+
     ScalapackSolver(
                         MKL_INT num_rows, 
                         MKL_INT num_cols_rhs,  
@@ -66,19 +68,109 @@ public:
                         MPI_Comm global_comm_inc
                     );
 
+    ~ScalapackSolver(  );
+
     // Declare Class Methdos
-    void GenerateRhsComm(void);
-    T* GetGlobalRhs(T* subrhs, T* sol_vec);
-    void Initialize(void);
-    void Solve(T* subsysmat, T* subrhs);
+    void    Cond(               T*          subsysmat,
+                                cusfloat&   cond 
+                );
+
+    void    GenerateRhsComm(    
+                                void 
+                            );
+
+    T*      GetGlobalRhs(       
+                                T* subrhs, 
+                                T* sol_vec
+                        );
+    
+    void    Initialize(
+                                void
+                    );
+
+    void    Solve( 
+                                T* subsysmat, 
+                                T* subrhs 
+                    );
 };
+
+
+template <class T>
+void ScalapackSolver<T>::Cond( T* subsysmat_orig, cusfloat& cond )
+{
+    // Make a local copy of the matrix to avoid factorizing it
+    int mat_size = num_rows_local *  num_cols_local;
+    T* subsysmat = (T*)mkl_calloc( mat_size, sizeof(T), FLOATING_PRECISION );
+
+    for ( int i=0; i<mat_size; i++ )
+    {
+        subsysmat[i] = subsysmat_orig[i];
+    }
+
+    // Define local variables
+    cusfloat    anorm       = 0;
+    char        norm        = '1';
+    MKL_INT     startrow    = 1;
+    MKL_INT     startcol    = 1;
+    MKL_INT     lwork       = 4 * num_rows;
+    T*          work        = (T*)mkl_calloc( lwork, sizeof(T), FLOATING_PRECISION );
+    cusfloat*   iwork       = (cusfloat*)mkl_calloc( lwork, sizeof(cusfloat), FLOATING_PRECISION );
+
+    // Clear pivot vector
+    for ( int i=0; i< ( num_rows_local + num_block_size ); i++ )
+    {
+        this->ipiv[i] = 0;
+    }
+
+    // Calculate matrix norm ( 1-norm )
+    MPI_Barrier( this->global_comm );
+    anorm = plange<T>(&norm, &num_rows_local, &num_cols_local, subsysmat, &startrow, &startcol, descA, iwork);
+    MPI_Barrier( this->global_comm );
+
+    if ( info != 0 )
+    {
+        std::cerr << "ERROR - Scalapack Norm 1" << std::endl;
+        std::cerr << "Scalapack norm 1 finished abnormally with code: " << info << std::endl;
+        throw std::runtime_error( "" );
+    }
+
+    // Calculate LU factorization
+    MPI_Barrier( this->global_comm );
+    pgetrf<T>(&num_rows_local, &num_rows_local, subsysmat, &startrow, &startcol, descA, ipiv, &info);
+    MPI_Barrier( this->global_comm );
+
+    if ( info != 0 )
+    {
+        std::cerr << "ERROR - Scalapack LU decomposition" << std::endl;
+        std::cerr << "Scalapack LU decomposition finished abnormally with code: " << info << std::endl;
+        throw std::runtime_error( "" );
+    }
+
+    // Calculate Condition Number
+    MPI_Barrier( this->global_comm );
+    pgecon<T>(&norm, &num_rows_local, subsysmat, &startrow, &startcol, descA, &anorm, &cond, work, &lwork, iwork, &lwork, &info);
+    MPI_Barrier( this->global_comm );
+
+    if ( info != 0 )
+    {
+        std::cerr << "ERROR - Scalapack LU decomposition" << std::endl;
+        std::cerr << "Scalapack LU decomposition finished abnormally with code: " << info << std::endl;
+        throw std::runtime_error( "" );
+    }
+
+    cond = 1 / cond;
+
+    // Clean heap local heap memory
+    mkl_free( iwork );
+    mkl_free( subsysmat);
+    mkl_free( work );
+}
 
 
 template <class T>
 void ScalapackSolver<T>::GenerateRhsComm(void)
 {
-    MKL_INT* cols_position = NULL;
-    cols_position = new MKL_INT[num_procs];
+    MKL_INT* cols_position = (MKL_INT*)mkl_calloc( num_procs, sizeof(MKL_INT), FLOATING_PRECISION );
     
     MPI_Barrier(this->global_comm);
     MPI_Allgather(&mycol, 1, MPI_INT, cols_position, 1, MPI_INT, this->global_comm);
@@ -99,7 +191,7 @@ void ScalapackSolver<T>::GenerateRhsComm(void)
     MPI_Comm_create_group(this->global_comm, rhs_group, 0, &rhs_comm);
     
     // Delete matrixes
-    delete [] cols_position;
+    mkl_free( cols_position );
 }
 
 
@@ -130,8 +222,8 @@ void ScalapackSolver<T>::Initialize(void)
     num_cols_local = numroc(&num_rows, &num_block_size, &mycol, &izero, &num_procs_col); // My proc -> col of local A
 
     // Create matrix descriptor 
-    descA = new MKL_INT [9];
-    descB = new MKL_INT [9];
+    descA = (MKL_INT*)mkl_calloc( 9, sizeof(MKL_INT), FLOATING_PRECISION );
+    descB = (MKL_INT*)mkl_calloc( 9, sizeof(MKL_INT), FLOATING_PRECISION );
     lddA = num_rows_local > 1 ? num_rows_local : 1;
     descinit_(descA, &num_rows, &num_rows, &num_block_size, &num_block_size, &izero, &izero, &ictxt, &lddA, &info);
     descinit_(descB, &num_rows, &num_cols_rhs, &num_block_size, &num_block_size_rhs, &izero, &izero, &ictxt, &lddA, &info);
@@ -157,16 +249,16 @@ void ScalapackSolver<T>::Initialize(void)
     // descB[8] = num_rows_local; // leading dimension of local array
 
     // Distribute matrix
-    MKL_INT* num_rows_div = NULL;
-    MKL_INT* num_cols_div = NULL;
-    MKL_INT* rows_position = NULL;
-    MKL_INT* cols_position = NULL;
+    MKL_INT* num_rows_div   = NULL;
+    MKL_INT* num_cols_div   = NULL;
+    MKL_INT* rows_position  = NULL;
+    MKL_INT* cols_position  = NULL;
     if (proc_rank == 0)
     {
-        num_rows_div = new MKL_INT[num_procs];
-        num_cols_div = new MKL_INT[num_procs];
-        rows_position = new MKL_INT[num_procs];
-        cols_position = new MKL_INT[num_procs];
+        num_rows_div    = (MKL_INT*)mkl_calloc( num_procs, sizeof(MKL_INT), FLOATING_PRECISION );
+        num_cols_div    = (MKL_INT*)mkl_calloc( num_procs, sizeof(MKL_INT), FLOATING_PRECISION );
+        rows_position   = (MKL_INT*)mkl_calloc( num_procs, sizeof(MKL_INT), FLOATING_PRECISION );
+        cols_position   = (MKL_INT*)mkl_calloc( num_procs, sizeof(MKL_INT), FLOATING_PRECISION );
     }
 
     MPI_Barrier(this->global_comm);
@@ -181,8 +273,8 @@ void ScalapackSolver<T>::Initialize(void)
     MKL_INT* start_rows = NULL;
     if (proc_rank == 0)
     {
-        start_cols = new MKL_INT [num_procs];
-        start_rows = new MKL_INT [num_procs];
+        start_cols = (MKL_INT*)mkl_calloc( num_procs, sizeof(MKL_INT), FLOATING_PRECISION );
+        start_rows = (MKL_INT*)mkl_calloc( num_procs, sizeof(MKL_INT), FLOATING_PRECISION );
 
         for (MKL_INT i=0; i<num_procs; i++)
         {
@@ -225,13 +317,16 @@ void ScalapackSolver<T>::Initialize(void)
     // Delete vectors
     if (proc_rank == 0)
     {
-        delete [] num_rows_div;
-        delete [] num_cols_div;
-        delete [] rows_position;
-        delete [] cols_position;
-        delete [] start_cols;
-        delete [] start_rows;
+        mkl_free( num_rows_div  );
+        mkl_free( num_cols_div  );
+        mkl_free( rows_position );
+        mkl_free( cols_position );
+        mkl_free( start_cols    );
+        mkl_free( start_rows    );
     }
+
+    // Generate ipiv vector
+    this->ipiv = (MKL_INT*)mkl_calloc( num_rows_local + num_block_size, sizeof(MKL_INT), FLOATING_PRECISION );
 
     this->GenerateRhsComm();
 }
@@ -290,14 +385,30 @@ ScalapackSolver<T>::ScalapackSolver(
 }
 
 
+template<typename T>
+ScalapackSolver<T>::~ScalapackSolver( )
+{
+    mkl_free( this->descA );
+    mkl_free( this->descB );
+    mkl_free( this->ipiv );
+}
+
+
 template <class T>
 void ScalapackSolver<T>::Solve(T* subsysmat, T* subrhs)
 {
-    MKL_INT startrow = 1;
-    MKL_INT startcol = 1;
-    MKL_INT* ipiv = new MKL_INT[num_rows_local + num_block_size];
+    // Define local variables
+    MKL_INT startrow    = 1;
+    MKL_INT startcol    = 1;
+
+    // Clear pivot vector
+    for ( int i=0; i< ( num_rows_local + num_block_size ); i++ )
+    {
+        this->ipiv[i] = 0;
+    }
+
     MPI_Barrier( this->global_comm );
-    pgesv<T>(&num_rows, &num_cols_rhs, subsysmat, &startrow, &startcol, descA, ipiv, subrhs, &startrow, &startrow, descB, &info);
+    pgesv<T>(&num_rows, &num_cols_rhs, subsysmat, &startrow, &startcol, descA, this->ipiv, subrhs, &startrow, &startrow, descB, &info);
     MPI_Barrier( this->global_comm );
 
     if ( info != 0 )
@@ -311,6 +422,3 @@ void ScalapackSolver<T>::Solve(T* subsysmat, T* subrhs)
 // Define custom types to have more handy ways to 
 // work with ScalapackSolver implementations
 typedef ScalapackSolver<cuscomplex> SclCmpx;
-
-
-#endif // scalapack_real_solver_hpp__
