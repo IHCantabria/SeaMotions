@@ -2,6 +2,7 @@
 // Include general usage libraries
 #include <algorithm>
 #include <cctype>
+#include <filesystem>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -65,6 +66,24 @@ bool check_num_cmd_args(int argc, int req_argc)
     }
 
     return true;
+}
+
+
+std::string get_fipath_extension( std::string fipath )
+{
+    std::filesystem::path file_path = fipath;
+
+    std::filesystem::path temp      = fipath;
+    std::string all_ext;
+
+    // Extract all extensions from right to left
+    while ( temp.has_extension( ) ) 
+    {
+        all_ext = temp.extension( ).string( ) + all_ext;   // prepend
+        temp    = temp.stem( );                          // remove last extension
+    }
+
+    return all_ext;
 }
 
 

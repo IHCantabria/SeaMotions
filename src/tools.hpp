@@ -163,6 +163,10 @@ template<>              inline  void        convert_number<cusfloat>(
                                                                             cusfloat& val 
                                                                     );
 
+                                std::string get_fipath_extension(           
+                                                                            std::string fipath 
+                                                                );
+
                                 double      get_wall_time( );
 
                                 double      get_cpu_time( );
