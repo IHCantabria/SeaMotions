@@ -19,6 +19,7 @@
 #include "./fin_depth_coeffs/M3_dA.hpp"
 #include "./fin_depth_coeffs/M3_dB.hpp"
 #include "./inf_depth_coeffs/R11.hpp"
+#include "./inf_depth_coeffs/R00_dX.hpp"
 #include "./inf_depth_coeffs/R11_dX.hpp"
 
 
@@ -28,6 +29,7 @@ struct ChebyshevTraits;
 
 // Expand macros for infinite water depth traits
 CHEBYSHEV_2D_TRAITS( R11C );
+CHEBYSHEV_2D_TRAITS( R00_dXC );
 CHEBYSHEV_2D_TRAITS( R11_dXC );
 
 // Expand macros for finit water depth traits

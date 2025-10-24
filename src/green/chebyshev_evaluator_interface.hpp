@@ -60,5 +60,9 @@ using M3_dBCEV      = ChebyshevEvaluatorBaseVector<ChebyshevTraits<M3_dBC>, N, m
 template<std::size_t N, int mode_loop>
 using R11CEV        = ChebyshevEvaluatorBaseVector<ChebyshevTraits<R11C>, N, mode_loop>;
 
+
+template<std::size_t N, int mode_loop>
+using R00_dXCEV     = ChebyshevEvaluatorBaseVector<ChebyshevTraits<R00_dXC>, N, mode_loop>;
+
 template<std::size_t N, int mode_loop>
 using R11_dXCEV     = ChebyshevEvaluatorBaseVector<ChebyshevTraits<R11_dXC>, N, mode_loop>;
