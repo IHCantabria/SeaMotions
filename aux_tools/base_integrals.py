@@ -3,11 +3,11 @@
 from typing import Callable
 
 # Import general usage scientific libraries
-import matplotlib.pyplot as plt
-from numpy import array, ceil, cos, cosh, exp, linspace, log, log10, meshgrid, mod, ndarray, pi, sign, sin, sinh, sqrt, tan, tanh, zeros
+import numpy as np
+from numpy import array, ceil, cos, exp, linspace, log, log10, mod, ndarray, pi, sign, sqrt, tan, zeros
 from numpy import abs as np_abs
 from scipy.integrate import quad
-from scipy.special import expi, jv, kn, roots_chebyt, roots_laguerre, struve, yv
+from scipy.special import expi, jv, kn, roots_laguerre, struve, yv
 
 # Import local modules
 from hydlib.waves.airy import w2k
@@ -53,6 +53,11 @@ def bisection(ft, a, b, abs_err=1e-6, max_iter=100, verbose=False):
     return c
 
 
+def _check_quad_bounds( X: float, Y: float, int_value: list ) -> None:
+    if np_abs( int_value[1] ) > 1e-7:
+            raise ValueError( f"Error Exceed! - X: {X:0.3E} - Y: {Y:0.3E} - Int.Value: {int_value[0]:0.2E} - Error: {int_value[1]:0.2E}" )
+
+
 def complex_quadrature(func: Callable, a: float, b: float, **kwargs):
     # Define functions to parametrize the segment
     g = lambda t: a + t*(b-a)
@@ -65,9 +70,17 @@ def complex_quadrature(func: Callable, a: float, b: float, **kwargs):
     def imag_func(x):
         return (func(g(x))*gp(x)).imag
     
+    # Add precision keyword arguments
+    kwargs[ "limit" ]   = 10000
+    kwargs[ "epsabs" ]  = 1e-14
+    kwargs[ "epsrel" ]  = 1e-14
+    
     # Calculate numerical functions
     real_integral = quad(real_func, 0.0, 1.0, **kwargs)
     imag_integral = quad(imag_func, 0.0, 1.0, **kwargs)
+
+    _check_quad_bounds( a, b, real_integral )
+    _check_quad_bounds( a, b, imag_integral )
 
     # Compose output tuple
     out = (
@@ -103,40 +116,57 @@ def fuh(u: ndarray, H: float) -> ndarray:
     return (u+H)/((u-H)-(u+H)*exp(-2*u))
 
 
-def fxy(X: float, Y: float) -> float:
+def fxy(X: float, Y: float, only_int=False) -> float:
     # Calculate integral value
     ref_value = 8000
     if Y < ref_value:
-        int_value = quad(lambda t: wave_term_expint_def(X, Y, t), 0, Y)
+        int_value = quad(lambda t: wave_term_expint_def(X, Y, t), 0, Y, limit=10000, epsabs=1e-12, epsrel=1e-14 )
+        _check_quad_bounds( X, Y, int_value )
+        
     else:
         num_points = int(ceil(Y/ref_value))+2
         int_points = linspace(0, Y, num_points)
         int_value = [0.0, 0.0]
         for i in range(num_points-1):
-            int_value_i = quad(lambda t: wave_term_expint_def(X, Y, t), int_points[i], int_points[i+1])
+            int_value_i = quad(lambda t: wave_term_expint_def(X, Y, t), int_points[i], int_points[i+1], limit=10000, epsabs=1e-12, epsrel=1e-14)
+            _check_quad_bounds( int_points[i], int_points[i+1], int_value_i )
             int_value[0] = int_value[0] + int_value_i[0]
             int_value[1] = int_value[1] + int_value_i[1]
 
     # Calculate function value
-    fun_val = (
-                -pi*exp(-Y)*(struve(0, X)+yv(0, X))
-                -2*int_value[0]
-                )
+    if only_int:
+        fun_val = int_value[0]
+
+    else:
+        fun_val = (
+                    -pi*exp(-Y)*(struve(0, X)+yv(0, X))
+                    -2*int_value[0]
+                    )
 
     return fun_val
+
+
+def fxy_polar( R: float, theta: float, only_int=False ) -> float:
+    X = R * np.cos( theta )
+    Y = R * np.sin( theta )
+
+    return np.log10( fxy( X, Y, only_int=only_int ) )
 
 
 def fxy_dx(X: float, Y: float, only_int=False) -> float:
     # Calculate the numerical value
     ref_value = 150
-    if Y < ref_value:
+    if Y < 1e-8:
+        int_value = [0, 0]
+    elif Y < ref_value:
         if X < 0.5:
             num_points = 70
             int_points = 10**linspace(-30, log10(Y), num_points)
             # int_points = linspace(0, Y, num_points)
             int_value = [0.0, 0.0]
             for i in range(num_points-1):
-                int_value_i = quad(lambda t: wave_term_expint_def_dxt(X, Y, t), int_points[i], int_points[i+1])
+                int_value_i = quad(lambda t: wave_term_expint_def_dxt(X, Y, t), int_points[i], int_points[i+1], limit=1000000, epsabs=1e-12, epsrel=1e-14)
+                _check_quad_bounds( int_points[i], int_points[i+1], int_value_i )
                 int_value[0] = int_value[0] + int_value_i[0]
                 int_value[1] = int_value[1] + int_value_i[1]
         else:
@@ -144,7 +174,8 @@ def fxy_dx(X: float, Y: float, only_int=False) -> float:
             int_points = linspace(0, Y, num_points)
             int_value = [0.0, 0.0]
             for i in range(num_points-1):
-                int_value_i = quad(lambda t: wave_term_expint_def_dxt(X, Y, t), int_points[i], int_points[i+1])
+                int_value_i = quad(lambda t: wave_term_expint_def_dxt(X, Y, t), int_points[i], int_points[i+1], limit=10000, epsabs=1e-12, epsrel=1e-14)
+                _check_quad_bounds( int_points[i], int_points[i+1], int_value_i )
                 int_value[0] = int_value[0] + int_value_i[0]
                 int_value[1] = int_value[1] + int_value_i[1]
     else:
@@ -152,13 +183,14 @@ def fxy_dx(X: float, Y: float, only_int=False) -> float:
         int_points = linspace(0, Y, num_points)
         int_value = [0.0, 0.0]
         for i in range(num_points-1):
-            int_value_i = quad(lambda t: wave_term_expint_def_dxt(X, Y, t), int_points[i], int_points[i+1])
+            int_value_i = quad(lambda t: wave_term_expint_def_dxt(X, Y, t), int_points[i], int_points[i+1], limit=10000, epsabs=1e-12, epsrel=1e-14)
+            _check_quad_bounds( int_points[i], int_points[i+1], int_value_i )
             int_value[0] = int_value[0] + int_value_i[0]
             int_value[1] = int_value[1] + int_value_i[1]
 
     # Calculate function value
     if only_int:
-        fun_val = 2.0*int_value[0]
+        fun_val = int_value[0]
     else:
         fun_val = (
                     - 2.0/X*int_value[0]
@@ -167,6 +199,13 @@ def fxy_dx(X: float, Y: float, only_int=False) -> float:
                     )
 
     return fun_val
+
+
+def fxy_dx_polar( R: float, theta: float, only_int=False ) -> float:
+    X = R * np.cos( theta )
+    Y = R * np.sin( theta )
+
+    return fxy_dx( X, Y, only_int=only_int )
 
 
 def fxy_dy(X: float, Y: float) -> float:
@@ -570,25 +609,9 @@ def L1_H0_endo(A: float, B: float) -> float:
     Fl = lambda u: fx(u0)/((u-u0)*gxp(u0))
     Fp = lambda u: Fx(u)-Fl(u)
 
-    # u = linspace(0, 100, 1000)
-    # y = Fp(u)
-    # print(f"A: {A:0.3f} - B: {B:0.3f}")
-    # plt.plot(u, Fx(u))
-    # plt.plot(u, Fl(u))
-    # plt.plot(u, Fp(u))
-    # plt.show()
-
     # Integrate principal function using Gauss-Laguerre
     I1 = (gl_weights*Fp(gl_roots)).sum()
     I2 = -exp(-u0v)*expi(u0v)*fxv(u0v)/gxpv(u0v)
-    # print("I1: ", I1)
-    # print("I2: ", I2)
-    # print("-exp(-u0): ", -exp(u0))
-    # print("exp1(0): ", exp1(u0))
-    # print("fx(u0): ", fx(u0))
-    # print("gxp(u0): ", gxp(u0))
-
-    # print("Endo: ", (I1+I2))
 
     return complex((I1+I2), 0.0), 0.0, 0.0
 
@@ -653,11 +676,8 @@ def L3(A: float, B: float, H: float) -> float:
     ])
 
     # Integrate function
-    # if H <= 1001:
     f_def_dummy = lambda u: L3_def(A, B, H, u)
-    int_value = complex_quadrature_line(f_def_dummy, way_points)
-    # else:
-        # int_value = (complex(L_minus(A, B), 0.0), 0.0, 0.0)
+    int_value   = complex_quadrature_line(f_def_dummy, way_points)
 
     return int_value
 
@@ -995,34 +1015,3 @@ def w2ki(w, h, n, g=9.81, abs_err=1e-6, max_iter=1000):
         kn[i-1] = bisection(f_dispersion, a, b, abs_err=abs_err, max_iter=max_iter, verbose=False)/h
 
     return kn
-
-
-if __name__ == "__main__":
-    # print(L1(1.0, 1.0, 1.0))
-    # X = 1e-6
-    # Y = 1e-6
-    # print(f"X: {X:0.6f} - Y: {Y:0.6f} - int_value: ", fxy_dx(X, Y))
-    import matplotlib.pyplot as plt
-    from numpy import linspace
-    num_points = 1000
-    # x = 10**linspace(-8, -3.0, num_points)
-    # x = linspace(1e-3, 3.0, num_points)
-    y = linspace(0.001, 1.0, num_points)
-    X = 1e-8
-    Y = 4.0
-    fy = zeros((num_points, ))
-    for i in range(num_points):
-        fy[i] = fxy_dx(X, y[i], only_int=False)
-    
-    print(fxy_dx(X, Y))
-    # plt.plot(log10(x), log10(-fy))
-    plt.plot(y, fy)
-    plt.show()
-
-    # X = 1e-8
-    # Y = 0.1
-    # print("fxy_dx: ", fxy_dx(X, Y))
-    # t = 10**linspace(-16, log10(Y), 1000)
-    # f = wave_term_expint_def_dx(X, Y, t)
-    # plt.plot(t, f)
-    # plt.show()
