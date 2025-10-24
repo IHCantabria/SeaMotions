@@ -13,15 +13,13 @@ from scipy.special import jv as besselj
 # Import general usage scientific plotting libraries
 import matplotlib.pyplot as plt
 
-# Import local modules
-from time_domain import integrate_adapt_fcn, read_input_spec
-
 
 #######################################################################
 ################## Define F_beta time derivatives #####################
 #######################################################################
 def fas_lt( mu ) -> float:
     return 1.0
+
 
 def fas( lam: np.ndarray, mu: float, beta: float ) -> np.ndarray:
     return np.sin( np.sqrt( lam ) * beta ) * fkernel_b( lam, mu )
@@ -1509,6 +1507,65 @@ def init_conds_fcn( mu: float, nu: int, l: float, k: int ) -> float:
     return fv
 
 
+def integrate_adapt_fcn( fcn, a: float, b:float, eps=1e-6, ref_step=10 ) -> float:
+    # Define first interval
+    # lt  = ( b - a ) / 1000
+
+    # if lt > ref_step:
+        # lt = ref_step
+    lt = ref_step
+
+    # Loop over refinement levels
+    is_conv = False
+    for _ in range( 5 ):
+        # Integrate function
+        values = integrate_fcn( fcn, a, b, lt, eps=eps )
+
+        # Check convergence
+        if np.abs( values[1] ) < eps:
+            is_conv = True
+            break
+    
+        # Define next interval
+        lt /= 10.0
+
+    if not is_conv:
+        raise ValueError( "Convergence not found!" )
+    
+    return values
+
+
+def integrate_fcn( fcn, a: float, b:float, du: float, eps=1e-6 ) -> float:
+    # Define intervals
+    interval_np = int( np.ceil( ( b - a ) / du ) )
+    intervals   = np.linspace( a, b, interval_np )
+    integrals   = np.zeros_like( intervals )
+
+    # Loop over integral to find the overall function integral value
+    int_total   = 0.0
+    total_err   = 0.0
+    hist_np     = 100
+    for i in range( intervals.shape[0] - 1 ):
+        int_value   = sp.integrate.quad(
+                                            fcn,
+                                            intervals[i],
+                                            intervals[i+1]
+                                        )
+        if np.abs( int_value[1] ) > eps:
+            break
+        
+        integrals[i]    = int_value[0]
+        int_total       += int_value[0]
+        total_err       += np.abs( int_value[1] )
+
+        # Check for convergence
+        if i > hist_np:
+            if np.abs( integrals[i-hist_np:i] ).max( ) < eps:
+                break
+
+    return int_total, total_err
+
+
 def integrate_like_ode( kernel_fcn, a, b ) -> None:
     def kernel_ode( t, y ):
         return kernel_fcn( t )
@@ -1551,14 +1608,6 @@ def integrate_over_time( init_cond_fcn, lt_fcn, l: float, nu: float ) -> list:
                                                                 max_step=0.001
                                             )
         
-        # print( init_conds )
-        # plt.plot( result.t, result.y[0, :], label="IVP" )
-        # plt.plot( result.t, G0_Magee( result.t, mu[i] ) / 2.0, label="Magee" )
-        # plt.xlabel( "Time [s]" )
-        # plt.ylabel( "Function Value" )
-        # plt.legend( )
-        # plt.show( )
-        
         # Storage data
         f_val[:, i]         = lt_fcn( mu[i] ) * result.y[0, :]
         f_beta1_val[:, i]   = lt_fcn( mu[i] ) * result.y[1, :]
@@ -1579,87 +1628,11 @@ def save_data( fipath: str, beta: np.ndarray, mu: np.ndarray, f: np.ndarray, ft:
 
 
 if __name__ == "__main__":
-    folder_path = r"D:\sergio\0050_OASIS_SM\TimeDomain"
-    # calculate_Gas( folder_path )
-    # calculate_Gac( folder_path )
+    this_path   = os.path.dirname( os.path.abspath( __file__ ) )
+    folder_path = os.path.join( this_path, "..", "aux_data", "1_time_domain" )
     calculate_Gt( folder_path )
     calculate_Gtx( folder_path )
     calculate_Gtxx( folder_path )
     calculate_Gtt( folder_path )
     calculate_Gttx( folder_path )
     calculate_Gttxx( folder_path )
-
-
-
-    # mu  = np.array( [ 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.2, 0.3, 0.4, 0.5 ] )
-    # P   = np.zeros( ( mu.shape[0], 4 ) )
-    # P_dt   = np.zeros( mu.shape )
-    # for i in range( mu.shape[0] ):
-    #     print( "Calculating mu: ", i )
-    #     P[i, 0], P[i, 1], P[i, 2], P[i, 3] = calculate_initial_conditions_integration_fbmm0( mu[i] )
-
-    # plt.plot( np.log10( mu ), P[:, 0], label="A" )
-    # plt.plot( np.log10( mu ), P[:, 1], label="A_dt" )
-    # plt.plot( np.log10( mu ), P[:, 2], label="A_dtt" )
-    # plt.plot( np.log10( mu ), P[:, 3], label="A_dttt" )
-    # plt.legend( )
-    # plt.show( )
-
-
-
-    # with h5py.File( r"D:\sergio\0050_OASIS_SM\TimeDomain\Gas.h5", "r" ) as fid:
-    #     beta   = fid[ "beta" ][:]
-    #     mu     = fid[ "mu" ][:]
-    #     fcns   = fid[ "fcn" ][:]
-
-    # with h5py.File( r"D:\sergio\0050_OASIS_SM\TimeDomain\Gt.h5", "r" ) as fid:
-    #     beta   = fid[ "beta" ][:]
-    #     mu     = fid[ "mu" ][:]
-    #     fcnc   = fid[ "fcn" ][:]
-
-    # B, M = np.meshgrid( beta, mu, indexing="ij" )
-    
-    # fig, ax = plt.subplots( 2, 2 )
-
-    # cnf = ax[0, 0].contourf( B, np.log10( M ), fcns )
-    # plt.colorbar( cnf, ax=ax[0, 0] )
-
-    # cnf = ax[0, 1].contourf( B, np.log10( M ), fcnc )
-    # plt.colorbar( cnf, ax=ax[0, 1] )
-
-    # cnf = ax[1, 0].contourf( B, np.log10( M ), fcns - fcnc )
-    # plt.colorbar( cnf, ax=ax[1, 0] )
-
-    # ax[1, 1].plot( beta, fcns[:, 0] )
-    # ax[1, 1].plot( beta, fcnc[:, 0] )
-
-    # plt.show( )
-
-
-
-
-    # idx = 85
-    # with h5py.File( r"D:\sergio\0050_OASIS_SM\TimeDomain\Gas.h5", "r" ) as fid:
-    #     betas   = fid[ "beta" ][:]
-    #     ss      = fid[ "fcn" ][:, idx]
-
-    # with h5py.File( r"D:\sergio\0050_OASIS_SM\TimeDomain\Gac.h5", "r" ) as fid:
-    #     betac   = fid[ "beta" ][:]
-    #     sc      = fid[ "fcn" ][:, idx]
-
-    # beta1   = np.arange( 0, 20.0, 0.1 )
-    # sols     = np.zeros( beta1.shape[0] )
-    # solc     = np.zeros( beta1.shape[0] )
-    # for i in range( beta1.shape[0] ):
-    #     print( i )
-    #     si = integrate_adapt_fcn( lambda ul: fas( ul, 0.521356061745598, beta1[i] ), 0.0, 90e3, ref_step=10 )
-    #     sols[i] = si[0]
-
-    #     si = integrate_adapt_fcn( lambda ul: fac( ul, 0.521356061745598, beta1[i] ), 0.0, 90e3, ref_step=10 )
-    #     solc[i] = si[0]
-
-    # plt.plot( beta1, sols )
-    # plt.plot( beta1, solc )
-    # plt.plot( betas, ss )
-    # plt.plot( betac, sc )
-    # plt.show( )
