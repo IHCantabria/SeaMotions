@@ -43,6 +43,8 @@ public:
     static_assert( NumKn > 0 );
 
     // Define class constructors and destructor
+    WaveDispersionFO( ) = default;
+    
     WaveDispersionFO(
                                     cusfloat    w0_i, 
                                     cusfloat    water_depth_i, 
