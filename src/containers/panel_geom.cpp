@@ -12,6 +12,84 @@
 #include "panel_geom.hpp"
 
 
+void PanelGeom::calcualte_free_surface_singularity( void )
+{
+    // Clean container to avoid spurious data
+    this->free_surface_log_int = 0.0;
+
+    // Declare local variables
+    cusfloat A, B, C, df;
+    cusfloat a0, a1;
+    cusfloat b0, b1;
+    cusfloat delta;
+    cusfloat int_0, int_1;
+    cusfloat p0[3], p1[3];
+    cusfloat p0l[3], p1l[3];
+    cusfloat p0t[3], p1t[3];
+    cusfloat u[3]   = { 0.0, 0.0, 0.0 };
+    cusfloat v[3]   = { 0.0, 0.0, 0.0 };
+    cusfloat v_norm = 0.0;
+    cusfloat w[3]   = { 0.0, 0.0, 1.0 };
+    
+    // Loop over number of nodes to calculate the different
+    // chunks of the integral
+    int i1 = 0;
+    for ( int i=0; i<this->num_nodes; i++ )
+    {
+        // Get forward node index
+        i1 = ( i + 1 ) % this->num_nodes;
+
+        // Get points for the study
+        p0[0] = this->x[i];
+        p0[1] = this->y[i];
+        p0[2] = this->z[i];
+        p1[0] = this->x[i1];
+        p1[1] = this->y[i1];
+        p1[2] = this->z[i1];
+
+        // Calculate v base vector
+        sv_sub( 3, p1, p0, v );
+        v_norm = std::sqrt( pow2s( v[0] ) + pow2s( v[1] ) + pow2s( v[2] ) );
+        svs_div( 3, v, v_norm, v );
+
+        // Calculate u vector
+        cross( v, w, u );
+
+        // Convert to local coordinates p0 and p1
+        sv_sub( 3, p0, this->center, p0t );
+        sv_sub( 3, p1, this->center, p1t );
+
+        p0l[0] = u[0] * p0t[0] + u[1] * p0t[1];
+        p0l[1] = v[0] * p0t[0] + v[1] * p0t[1];
+        p1l[0] = u[0] * p1t[0] + u[1] * p1t[1];
+        p1l[1] = v[0] * p1t[0] + v[1] * p1t[1];
+
+        // Calculate alpha angle of cylindrical coordinates
+        a0 = std::atan2( p0l[1], p0l[0] );
+        a1 = std::atan2( p1l[1], p1l[0] );
+
+        // Calculate A and B factors
+        df  = p0l[0] * p1l[1] - p0l[1] * p1l[0];
+        A   = ( p1l[1] - p0l[1] ) / df;
+        B   = ( p0l[0] - p1l[0] ) / df;
+        C   = std::sqrt( pow2s( A ) + pow2s( B ) );
+
+        // Calculate delta angle
+        delta = std::atan2( B, A );
+
+        // Calculate beta angles
+        b0 = a0 - delta;
+        b1 = a1 - delta;
+
+        // Calculate integral value
+        int_0 = - std::tan( b0 ) / 2.0 / pow2s( C ) * ( std::log( C ) + std::log( std::cos( b0 ) ) + 1.5 ) + b0/ 2.0 / pow2s( C );
+        int_1 = - std::tan( b1 ) / 2.0 / pow2s( C ) * ( std::log( C ) + std::log( std::cos( b1 ) ) + 1.5 ) + b1/ 2.0 / pow2s( C );
+        
+        this->free_surface_log_int += int_1 - int_0;
+    }
+}
+
+
 // Add method to calculate the geometric propertiess
 void PanelGeom::calculate_properties( 
                                         cusfloat* cog
@@ -139,6 +217,7 @@ void PanelGeom::calculate_properties(
 
     // Storage normal vector to the panel
     copy_vector( 3, v2, this->normal_vec );
+    svs_mult( 3, this->normal_vec, -1.0, this->normal_vec );
 
     // Take the local reference system centre
     this->sysref_centre[0] = this->x[0];
@@ -408,20 +487,17 @@ void PanelGeom::local_to_global(
     // Get shape functions value
     shape_fcn_2d( this->num_nodes, xi, eta, N );
 
-    // std::cout << "LTG::num_nodes: " << this->num_nodes << std::endl;
-    // std::cout << "LTG::xl: "; print_vector( 3, this->xl, 0, 6 );
-    // std::cout << "LTG::yl: "; print_vector( 3, this->yl, 0, 6 );
-    // std::cout << "LTG::local_to_global_mat: "; print_vector( 9, this->global_to_local_mat, 0, 6 );
-
     // Get global coordinates
-    cusfloat x2d[3]         = { 0.0, 0.0, 0.0 };
-    x2d[0]                  = cblas_dot<cusfloat>( this->num_nodes, this->xl, 1, N, 1 );
-    x2d[1]                  = cblas_dot<cusfloat>( this->num_nodes, this->yl, 1, N, 1 );
+    // cusfloat x2d[3]         = { 0.0, 0.0, 0.0 };
+    this->_x2d[0]                  = cblas_dot<cusfloat>( this->num_nodes, this->xl, 1, N, 1 );
+    this->_x2d[1]                  = cblas_dot<cusfloat>( this->num_nodes, this->yl, 1, N, 1 );
+    this->_x2d[2]                  = 0.0;
 
+    clear_vector( 3, this->_global_pos );
     clear_vector( 3, global_pos );
-    cblas_gemv<cusfloat>(CblasRowMajor, CblasNoTrans, 3, 3, 1.0, this->local_to_global_mat, 3, x2d, 1, 0, global_pos, 1);
+    cblas_gemv<cusfloat>(CblasRowMajor, CblasNoTrans, 3, 3, 1.0, this->local_to_global_mat, 3, this->_x2d, 1, 0, this->_global_pos, 1);
 
-    sv_add( 3, global_pos, this->sysref_centre, global_pos );
+    sv_add( 3, this->_global_pos, this->sysref_centre, global_pos );
 
 }
 
@@ -550,8 +626,29 @@ std::ostream& operator<< ( std::ostream& os, PanelGeom& panel )
     }
     os << std::endl;
 
+    os << " - CENTROID:" << std::endl;
+    os << "   -> X: " << panel.center[0] << " Y: " << panel.center[1] << " Z: " << panel.center[2] << std::endl;
+    os << std::endl;
+
     os << " - NORMAL VECTOR:" << std::endl;
     os << "   -> X: " << panel.normal_vec[0] << " Y: " << panel.normal_vec[1] << " Z: " << panel.normal_vec[2] << std::endl;
+    os << std::endl;
+
+    os << " - x2d:" << std::endl;
+    os << "   -> X: " << panel._x2d[0] << " Y: " << panel._x2d[1] << " Z: " << panel._x2d[2] << std::endl;
+    os << std::endl;
+
+    os << " - SysCentre:" << std::endl;
+    os << "   -> X: " << panel.sysref_centre[0] << " Y: " << panel.sysref_centre[1] << " Z: " << panel.sysref_centre[2] << std::endl;
+    os << std::endl;
+
+    os << " - global_pos:" << std::endl;
+    os << "   -> X: " << panel._global_pos[0] << " Y: " << panel._global_pos[1] << " Z: " << panel._global_pos[2] << std::endl;
+    os << std::endl;
+
+    os << " - Gauss Points Global:" << std::endl;
+    os << "   -> X: " << panel.gauss_points_global_x[0] << " Y: " << panel.gauss_points_global_y[0] << " Z: " << panel.gauss_points_global_z[0] << std::endl;
+    os << std::endl;
 
     return os;
 }

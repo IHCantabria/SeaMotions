@@ -20,6 +20,7 @@ public:
     cusfloat                body_cog[3]             = { 0.0, 0.0, 0.0 };
     cusfloat                center[3]               = {0.0, 0.0, 0.0};
     cusfloat                center_wl[3]            = {0.0, 0.0, 0.0};
+    cusfloat                free_surface_log_int    = 0.0;
     cusfloat                global_to_local_mat[9];
     cusfloat                gauss_points_global_x[NUM_GP2];
     cusfloat                gauss_points_global_y[NUM_GP2];
@@ -49,6 +50,8 @@ public:
     cusfloat                z_wl[2]                 = { 0.0, 0.0 };
     cusfloat                zl[MAX_PANEL_NODES];
     cusfloat                zlc[MAX_PANEL_NODES];
+    cusfloat                _x2d[3];
+    cusfloat                _global_pos[3];
 
     // Define class constructors and destructor
     PanelGeom( ) = default;
@@ -67,6 +70,8 @@ public:
                 );
 
     // Add method to calculate the geometric propertiess
+    void    calcualte_free_surface_singularity( void );
+
     template<int NGP>
     void    calculate_integration_properties( void );
 
