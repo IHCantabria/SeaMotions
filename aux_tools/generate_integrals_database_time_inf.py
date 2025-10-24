@@ -1464,31 +1464,33 @@ def fit_G0_fcn( fcn_fit, beta: np.ndarray, mu: float, f: np.ndarray, alpha: np.n
 
 def fit_residual_dGdt( folder_path: str, show_figs=False, is_square_ref=True, show_summary_fig=False ) -> None:
     # Define fit properties
-    fit_props               = FitProperties( )
-    fit_props.dims          = 2
-    fit_props.region_name   = "dGdt"
-    fit_props.cheby_order_x = 15
-    fit_props.cheby_order_y = 15
-    fit_props.fcn_log_scale = False
-    fit_props.x_hpatch_np   = 30
-    fit_props.x_log_scale   = False
-    fit_props.x_max         = 30.0
-    fit_props.x_min         = 0.0
-    fit_props.y_hpatch_np   = 4
-    fit_props.y_log_scale   = True
-    fit_props.y_max         = np.log10( 0.9998 )
-    fit_props.y_min         = -4.0
-    fit_props.cheby_abs_tol = 1E-4
-    fit_props.cheby_rel_tol = 1E-4
-    fit_props.x_map_fcn     = lambda x: x
-    fit_props.y_map_fcn     = lambda y: y
-    fit_props.max_ref_level = 10
-    fit_props.alpha_shift   = np.array( [ 0.0 ] )
+    fit_props                   = FitProperties( )
+    fit_props.dims              = 2
+    fit_props.region_name       = "dGdt"
+    fit_props.cheby_order_x     = 15
+    fit_props.cheby_order_y     = 15
+    fit_props.fcn_log_scale     = False
+    fit_props.x_hpatch_np       = 30
+    fit_props.x_log_scale       = False
+    fit_props.x_max             = 30.0
+    fit_props.x_min             = 0.0
+    fit_props.y_hpatch_np       = 4
+    fit_props.y_log_scale       = True
+    fit_props.y_max             = np.log10( 0.9998 )
+    fit_props.y_min             = -4.0
+    fit_props.cheby_abs_tol     = 1E-4
+    fit_props.cheby_abs_tol_f   = 2
+    fit_props.cheby_rel_tol     = 1E-4
+    fit_props.cheby_rel_tol_f   = 2
+    fit_props.x_map_fcn         = lambda x: x
+    fit_props.y_map_fcn         = lambda y: y
+    fit_props.max_ref_level     = 10
+    fit_props.alpha_shift       = np.array( [ 0.0 ] )
 
-    fit_props.num_x         = fit_props.cheby_order_x + 1
-    fit_props.num_x_fit     = fit_props.cheby_order_x + 1
-    fit_props.num_y         = fit_props.cheby_order_y + 1
-    fit_props.num_y_fit     = fit_props.cheby_order_y + 1
+    fit_props.num_x             = fit_props.cheby_order_x + 1
+    fit_props.num_x_fit         = fit_props.cheby_order_x + 1
+    fit_props.num_y             = fit_props.cheby_order_y + 1
+    fit_props.num_y_fit         = fit_props.cheby_order_y + 1
 
     fit_props.generate_fitting_matrix( )
 
@@ -1555,31 +1557,33 @@ def fit_residual_dGdt( folder_path: str, show_figs=False, is_square_ref=True, sh
 
 def fit_residual_dGdtx( folder_path: str, show_figs=False, is_square_ref=True, show_summary_fig=False ) -> None:
     # Define boundary values
-    fit_props               = FitProperties( )
-    fit_props.dims          = 2
-    fit_props.region_name   = "dGdtx"
-    fit_props.cheby_order_x = 30
-    fit_props.cheby_order_y = 15
-    fit_props.fcn_log_scale = False
-    fit_props.x_log_scale   = False
-    fit_props.x_hpatch_np   = 30
-    fit_props.x_max         = 30.0
-    fit_props.x_min         = 0.0
-    fit_props.y_hpatch_np   = 4
-    fit_props.y_log_scale   = True
-    fit_props.y_max         = np.log10( 0.9998 )
-    fit_props.y_min         = -4.0
-    fit_props.cheby_abs_tol = 1E-2
-    fit_props.cheby_rel_tol = 1E-4
-    fit_props.x_map_fcn     = lambda x: x
-    fit_props.y_map_fcn     = lambda y: y
-    fit_props.max_ref_level = 10
-    fit_props.alpha_shift   = np.array( [ 1e-3, 1e-2, 1e-1 ] )
+    fit_props                   = FitProperties( )
+    fit_props.dims              = 2
+    fit_props.region_name       = "dGdtx"
+    fit_props.cheby_order_x     = 30
+    fit_props.cheby_order_y     = 15
+    fit_props.fcn_log_scale     = False
+    fit_props.x_log_scale       = False
+    fit_props.x_hpatch_np       = 30
+    fit_props.x_max             = 30.0
+    fit_props.x_min             = 0.0
+    fit_props.y_hpatch_np       = 4
+    fit_props.y_log_scale       = True
+    fit_props.y_max             = np.log10( 0.9998 )
+    fit_props.y_min             = -4.0
+    fit_props.cheby_abs_tol     = 1E-2
+    fit_props.cheby_abs_tol_f   = 2
+    fit_props.cheby_rel_tol     = 1E-4
+    fit_props.cheby_rel_tol_f   = 2
+    fit_props.x_map_fcn         = lambda x: x
+    fit_props.y_map_fcn         = lambda y: y
+    fit_props.max_ref_level     = 10
+    fit_props.alpha_shift       = np.array( [ 1e-3, 1e-2, 1e-1 ] )
 
-    fit_props.num_x         = fit_props.cheby_order_x + 1
-    fit_props.num_x_fit     = fit_props.cheby_order_x + 1
-    fit_props.num_y         = fit_props.cheby_order_y + 1
-    fit_props.num_y_fit     = fit_props.cheby_order_y + 1
+    fit_props.num_x             = fit_props.cheby_order_x + 1
+    fit_props.num_x_fit         = fit_props.cheby_order_x + 1
+    fit_props.num_y             = fit_props.cheby_order_y + 1
+    fit_props.num_y_fit         = fit_props.cheby_order_y + 1
 
     fit_props.generate_fitting_matrix( )
 
@@ -1646,31 +1650,33 @@ def fit_residual_dGdtx( folder_path: str, show_figs=False, is_square_ref=True, s
 
 def fit_residual_dGdtxx( folder_path: str, show_figs=False, is_square_ref=True, show_summary_fig=False ) -> None:
     # Define boundary values
-    fit_props               = FitProperties( )
-    fit_props.dims          = 2
-    fit_props.region_name   = "dGdtxx"
-    fit_props.cheby_order_x = 40
-    fit_props.cheby_order_y = 15
-    fit_props.fcn_log_scale = False
-    fit_props.x_hpatch_np   = 30
-    fit_props.x_log_scale   = False
-    fit_props.x_max         = 30.0
-    fit_props.x_min         = 0.0
-    fit_props.y_hpatch_np   = 4
-    fit_props.y_log_scale   = True
-    fit_props.y_max         = np.log10( 0.9998 )
-    fit_props.y_min         = -4.0
-    fit_props.cheby_abs_tol = 1E1
-    fit_props.cheby_rel_tol = 1E-4
-    fit_props.x_map_fcn     = lambda x: x
-    fit_props.y_map_fcn     = lambda y: y
-    fit_props.max_ref_level = 10
-    fit_props.alpha_shift   = np.array( [ 1e-3, 1e-2, 1e-1 ] )
+    fit_props                   = FitProperties( )
+    fit_props.dims              = 2
+    fit_props.region_name       = "dGdtxx"
+    fit_props.cheby_order_x     = 40
+    fit_props.cheby_order_y     = 15
+    fit_props.fcn_log_scale     = False
+    fit_props.x_hpatch_np       = 30
+    fit_props.x_log_scale       = False
+    fit_props.x_max             = 30.0
+    fit_props.x_min             = 0.0
+    fit_props.y_hpatch_np       = 4
+    fit_props.y_log_scale       = True
+    fit_props.y_max             = np.log10( 0.9998 )
+    fit_props.y_min             = -4.0
+    fit_props.cheby_abs_tol     = 1E1
+    fit_props.cheby_abs_tol_f   = 2
+    fit_props.cheby_rel_tol     = 1E-4
+    fit_props.cheby_rel_tol_f   = 2
+    fit_props.x_map_fcn         = lambda x: x
+    fit_props.y_map_fcn         = lambda y: y
+    fit_props.max_ref_level     = 10
+    fit_props.alpha_shift       = np.array( [ 1e-3, 1e-2, 1e-1 ] )
 
-    fit_props.num_x         = fit_props.cheby_order_x + 1
-    fit_props.num_x_fit     = fit_props.cheby_order_x + 1
-    fit_props.num_y         = fit_props.cheby_order_y + 1
-    fit_props.num_y_fit     = fit_props.cheby_order_y + 1
+    fit_props.num_x             = fit_props.cheby_order_x + 1
+    fit_props.num_x_fit         = fit_props.cheby_order_x + 1
+    fit_props.num_y             = fit_props.cheby_order_y + 1
+    fit_props.num_y_fit         = fit_props.cheby_order_y + 1
 
     fit_props.generate_fitting_matrix( )
 
@@ -1738,31 +1744,33 @@ def fit_residual_dGdtxx( folder_path: str, show_figs=False, is_square_ref=True, 
 def fit_residual_dGdtt( folder_path: str, show_figs=False, is_square_ref=True, show_summary_fig=False ) -> None:
     # Define fit properties
     # Define boundary values
-    fit_props               = FitProperties( )
-    fit_props.dims          = 2
-    fit_props.region_name   = "dGdtt"
-    fit_props.cheby_order_x = 40
-    fit_props.cheby_order_y = 15
-    fit_props.fcn_log_scale = False
-    fit_props.x_hpatch_np   = 30
-    fit_props.x_log_scale   = False
-    fit_props.x_max         = 19.0
-    fit_props.x_min         = 0.0
-    fit_props.y_hpatch_np   = 4
-    fit_props.y_log_scale   = True
-    fit_props.y_max         = np.log10( 0.9998 )
-    fit_props.y_min         = -4.0
-    fit_props.cheby_abs_tol = 1E-3
-    fit_props.cheby_rel_tol = 1E-4
-    fit_props.x_map_fcn     = lambda x: x
-    fit_props.y_map_fcn     = lambda y: y
-    fit_props.max_ref_level = 10
-    fit_props.alpha_shift   = np.array( [ 1e-3, 1e-2, 1e-1 ] )
+    fit_props                   = FitProperties( )
+    fit_props.dims              = 2
+    fit_props.region_name       = "dGdtt"
+    fit_props.cheby_order_x     = 40
+    fit_props.cheby_order_y     = 15
+    fit_props.fcn_log_scale     = False
+    fit_props.x_hpatch_np       = 30
+    fit_props.x_log_scale       = False
+    fit_props.x_max             = 19.0
+    fit_props.x_min             = 0.0
+    fit_props.y_hpatch_np       = 4
+    fit_props.y_log_scale       = True
+    fit_props.y_max             = np.log10( 0.9998 )
+    fit_props.y_min             = -4.0
+    fit_props.cheby_abs_tol     = 1E-3
+    fit_props.cheby_abs_tol_f   = 2
+    fit_props.cheby_rel_tol     = 1E-4
+    fit_props.cheby_rel_tol_f   = 2
+    fit_props.x_map_fcn         = lambda x: x
+    fit_props.y_map_fcn         = lambda y: y
+    fit_props.max_ref_level     = 10
+    fit_props.alpha_shift       = np.array( [ 1e-3, 1e-2, 1e-1 ] )
 
-    fit_props.num_x         = fit_props.cheby_order_x + 1
-    fit_props.num_x_fit     = fit_props.cheby_order_x + 1
-    fit_props.num_y         = fit_props.cheby_order_y + 1
-    fit_props.num_y_fit     = fit_props.cheby_order_y + 1
+    fit_props.num_x             = fit_props.cheby_order_x + 1
+    fit_props.num_x_fit         = fit_props.cheby_order_x + 1
+    fit_props.num_y             = fit_props.cheby_order_y + 1
+    fit_props.num_y_fit         = fit_props.cheby_order_y + 1
 
     fit_props.generate_fitting_matrix( )
 
@@ -1829,32 +1837,33 @@ def fit_residual_dGdtt( folder_path: str, show_figs=False, is_square_ref=True, s
 
 def fit_residual_dGdttx( folder_path: str, show_figs=False, is_square_ref=True, show_summary_fig=False ) -> None:
     # Define boundary values
-    fit_props               = FitProperties( )
-    fit_props.dims          = 2
-    fit_props.region_name   = "dGdttx"
-    fit_props.cheby_order_x = 40
-    fit_props.cheby_order_y = 15
-    fit_props.fcn_log_scale = False
-    fit_props.x_hpatch_np   = 30
-    fit_props.x_log_scale   = False
-    fit_props.x_max         = 30.0
-    fit_props.x_min         = 0.0
-    fit_props.y_hpatch_np   = 4
-    fit_props.y_log_scale   = True
-    fit_props.y_max         = np.log10( 0.999 )
-    fit_props.y_min         = -4.0
-    fit_props.cheby_abs_tol = 1E0
-    fit_props.cheby_rel_tol = 1E-4
-    fit_props.x_map_fcn     = lambda x: x
-    fit_props.y_map_fcn     = lambda y: y
-    fit_props.max_ref_level = 10
-    # fit_props.alpha_shift   = np.array( [ 1e-4, 0.0, 1e-2, 1e-1 ] )
-    fit_props.alpha_shift   = np.array( [ 1e-3, 1e-2, 1e-1 ] )
+    fit_props                   = FitProperties( )
+    fit_props.dims              = 2
+    fit_props.region_name       = "dGdttx"
+    fit_props.cheby_order_x     = 40
+    fit_props.cheby_order_y     = 15
+    fit_props.fcn_log_scale     = False
+    fit_props.x_hpatch_np       = 30
+    fit_props.x_log_scale       = False
+    fit_props.x_max             = 30.0
+    fit_props.x_min             = 0.0
+    fit_props.y_hpatch_np       = 4
+    fit_props.y_log_scale       = True
+    fit_props.y_max             = np.log10( 0.999 )
+    fit_props.y_min             = -4.0
+    fit_props.cheby_abs_tol     = 1E0
+    fit_props.cheby_abs_tol_f   = 2
+    fit_props.cheby_rel_tol     = 1E-4
+    fit_props.cheby_rel_tol_f   = 2
+    fit_props.x_map_fcn         = lambda x: x
+    fit_props.y_map_fcn         = lambda y: y
+    fit_props.max_ref_level     = 10
+    fit_props.alpha_shift       = np.array( [ 1e-3, 1e-2, 1e-1 ] )
 
-    fit_props.num_x         = fit_props.cheby_order_x + 1
-    fit_props.num_x_fit     = fit_props.cheby_order_x + 1
-    fit_props.num_y         = fit_props.cheby_order_y + 1
-    fit_props.num_y_fit     = fit_props.cheby_order_y + 1
+    fit_props.num_x             = fit_props.cheby_order_x + 1
+    fit_props.num_x_fit         = fit_props.cheby_order_x + 1
+    fit_props.num_y             = fit_props.cheby_order_y + 1
+    fit_props.num_y_fit         = fit_props.cheby_order_y + 1
 
     fit_props.generate_fitting_matrix( )
 
@@ -1921,31 +1930,33 @@ def fit_residual_dGdttx( folder_path: str, show_figs=False, is_square_ref=True, 
 
 def fit_residual_dGdttxx( folder_path: str, show_figs=True, is_square_ref=True, show_summary_fig=False ) -> None:
     # Define boundary values
-    fit_props               = FitProperties( )
-    fit_props.dims          = 2
-    fit_props.region_name   = "dGdttxx"
-    fit_props.cheby_order_x = 30
-    fit_props.cheby_order_y = 30
-    fit_props.fcn_log_scale = False
-    fit_props.x_log_scale   = False
-    fit_props.x_hpatch_np   = 30
-    fit_props.x_max         = 30.0
-    fit_props.x_min         = 0.0
-    fit_props.y_log_scale   = True
-    fit_props.y_max         = np.log10( 0.999 )
-    fit_props.y_hpatch_np   = 4
-    fit_props.y_min         = -4.0
-    fit_props.cheby_abs_tol = 1E+1
-    fit_props.cheby_rel_tol = 1E-3
-    fit_props.x_map_fcn     = lambda x: x
-    fit_props.y_map_fcn     = lambda y: y
-    fit_props.max_ref_level = 10
-    fit_props.alpha_shift   = np.array( [ 1e-3, 1e-2, 1e-1 ] )
+    fit_props                   = FitProperties( )
+    fit_props.dims              = 2
+    fit_props.region_name       = "dGdttxx"
+    fit_props.cheby_order_x     = 30
+    fit_props.cheby_order_y     = 30
+    fit_props.fcn_log_scale     = False
+    fit_props.x_log_scale       = False
+    fit_props.x_hpatch_np       = 30
+    fit_props.x_max             = 30.0
+    fit_props.x_min             = 0.0
+    fit_props.y_log_scale       = True
+    fit_props.y_max             = np.log10( 0.999 )
+    fit_props.y_hpatch_np       = 4
+    fit_props.y_min             = -4.0
+    fit_props.cheby_abs_tol     = 1E+1
+    fit_props.cheby_abs_tol_f   = 2
+    fit_props.cheby_rel_tol     = 1E-3
+    fit_props.cheby_rel_tol_f   = 2
+    fit_props.x_map_fcn         = lambda x: x
+    fit_props.y_map_fcn         = lambda y: y
+    fit_props.max_ref_level     = 10
+    fit_props.alpha_shift       = np.array( [ 1e-3, 1e-2, 1e-1 ] )
 
-    fit_props.num_x         = fit_props.cheby_order_x + 1
-    fit_props.num_x_fit     = fit_props.cheby_order_x + 1
-    fit_props.num_y         = fit_props.cheby_order_y + 1
-    fit_props.num_y_fit     = fit_props.cheby_order_y + 1
+    fit_props.num_x             = fit_props.cheby_order_x + 1
+    fit_props.num_x_fit         = fit_props.cheby_order_x + 1
+    fit_props.num_y             = fit_props.cheby_order_y + 1
+    fit_props.num_y_fit         = fit_props.cheby_order_y + 1
 
     fit_props.generate_fitting_matrix( )
 
@@ -2015,75 +2026,139 @@ def fit_residual_dGdttxx( folder_path: str, show_figs=True, is_square_ref=True, 
 
 
 def generate_dGdt( show_summary_fig=False, show_figs=False )->None:
-    # Fit coefficients
-    fit_region, chfhpa = fit_residual_dGdt(folder_path, show_summary_fig=show_summary_fig, show_figs=show_figs)
+    # Define case type
+    case_type   = "dGdt"
 
     # Define folder path to storage fit results
-    fopath = os.path.join( get_integrals_database_fit_fopath( ), "1_time_domain" )
+    fopath      = os.path.join( get_integrals_database_fit_fopath( ), "1_time_domain" )
+    fopath_fit  = os.path.join( fopath, f"{case_type}_fit_results" )
+
+    # Check if fit results folder exits
+    if not os.path.isdir( fopath_fit ):
+        os.makedirs( fopath_fit )
+
+    # Fit coefficients
+    fit_region, chfhpa = fit_residual_dGdt( fopath_fit, show_summary_fig=show_summary_fig, show_figs=show_figs )
 
     # Write coefficients
-    write_coeffs_module_adaptive_2d_only_header( fit_region, fopath, "dGdt", is_time=True )
+    write_coeffs_module_adaptive_2d_only_header( fit_region, fopath, case_type, is_time=True )
 
     for i,mi in enumerate( chfhpa.get_interpolators( ) ):
-        write_coeffs_module_adaptive_1d_only_header( mi.get_fit_fcn( ), fopath, f"dGdtA{i:d}" )
+        write_coeffs_module_adaptive_1d_only_header( mi.get_fit_fcn( ), fopath, f"{case_type}A{i:d}" )
 
 
 def generate_dGdtx( show_summary_fig=False, show_figs=False )->None:
-    # Fit coefficients
-    fit_region, chfhpa = fit_residual_dGdtx(folder_path, show_summary_fig=show_summary_fig, show_figs=show_figs)
+    # Define case type
+    case_type   = "dGdtx"
 
     # Define folder path to storage fit results
-    fopath = os.path.join( get_integrals_database_fit_fopath( ), "1_time_domain" )
+    fopath      = os.path.join( get_integrals_database_fit_fopath( ), "1_time_domain" )
+    fopath_fit  = os.path.join( fopath, f"{case_type}_fit_results" )
 
-    # Write coefficients
-    write_coeffs_module_adaptive_2d_only_header( fit_region, fopath, "dGdtx", is_time=True )
+    # Check if fit results folder exits
+    if not os.path.isdir( fopath_fit ):
+        os.makedirs( fopath_fit )
 
-    for i,mi in enumerate( chfhpa.get_interpolators( ) ):
-        write_coeffs_module_adaptive_1d_only_header( mi.get_fit_fcn( ), folder_path, f"dGdtxA{i:d}" )
-
-
-def generate_dGdtxx(folder_path: str, show_summary_fig=False, show_figs=False)->None:
     # Fit coefficients
-    fit_region, chfhpa = fit_residual_dGdtxx(folder_path, show_summary_fig=show_summary_fig, show_figs=show_figs)
+    fit_region, chfhpa = fit_residual_dGdtx( fopath_fit, show_summary_fig=show_summary_fig, show_figs=show_figs )
 
     # Write coefficients
-    write_coeffs_module_adaptive_2d_only_header( fit_region, folder_path, "dGdtxx", is_time=True )
+    write_coeffs_module_adaptive_2d_only_header( fit_region, fopath, case_type, is_time=True )
 
     for i,mi in enumerate( chfhpa.get_interpolators( ) ):
-        write_coeffs_module_adaptive_1d_only_header( mi.get_fit_fcn( ), folder_path, f"dGdtxxA{i:d}" )
+        write_coeffs_module_adaptive_1d_only_header( mi.get_fit_fcn( ), fopath, f"{case_type}A{i:d}" )
 
 
-def generate_dGdtt(folder_path: str, show_summary_fig=False, show_figs=False)->None:
+def generate_dGdtxx( show_summary_fig=False, show_figs=False )->None:
+    # Define case type
+    case_type   = "dGdtxx"
+
+    # Define folder path to storage fit results
+    fopath      = os.path.join( get_integrals_database_fit_fopath( ), "1_time_domain" )
+    fopath_fit  = os.path.join( fopath, f"{case_type}_fit_results" )
+
+    # Check if fit results folder exits
+    if not os.path.isdir( fopath_fit ):
+        os.makedirs( fopath_fit )
+
     # Fit coefficients
-    fit_region, chfhpa = fit_residual_dGdtt(folder_path, show_summary_fig=show_summary_fig, show_figs=show_figs)
+    fit_region, chfhpa = fit_residual_dGdtxx( fopath_fit, show_summary_fig=show_summary_fig, show_figs=show_figs )
 
     # Write coefficients
-    write_coeffs_module_adaptive_2d_only_header( fit_region, folder_path, "dGdtt", is_time=True )
+    write_coeffs_module_adaptive_2d_only_header( fit_region, fopath, case_type, is_time=True )
 
     for i,mi in enumerate( chfhpa.get_interpolators( ) ):
-        write_coeffs_module_adaptive_1d_only_header( mi.get_fit_fcn( ), folder_path, f"dGdttA{i:d}" )
+        write_coeffs_module_adaptive_1d_only_header( mi.get_fit_fcn( ), fopath, f"{case_type}A{i:d}" )
 
 
-def generate_dGdttx(folder_path: str, show_summary_fig=False, show_figs=False)->None:
+def generate_dGdtt( show_summary_fig=False, show_figs=False )->None:
+    # Define case type
+    case_type   = "dGdtt"
+
+    # Define folder path to storage fit results
+    fopath      = os.path.join( get_integrals_database_fit_fopath( ), "1_time_domain" )
+    fopath_fit  = os.path.join( fopath, f"{case_type}_fit_results" )
+
+    # Check if fit results folder exits
+    if not os.path.isdir( fopath_fit ):
+        os.makedirs( fopath_fit )
+
     # Fit coefficients
-    fit_region, chfhpa = fit_residual_dGdttx(folder_path, show_summary_fig=show_summary_fig, show_figs=show_figs)
+    fit_region, chfhpa = fit_residual_dGdtt( fopath_fit, show_summary_fig=show_summary_fig, show_figs=show_figs )
 
     # Write coefficients
-    write_coeffs_module_adaptive_2d_only_header( fit_region, folder_path, "dGdttx", is_time=True )
+    write_coeffs_module_adaptive_2d_only_header( fit_region, fopath, case_type, is_time=True )
 
     for i,mi in enumerate( chfhpa.get_interpolators( ) ):
-        write_coeffs_module_adaptive_1d_only_header( mi.get_fit_fcn( ), folder_path, f"dGdttxA{i:d}" )
+        write_coeffs_module_adaptive_1d_only_header( mi.get_fit_fcn( ), fopath, f"{case_type}A{i:d}" )
 
 
-def generate_dGdttxx(folder_path: str, show_summary_fig=False, show_figs=False)->None:
+def generate_dGdttx( show_summary_fig=False, show_figs=False )->None:
+    # Define case type
+    case_type   = "dGdttx"
+
+    # Define folder path to storage fit results
+    fopath      = os.path.join( get_integrals_database_fit_fopath( ), "1_time_domain" )
+    fopath_fit  = os.path.join( fopath, f"{case_type}_fit_results" )
+
+    # Check if fit results folder exits
+    if not os.path.isdir( fopath_fit ):
+        os.makedirs( fopath_fit )
+
+    # Check if fit results folder exits
+    if not os.path.isdir( fopath_fit ):
+        os.makedirs( fopath_fit )
+
     # Fit coefficients
-    fit_region, chfhpa = fit_residual_dGdttxx(folder_path, show_summary_fig=show_summary_fig, show_figs=show_figs)
+    fit_region, chfhpa = fit_residual_dGdttx( fopath_fit, show_summary_fig=show_summary_fig, show_figs=show_figs )
 
     # Write coefficients
-    write_coeffs_module_adaptive_2d_only_header( fit_region, folder_path, "dGdttxx", is_time=True )
+    write_coeffs_module_adaptive_2d_only_header( fit_region, fopath, case_type, is_time=True )
 
     for i,mi in enumerate( chfhpa.get_interpolators( ) ):
-        write_coeffs_module_adaptive_1d_only_header( mi.get_fit_fcn( ), folder_path, f"dGdttxxA{i:d}" )
+        write_coeffs_module_adaptive_1d_only_header( mi.get_fit_fcn( ), fopath, f"{case_type}A{i:d}" )
+
+
+def generate_dGdttxx( show_summary_fig=False, show_figs=False )->None:
+    # Define case type
+    case_type   = "dGdttxx"
+
+    # Define folder path to storage fit results
+    fopath      = os.path.join( get_integrals_database_fit_fopath( ), "1_time_domain" )
+    fopath_fit  = os.path.join( fopath, f"{case_type}_fit_results" )
+
+    # Check if fit results folder exits
+    if not os.path.isdir( fopath_fit ):
+        os.makedirs( fopath_fit )
+
+    # Fit coefficients
+    fit_region, chfhpa = fit_residual_dGdttxx( fopath_fit, show_summary_fig=show_summary_fig, show_figs=show_figs )
+
+    # Write coefficients
+    write_coeffs_module_adaptive_2d_only_header( fit_region, fopath, case_type, is_time=True )
+
+    for i,mi in enumerate( chfhpa.get_interpolators( ) ):
+        write_coeffs_module_adaptive_1d_only_header( mi.get_fit_fcn( ), fopath, f"{case_type}A{i:d}" )
 
 
 def get_root_fopath( ) -> str:
@@ -2539,149 +2614,6 @@ def dGdttxx_G0( beta: np.ndarray, mu: float, alpha=0.0 ) -> np.ndarray:
     return ( -beta**2.0 / 4.0 ) * dGdttx_G0( beta, mu, alpha=alpha )
 
 
-def G0_G0( beta: np.ndarray, mu ) -> np.ndarray:
-    lt = np.pi * beta**3.0 / 16 / np.sqrt( 2 ) * np.exp( -beta**2.0 * mu / 4.0 )
-    return lt * (
-                    sp.special.jv( 0.25, beta**2.0 / 8.0 )
-                    *
-                    sp.special.jv( -0.25, beta**2.0 / 8.0 )
-                    +
-                    sp.special.jv( 0.75, beta**2.0 /8.0 )
-                    *
-                    sp.special.jv( -0.75, beta**2.0 / 8.0 )
-                )
-
-
-def G0_G0_series( beta: np.ndarray, mu: float, n: int ) -> np.ndarray:
-    lt  = np.pi * beta**3.0 / 16 / np.sqrt( 2 ) * np.exp( -beta**2.0 * mu / 4.0 )
-    G   = lt * (
-                    sp.special.jv( 0.25 * ( n + 1 ), beta**2.0 / 8.0 )
-                    *
-                    sp.special.jv( -0.25 * ( n + 1 ), beta**2.0 / 8.0 )
-                    +
-                    sp.special.jv( 0.75 * ( n + 1 ), beta**2.0 /8.0 )
-                    *
-                    sp.special.jv( -0.75 * ( n + 1 ), beta**2.0 / 8.0 )
-                )
-    pos     = beta < 1e-6
-    G[pos]  = 0.0
-
-    return G
-
-
-def G0_G0_dx( beta: np.ndarray, mu ) -> np.ndarray:
-    lt      = - np.pi * beta**5.0 / 64 / np.sqrt( 2 ) * np.exp( -beta**2.0 * mu / 4.0 )
-    G       = lt * (
-                        sp.special.jv( 0.25, beta**2.0 / 8.0 )
-                        *
-                        sp.special.jv( -0.25, beta**2.0 / 8.0 )
-                        +
-                        sp.special.jv( 0.75, beta**2.0 /8.0 )
-                        *
-                        sp.special.jv( -0.75, beta**2.0 / 8.0 )
-                    )
-
-    return G
-
-
-def G0_G0_dx_series( beta: np.ndarray, mu: float, n: int ) -> np.ndarray:
-    lt      = - np.pi * beta**5.0 / 64 / np.sqrt( 2 ) * np.exp( -beta**2.0 * mu / 4.0 )
-    xarg    = np.sqrt( 1 - mu**2.0 ) * beta**2.0 / 8.0
-    G       = lt * (
-                        sp.special.jv( 0.25 * ( n + 1 ), xarg )
-                        *
-                        sp.special.jv( -0.25 * ( n + 1 ), xarg )
-                        +
-                        sp.special.jv( 0.75 * ( n + 1 ), xarg )
-                        *
-                        sp.special.jv( -0.75 * ( n + 1 ), xarg )
-                    )
-    
-    pos     = beta < 1e-6
-    G[pos]  = 0.0
-
-    return G
-
-
-def G0_G0_dxx( beta: np.ndarray, mu ) -> np.ndarray:
-    lt = np.pi * beta**7.0 / 256 / np.sqrt( 2 ) * np.exp( -beta**2.0 * mu / 4.0 )
-    return lt * (
-                    sp.special.jv( 0.25, beta**2.0 / 8.0 )
-                    *
-                    sp.special.jv( -0.25, beta**2.0 / 8.0 )
-                    +
-                    sp.special.jv( 0.75, beta**2.0 /8.0 )
-                    *
-                    sp.special.jv( -0.75, beta**2.0 / 8.0 )
-                )
-
-
-def G0_G0_dxx_series( beta: np.ndarray, mu: float, n: int ) -> np.ndarray:
-    lt = np.pi * beta**7.0 / 256 / np.sqrt( 2 ) * np.exp( -beta**2.0 * mu / 4.0 )
-    return lt * (
-                    sp.special.jv( 0.25 * ( n + 1 ), beta**2.0 / 8.0 )
-                    *
-                    sp.special.jv( -0.25 * ( n + 1 ), beta**2.0 / 8.0 )
-                    +
-                    sp.special.jv( 0.75 * ( n + 1 ), beta**2.0 /8.0 )
-                    *
-                    sp.special.jv( -0.75 * ( n + 1 ), beta**2.0 / 8.0 )
-                )
-
-
-def G0_G0_dt( beta: np.ndarray, mu ) -> np.ndarray:
-    # Calculate leading term
-    lt  = np.pi / 16 / np.sqrt( 2 )
-
-    # Calculate term 1
-    a   = beta**3.0
-    y0  = (
-                sp.special.jv( 0.25, beta**2.0 / 8.0 )
-                *
-                sp.special.jv( -0.25, beta**2.0 / 8.0 )
-                +
-                sp.special.jv( 0.75, beta**2.0 /8.0 )
-                *
-                sp.special.jv( -0.75, beta**2.0 / 8.0 )
-            )
-    
-    T1  = - 0.5 * a * y0 * beta * mu * np.exp( -beta**2.0 * mu / 4.0 )
-
-    # Calculate term 2
-    x   = beta**2.0 / 8.0
-    a   = 3.0 * beta**2.0
-    b   = beta**4.0 / 4.0
-    c   = b / 2.0
-
-    y0  = a * (
-                    jv( 0.25, x ) * jv( -0.25, x )
-                    +
-                    jv( 0.75, x ) * jv( -0.75, x )
-            )
-    
-    y1  = b * (
-                    jv( -0.75, x ) * jv( -0.25, x )
-                    -
-                    jv( 0.75, x ) * jv( 0.25, x )
-                )
-    
-    y2  = c * (
-                    - jv( 1.25, x ) * jv( -0.25, x )
-                    +
-                    jv( -1.25, x ) * jv( 0.25, x )
-                )
-    
-    y3  = c * (
-                    - jv( 1.75, x ) * jv( -0.75, x )
-                    +
-                    jv( -1.75, x ) * jv( 0.75, x )
-                )
-    
-    T2  = ( y0 + y1 + y2 + y3 ) * np.exp( -beta**2.0 * mu / 4.0 )
-
-    return lt * ( T1 + T2 )
-
-
 def map_to_interval( a: float, b: float, t: np.ndarray ) -> None:
     """
     Map points from the canonical interval [-1, 1] to a target interval [a, b].
@@ -2782,10 +2714,9 @@ def plot_residual_function( beta: np.ndarray, mu: np.ndarray, data_raw: np.ndarr
 
 
 if __name__ == "__main__":
-    folder_path = r"D:\sergio\developments\SeaMotions\aux_tools\0_databases\2_infinite_water_depth_time"
-    generate_dGdt( folder_path )
-    # generate_dGdtx( folder_path )
-    # generate_dGdtxx( folder_path )
-    # generate_dGdtt( folder_path )
-    # generate_dGdttx( folder_path )
-    # generate_dGdttxx( folder_path )
+    # generate_dGdt( )
+    generate_dGdtx( )
+    # generate_dGdtxx( )
+    # generate_dGdtt( )
+    # generate_dGdttx( )
+    # generate_dGdttxx( )
