@@ -125,7 +125,7 @@ class RefLevel:
         self.cheby_coeffs           = np.ndarray
         self.child                  = [ ]
         self.fit_props              = fit_props
-        self.fit_stats              = FitProperties( )
+        self.fit_stats              = FitStats( )
         self.level                  = 0
         self.parent                 = parent
         self.start_index_global     = 0
@@ -163,22 +163,22 @@ class RefLevel:
     def check_position_interval( self, pos: np.ndarray ):
         if pos.shape[0] == 1:
             is_pass =   ( 
-                            ( self.fit_props.x_max > pos[0] ) & ( self.fit_props.x_min < pos[0] ) 
+                            ( self.fit_props.x_max >= pos[0] ) & ( self.fit_props.x_min <= pos[0] ) 
                         )
         elif pos.shape[0] == 2:
             is_pass =   ( 
-                            ( self.fit_props.x_max > pos[0] ) & ( self.fit_props.x_min < pos[0] )
+                            ( self.fit_props.x_max >= pos[0] ) & ( self.fit_props.x_min <= pos[0] )
                             &
-                            ( self.fit_props.y_max > pos[1] ) & ( self.fit_props.y_min < pos[1] )
+                            ( self.fit_props.y_max >= pos[1] ) & ( self.fit_props.y_min <= pos[1] )
                         )
             
         elif pos.shape[0] == 3:
             is_pass =   ( 
-                            ( self.fit_props.x_max > pos[0] ) & ( self.fit_props.x_min < pos[0] )
+                            ( self.fit_props.x_max >= pos[0] ) & ( self.fit_props.x_min <= pos[0] )
                             &
-                            ( self.fit_props.y_max > pos[1] ) & ( self.fit_props.y_min < pos[1] )
+                            ( self.fit_props.y_max >= pos[1] ) & ( self.fit_props.y_min <= pos[1] )
                             &
-                            ( self.fit_props.z_max > pos[2] ) & ( self.fit_props.z_min < pos[2] )
+                            ( self.fit_props.z_max >= pos[2] ) & ( self.fit_props.z_min <= pos[2] )
                         )
         else:
             raise ValueError( "Could not check position in more that 3 dimensions." )
@@ -189,9 +189,11 @@ class RefLevel:
         is_pass_abs         = self.fit_stats.max_abs_err < self.fit_stats.abs_err_tol
         is_pass_rel         = self.fit_stats.max_rel_err < self.fit_stats.rel_err_tol
         # is_pass_thr_abs     = self.fit_stats.abs_err_over_thr < 1.0
-        is_pass_mean_abs    = self.fit_stats.mean_abs_err < self.fit_stats.abs_err_tol
+        is_pass_mean_abs    = self.fit_stats.mean_abs_err < self.fit_stats.abs_err_tol * 1.05
+        is_pass_mean_rel    = self.fit_stats.mean_rel_err < self.fit_stats.rel_err_tol * 1.05
         is_pass_loose_abs   = self.fit_stats.max_abs_err < 10 * self.fit_stats.abs_err_tol
-        is_pass             = is_pass_abs or is_pass_rel or ( is_pass_mean_abs and is_pass_loose_abs )
+        is_pass_loose_rel   = self.fit_stats.max_abs_err < 10 * self.fit_stats.rel_err_tol
+        is_pass             = is_pass_abs or is_pass_rel or ( is_pass_mean_abs and is_pass_loose_abs ) or ( is_pass_mean_rel and is_pass_loose_rel )
 
         return is_pass
     
@@ -333,23 +335,29 @@ class RefLevel:
 
         return start_index
     
-    def show_summary( self, folder_path: str ) -> None:
+    def show_summary( self, folder_path: str, log_scale=False ) -> None:
         # Define output coefficients
         num_coeffs_sp       = StatPatch( "num_coeffs" )
         max_err_sp          = StatPatch( "max_abs_err" )
         ref_level_sp        = StatPatch( "ref_level" )
         max_cheby_order_sp  = StatPatch( "max_cheby_order" )
         max_abs_err_sp      = StatPatch( "max_abs_err" )
+        max_rel_err_sp      = StatPatch( "max_rel_err" )
         mean_abs_err_sp     = StatPatch( "mean_abs_err" )
+        mean_rel_err_sp     = StatPatch( "mean_rel_err" )
         min_abs_err_sp      = StatPatch( "min_abs_err" )
+        min_rel_err_sp      = StatPatch( "min_rel_err" )
 
         self.get_stat_patch( num_coeffs_sp )
         self.get_stat_patch( max_err_sp )
         self.get_stat_patch( ref_level_sp )
         self.get_stat_patch( max_cheby_order_sp )
         self.get_stat_patch( max_abs_err_sp )
+        self.get_stat_patch( max_rel_err_sp )
         self.get_stat_patch( mean_abs_err_sp )
+        self.get_stat_patch( mean_rel_err_sp )
         self.get_stat_patch( min_abs_err_sp )
+        self.get_stat_patch( min_rel_err_sp )
 
         # Ouput summary data
         print( "Num.Coeffs: ", np.array( num_coeffs_sp.value ).sum( ) )
@@ -360,16 +368,19 @@ class RefLevel:
             fid.writelines( f"Num.Patches:           {len( max_err_sp.value )}\n" )
             fid.writelines( f"Max.Cheyby Order:      {np.array( max_cheby_order_sp.value ).max( )}" )
 
-        plot_patch( num_coeffs_sp, folder_path )
-        plot_patch( max_err_sp, folder_path )
-        plot_patch( ref_level_sp, folder_path )
-        plot_patch( max_cheby_order_sp, folder_path )
-        plot_patch( max_abs_err_sp, folder_path )
-        plot_patch( mean_abs_err_sp, folder_path )
-        plot_patch( min_abs_err_sp, folder_path )
+        plot_patch( num_coeffs_sp,      folder_path, log_scale=False        )
+        plot_patch( max_err_sp,         folder_path, log_scale=log_scale    )
+        plot_patch( ref_level_sp,       folder_path, log_scale=False        )
+        plot_patch( max_cheby_order_sp, folder_path, log_scale=False        )
+        plot_patch( max_abs_err_sp,     folder_path, log_scale=log_scale    )
+        plot_patch( max_rel_err_sp,     folder_path, log_scale=log_scale    )
+        plot_patch( mean_abs_err_sp,    folder_path, log_scale=log_scale    )
+        plot_patch( mean_rel_err_sp,    folder_path, log_scale=log_scale    )
+        plot_patch( min_abs_err_sp,     folder_path, log_scale=log_scale    )
+        plot_patch( min_rel_err_sp,     folder_path, log_scale=log_scale    )
 
 
-def plot_patch( stat_patch: StatPatch, folder_path: str ) -> None:
+def plot_patch( stat_patch: StatPatch, folder_path: str, log_scale=False ) -> None:
     # Create output file
     fipath = os.path.join( folder_path, stat_patch.name + ".html" )
     output_file( fipath, stat_patch.name.upper( ) )
@@ -379,7 +390,7 @@ def plot_patch( stat_patch: StatPatch, folder_path: str ) -> None:
     y       = stat_patch.y
     width   = stat_patch.dx
     height  = stat_patch.dy
-    value   = stat_patch.value
+    value   = np.log10( np.abs( stat_patch.value ) ) if log_scale else stat_patch.value
 
     # Prepare main rectangle source
     rect_data   = dict(x=x, y=y, width=width, height=height, value=value)
@@ -570,7 +581,7 @@ def write_coeffs_module_adaptive_1d_only_header( ref_level: RefLevel, folder_pat
     fid.close()
 
 
-def write_coeffs_module_adaptive_2d_only_header( ref_level: RefLevel, folder_path: str, module_name: str)->None:
+def write_coeffs_module_adaptive_2d_only_header( ref_level: RefLevel, folder_path: str, module_name: str, is_time=False)->None:
     # Get number of cumulative coefficients
     num_points_cum = ref_level.get_num_cheby_coeffs( )
 
@@ -583,6 +594,10 @@ def write_coeffs_module_adaptive_2d_only_header( ref_level: RefLevel, folder_pat
 
     # Get intervals size
     max_ref_level   = ref_level.get_max_level( )
+    xhp_np          = ref_level.fit_props.x_hpatch_np
+    yhp_np          = ref_level.fit_props.y_hpatch_np
+    is_hpatch_np    = ( xhp_np > 1 ) | ( yhp_np > 1 )
+    max_ref_level   = ( max_ref_level - 1 ) if is_hpatch_np else max_ref_level
     x_min           = ref_level.fit_props.x_min
     x_max           = ref_level.fit_props.x_max
     y_min           = ref_level.fit_props.y_min
@@ -595,12 +610,14 @@ def write_coeffs_module_adaptive_2d_only_header( ref_level: RefLevel, folder_pat
 
     # Calculate hash table
     intervals_np    = 2**(max_ref_level)
-    dx              = ( x_max - x_min ) / intervals_np
-    x               = np.arange( x_min, x_max+dx, dx )
+    dx              = ( x_max - x_min ) / ( intervals_np * xhp_np )
+    # x               = np.arange( x_min, x_max+dx, dx )
+    x               = np.linspace( x_min, x_max, ( intervals_np * xhp_np ) +1 )
     xm              = ( x[1:] + x[:-1] ) / 2.0
 
-    dy              = ( y_max - y_min ) / intervals_np
-    y               = np.arange( y_min, y_max+dy, dy )
+    dy              = ( y_max - y_min ) / ( intervals_np * yhp_np )
+    # y               = np.arange( y_min, y_max+dy, dy )
+    y               = np.linspace( y_min, y_max, ( intervals_np * yhp_np ) +1 )
     ym              = ( y[1:] + y[:-1] ) / 2.0
 
     blocks_np                   = xm.shape[0] * ym.shape[0]
@@ -616,6 +633,7 @@ def write_coeffs_module_adaptive_2d_only_header( ref_level: RefLevel, folder_pat
         xmi = xm[i]
         for j in range( ym.shape[0] ):
             ymi = ym[j]
+            print( i, j, xm[i], ym[j] )
             bs, bc, _, _, mco, _, x_min_i, x_max_i, y_min_i, y_max_i, _, _      = ref_level.get_start_index( np.array( [ xmi, ymi ] ) )
             blocks_start[count]                                                 = bs
             blocks_coeffs_np[count]                                             = bc
@@ -684,6 +702,36 @@ def write_coeffs_module_adaptive_2d_only_header( ref_level: RefLevel, folder_pat
     fid.writelines(str_start_col(f"static constexpr cusfloat", f"dy_min_region = {dy:0.16f};\n", REF_COL))
 
     fid.writelines("\n")
+
+    if is_time:
+        npp                     = ref_level.fit_props.alpha_shift.shape[0]
+        G0_alpha_shift          = ", ".join(f"{v:0.3E}" for v in ref_level.fit_props.alpha_shift)
+        fid.writelines(str_start_col(f"static constexpr cusfloat", f"G0_alpha_shift[{npp}] = " + "{" + G0_alpha_shift + "};\n", REF_COL))
+
+        G0_alpha_shift_np       = ref_level.fit_props.alpha_shift.shape[0]
+        fid.writelines(str_start_col(f"static constexpr int", f"G0_alpha_shift_np = {G0_alpha_shift_np};\n", REF_COL))
+
+        npp                     = ref_level.fit_props.G0_cheby_intv.shape[0]
+        G0_cheby_intv           = ", ".join(f"{v:0.3E}" for v in ref_level.fit_props.G0_cheby_intv)
+        fid.writelines(str_start_col(f"static constexpr cusfloat", f"G0_cheby_intv[{npp}] = " + "{" + G0_cheby_intv + "};\n", REF_COL))
+
+        G0_cheby_np             = ref_level.fit_props.G0_cheby_np
+        fid.writelines(str_start_col(f"static constexpr int", f"G0_cheby_np = {G0_cheby_np};\n", REF_COL))
+
+        npp                     = ref_level.fit_props.G0_mui_log.shape[0]
+        G0_mui_log              = ", ".join( f"{v:0.3E}" for v in ref_level.fit_props.G0_mui_log )
+        fid.writelines(str_start_col(f"static constexpr cusfloat", f"G0_cheby_mui_log[{npp}] = " + "{" + G0_mui_log + "};\n", REF_COL))
+
+        npp                     = ref_level.fit_props.G0_mui.shape[0]
+        G0_mui                  = ", ".join(f"{v:0.3E}" for v in ref_level.fit_props.G0_mui)
+        fid.writelines(str_start_col(f"static constexpr cusfloat", f"G0_cheby_mui[{npp}] = " + "{" + G0_mui + "};\n", REF_COL))
+
+        npp                     = ref_level.fit_props.G0_coeffs.shape[0] * ref_level.fit_props.G0_coeffs.shape[1]
+        G0_coeffs               = ", ".join(f"{v:0.3E}" for v in ref_level.fit_props.G0_coeffs.T.flatten())
+        fid.writelines(str_start_col(f"static constexpr cusfloat", f"G0_coeffs[{npp}] = " + "{" + G0_coeffs + "};\n", REF_COL))
+
+        G0_norm_f               = ref_level.fit_props.G0_norm_f
+        fid.writelines(str_start_col(f"static constexpr cusfloat", f"G0_norm_f = {G0_norm_f};\n", REF_COL))
 
     # Write chebyshev polynomials
     fid.writelines(str_start_col("static constexpr std::size_t", f"num_c = {cheby_coeffs.shape[0]};\n", REF_COL))
@@ -844,30 +892,18 @@ def write_coeffs_module_adaptive_3d_only_header( ref_level: RefLevel, folder_pat
     dz_str = ", ".join(f"{v:0.3E}" for v in dz_vec)
     fid.writelines(str_start_col(f"static constexpr cusfloat", f"dz_region[{blocks_np}] = " + "{" + dz_str + "};\n", REF_COL))
 
-    blocks_start_f_str = ", ".join(f"{0:d}" for _ in range( blocks_np_f ))
-    fid.writelines(str_start_col(f"inline static std::size_t", f"blocks_start_f[{blocks_np_f}] = " + "{" + blocks_start_f_str + "};\n", REF_COL))
-    blocks_coeffs_np_f_str = ", ".join(f"{0:d}" for _ in range( blocks_np_f ))
-    fid.writelines(str_start_col(f"inline static std::size_t", f"blocks_coeffs_np_f[{blocks_np_f}] = " + "{" + blocks_coeffs_np_f_str + "};\n", REF_COL))
-    blocks_max_cheby_order_f_str = ", ".join(f"{0:d}" for _ in range( blocks_np_f ))
-    fid.writelines(str_start_col(f"inline static std::size_t", f"blocks_max_cheby_order_f[{blocks_np_f}] = " + "{" + blocks_max_cheby_order_f_str + "};\n", REF_COL))
-    x_min_f_str = ", ".join(f"{0:0.3E}" for _ in range( blocks_np_f ))
-    fid.writelines(str_start_col(f"inline static cusfloat", f"x_min_region_f[{blocks_np_f}] = " + "{" + x_min_f_str + "};\n", REF_COL))
-    x_max_f_str = ", ".join(f"{0:0.3E}" for _ in range( blocks_np_f ))
-    fid.writelines(str_start_col(f"inline static cusfloat", f"x_max_region_f[{blocks_np_f}] = " + "{" + x_max_f_str + "};\n", REF_COL))
-    dx_f_str = ", ".join(f"{0:0.3E}" for _ in range( blocks_np_f ))
-    fid.writelines(str_start_col(f"inline static cusfloat", f"dx_region_f[{blocks_np_f}] = " + "{" + dx_f_str + "};\n", REF_COL))
-    y_min_f_str = ", ".join(f"{0:0.3E}" for _ in range( blocks_np_f ))
-    fid.writelines(str_start_col(f"inline static cusfloat", f"y_min_region_f[{blocks_np_f}] = " + "{" + y_min_f_str + "};\n", REF_COL))
-    y_max_f_str = ", ".join(f"{0:0.3E}" for _ in range( blocks_np_f ))
-    fid.writelines(str_start_col(f"inline static cusfloat", f"y_max_region_f[{blocks_np_f}] = " + "{" + y_max_f_str + "};\n", REF_COL))
-    dy_f_str = ", ".join(f"{0:0.3E}" for _ in range( blocks_np_f ))
-    fid.writelines(str_start_col(f"inline static cusfloat", f"dy_region_f[{blocks_np_f}] = " + "{" + dy_f_str + "};\n", REF_COL))
-    z_min_f_str = ", ".join(f"{0:0.3E}" for _ in range( blocks_np_f ))
-    fid.writelines(str_start_col(f"inline static cusfloat", f"z_min_region_f[{blocks_np_f}] = " + "{" + z_min_f_str + "};\n", REF_COL))
-    z_max_f_str = ", ".join(f"{0:0.3E}" for _ in range( blocks_np_f ))
-    fid.writelines(str_start_col(f"inline static cusfloat", f"z_max_region_f[{blocks_np_f}] = " + "{" + z_max_f_str + "};\n", REF_COL))
-    dz_f_str = ", ".join(f"{0:0.3E}" for _ in range( blocks_np_f ))
-    fid.writelines(str_start_col(f"inline static cusfloat", f"dz_region_f[{blocks_np_f}] = " + "{" + dz_f_str + "};\n", REF_COL))
+    fid.writelines(str_start_col(f"static std::size_t", f"blocks_start_f[{blocks_np_f}];\n", REF_COL))
+    fid.writelines(str_start_col(f"static std::size_t", f"blocks_coeffs_np_f[{blocks_np_f}];\n", REF_COL))
+    fid.writelines(str_start_col(f"static std::size_t", f"blocks_max_cheby_order_f[{blocks_np_f}];\n", REF_COL))
+    fid.writelines(str_start_col(f"static cusfloat", f"x_min_region_f[{blocks_np_f}];\n", REF_COL))
+    fid.writelines(str_start_col(f"static cusfloat", f"x_max_region_f[{blocks_np_f}];\n", REF_COL))
+    fid.writelines(str_start_col(f"static cusfloat", f"dx_region_f[{blocks_np_f}];\n", REF_COL))
+    fid.writelines(str_start_col(f"static cusfloat", f"y_min_region_f[{blocks_np_f}];\n", REF_COL))
+    fid.writelines(str_start_col(f"static cusfloat", f"y_max_region_f[{blocks_np_f}];\n", REF_COL))
+    fid.writelines(str_start_col(f"static cusfloat", f"dy_region_f[{blocks_np_f}];\n", REF_COL))
+    fid.writelines(str_start_col(f"static cusfloat", f"z_min_region_f[{blocks_np_f}];\n", REF_COL))
+    fid.writelines(str_start_col(f"static cusfloat", f"z_max_region_f[{blocks_np_f}];\n", REF_COL))
+    fid.writelines(str_start_col(f"static cusfloat", f"dz_region_f[{blocks_np_f}];\n", REF_COL))
 
     # Save interval bounds
     fid.writelines(str_start_col(f"static constexpr bool", f"fcn_log_scale = {fcn_log_scale:d};\n", REF_COL))
@@ -893,18 +929,37 @@ def write_coeffs_module_adaptive_3d_only_header( ref_level: RefLevel, folder_pat
     fid.writelines(str_start_col("static constexpr std::size_t", f"num_c = {cheby_coeffs.shape[0]};\n", REF_COL))
     fid.writelines(str_start_col("static constexpr std::size_t", f"num_cf = {ncf};\n", REF_COL))
     write_vector_header(fid, cheby_coeffs, "c", "cusfloat")
-    write_vector_header(fid, np.zeros( ( ncf, ) ), "cf", "cusfloat", keyword="")
+    fid.writelines(str_start_col(f"alignas(FLOATING_PRECISION) static cusfloat", f"cf[{ncf}];\n", REF_COL))
 
     # Write polynomials coefficients
     write_vector_header(fid, ncx, "ncx", "std::size_t")
-    write_vector_header(fid, np.zeros( ( ncf, ), dtype=int ), "ncxf", "std::size_t", keyword="", is_inline=True)
+    fid.writelines(str_start_col(f"alignas(FLOATING_PRECISION) static std::size_t", f"ncxf[{ncf}];\n", REF_COL))
     write_vector_header(fid, ncy, "ncy", "std::size_t")
-    write_vector_header(fid, np.zeros( ( ncf, ), dtype=int ), "ncyf", "std::size_t", keyword="", is_inline=True)
+    fid.writelines(str_start_col(f"alignas(FLOATING_PRECISION) static std::size_t", f"ncyf[{ncf}];\n", REF_COL))
     write_vector_header(fid, ncz, "ncz", "std::size_t")
 
 
     # Close namespace field
     fid.writelines("};\n")
+
+
+    fid.writelines("\n")
+    fid.writelines(str_start_col(f"std::size_t", f"{module_name}C::blocks_start_f[{blocks_np_f}];\n", REF_COL))
+    fid.writelines(str_start_col(f"std::size_t", f"{module_name}C::blocks_coeffs_np_f[{blocks_np_f}];\n", REF_COL))
+    fid.writelines(str_start_col(f"std::size_t", f"{module_name}C::blocks_max_cheby_order_f[{blocks_np_f}];\n", REF_COL))
+    fid.writelines(str_start_col(f"cusfloat", f"{module_name}C::x_min_region_f[{blocks_np_f}];\n", REF_COL))
+    fid.writelines(str_start_col(f"cusfloat", f"{module_name}C::x_max_region_f[{blocks_np_f}];\n", REF_COL))
+    fid.writelines(str_start_col(f"cusfloat", f"{module_name}C::dx_region_f[{blocks_np_f}];\n", REF_COL))
+    fid.writelines(str_start_col(f"cusfloat", f"{module_name}C::y_min_region_f[{blocks_np_f}];\n", REF_COL))
+    fid.writelines(str_start_col(f"cusfloat", f"{module_name}C::y_max_region_f[{blocks_np_f}];\n", REF_COL))
+    fid.writelines(str_start_col(f"cusfloat", f"{module_name}C::dy_region_f[{blocks_np_f}];\n", REF_COL))
+    fid.writelines(str_start_col(f"cusfloat", f"{module_name}C::z_min_region_f[{blocks_np_f}];\n", REF_COL))
+    fid.writelines(str_start_col(f"cusfloat", f"{module_name}C::z_max_region_f[{blocks_np_f}];\n", REF_COL))
+    fid.writelines(str_start_col(f"cusfloat", f"{module_name}C::dz_region_f[{blocks_np_f}];\n", REF_COL))
+    fid.writelines(str_start_col(f"alignas(FLOATING_PRECISION) cusfloat", f"{module_name}C::cf[{ncf}];\n", REF_COL))
+    fid.writelines(str_start_col(f"alignas(FLOATING_PRECISION) std::size_t", f"{module_name}C::ncxf[{ncf}];\n", REF_COL))
+    fid.writelines(str_start_col(f"alignas(FLOATING_PRECISION) std::size_t", f"{module_name}C::ncyf[{ncf}];\n", REF_COL))
+    fid.writelines("\n")
 
     # Close header guard if statement
     fid.writelines("#endif\n")
