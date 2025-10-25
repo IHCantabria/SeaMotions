@@ -15,7 +15,7 @@ from matplotlib import cm
 import mplcursors
 
 # Import local modules
-from fit_cheby_v2 import FitProperties, fit_integral_1d, fit_integral_2d, RefLevel, fit_residual_1D_adaptive_interface, fit_residual_2D_adaptive_interface
+from fit_cheby import FitProperties, fit_integral_1d, fit_integral_2d, RefLevel, fit_residual_1D_adaptive_interface, fit_residual_2D_adaptive_interface
 from fit_tools import RefLevel, write_coeffs_module_adaptive_1d_only_header, write_coeffs_module_adaptive_2d_only_header
 
 
