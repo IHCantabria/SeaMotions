@@ -1,15 +1,18 @@
 
 # Import general usage libraries
+import copy
 import h5py
 import os
 
 # Import general usage scientific libraries
 from numpy import argsort, array, concatenate, log, ndarray
 from numpy import abs as np_abs
+import numpy as np
 
 # Import local modules
 from base_integrals import L1, L1_dA, L1_dB, L2, L3, L3_dA, L3_dB, M1, M1_dA, M1_dB, M2, M3, M3_dA, M3_dB
-from fit_cheby import fit_integral_1d, fit_integral_2d, fit_integral_3d, FitProperties
+from fit_cheby_v2 import fit_integral_1d, fit_integral_2d, fit_integral_3d, FitProperties, FitStats, fit_residual_1D_adaptive_interface, fit_residual_3D_adaptive_interface
+from fit_tools import RefLevel, write_coeffs_module_adaptive_1d_only_header, write_coeffs_module_adaptive_3d_only_header
 
 
 FIT_TOL = 1E-5
@@ -34,2283 +37,845 @@ def data_to_dict(
     return data
 
 
-def fit_L1()->None:
-    # Initialize object to storage the data
-    intervals_data = []
+def fit_L1( fopath: str ) -> None:
+    ref_level = fit_residual_region_L1_adaptive( )
 
-    # Calculate coefficients for H = [1e-16, 0.1]
-    intervals_data.append(fit_L1_P0())
-
-    # Calculate coefficients for H = [0.1, 1.0]
-    intervals_data.append(fit_L1_P1())
-
-    # Save coefficients data into a database
-    this_path = os.path.dirname(os.path.abspath(__file__))
-    database_path = os.path.join(this_path, "L1_database.h5")
-    write_intervals(database_path, intervals_data, 3)
+    write_coeffs_module_adaptive_3d_only_header( ref_level, fopath, "L1" )
 
 
-def fit_L1_dA()->None:
-    # Initialize object to storage the data
-    intervals_data = []
+def fit_L1_dA( fopath: str ) -> None:
+    ref_level = fit_residual_region_L1_dA_adaptive( )
 
-    # Calculate coefficients for H = [1e-16, 0.1]
-    intervals_data.append(fit_L1_dA_P0())
-
-    # Calculate coefficients for H = [0.1, 1.0]
-    intervals_data.append(fit_L1_dA_P1())
-
-    # Save coefficients data into a database
-    this_path = os.path.dirname(os.path.abspath(__file__))
-    database_path = os.path.join(this_path, "L1_dA_database.h5")
-    write_intervals(database_path, intervals_data, 3)
+    write_coeffs_module_adaptive_3d_only_header( ref_level, fopath, "L1_dA" )
 
 
-def fit_L1_dA_P0()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 0.1
-    fit_props.z_min = 1e-16
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
+def fit_L1_dB( fopath: str ) -> None:
+    ref_level = fit_residual_region_L1_dB_adaptive( )
 
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L1_dA(x, y, z)[0].real, fit_props, "L1_dA_P0")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
+    write_coeffs_module_adaptive_3d_only_header( ref_level, fopath, "L1_dB" )
 
 
-def fit_L1_dA_P1()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = False
-    fit_props.z_max = 1.0
-    fit_props.z_min = 0.1
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
+def fit_L2( fopath: str ) -> None:
+    ref_level = fit_residual_region_L2_adaptive( )
 
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L1_dA(x, y, z)[0].real, fit_props, "L1_dA_P1")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
+    write_coeffs_module_adaptive_1d_only_header( ref_level, fopath, "L2" )
 
 
-def fit_L1_dB()->None:
-    # Initialize object to storage the data
-    intervals_data = []
+def fit_L3( fopath: str ) -> None:
+    ref_level = fit_residual_region_L3_adaptive( )
 
-    # Calculate coefficients for H = [1e-16, 0.1]
-    intervals_data.append(fit_L1_dB_P0())
-
-    # Calculate coefficients for H = [0.1, 1.0]
-    intervals_data.append(fit_L1_dB_P1())
-
-    # Save coefficients data into a database
-    this_path = os.path.dirname(os.path.abspath(__file__))
-    database_path = os.path.join(this_path, "L1_dB_database.h5")
-    write_intervals(database_path, intervals_data, 3)
+    write_coeffs_module_adaptive_3d_only_header( ref_level, fopath, "L3" )
 
 
-def fit_L1_dB_P0()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 0.1
-    fit_props.z_min = 1e-16
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
+def fit_L3_dA( fopath: str ) -> None:
+    ref_level = fit_residual_region_L3_dA_adaptive( )
 
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L1_dB(x, y, z)[0].real, fit_props, "L1_dB_P0")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
+    write_coeffs_module_adaptive_3d_only_header( ref_level, fopath, "L3_dA" )
 
 
-def fit_L1_dB_P1()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = False
-    fit_props.z_max = 1.0
-    fit_props.z_min = 0.1
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
+def fit_L3_dB( fopath: str ) -> None:
+    ref_level = fit_residual_region_L3_dB_adaptive( )
 
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L1_dB(x, y, z)[0].real, fit_props, "L1_dB_P1")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
+    write_coeffs_module_adaptive_3d_only_header( ref_level, fopath, "L3_dB" )
 
 
-def fit_L1_P0()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 0.1
-    fit_props.z_min = 1e-16
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
+def fit_M1( fopath: str ) -> None:
+    ref_level = fit_residual_region_M1_adaptive( )
 
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L1(x, y, z)[0].real, fit_props, "L1_P0")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
+    write_coeffs_module_adaptive_3d_only_header( ref_level, fopath, "M1" )
 
 
-def fit_L1_P1()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = False
-    fit_props.z_max = 1.0
-    fit_props.z_min = 0.1
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
+def fit_M1_dA( fopath: str ) -> None:
+    ref_level = fit_residual_region_M1_dA_adaptive( )
 
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L1(x, y, z)[0].real, fit_props, "L1_P1")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
+    write_coeffs_module_adaptive_3d_only_header( ref_level, fopath, "M1_dA" )
 
 
-def fit_L1_Afix_Bfix()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.num_x = 100
-    fit_props.num_x_fit = 100
-    fit_props.x_log_scale = True
-    fit_props.x_max = 3.0
-    fit_props.x_min = 1e-12
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.cheby_order = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.x_map_fcn = lambda x: x
-    fit_props.y_map_fcn = lambda y: y
-    A = 0.1
-    B = 0.1
+def fit_M1_dB( fopath: str ) -> None:
+    ref_level = fit_residual_region_M1_dB_adaptive( )
 
-    # Launch fit
-    fit_integral_1d(lambda z: L1(A, B, z)[0].real, fit_props, f"L1_A: {A:0.2E} - B: {B:0.2E}")
+    write_coeffs_module_adaptive_3d_only_header( ref_level, fopath, "M1_dB" )
 
 
-def fit_L1_Hfix()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
+def fit_M2( fopath: str ) -> None:
+    ref_level = fit_residual_region_M2_adaptive( )
+
+    write_coeffs_module_adaptive_1d_only_header( ref_level, fopath, "M2" )
+
+
+def fit_M3( fopath: str ) -> None:
+    ref_level = fit_residual_region_M3_adaptive( )
+
+    write_coeffs_module_adaptive_3d_only_header( ref_level, fopath, "M3" )
+
+
+def fit_M3_dA( fopath: str ) -> None:
+    ref_level = fit_residual_region_M3_dA_adaptive( )
+
+    write_coeffs_module_adaptive_3d_only_header( ref_level, fopath, "M3_dA" )
+
+
+def fit_M3_dB( fopath: str ) -> None:
+    ref_level = fit_residual_region_M3_dB_adaptive( )
+
+    write_coeffs_module_adaptive_3d_only_header( ref_level, fopath, "M3_dB" )
+
+
+def fit_residual_region_L1_adaptive( ) -> None:
+    fit_props               = FitProperties( )
+    fit_props.dims          = 3
+    fit_props.region_name   = "L1"
     fit_props.cheby_order_x = 10
     fit_props.cheby_order_y = 10
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.x_map_fcn = lambda x: x
-    fit_props.y_map_fcn = lambda y: y
-    H = 30.0
-
-    # Launch fit
-    fit_integral_2d(lambda x, y: L1(x, y, H)[0].real, fit_props, f"L1_H: {H:0.2E}")
-
-
-def fit_L2()->None:
-    # Initialize object to storage the data
-    intervals_data = []
-
-    # Calculate coefficients for H = [1e-12, 1.0]
-    intervals_data.append(fit_L2_P0())
-
-    # Calculate coefficients for H = [1.0, 50.0]
-    intervals_data.append(fit_L2_P1())
-
-    # Save coefficients data into a database
-    this_path = os.path.dirname(os.path.abspath(__file__))
-    database_path = os.path.join(this_path, "L2_database.h5")
-    write_intervals(database_path, intervals_data, 1)
-
-
-def fit_L2_P0()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_log_scale = True
-    fit_props.x_max = 0.001
-    fit_props.x_min = 1e-16
-    fit_props.cheby_order_x = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.x_map_fcn = lambda x: x
-    fit_props.y_map_fcn = lambda y: y
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx = fit_integral_1d(lambda z: L2(z)[0].real, fit_props, f"L2")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, array([]), array([]))
-
-
-def fit_L2_P1()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_log_scale = True
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.001
-    fit_props.cheby_order_x = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.x_map_fcn = lambda x: x
-    fit_props.y_map_fcn = lambda y: y
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx = fit_integral_1d(lambda z: L2(z)[0].real, fit_props, f"L2")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, array([]), array([]))
-
-
-def fit_L3()->None:
-    # Initialize object to storage the data
-    intervals_data = []
-
-    # Calculate coefficients for H = [1.0, 2.0]
-    intervals_data.append(fit_L3_P0())
-
-    # Calculate coefficients for H = [2.0, 3.0]
-    intervals_data.append(fit_L3_P1())
-
-    # Calculate coefficients for H = [3.0, 4.5]
-    intervals_data.append(fit_L3_P2())
-
-    # Calculate coefficients for H = [4.5, 6.0]
-    intervals_data.append(fit_L3_P3())
-
-    # Calculate coefficients for H = [6.0, 7.5]
-    intervals_data.append(fit_L3_P4())
-
-    # Calculate coefficients for H = [7.5, 9.0]
-    intervals_data.append(fit_L3_P5())
-
-    # Calculate coefficients for H = [9.0, 10.5]
-    intervals_data.append(fit_L3_P6())
-
-    # Calculate coefficients for H = [10.5, 12.0]
-    intervals_data.append(fit_L3_P7())
-
-    # Calculate coefficients for H = [12.0, 15.0]
-    intervals_data.append(fit_L3_P8())
-
-    # Calculate coefficients for H = [15.0, 18.0]
-    intervals_data.append(fit_L3_P9())
-
-    # Calculate coefficients for H = [18.0, 21.0]
-    intervals_data.append(fit_L3_P10())
-
-    # Calculate coefficients for H = [21.0, 24.0]
-    intervals_data.append(fit_L3_P11())
-
-    # Calculate coefficients for H = [24.0, 30.0]
-    intervals_data.append(fit_L3_P12())
-
-    # Calculate coefficients for H = [30.0, 36.0]
-    intervals_data.append(fit_L3_P13())
-
-    # Calculate coefficients for H = [36.0, 42.0]
-    intervals_data.append(fit_L3_P14())
-
-    # Calculate coefficients for H = [42.0, 50.0]
-    intervals_data.append(fit_L3_P15())
-
-    # Calculate coefficients for H = [50.0, 200.0]
-    intervals_data.append(fit_L3_P16())
-
-    # Calculate coefficients for H = [200.0, 1000.0]
-    intervals_data.append(fit_L3_P17())
-
-    # Save coefficients data into a database
-    this_path = os.path.dirname(os.path.abspath(__file__))
-    database_path = os.path.join(this_path, "L3_database.h5")
-    write_intervals(database_path, intervals_data, 3)
-
-
-def fit_L3_dA()->None:
-    # Initialize object to storage the data
-    intervals_data = []
-
-    # Calculate coefficients for H = [1.0, 2.0]
-    intervals_data.append(fit_L3_dA_P0())
-
-    # Calculate coefficients for H = [2.0, 3.0]
-    intervals_data.append(fit_L3_dA_P1())
-
-    # Calculate coefficients for H = [3.0, 4.5]
-    intervals_data.append(fit_L3_dA_P2())
-
-    # Calculate coefficients for H = [4.5, 6.0]
-    intervals_data.append(fit_L3_dA_P3())
-
-    # Calculate coefficients for H = [6.0, 7.5]
-    intervals_data.append(fit_L3_dA_P4())
-
-    # Calculate coefficients for H = [7.5, 9.0]
-    intervals_data.append(fit_L3_dA_P5())
-
-    # Calculate coefficients for H = [9.0, 10.5]
-    intervals_data.append(fit_L3_dA_P6())
-
-    # Calculate coefficients for H = [10.5, 12.0]
-    intervals_data.append(fit_L3_dA_P7())
-
-    # Calculate coefficients for H = [12.0, 15.0]
-    intervals_data.append(fit_L3_dA_P8())
-
-    # Calculate coefficients for H = [15.0, 18.0]
-    intervals_data.append(fit_L3_dA_P9())
-
-    # Calculate coefficients for H = [18.0, 21.0]
-    intervals_data.append(fit_L3_dA_P10())
-
-    # Calculate coefficients for H = [21.0, 24.0]
-    intervals_data.append(fit_L3_dA_P11())
-
-    # Calculate coefficients for H = [24.0, 30.0]
-    intervals_data.append(fit_L3_dA_P12())
-
-    # Calculate coefficients for H = [30.0, 36.0]
-    intervals_data.append(fit_L3_dA_P13())
-
-    # Calculate coefficients for H = [36.0, 42.0]
-    intervals_data.append(fit_L3_dA_P14())
-
-    # Calculate coefficients for H = [42.0, 50.0]
-    intervals_data.append(fit_L3_dA_P15())
-
-    # Calculate coefficients for H = [50.0, 200.0]
-    intervals_data.append(fit_L3_dA_P16())
-
-    # Calculate coefficients for H = [200.0, 1000.0]
-    intervals_data.append(fit_L3_dA_P17())
-
-    # Save coefficients data into a database
-    this_path = os.path.dirname(os.path.abspath(__file__))
-    database_path = os.path.join(this_path, "L3_dA_database.h5")
-    write_intervals(database_path, intervals_data, 3)
-
-
-def fit_L3_dA_P0()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 2.0
-    fit_props.z_min = 1.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dA(x, y, z)[0].real, fit_props, "L3_dA_P0")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dA_P1()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 3.0
-    fit_props.z_min = 2.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dA(x, y, z)[0].real, fit_props, "L3_dA_P1")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dA_P2()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 4.5
-    fit_props.z_min = 3.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dA(x, y, z)[0].real, fit_props, "L3_dA_P2")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dA_P3()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 6.0
-    fit_props.z_min = 4.5
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dA(x, y, z)[0].real, fit_props, "L3_dA_P3")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dA_P4()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 7.5
-    fit_props.z_min = 6.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dA(x, y, z)[0].real, fit_props, "L3_dA_P4")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dA_P5()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 9.0
-    fit_props.z_min = 7.5
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dA(x, y, z)[0].real, fit_props, "L3_dA_P5")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dA_P6()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 10.5
-    fit_props.z_min = 9.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dA(x, y, z)[0].real, fit_props, "L3_dA_P6")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dA_P7()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 12.0
-    fit_props.z_min = 10.5
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dA(x, y, z)[0].real, fit_props, "L3_dA_P7")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dA_P8()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 15.0
-    fit_props.z_min = 12.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dA(x, y, z)[0].real, fit_props, "L3_dA_P8")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dA_P9()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 18.0
-    fit_props.z_min = 15.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dA(x, y, z)[0].real, fit_props, "L3_dA_P9")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dA_P10()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 21.0
-    fit_props.z_min = 18.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dA(x, y, z)[0].real, fit_props, "L3_dA_P10")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dA_P11()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 24.0
-    fit_props.z_min = 21.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dA(x, y, z)[0].real, fit_props, "L3_dA_P11")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dA_P12()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 30.0
-    fit_props.z_min = 24.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dA(x, y, z)[0].real, fit_props, "L3_dA_P12")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dA_P13()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 36.0
-    fit_props.z_min = 30.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dA(x, y, z)[0].real, fit_props, "L3_dA_P13")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dA_P14()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 42.0
-    fit_props.z_min = 36.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dA(x, y, z)[0].real, fit_props, "L3_dA_P14")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dA_P15()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 50.0
-    fit_props.z_min = 42.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dA(x, y, z)[0].real, fit_props, "L3_dA_P15")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dA_P16()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 200.0
-    fit_props.z_min = 50.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dA(x, y, z)[0].real, fit_props, "L3_dA_P16")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dA_P17()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 1000.0
-    fit_props.z_min = 200.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dA(x, y, z)[0].real, fit_props, "L3_dA_P17")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dB()->None:
-    # Initialize object to storage the data
-    intervals_data = []
-
-    # Calculate coefficients for H = [1.0, 2.0]
-    intervals_data.append(fit_L3_dB_P0())
-
-    # Calculate coefficients for H = [2.0, 3.0]
-    intervals_data.append(fit_L3_dB_P1())
-
-    # Calculate coefficients for H = [3.0, 4.5]
-    intervals_data.append(fit_L3_dB_P2())
-    
-    # Calculate coefficients for H = [4.5, 6.0]
-    intervals_data.append(fit_L3_dB_P3())
-
-    # Calculate coefficients for H = [6.0, 7.5]
-    intervals_data.append(fit_L3_dB_P4())
-
-    # Calculate coefficients for H = [7.5, 9.0]
-    intervals_data.append(fit_L3_dB_P5())
-
-    # Calculate coefficients for H = [9.0, 10.5]
-    intervals_data.append(fit_L3_dB_P6())
-
-    # Calculate coefficients for H = [10.5, 12.0]
-    intervals_data.append(fit_L3_dB_P7())
-
-    # Calculate coefficients for H = [12.0, 15.0]
-    intervals_data.append(fit_L3_dB_P8())
-
-    # Calculate coefficients for H = [15.0, 18.0]
-    intervals_data.append(fit_L3_dB_P9())
-
-    # Calculate coefficients for H = [18.0, 21.0]
-    intervals_data.append(fit_L3_dB_P10())
-
-    # Calculate coefficients for H = [21.0, 24.0]
-    intervals_data.append(fit_L3_dB_P11())
-
-    # Calculate coefficients for H = [24.0, 30.0]
-    intervals_data.append(fit_L3_dB_P12())
-
-    # Calculate coefficients for H = [30.0, 36.0]
-    intervals_data.append(fit_L3_dB_P13())
-
-    # Calculate coefficients for H = [36.0, 42.0]
-    intervals_data.append(fit_L3_dB_P14())
-
-    # Calculate coefficients for H = [42.0, 50.0]
-    intervals_data.append(fit_L3_dB_P15())
-
-    # Calculate coefficients for H = [50.0, 200.0]
-    intervals_data.append(fit_L3_dB_P16())
-
-    # Calculate coefficients for H = [200.0, 1000.0]
-    intervals_data.append(fit_L3_dB_P17())
-
-    # Save coefficients data into a database
-    this_path = os.path.dirname(os.path.abspath(__file__))
-    database_path = os.path.join(this_path, "L3_dB_database.h5")
-    write_intervals(database_path, intervals_data, 3)
-
-
-def fit_L3_dB_P0()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 2.0
-    fit_props.z_min = 1.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dB(x, y, z)[0].real, fit_props, "L3_dB_P0")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dB_P1()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 3.0
-    fit_props.z_min = 2.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dB(x, y, z)[0].real, fit_props, "L3_dB_P1")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dB_P2()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 4.5
-    fit_props.z_min = 3.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dB(x, y, z)[0].real, fit_props, "L3_dB_P2")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dB_P3()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 6.0
-    fit_props.z_min = 4.5
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dB(x, y, z)[0].real, fit_props, "L3_dB_P3")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dB_P4()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 7.5
-    fit_props.z_min = 6.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dB(x, y, z)[0].real, fit_props, "L3_dB_P4")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dB_P5()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 9.0
-    fit_props.z_min = 7.5
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dB(x, y, z)[0].real, fit_props, "L3_dB_P5")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dB_P6()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 10.5
-    fit_props.z_min = 9.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dB(x, y, z)[0].real, fit_props, "L3_dB_P6")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dB_P7()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 12.0
-    fit_props.z_min = 10.5
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dB(x, y, z)[0].real, fit_props, "L3_dB_P7")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dB_P8()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 15.0
-    fit_props.z_min = 12.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dB(x, y, z)[0].real, fit_props, "L3_dB_P8")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dB_P9()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 18.0
-    fit_props.z_min = 15.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dB(x, y, z)[0].real, fit_props, "L3_dB_P9")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dB_P10()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 21.0
-    fit_props.z_min = 18.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dB(x, y, z)[0].real, fit_props, "L3_dB_P10")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dB_P11()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 24.0
-    fit_props.z_min = 21.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dB(x, y, z)[0].real, fit_props, "L3_dB_P11")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dB_P12()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 30.0
-    fit_props.z_min = 24.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dB(x, y, z)[0].real, fit_props, "L3_dB_P12")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dB_P13()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 36.0
-    fit_props.z_min = 30.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dB(x, y, z)[0].real, fit_props, "L3_dB_P13")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dB_P14()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 42.0
-    fit_props.z_min = 36.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dB(x, y, z)[0].real, fit_props, "L3_dB_P14")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dB_P15()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 50.0
-    fit_props.z_min = 42.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dB(x, y, z)[0].real, fit_props, "L3_dB_P15")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dB_P16()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 200.0
-    fit_props.z_min = 50.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dB(x, y, z)[0].real, fit_props, "L3_dB_P16")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_dB_P17()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 1000.0
-    fit_props.z_min = 200.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3_dB(x, y, z)[0].real, fit_props, "L3_dB_P17")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_Afix_Bfix()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.num_x = 100
-    fit_props.num_x_fit = 100
-    fit_props.x_log_scale = True
-    fit_props.x_max = 30.0
-    fit_props.x_min = 1.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.cheby_order_x = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.x_map_fcn = lambda x: x
-    fit_props.y_map_fcn = lambda y: y
-    A = 1.0
-    B = 1.0
-
-    # Launch fit
-    fit_integral_1d(lambda z: L3(A, B, z)[0].real, fit_props, f"L3_A: {A:0.2E} - B: {B:0.2E}")
-
-
-def fit_L3_Hfix()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.x_map_fcn = lambda x: x
-    fit_props.y_map_fcn = lambda y: y
-    H = 50.0
-
-    # Launch fit
-    fit_integral_2d(lambda x, y: L3(x, y, H)[0].real, fit_props, f"L3_H: {H:0.2E}")
-
-
-def fit_L3_P0()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 2.0
-    fit_props.z_min = 1.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3(x, y, z)[0].real, fit_props, "L3_P0")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_P1()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 3.0
-    fit_props.z_min = 2.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3(x, y, z)[0].real, fit_props, "L3_P1")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_P2()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 4.5
-    fit_props.z_min = 3.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3(x, y, z)[0].real, fit_props, "L3_P2")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_P3()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 6.0
-    fit_props.z_min = 4.5
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3(x, y, z)[0].real, fit_props, "L3_P3")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_P4()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = False
-    fit_props.z_max = 7.5
-    fit_props.z_min = 6.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3(x, y, z)[0].real, fit_props, "L3_P4")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_P5()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = False
-    fit_props.z_max = 9.0
-    fit_props.z_min = 7.5
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3(x, y, z)[0].real, fit_props, "L3_P5")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_P6()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = False
-    fit_props.z_max = 10.5
-    fit_props.z_min = 9.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3(x, y, z)[0].real, fit_props, "L3_P6")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_P7()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = False
-    fit_props.z_max = 12.0
-    fit_props.z_min = 10.5
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3(x, y, z)[0].real, fit_props, "L3_P7")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_P8()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = False
-    fit_props.z_max = 15.0
-    fit_props.z_min = 12.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3(x, y, z)[0].real, fit_props, "L3_P8")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_P9()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = False
-    fit_props.z_max = 18.0
-    fit_props.z_min = 15.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3(x, y, z)[0].real, fit_props, "L3_P9")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_P10()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = False
-    fit_props.z_max = 21.0
-    fit_props.z_min = 18.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3(x, y, z)[0].real, fit_props, "L3_P10")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_P11()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = False
-    fit_props.z_max = 24.0
-    fit_props.z_min = 21.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3(x, y, z)[0].real, fit_props, "L3_P11")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_P12()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = False
-    fit_props.z_max = 30.0
-    fit_props.z_min = 24.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3(x, y, z)[0].real, fit_props, "L3_P12")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_P13()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = False
-    fit_props.z_max = 36.0
-    fit_props.z_min = 30.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3(x, y, z)[0].real, fit_props, "L3_P13")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_P14()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = False
-    fit_props.z_max = 42.0
-    fit_props.z_min = 36.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3(x, y, z)[0].real, fit_props, "L3_P14")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_P15()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = False
-    fit_props.z_max = 50.0
-    fit_props.z_min = 42.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3(x, y, z)[0].real, fit_props, "L3_P15")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_P16()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 200.0
-    fit_props.z_min = 50.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3(x, y, z)[0].real, fit_props, "L3_P16")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_L3_P17()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 1.0
-    fit_props.y_min = 0.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 1000.0
-    fit_props.z_min = 200.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: L3(x, y, z)[0].real, fit_props, "L3_P17")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_M1()->None:
-    # Initialize object to storage the data
-    intervals_data = []
-
-    # Calculate coefficients for H = [1e-16, 0.1]
-    intervals_data.append(fit_M1_P0())
-
-    # Calculate coefficients for H = [0.1, 1.0]
-    intervals_data.append(fit_M1_P1())
-
-    # Save coefficients data into a database
-    this_path = os.path.dirname(os.path.abspath(__file__))
-    database_path = os.path.join(this_path, "M1_database.h5")
-    write_intervals(database_path, intervals_data, 3)
-
-
-def fit_M1_dA()->None:
-    # Initialize object to storage the data
-    intervals_data = []
-
-    # Calculate coefficients for H = [1e-16, 0.1]
-    intervals_data.append(fit_M1_dA_P0())
-
-    # Calculate coefficients for H = [0.1, 1.0]
-    intervals_data.append(fit_M1_dA_P1())
-
-    # Save coefficients data into a database
-    this_path = os.path.dirname(os.path.abspath(__file__))
-    database_path = os.path.join(this_path, "M1_dA_database.h5")
-    write_intervals(database_path, intervals_data, 3)
-
-
-def fit_M1_dA_P0()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 2.0
-    fit_props.y_min = 1.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 0.1
-    fit_props.z_min = 1e-16
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: M1_dA(x, y, z)[0].real, fit_props, "M1_dA_P0")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_M1_dA_P1()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 2.0
-    fit_props.y_min = 1.0
-    fit_props.z_log_scale = False
-    fit_props.z_max = 1.0
-    fit_props.z_min = 0.1
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: M1_dA(x, y, z)[0].real, fit_props, "M1_dA_P1")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_M1_dB()->None:
-    # Initialize object to storage the data
-    intervals_data = []
-
-    # Calculate coefficients for H = [1e-16, 0.1]
-    intervals_data.append(fit_M1_dB_P0())
-
-    # Calculate coefficients for H = [0.1, 1.0]
-    intervals_data.append(fit_M1_dB_P1())
-
-    # Save coefficients data into a database
-    this_path = os.path.dirname(os.path.abspath(__file__))
-    database_path = os.path.join(this_path, "M1_dB_database.h5")
-    write_intervals(database_path, intervals_data, 3)
-
-
-def fit_M1_dB_P0()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 2.0
-    fit_props.y_min = 1.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 0.1
-    fit_props.z_min = 1e-16
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: M1_dB(x, y, z)[0].real, fit_props, "M1_dB_P0")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_M1_dB_P1()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 2.0
-    fit_props.y_min = 1.0
-    fit_props.z_log_scale = False
-    fit_props.z_max = 1.0
-    fit_props.z_min = 0.1
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: M1_dB(x, y, z)[0].real, fit_props, "M1_dB_P1")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_M1_P0()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 2.0
-    fit_props.y_min = 1.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 0.1
-    fit_props.z_min = 1e-16
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: M1(x, y, z)[0].real, fit_props, "M1_P0")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_M1_P1()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 2.0
-    fit_props.y_min = 1.0
-    fit_props.z_log_scale = False
-    fit_props.z_max = 1.0
-    fit_props.z_min = 0.1
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: M1(x, y, z)[0].real, fit_props, "M1_P1")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_M1_Hfix()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 2.0
-    fit_props.y_min = 1.0
-    fit_props.cheby_order = 20
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.x_map_fcn = lambda x: x
-    fit_props.y_map_fcn = lambda y: y
-    H = 1.5
-
-    # Launch fit
-    fit_integral_2d(lambda x, y: M1(x, y, H)[0].real, fit_props, f"M1_H: {H:0.2E}")
-
-
-def fit_M2()->None:
-    # Initialize object to storage the data
-    intervals_data = []
-
-    # Calculate coefficients for H = [1e-12, 1.0]
-    intervals_data.append(fit_M2_P0())
-
-    # Calculate coefficients for H = [1.0, 50.0]
-    intervals_data.append(fit_M2_P1())
-
-    # Save coefficients data into a database
-    this_path = os.path.dirname(os.path.abspath(__file__))
-    database_path = os.path.join(this_path, "M2_database.h5")
-    write_intervals(database_path, intervals_data, 1)
-
-
-def fit_M2_P0()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_log_scale = True
-    fit_props.x_max = 0.001
-    fit_props.x_min = 1e-16
-    fit_props.cheby_order_x = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.x_map_fcn = lambda x: x
-    fit_props.y_map_fcn = lambda y: y
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx = fit_integral_1d(lambda z: M2(z)[0].real, fit_props, f"M2")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, array([]), array([]))
-
-
-def fit_M2_P1()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_log_scale = True
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.001
-    fit_props.cheby_order_x = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.x_map_fcn = lambda x: x
-    fit_props.y_map_fcn = lambda y: y
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx = fit_integral_1d(lambda z: M2(z)[0].real, fit_props, f"M2")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, array([]), array([]))
-
-
-def fit_M3()->None:
-    # Initialize object to storage the data
-    intervals_data = []
-
-    # Calculate coefficients for H = [1.0, 12.0]
-    intervals_data.append(fit_M3_P0())
-
-    # Calculate coefficients for H = [12.0, 50.0]
-    intervals_data.append(fit_M3_P1())
-
-    # Calculate coefficients for H = [50.0, 1000.0]
-    intervals_data.append(fit_M3_P2())
-
-    # Save coefficients data into a database
-    this_path = os.path.dirname(os.path.abspath(__file__))
-    database_path = os.path.join(this_path, "M3_database.h5")
-    write_intervals(database_path, intervals_data, 3)
-
-
-def fit_M3_dA()->None:
-    # Initialize object to storage the data
-    intervals_data = []
-
-    # Calculate coefficients for H = [1.0, 12.0]
-    intervals_data.append(fit_M3_dA_P0())
-
-    # Calculate coefficients for H = [12.0, 50.0]
-    intervals_data.append(fit_M3_dA_P1())
-
-    # Calculate coefficients for H = [50.0, 1000.0]
-    intervals_data.append(fit_M3_dA_P2())
-
-    # Save coefficients data into a database
-    this_path = os.path.dirname(os.path.abspath(__file__))
-    database_path = os.path.join(this_path, "M3_dA_database.h5")
-    write_intervals(database_path, intervals_data, 3)
-
-
-def fit_M3_dA_P0()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 2.0
-    fit_props.y_min = 1.0
-    fit_props.z_log_scale = False
-    fit_props.z_max = 12.0
-    fit_props.z_min = 1.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: M3_dA(x, y, z)[0].real, fit_props, "M3_dA_P0")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_M3_dA_P1()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 2.0
-    fit_props.y_min = 1.0
-    fit_props.z_log_scale = False
-    fit_props.z_max = 50.0
-    fit_props.z_min = 12.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: M3_dA(x, y, z)[0].real, fit_props, "M3_dA_P1")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_M3_dA_P2()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 2.0
-    fit_props.y_min = 1.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 1000.0
-    fit_props.z_min = 50.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
     fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
+    fit_props.fcn_log_scale = False
+    fit_props.x_log_scale   = False
+    fit_props.x_max         = 1.0
+    fit_props.x_min         = 0.0
+    fit_props.y_log_scale   = False
+    fit_props.y_max         = 1.0
+    fit_props.y_min         = 0.0
+    fit_props.z_log_scale   = True
+    fit_props.z_max         = 0.0
+    fit_props.z_min         = -5.0
+    fit_props.cheby_abs_tol = 5E-7
+    fit_props.cheby_rel_tol = 1E-14
+    fit_props.x_map_fcn     = lambda x: x
+    fit_props.y_map_fcn     = lambda y: y
+    fit_props.z_map_fcn     = lambda z: z
+    fit_props.max_ref_level = 10
+
+    fit_props.num_x         = fit_props.cheby_order_x + 1
+    fit_props.num_x_fit     = fit_props.cheby_order_x + 1
+    fit_props.num_y         = fit_props.cheby_order_y + 1
+    fit_props.num_y_fit     = fit_props.cheby_order_y + 1
+    fit_props.num_z         = fit_props.cheby_order_z + 1
+    fit_props.num_z_fit     = fit_props.cheby_order_z + 1
+
+    fit_props.generate_fitting_matrix( )
+
+    fit_function            = lambda x, y, z: L1(x, y, z)[0].real
+
+    # Create root FitRegion
+    ref_level               = RefLevel( copy.copy( fit_props ) )
+
+    # Create first fit to feed root refinement level
+    ref_level.add_data( *fit_integral_3d( fit_function, fit_props ) )
+
+    # Start adaptive refinement loop
+    fit_residual_3D_adaptive_interface( fit_function, ref_level )
+
+    # Set starting position
+    ref_level.set_start_index( 0 )
+    ref_level.set_start_index_folded( 0 )
+
+
+    return ref_level
+
+
+def fit_residual_region_LXX_adaptive( ) -> None:
+    fit_props               = FitProperties( )
+    fit_props.dims          = 3
+    fit_props.region_name   = "LXX"
+    fit_props.cheby_order_x = 10
+    fit_props.cheby_order_y = 10
+    fit_props.cheby_order_z = 50
+    fit_props.fcn_log_scale = False
+    fit_props.x_log_scale   = False
+    fit_props.x_max         = 3.906E-01
+    fit_props.x_min         = 3.867E-01
+    fit_props.y_log_scale   = False
+    fit_props.y_max         = 8.477E-01
+    fit_props.y_min         = 8.438E-01
+    fit_props.z_log_scale   = True
+    fit_props.z_max         = np.log10( 4.068E+00 )
+    fit_props.z_min         = np.log10( 3.854E+00 )
+    fit_props.cheby_abs_tol = 5E-7
+    fit_props.cheby_rel_tol = 1E-14
+    fit_props.x_map_fcn     = lambda x: x
+    fit_props.y_map_fcn     = lambda y: y
+    fit_props.z_map_fcn     = lambda z: z
+    fit_props.max_ref_level = 10
+
+    fit_props.num_x         = fit_props.cheby_order_x + 1
+    fit_props.num_x_fit     = fit_props.cheby_order_x + 1
+    fit_props.num_y         = fit_props.cheby_order_y + 1
+    fit_props.num_y_fit     = fit_props.cheby_order_y + 1
+    fit_props.num_z         = fit_props.cheby_order_z + 1
+    fit_props.num_z_fit     = fit_props.cheby_order_z + 1
+
+    fit_props.generate_fitting_matrix( )
+
+    fit_function            = lambda x, y, z: L1(x, y, z)[0].real
+
+    # Create root FitRegion
+    ref_level               = RefLevel( copy.copy( fit_props ) )
+
+    # Create first fit to feed root refinement level
+    ref_level.add_data( *fit_integral_3d( fit_function, fit_props ) )
+
+    # Start adaptive refinement loop
+    fit_residual_3D_adaptive_interface( fit_function, ref_level )
+
+    # Set starting position
+    ref_level.set_start_index( 0 )
+    ref_level.set_start_index_folded( 0 )
+
+
+    return ref_level
+
+
+def fit_residual_region_L1_dA_adaptive( ) -> None:
+    fit_props               = FitProperties( )
+    fit_props.dims          = 3
+    fit_props.region_name   = "L1_dA"
+    fit_props.cheby_order_x = 10
+    fit_props.cheby_order_y = 10
+    fit_props.cheby_order_z = 50
+    fit_props.fcn_log_scale = False
+    fit_props.x_log_scale   = False
+    fit_props.x_max         = 1.0
+    fit_props.x_min         = 0.0
+    fit_props.y_log_scale   = False
+    fit_props.y_max         = 1.0
+    fit_props.y_min         = 0.0
+    fit_props.z_log_scale   = True
+    fit_props.z_max         = 0.0
+    fit_props.z_min         = -5.0
+    fit_props.cheby_abs_tol = 5E-7
+    fit_props.cheby_rel_tol = 1E-14
+    fit_props.x_map_fcn     = lambda x: x
+    fit_props.y_map_fcn     = lambda y: y
+    fit_props.z_map_fcn     = lambda z: z
+    fit_props.max_ref_level = 10
+
+    fit_props.num_x         = fit_props.cheby_order_x + 1
+    fit_props.num_x_fit     = fit_props.cheby_order_x + 1
+    fit_props.num_y         = fit_props.cheby_order_y + 1
+    fit_props.num_y_fit     = fit_props.cheby_order_y + 1
+    fit_props.num_z         = fit_props.cheby_order_z + 1
+    fit_props.num_z_fit     = fit_props.cheby_order_z + 1
+
+    fit_props.generate_fitting_matrix( )
+
+    fit_function            = lambda x, y, z: L1_dA(x, y, z)[0].real
+
+    # Create root FitRegion
+    ref_level               = RefLevel( copy.copy( fit_props ) )
+
+    # Create first fit to feed root refinement level
+    ref_level.add_data( *fit_integral_3d( fit_function, fit_props ) )
 
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: M3_dA(x, y, z)[0].real, fit_props, "M3_dA_P2")
+    # Start adaptive refinement loop
+    fit_residual_3D_adaptive_interface( fit_function, ref_level )
 
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
+    # Set starting position
+    ref_level.set_start_index( 0 )
+    ref_level.set_start_index_folded( 0 )
+
 
+    return ref_level
 
-def fit_M3_dB()->None:
-    # Initialize object to storage the data
-    intervals_data = []
-
-    # Calculate coefficients for H = [1.0, 12.0]
-    intervals_data.append(fit_M3_dB_P0())
-
-    # Calculate coefficients for H = [12.0, 50.0]
-    intervals_data.append(fit_M3_dB_P1())
-
-    # Calculate coefficients for H = [50.0, 1000.0]
-    intervals_data.append(fit_M3_dB_P2())
-
-    # Save coefficients data into a database
-    this_path = os.path.dirname(os.path.abspath(__file__))
-    database_path = os.path.join(this_path, "M3_dB_database.h5")
-    write_intervals(database_path, intervals_data, 3)
-
-
-def fit_M3_dB_P0()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 2.0
-    fit_props.y_min = 1.0
-    fit_props.z_log_scale = False
-    fit_props.z_max = 12.0
-    fit_props.z_min = 1.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: M3_dB(x, y, z)[0].real, fit_props, "M3_dB_P0")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_M3_dB_P1()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 2.0
-    fit_props.y_min = 1.0
-    fit_props.z_log_scale = False
-    fit_props.z_max = 50.0
-    fit_props.z_min = 12.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: M3_dB(x, y, z)[0].real, fit_props, "M3_dB_P1")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_M3_dB_P2()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 2.0
-    fit_props.y_min = 1.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 1000.0
-    fit_props.z_min = 50.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: M3_dB(x, y, z)[0].real, fit_props, "M3_dB_P2")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_M3_P0()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 2.0
-    fit_props.y_min = 1.0
-    fit_props.z_log_scale = False
-    fit_props.z_max = 12.0
-    fit_props.z_min = 1.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: M3(x, y, z)[0].real, fit_props, "M3_P0")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_M3_P1()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 2.0
-    fit_props.y_min = 1.0
-    fit_props.z_log_scale = False
-    fit_props.z_max = 50.0
-    fit_props.z_min = 12.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: M3(x, y, z)[0].real, fit_props, "M3_P1")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def fit_M3_P2()->None:
-    # Define parametric space and fit properties
-    fit_props = FitProperties()
-    fit_props.x_max = 1.0
-    fit_props.x_min = 0.0
-    fit_props.y_max = 2.0
-    fit_props.y_min = 1.0
-    fit_props.z_log_scale = True
-    fit_props.z_max = 1000.0
-    fit_props.z_min = 50.0
-    fit_props.cheby_order_x = 20
-    fit_props.cheby_order_y = 20
-    fit_props.cheby_order_z = 50
-    fit_props.cheby_tol = FIT_TOL
-    fit_props.fit_points_to_order()
-
-    # Launch fit
-    cheby_coeffs, ncx, ncy, ncz = fit_integral_3d(lambda x, y, z: M3(x, y, z)[0].real, fit_props, "M3_P2")
-
-    return data_to_dict(fit_props, cheby_coeffs, ncx, ncy, ncz)
-
-
-def write_intervals(database_path: str, intervals_data: list, dims: int) -> None:
-    if dims == 1:
-        dim_label = "x"
-        fold_chn = None
-    elif dims == 2:
-        dim_label = "y"
-        fold_chn = "ncx"
-    elif dims == 3:
-        dim_label = "z"
-        fold_chn = "ncy"
-
-    # Get intervals min position
-    z_min = []
-    for int_data in intervals_data:
-        z_min.append(getattr(int_data["fit_props"], f"{dim_label}_min"))
-    z_min = array(z_min)
-
-    # Sort intervals by x_min values
-    pos = argsort(z_min)
-    intervals_sort = []
-    for i in range(pos.shape[0]):
-        intervals_sort.append(intervals_data[pos[i]])
-
-    # Get intervals bounds
-    intervals_bounds = concatenate((z_min[pos], array([getattr(intervals_sort[-1]["fit_props"], f"{dim_label}_max")])))
-
-    # Get number of points per interval
-    num_points = []
-    for i in range(len(intervals_sort)):
-        num_points.append(intervals_sort[i]["cheby_coeffs"].shape[0])
-    num_points_cum = [0]
-    for i,iv in enumerate(num_points):
-        num_points_cum.append(num_points_cum[i]+iv)
-
-    # Count folded points
-    count_fold = 0
-    count_fold_i = 0
-    max_size_fold = 0
-    if fold_chn is not None:
-        for i in range(len(intervals_sort)):
-            diff = np_abs(intervals_sort[i][fold_chn][1:]-intervals_sort[i][fold_chn][:-1])
-            count_fold_i = (diff > 0.1).sum() + 1
-            count_fold += count_fold_i
-            if count_fold_i > max_size_fold:
-                max_size_fold = count_fold_i
-
-    # Open file unit
-    fid = h5py.File(database_path, "w")
-
-    # Storage data
-    fid.create_dataset("dims", data=dims)
-    fid.create_dataset("count_fold", data=count_fold)
-    fid.create_dataset("intervals_bounds", data=intervals_bounds)
-    fid.create_dataset("max_size_fold", data=max_size_fold)
-    fid.create_dataset("num_points", data=num_points)
-    fid.create_dataset("num_points_cum", data=num_points_cum)
-    for i in range(len(intervals_sort)):
-        # Create new group
-        gp_int = fid.create_group(f"I{i:d}")
-
-        # Fill intervals data
-        gp_int.create_dataset("cheby_coeffs", data=intervals_sort[i]["cheby_coeffs"])
-        gp_int.create_dataset("ncx", data=intervals_sort[i]["ncx"])
-        gp_int.create_dataset("x_max", data=getattr(intervals_sort[i]["fit_props"], "x_max"))
-        gp_int.create_dataset("x_min", data=getattr(intervals_sort[i]["fit_props"], "x_min"))
-        gp_int.create_dataset("x_log_scale", data=getattr(intervals_sort[i]["fit_props"], "x_log_scale"))
-        if dims >= 2:
-            gp_int.create_dataset("ncy", data=intervals_sort[i]["ncy"])
-            gp_int.create_dataset("y_max", data=getattr(intervals_sort[i]["fit_props"], "y_max"))
-            gp_int.create_dataset("y_min", data=getattr(intervals_sort[i]["fit_props"], "y_min"))
-            gp_int.create_dataset("y_log_scale", data=getattr(intervals_sort[i]["fit_props"], "y_log_scale"))
-            if dims == 3:
-                gp_int.create_dataset("ncz", data=intervals_sort[i]["ncz"])
-                gp_int.create_dataset("z_max", data=getattr(intervals_sort[i]["fit_props"], "z_max"))
-                gp_int.create_dataset("z_min", data=getattr(intervals_sort[i]["fit_props"], "z_min"))
-                gp_int.create_dataset("z_log_scale", data=getattr(intervals_sort[i]["fit_props"], "z_log_scale"))
-
-
-    # Close file unit
-    fid.close()
+
+def fit_residual_region_L1_dB_adaptive( ) -> None:
+    fit_props               = FitProperties( )
+    fit_props.dims          = 3
+    fit_props.region_name   = "L1_dB"
+    fit_props.cheby_order_x = 10
+    fit_props.cheby_order_y = 10
+    fit_props.cheby_order_z = 50
+    fit_props.fcn_log_scale = False
+    fit_props.x_log_scale   = False
+    fit_props.x_max         = 1.0
+    fit_props.x_min         = 0.0
+    fit_props.y_log_scale   = False
+    fit_props.y_max         = 1.0
+    fit_props.y_min         = 0.0
+    fit_props.z_log_scale   = True
+    fit_props.z_max         = 0.0
+    fit_props.z_min         = -5.0
+    fit_props.cheby_abs_tol = 5E-7
+    fit_props.cheby_rel_tol = 1E-14
+    fit_props.x_map_fcn     = lambda x: x
+    fit_props.y_map_fcn     = lambda y: y
+    fit_props.z_map_fcn     = lambda z: z
+    fit_props.max_ref_level = 10
+
+    fit_props.num_x         = fit_props.cheby_order_x + 1
+    fit_props.num_x_fit     = fit_props.cheby_order_x + 1
+    fit_props.num_y         = fit_props.cheby_order_y + 1
+    fit_props.num_y_fit     = fit_props.cheby_order_y + 1
+    fit_props.num_z         = fit_props.cheby_order_z + 1
+    fit_props.num_z_fit     = fit_props.cheby_order_z + 1
+
+    fit_props.generate_fitting_matrix( )
+
+    fit_function            = lambda x, y, z: L1_dB(x, y, z)[0].real
+
+    # Create root FitRegion
+    ref_level               = RefLevel( copy.copy( fit_props ) )
+
+    # Create first fit to feed root refinement level
+    ref_level.add_data( *fit_integral_3d( fit_function, fit_props ) )
+
+    # Start adaptive refinement loop
+    fit_residual_3D_adaptive_interface( fit_function, ref_level )
+
+    # Set starting position
+    ref_level.set_start_index( 0 )
+    ref_level.set_start_index_folded( 0 )
+
+
+    return ref_level
+
+
+def fit_residual_region_L2_adaptive( ) -> None:
+    fit_props               = FitProperties( )
+    fit_props.dims          = 1
+    fit_props.region_name   = "L2"
+    fit_props.cheby_order_x = 20
+    fit_props.fcn_log_scale = False
+    fit_props.x_log_scale   = True
+    fit_props.x_max         = 0.0
+    fit_props.x_min         = -5.0
+    fit_props.cheby_abs_tol = 5E-7
+    fit_props.cheby_rel_tol = 1E-14
+    fit_props.x_map_fcn     = lambda x: x
+    fit_props.max_ref_level = 10
+
+    fit_props.num_x         = fit_props.cheby_order_x + 1
+    fit_props.num_x_fit     = fit_props.cheby_order_x + 1
+
+    fit_props.generate_fitting_matrix( )
+
+    fit_function            = lambda x: L2( x )[0].real
+
+    # Create root FitRegion
+    ref_level               = RefLevel( copy.copy( fit_props ) )
+
+    # Create first fit to feed root refinement level
+    ref_level.add_data( *fit_integral_1d( fit_function, fit_props ) )
+
+    # Start adaptive refinement loop
+    fit_residual_1D_adaptive_interface( fit_function, ref_level )
+
+    # Set starting position
+    ref_level.set_start_index( 0 )
+
+
+    return ref_level
+
+
+def fit_residual_region_L3_adaptive( ) -> None:
+    fit_props               = FitProperties( )
+    fit_props.dims          = 3
+    fit_props.region_name   = "L3"
+    fit_props.cheby_order_x = 10
+    fit_props.cheby_order_y = 10
+    fit_props.cheby_order_z = 50
+    fit_props.fcn_log_scale = False
+    fit_props.x_log_scale   = False
+    fit_props.x_max         = 1.0
+    fit_props.x_min         = 0.0
+    fit_props.y_log_scale   = False
+    fit_props.y_max         = 1.0
+    fit_props.y_min         = 0.0
+    fit_props.z_log_scale   = True
+    fit_props.z_max         = 3.0
+    fit_props.z_min         = 0.0
+    fit_props.cheby_abs_tol = 5E-7
+    fit_props.cheby_rel_tol = 1E-14
+    fit_props.x_map_fcn     = lambda x: x
+    fit_props.y_map_fcn     = lambda y: y
+    fit_props.z_map_fcn     = lambda z: z
+    fit_props.max_ref_level = 10
+
+    fit_props.num_x         = fit_props.cheby_order_x + 1
+    fit_props.num_x_fit     = fit_props.cheby_order_x + 1
+    fit_props.num_y         = fit_props.cheby_order_y + 1
+    fit_props.num_y_fit     = fit_props.cheby_order_y + 1
+    fit_props.num_z         = fit_props.cheby_order_z + 1
+    fit_props.num_z_fit     = fit_props.cheby_order_z + 1
+
+    fit_props.generate_fitting_matrix( )
+
+    fit_function            = lambda x, y, z: L3(x, y, z)[0].real
+
+    # Create root FitRegion
+    ref_level               = RefLevel( copy.copy( fit_props ) )
+
+    # Create first fit to feed root refinement level
+    ref_level.add_data( *fit_integral_3d( fit_function, fit_props ) )
+
+    # Start adaptive refinement loop
+    fit_residual_3D_adaptive_interface( fit_function, ref_level )
+
+    # Set starting position
+    ref_level.set_start_index( 0 )
+    ref_level.set_start_index_folded( 0 )
+
+
+    return ref_level
+
+
+def fit_residual_region_L3_dA_adaptive( ) -> None:
+    fit_props               = FitProperties( )
+    fit_props.dims          = 3
+    fit_props.region_name   = "L3_dA"
+    fit_props.cheby_order_x = 10
+    fit_props.cheby_order_y = 10
+    fit_props.cheby_order_z = 50
+    fit_props.fcn_log_scale = False
+    fit_props.x_log_scale   = False
+    fit_props.x_max         = 1.0
+    fit_props.x_min         = 0.0
+    fit_props.y_log_scale   = False
+    fit_props.y_max         = 1.0
+    fit_props.y_min         = 0.0
+    fit_props.z_log_scale   = True
+    fit_props.z_max         = 3.0
+    fit_props.z_min         = 0.0
+    fit_props.cheby_abs_tol = 5E-6
+    fit_props.cheby_rel_tol = 1E-14
+    fit_props.x_map_fcn     = lambda x: x
+    fit_props.y_map_fcn     = lambda y: y
+    fit_props.z_map_fcn     = lambda z: z
+    fit_props.max_ref_level = 10
+
+    fit_props.num_x         = fit_props.cheby_order_x + 1
+    fit_props.num_x_fit     = fit_props.cheby_order_x + 1
+    fit_props.num_y         = fit_props.cheby_order_y + 1
+    fit_props.num_y_fit     = fit_props.cheby_order_y + 1
+    fit_props.num_z         = fit_props.cheby_order_z + 1
+    fit_props.num_z_fit     = fit_props.cheby_order_z + 1
+
+    fit_props.generate_fitting_matrix( )
+
+    fit_function            = lambda x, y, z: L3_dA(x, y, z)[0].real
+
+    # Create root FitRegion
+    ref_level               = RefLevel( copy.copy( fit_props ) )
+
+    # Create first fit to feed root refinement level
+    ref_level.add_data( *fit_integral_3d( fit_function, fit_props ) )
+
+    # Start adaptive refinement loop
+    fit_residual_3D_adaptive_interface( fit_function, ref_level )
+
+    # Set starting position
+    ref_level.set_start_index( 0 )
+    ref_level.set_start_index_folded( 0 )
+
+
+    return ref_level
+
+
+def fit_residual_region_L3_dB_adaptive( ) -> None:
+    fit_props               = FitProperties( )
+    fit_props.dims          = 3
+    fit_props.region_name   = "L3_dB"
+    fit_props.cheby_order_x = 10
+    fit_props.cheby_order_y = 10
+    fit_props.cheby_order_z = 50
+    fit_props.fcn_log_scale = False
+    fit_props.x_log_scale   = False
+    fit_props.x_max         = 1.0
+    fit_props.x_min         = 0.0
+    fit_props.y_log_scale   = False
+    fit_props.y_max         = 1.0
+    fit_props.y_min         = 0.0
+    fit_props.z_log_scale   = True
+    fit_props.z_max         = 3.0
+    fit_props.z_min         = 0.0
+    fit_props.cheby_abs_tol = 5E-6
+    fit_props.cheby_rel_tol = 1E-14
+    fit_props.x_map_fcn     = lambda x: x
+    fit_props.y_map_fcn     = lambda y: y
+    fit_props.z_map_fcn     = lambda z: z
+    fit_props.max_ref_level = 10
+
+    fit_props.num_x         = fit_props.cheby_order_x + 1
+    fit_props.num_x_fit     = fit_props.cheby_order_x + 1
+    fit_props.num_y         = fit_props.cheby_order_y + 1
+    fit_props.num_y_fit     = fit_props.cheby_order_y + 1
+    fit_props.num_z         = fit_props.cheby_order_z + 1
+    fit_props.num_z_fit     = fit_props.cheby_order_z + 1
+
+    fit_props.generate_fitting_matrix( )
+
+    fit_function            = lambda x, y, z: L3_dB(x, y, z)[0].real
+
+    # Create root FitRegion
+    ref_level               = RefLevel( copy.copy( fit_props ) )
+
+    # Create first fit to feed root refinement level
+    ref_level.add_data( *fit_integral_3d( fit_function, fit_props ) )
+
+    # Start adaptive refinement loop
+    fit_residual_3D_adaptive_interface( fit_function, ref_level )
+
+    # Set starting position
+    ref_level.set_start_index( 0 )
+    ref_level.set_start_index_folded( 0 )
+
+
+    return ref_level
+
+
+def fit_residual_region_M1_adaptive( ) -> None:
+    fit_props               = FitProperties( )
+    fit_props.dims          = 3
+    fit_props.region_name   = "M1"
+    fit_props.cheby_order_x = 10
+    fit_props.cheby_order_y = 10
+    fit_props.cheby_order_z = 50
+    fit_props.fcn_log_scale = False
+    fit_props.x_log_scale   = False
+    fit_props.x_max         = 1.0
+    fit_props.x_min         = 0.0
+    fit_props.y_log_scale   = False
+    fit_props.y_max         = 2.0
+    fit_props.y_min         = 1.0
+    fit_props.z_log_scale   = True
+    fit_props.z_max         = 0.0
+    fit_props.z_min         = -5.0
+    fit_props.cheby_abs_tol = 5E-7
+    fit_props.cheby_rel_tol = 1E-14
+    fit_props.x_map_fcn     = lambda x: x
+    fit_props.y_map_fcn     = lambda y: y
+    fit_props.z_map_fcn     = lambda z: z
+    fit_props.max_ref_level = 10
+
+    fit_props.num_x         = fit_props.cheby_order_x + 1
+    fit_props.num_x_fit     = fit_props.cheby_order_x + 1
+    fit_props.num_y         = fit_props.cheby_order_y + 1
+    fit_props.num_y_fit     = fit_props.cheby_order_y + 1
+    fit_props.num_z         = fit_props.cheby_order_z + 1
+    fit_props.num_z_fit     = fit_props.cheby_order_z + 1
+
+    fit_props.generate_fitting_matrix( )
+
+    fit_function            = lambda x, y, z: M1(x, y, z)[0].real
+
+    # Create root FitRegion
+    ref_level               = RefLevel( copy.copy( fit_props ) )
+
+    # Create first fit to feed root refinement level
+    ref_level.add_data( *fit_integral_3d( fit_function, fit_props ) )
+
+    # Start adaptive refinement loop
+    fit_residual_3D_adaptive_interface( fit_function, ref_level )
+
+    # Set starting position
+    ref_level.set_start_index( 0 )
+    ref_level.set_start_index_folded( 0 )
+
+
+    return ref_level
+
+
+def fit_residual_region_M1_dA_adaptive( ) -> None:
+    fit_props               = FitProperties( )
+    fit_props.dims          = 3
+    fit_props.region_name   = "M1_dA"
+    fit_props.cheby_order_x = 10
+    fit_props.cheby_order_y = 10
+    fit_props.cheby_order_z = 50
+    fit_props.fcn_log_scale = False
+    fit_props.x_log_scale   = False
+    fit_props.x_max         = 1.0
+    fit_props.x_min         = 0.0
+    fit_props.y_log_scale   = False
+    fit_props.y_max         = 2.0
+    fit_props.y_min         = 1.0
+    fit_props.z_log_scale   = True
+    fit_props.z_max         = 0.0
+    fit_props.z_min         = -5.0
+    fit_props.cheby_abs_tol = 5E-7
+    fit_props.cheby_rel_tol = 1E-14
+    fit_props.x_map_fcn     = lambda x: x
+    fit_props.y_map_fcn     = lambda y: y
+    fit_props.z_map_fcn     = lambda z: z
+    fit_props.max_ref_level = 10
+
+    fit_props.num_x         = fit_props.cheby_order_x + 1
+    fit_props.num_x_fit     = fit_props.cheby_order_x + 1
+    fit_props.num_y         = fit_props.cheby_order_y + 1
+    fit_props.num_y_fit     = fit_props.cheby_order_y + 1
+    fit_props.num_z         = fit_props.cheby_order_z + 1
+    fit_props.num_z_fit     = fit_props.cheby_order_z + 1
+
+    fit_props.generate_fitting_matrix( )
+
+    fit_function            = lambda x, y, z: M1_dA(x, y, z)[0].real
+
+    # Create root FitRegion
+    ref_level               = RefLevel( copy.copy( fit_props ) )
+
+    # Create first fit to feed root refinement level
+    ref_level.add_data( *fit_integral_3d( fit_function, fit_props ) )
+
+    # Start adaptive refinement loop
+    fit_residual_3D_adaptive_interface( fit_function, ref_level )
+
+    # Set starting position
+    ref_level.set_start_index( 0 )
+    ref_level.set_start_index_folded( 0 )
+
+
+    return ref_level
+
+
+def fit_residual_region_M1_dB_adaptive( ) -> None:
+    fit_props               = FitProperties( )
+    fit_props.dims          = 3
+    fit_props.region_name   = "M1_dB"
+    fit_props.cheby_order_x = 10
+    fit_props.cheby_order_y = 10
+    fit_props.cheby_order_z = 50
+    fit_props.fcn_log_scale = False
+    fit_props.x_log_scale   = False
+    fit_props.x_max         = 1.0
+    fit_props.x_min         = 0.0
+    fit_props.y_log_scale   = False
+    fit_props.y_max         = 2.0
+    fit_props.y_min         = 1.0
+    fit_props.z_log_scale   = True
+    fit_props.z_max         = 0.0
+    fit_props.z_min         = -5.0
+    fit_props.cheby_abs_tol = 5E-7
+    fit_props.cheby_rel_tol = 1E-14
+    fit_props.x_map_fcn     = lambda x: x
+    fit_props.y_map_fcn     = lambda y: y
+    fit_props.z_map_fcn     = lambda z: z
+    fit_props.max_ref_level = 10
+
+    fit_props.num_x         = fit_props.cheby_order_x + 1
+    fit_props.num_x_fit     = fit_props.cheby_order_x + 1
+    fit_props.num_y         = fit_props.cheby_order_y + 1
+    fit_props.num_y_fit     = fit_props.cheby_order_y + 1
+    fit_props.num_z         = fit_props.cheby_order_z + 1
+    fit_props.num_z_fit     = fit_props.cheby_order_z + 1
+
+    fit_props.generate_fitting_matrix( )
+
+    fit_function            = lambda x, y, z: M1_dB(x, y, z)[0].real
+
+    # Create root FitRegion
+    ref_level               = RefLevel( copy.copy( fit_props ) )
+
+    # Create first fit to feed root refinement level
+    ref_level.add_data( *fit_integral_3d( fit_function, fit_props ) )
+
+    # Start adaptive refinement loop
+    fit_residual_3D_adaptive_interface( fit_function, ref_level )
+
+    # Set starting position
+    ref_level.set_start_index( 0 )
+    ref_level.set_start_index_folded( 0 )
+
+
+    return ref_level
+
+
+def fit_residual_region_M2_adaptive( ) -> None:
+    fit_props               = FitProperties( )
+    fit_props.dims          = 1
+    fit_props.region_name   = "M2"
+    fit_props.cheby_order_x = 20
+    fit_props.fcn_log_scale = False
+    fit_props.x_log_scale   = True
+    fit_props.x_max         = 0.0
+    fit_props.x_min         = -5.0
+    fit_props.cheby_abs_tol = 5E-7
+    fit_props.cheby_rel_tol = 1E-14
+    fit_props.x_map_fcn     = lambda x: x
+    fit_props.max_ref_level = 10
+
+    fit_props.num_x         = fit_props.cheby_order_x + 1
+    fit_props.num_x_fit     = fit_props.cheby_order_x + 1
+
+    fit_props.generate_fitting_matrix( )
+
+    fit_function            = lambda x: M2( x )[0].real
+
+    # Create root FitRegion
+    ref_level               = RefLevel( copy.copy( fit_props ) )
+
+    # Create first fit to feed root refinement level
+    ref_level.add_data( *fit_integral_1d( fit_function, fit_props ) )
+
+    # Start adaptive refinement loop
+    fit_residual_1D_adaptive_interface( fit_function, ref_level )
+
+    # Set starting position
+    ref_level.set_start_index( 0 )
+
+
+    return ref_level
+
+
+def fit_residual_region_M3_adaptive( ) -> None:
+    fit_props               = FitProperties( )
+    fit_props.dims          = 3
+    fit_props.region_name   = "M3"
+    fit_props.cheby_order_x = 10
+    fit_props.cheby_order_y = 10
+    fit_props.cheby_order_z = 50
+    fit_props.fcn_log_scale = False
+    fit_props.x_log_scale   = False
+    fit_props.x_max         = 1.0
+    fit_props.x_min         = 0.0
+    fit_props.y_log_scale   = False
+    fit_props.y_max         = 2.0
+    fit_props.y_min         = 1.0
+    fit_props.z_log_scale   = True
+    fit_props.z_max         = 3.0
+    fit_props.z_min         = 0.0
+    fit_props.cheby_abs_tol = 5E-7
+    fit_props.cheby_rel_tol = 1E-14
+    fit_props.x_map_fcn     = lambda x: x
+    fit_props.y_map_fcn     = lambda y: y
+    fit_props.z_map_fcn     = lambda z: z
+    fit_props.max_ref_level = 10
+
+    fit_props.num_x         = fit_props.cheby_order_x + 1
+    fit_props.num_x_fit     = fit_props.cheby_order_x + 1
+    fit_props.num_y         = fit_props.cheby_order_y + 1
+    fit_props.num_y_fit     = fit_props.cheby_order_y + 1
+    fit_props.num_z         = fit_props.cheby_order_z + 1
+    fit_props.num_z_fit     = fit_props.cheby_order_z + 1
+
+    fit_props.generate_fitting_matrix( )
+
+    fit_function            = lambda x, y, z: M3(x, y, z)[0].real
+
+    # Create root FitRegion
+    ref_level               = RefLevel( copy.copy( fit_props ) )
+
+    # Create first fit to feed root refinement level
+    ref_level.add_data( *fit_integral_3d( fit_function, fit_props ) )
+
+    # Start adaptive refinement loop
+    fit_residual_3D_adaptive_interface( fit_function, ref_level )
+
+    # Set starting position
+    ref_level.set_start_index( 0 )
+    ref_level.set_start_index_folded( 0 )
+
+
+    return ref_level
+
+
+def fit_residual_region_M3_dA_adaptive( ) -> None:
+    fit_props               = FitProperties( )
+    fit_props.dims          = 3
+    fit_props.region_name   = "M3_dA"
+    fit_props.cheby_order_x = 10
+    fit_props.cheby_order_y = 10
+    fit_props.cheby_order_z = 50
+    fit_props.fcn_log_scale = False
+    fit_props.x_log_scale   = False
+    fit_props.x_max         = 1.0
+    fit_props.x_min         = 0.0
+    fit_props.y_log_scale   = False
+    fit_props.y_max         = 2.0
+    fit_props.y_min         = 1.0
+    fit_props.z_log_scale   = True
+    fit_props.z_max         = 3.0
+    fit_props.z_min         = 0.0
+    fit_props.cheby_abs_tol = 5E-6
+    fit_props.cheby_rel_tol = 1E-14
+    fit_props.x_map_fcn     = lambda x: x
+    fit_props.y_map_fcn     = lambda y: y
+    fit_props.z_map_fcn     = lambda z: z
+    fit_props.max_ref_level = 10
+
+    fit_props.num_x         = fit_props.cheby_order_x + 1
+    fit_props.num_x_fit     = fit_props.cheby_order_x + 1
+    fit_props.num_y         = fit_props.cheby_order_y + 1
+    fit_props.num_y_fit     = fit_props.cheby_order_y + 1
+    fit_props.num_z         = fit_props.cheby_order_z + 1
+    fit_props.num_z_fit     = fit_props.cheby_order_z + 1
+
+    fit_props.generate_fitting_matrix( )
+
+    fit_function            = lambda x, y, z: M3_dA(x, y, z)[0].real
+
+    # Create root FitRegion
+    ref_level               = RefLevel( copy.copy( fit_props ) )
+
+    # Create first fit to feed root refinement level
+    ref_level.add_data( *fit_integral_3d( fit_function, fit_props ) )
+
+    # Start adaptive refinement loop
+    fit_residual_3D_adaptive_interface( fit_function, ref_level )
+
+    # Set starting position
+    ref_level.set_start_index( 0 )
+    ref_level.set_start_index_folded( 0 )
+
+
+    return ref_level
+
+
+def fit_residual_region_M3_dB_adaptive( ) -> None:
+    fit_props               = FitProperties( )
+    fit_props.dims          = 3
+    fit_props.region_name   = "M3_dB"
+    fit_props.cheby_order_x = 10
+    fit_props.cheby_order_y = 10
+    fit_props.cheby_order_z = 50
+    fit_props.fcn_log_scale = False
+    fit_props.x_log_scale   = False
+    fit_props.x_max         = 1.0
+    fit_props.x_min         = 0.0
+    fit_props.y_log_scale   = False
+    fit_props.y_max         = 2.0
+    fit_props.y_min         = 1.0
+    fit_props.z_log_scale   = True
+    fit_props.z_max         = 3.0
+    fit_props.z_min         = 0.0
+    fit_props.cheby_abs_tol = 5E-6
+    fit_props.cheby_rel_tol = 1E-14
+    fit_props.x_map_fcn     = lambda x: x
+    fit_props.y_map_fcn     = lambda y: y
+    fit_props.z_map_fcn     = lambda z: z
+    fit_props.max_ref_level = 10
+
+    fit_props.num_x         = fit_props.cheby_order_x + 1
+    fit_props.num_x_fit     = fit_props.cheby_order_x + 1
+    fit_props.num_y         = fit_props.cheby_order_y + 1
+    fit_props.num_y_fit     = fit_props.cheby_order_y + 1
+    fit_props.num_z         = fit_props.cheby_order_z + 1
+    fit_props.num_z_fit     = fit_props.cheby_order_z + 1
+
+    fit_props.generate_fitting_matrix( )
+
+    fit_function            = lambda x, y, z: M3_dB(x, y, z)[0].real
+
+    # Create root FitRegion
+    ref_level               = RefLevel( copy.copy( fit_props ) )
+
+    # Create first fit to feed root refinement level
+    ref_level.add_data( *fit_integral_3d( fit_function, fit_props ) )
+
+    # Start adaptive refinement loop
+    fit_residual_3D_adaptive_interface( fit_function, ref_level )
+
+    # Set starting position
+    ref_level.set_start_index( 0 )
+    ref_level.set_start_index_folded( 0 )
+
+
+    return ref_level
 
 
 if __name__ == "__main__":
+    import sys
+
+    folder_path = sys.argv[1]
+    option      = sys.argv[2]
     # fit_L1_Hfix()
     # fit_M1_Hfix()
     # fit_L1_Afix_Bfix()
@@ -2333,17 +898,60 @@ if __name__ == "__main__":
     # fit_L3_dA()
     # fit_L3_dB()
     # fit_L3_P2()
-    fit_L1()
-    fit_L2()
-    fit_L3()
-    fit_M1()
-    fit_M2()
-    fit_M3()
-    fit_L1_dA()
-    fit_L1_dB()
-    fit_L3_dA()
-    fit_L3_dB()
-    fit_M1_dA()
-    fit_M1_dB()
-    fit_M3_dA()
-    fit_M3_dB()
+    # folder_path = r"D:\sergio\developments\SeaMotions\aux_tools\0_databases\1_finite_water_depth\Prec_1Em6"
+    # fit_L1( folder_path )
+    # fit_L2( folder_path )
+    # fit_L3( folder_path )
+    # fit_M1( folder_path )
+    # fit_M2( folder_path )
+    # fit_M3( folder_path )
+    # fit_L1_dA( folder_path )
+    # fit_L1_dB( folder_path )
+    # fit_L3_dA( folder_path )
+    # fit_L3_dB( folder_path )
+    # fit_M1_dA( folder_path )
+    # fit_M1_dB( folder_path )
+    # fit_M3_dA( folder_path )
+    # fit_M3_dB( folder_path )
+
+    if option == "L1":
+        fit_L1( folder_path )
+
+    elif option == "L1_dA":
+        fit_L1_dA( folder_path )
+
+    elif option == "L1_dB":
+        fit_L1_dB( folder_path )
+
+    elif option == "L2":
+        fit_L2( folder_path )
+
+    elif option == "L3":
+        fit_L3( folder_path )
+
+    elif option == "L3_dA":
+        fit_L3_dA( folder_path )
+
+    elif option == "L3_dB":
+        fit_L3_dB( folder_path )
+
+    elif option == "M1":
+        fit_M1( folder_path )
+
+    elif option == "M1_dA":
+        fit_M1_dA( folder_path )
+
+    elif option == "M1_dB":
+        fit_M1_dB( folder_path )
+
+    elif option == "M2":
+        fit_M2( folder_path )
+
+    elif option == "M3":
+        fit_M3( folder_path )
+
+    elif option == "M3_dA":
+        fit_M3_dA( folder_path )
+
+    elif option == "M3_dB":
+        fit_M3_dB( folder_path )
