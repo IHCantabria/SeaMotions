@@ -150,14 +150,29 @@ void        Mesh::_create_panels(
             this->panels[i]->z[j]   = this->z[node_num];
         }
 
-        // Set panel type
-        this->panels[i]->type = this->panels_type[i];
-
         // Set panel movility
         this->panels[i]->is_move_f = this->_is_move_f;
 
         // Calculate panel properties
         this->panels[i]->calculate_properties( cog );
+
+        // Set panel type
+        if ( std::abs( this->panels[i]->center[2] ) < FS_SEL_THR )
+        {
+            this->panels[i]->type = LID_PANEL_CODE;
+        }
+        else
+        {
+            this->panels[i]->type = DIFFRAC_PANEL_CODE;
+        }
+
+        // Calculate integration properties
+        this->panels[i]->calculate_integration_properties<NUM_GP>( );
+
+        if ( this->panels[i]->type == LID_PANEL_CODE )
+        {
+            this->panels[i]->calcualte_free_surface_singularity( );
+        }
 
     }
 }
@@ -436,7 +451,7 @@ void        Mesh::detect_wl_points(
     for ( int i=0; i<this->elems_np; i++ )
     {
         global_index = i * this->enrl;
-        if ( elems_wl[global_index] > 2 )
+        if ( ( elems_wl[global_index] > 2 ) && ( this->panels[i]->type == DIFFRAC_PANEL_CODE ) )
         {
             std::stringstream ss;
             ss << "ERROR - INPUT" << std::endl;
@@ -960,6 +975,106 @@ void        Mesh::_load_poly_mesh(
 }
 
 
+void        Mesh::_load_simply_mesh( 
+                                               std::string file_path,
+                                               std::string body_name
+                                    )
+{
+    // Define auxiliar variable to help in the file parsing
+    int                 a0                  = 0;
+    int                 a1                  = 0;
+    int                 aux_int;
+    std::string         aux_str;
+    std::string         _body_name;
+    int                 elem_count          = 0;
+    int                 elem_valid_count    = 0;
+    int                 elem_total          = 0;
+    int                 elem_id             = 0;
+    int                 header_code         = 0;
+    std::istringstream  iss;
+    int                 items_np            = 0;
+    std::string         line;
+    int                 mnpe                = 0;
+    int                 node_count          = 0;
+    int                 node_id             = 0;
+    int                 npe                 = 0;
+    int                 section_id          = 0;
+    int                 sel_count           = 0;
+
+    // Lower case body name to compare with the 
+    // names read from files
+    str_to_lower( &body_name );
+
+    // Storage maximum elements per node values and 
+    // it's extended counterpart to storage the number of 
+    // elements per node in the same vector
+    this->mnpe      = 4;
+    this->enrl      = this->mnpe + 1;
+
+    // Open file unit
+    std::ifstream infile( file_path );
+    CHECK_FILE_UNIT_STATUS( infile, file_path );
+
+    // Read mesh dimensions
+    std::getline( infile, line );
+    renew_stream( iss, line );
+    iss >> aux_str;
+    iss >> this->nodes_np;
+
+    std::getline( infile, line );
+    renew_stream( iss, line );
+    iss >> aux_str;
+    iss >> this->elems_np;
+
+    // Allocate space for the mesh variables
+    this->x         = generate_empty_vector<cusfloat>( this->nodes_np );
+    this->y         = generate_empty_vector<cusfloat>( this->nodes_np );
+    this->z         = generate_empty_vector<cusfloat>( this->nodes_np );
+    this->elems     = generate_empty_vector<int>( this->enrl * this->elems_np );
+
+    // Loop over number of nodes to read them from file
+    std::getline( infile, line );
+    for ( int i=0; i<this->nodes_np; i++ )
+    {
+        // Read line from disk
+        std::getline( infile, line );
+        renew_stream( iss, line );
+
+        // Process line
+        iss >> aux_int;
+        iss >> aux_int;
+        iss >> aux_int;
+        iss >> this->x[i];
+        iss >> this->y[i];
+        iss >> this->z[i];
+    }
+
+    // Loop over number of elements to read them from file
+    std::getline( infile, line );
+    for ( int i=0; i<this->elems_np; i++ )
+    {
+        // Read line from disk
+        std::getline( infile, line );
+        renew_stream( iss, line );
+
+        // Process line
+        iss >> aux_int;
+        iss >> npe;
+        this->elems[this->enrl*i+0] = npe;
+
+        for ( int j=0; j<npe; j++ )
+        {
+            iss >> this->elems[this->enrl*i+1+j];
+            this->elems[this->enrl*i+1+j] -= 1;
+        }
+    }
+
+    // Close file unit
+    infile.close( );
+
+}
+
+
 Mesh::Mesh( 
                                         std::string file_path,
                                         std::string body_name,
@@ -972,7 +1087,21 @@ Mesh::Mesh(
     this->_is_move_f = static_cast<cusfloat>( !is_fix );
 
     // Load mesh
-    this->_load_poly_mesh( file_path, body_name );
+    std::string file_ext = get_fipath_extension( file_path );
+
+    if ( file_ext.compare( ".poly" ) == 0 )
+    {
+        this->_load_poly_mesh( file_path, body_name );
+    }
+    else if ( file_ext.compare( ".symplymesh.dat" ) )
+    {
+        this->_load_simply_mesh( file_path, body_name );
+    }
+    else
+    {
+        std::cerr << "ERROR - Mesh file extension: " << file_ext << " is not valid." << std::endl; 
+        throw std::exception( "Mesh file extension is not valid." );
+    }
 
     // Generate vector with the panels type
     this->set_all_panels_type( panel_type );
@@ -982,6 +1111,7 @@ Mesh::Mesh(
 
     // Create panels for each element
     this->_create_panels( cog );
+    
 }
 
 

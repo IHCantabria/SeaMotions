@@ -64,6 +64,11 @@ void        _calculate_fs_centre(
                                         std::string         body_name
                            );
 
+    void    _load_simply_mesh( 
+                                        std::string file_path,
+                                        std::string body_name
+                            );
+
 public:
     // Define class attributes
     int             bodies_np       = 1;
