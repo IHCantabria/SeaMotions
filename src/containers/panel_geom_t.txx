@@ -13,10 +13,10 @@
 
 
 // Add method to calculate the geometric propertiess
-template<int NumNodes>
-void PanelGeomT<NumNodes>::calculate_properties( 
-                                                cusfloat* cog
-                                            )
+template<int NumNodes, int NGP>
+void PanelGeomT<NumNodes, NGP>::calculate_properties( 
+                                                        cusfloat* cog
+                                                    )
 {
     // Calculate ceter of the panel
     for (int i=0; i<NumNodes; i++)
@@ -214,8 +214,8 @@ void PanelGeomT<NumNodes>::calculate_properties(
 }
 
 
-template<int NumNodes>
-void PanelGeomT<NumNodes>::calculate_source_nodes(
+template<int NumNodes, int NGP>
+void PanelGeomT<NumNodes, NGP>::calculate_source_nodes(
                                                     int         poly_order,
                                                     cusfloat*    
                                                 )
@@ -252,8 +252,8 @@ void PanelGeomT<NumNodes>::calculate_source_nodes(
 }
 
 
-template<int NumNodes>
-void PanelGeomT<NumNodes>::get_node_local_position( int num_node, cusfloat* node_pos )
+template<int NumNodes, int NGP>
+void PanelGeomT<NumNodes, NGP>::get_node_local_position( int num_node, cusfloat* node_pos )
 {
     node_pos[0] = this->xl[num_node];
     node_pos[1] = this->yl[num_node];
@@ -261,8 +261,8 @@ void PanelGeomT<NumNodes>::get_node_local_position( int num_node, cusfloat* node
 }
 
 
-template<int NumNodes>
-void PanelGeomT<NumNodes>::get_node_local_position_c( int num_node, cusfloat* node_pos )
+template<int NumNodes, int NGP>
+void PanelGeomT<NumNodes, NGP>::get_node_local_position_c( int num_node, cusfloat* node_pos )
 {
     node_pos[0] = this->xlc[num_node];
     node_pos[1] = this->ylc[num_node];
@@ -270,8 +270,8 @@ void PanelGeomT<NumNodes>::get_node_local_position_c( int num_node, cusfloat* no
 }
 
 
-template<int NumNodes>
-void PanelGeomT<NumNodes>::get_node_position( int num_node, cusfloat* node_pos )
+template<int NumNodes, int NGP>
+void PanelGeomT<NumNodes, NGP>::get_node_position( int num_node, cusfloat* node_pos )
 {
     node_pos[0] = this->x[num_node];
     node_pos[1] = this->y[num_node];
@@ -279,8 +279,8 @@ void PanelGeomT<NumNodes>::get_node_position( int num_node, cusfloat* node_pos )
 }
 
 
-template<int NumNodes>
-void PanelGeomT<NumNodes>::get_panel_xy_proj( 
+template<int NumNodes, int NGP>
+void PanelGeomT<NumNodes, NGP>::get_panel_xy_proj( 
                                                 PanelGeomT* new_panel 
                                             )
 {
@@ -301,8 +301,8 @@ void PanelGeomT<NumNodes>::get_panel_xy_proj(
 }
 
 
-template<int NumNodes>
-void PanelGeomT<NumNodes>::get_source_nodes_data(
+template<int NumNodes, int NGP>
+void PanelGeomT<NumNodes, NGP>::get_source_nodes_data(
                                                     cusfloat*& position,
                                                     cusfloat*& normals_vec
                                                 )
@@ -313,8 +313,8 @@ void PanelGeomT<NumNodes>::get_source_nodes_data(
 }
 
 
-template<int NumNodes>
-int PanelGeomT<NumNodes>::is_inside( cusfloat* field_point )
+template<int NumNodes, int NGP>
+int PanelGeomT<NumNodes, NGP>::is_inside( cusfloat* field_point )
 {
     // Check if the field point is inside of the bounding box
     // of the panel.
@@ -400,8 +400,8 @@ int PanelGeomT<NumNodes>::is_inside( cusfloat* field_point )
 }
 
 
-template<int NumNodes>
-void PanelGeomT<NumNodes>::local_to_global( 
+template<int NumNodes, int NGP>
+void PanelGeomT<NumNodes, NGP>::local_to_global( 
                                             cusfloat    xi, 
                                             cusfloat    eta,
                                             cusfloat*   global_pos
@@ -431,19 +431,18 @@ void PanelGeomT<NumNodes>::local_to_global(
 }
 
 
-template<int NumNodes>
-template<int NGP>
-void PanelGeomT<NumNodes>::calculate_integration_properties( void )
+template<int NumNodes, int NGP>
+void PanelGeomT<NumNodes, NGP>::calculate_integration_properties( void )
 {
     // Generate shape functions value container
-    cusfloat shape_fcn[NGP*NumNodes]; clear_vector( NGP*NumNodes, shape_fcn );
+    cusfloat shape_fcn[NGP*NGP*NumNodes]; clear_vector( NGP*NGP*NumNodes, shape_fcn );
 
     // Get shape functions value
     shape_fcn_2d_gp<NumNodes, NGP>( shape_fcn );
 
     // Get global coordinates
-    std::array<cusfloat, 3*NGP> x2d;
-    for ( int i=0; i<NGP; i++ )
+    std::array<cusfloat, 3*NGP*NGP> x2d;
+    for ( int i=0; i<NGP*NGP; i++ )
     {
         x2d[3*i+0] = 0.0;
         for ( int j=0; j<NumNodes; j++ )
@@ -461,49 +460,37 @@ void PanelGeomT<NumNodes>::calculate_integration_properties( void )
     }
 
     // Multiply transformation matrix with the multiple points
-    for ( int i=0; i<NGP; i++ )
+    for ( int i=0; i<NGP*NGP; i++ )
     {
-        this->gauss_points_global[i*NGP+0] = (
-                               this->local_to_global_mat[0] * x2d[i*NGP+0] 
-                               +
-                               this->local_to_global_mat[1] * x2d[i*NGP+1]
-                               +
-                               this->local_to_global_mat[2] * x2d[i*NGP+2]
-                            );
-    }
-    for ( int i=0; i<NGP; i++ )
-    {
-        this->gauss_points_global[i*NGP+1] = (
-                               this->local_to_global_mat[3] * x2d[i*NGP+0] 
-                               +
-                               this->local_to_global_mat[4] * x2d[i*NGP+1]
-                               +
-                               this->local_to_global_mat[5] * x2d[i*NGP+2]
-                            );
-    }
-    for ( int i=0; i<NGP; i++ )
-    {
-        this->gauss_points_global[i*NGP+2] = (
-                               this->local_to_global_mat[6] * x2d[i*NGP+0] 
-                               +
-                               this->local_to_global_mat[7] * x2d[i*NGP+1]
-                               +
-                               this->local_to_global_mat[8] * x2d[i*NGP+2]
-                            );
+        this->gauss_points_global_x[i]      = (
+                                                this->local_to_global_mat[0] * x2d[i*NGP*NGP+0] 
+                                                +
+                                                this->local_to_global_mat[1] * x2d[i*NGP*NGP+1]
+                                                +
+                                                this->local_to_global_mat[2] * x2d[i*NGP*NGP+2]
+                                            );
+        this->gauss_points_global_y[i]      = (
+                                                this->local_to_global_mat[3] * x2d[i*NGP*NGP+0] 
+                                                +
+                                                this->local_to_global_mat[4] * x2d[i*NGP*NGP+1]
+                                                +
+                                                this->local_to_global_mat[5] * x2d[i*NGP*NGP+2]
+                                            );
+        this->gauss_points_global_z[i]      = (
+                                                this->local_to_global_mat[6] * x2d[i*NGP*NGP+0] 
+                                                +
+                                                this->local_to_global_mat[7] * x2d[i*NGP*NGP+1]
+                                                +
+                                                this->local_to_global_mat[8] * x2d[i*NGP*NGP+2]
+                                            );
     }
 
     // Add centre of system reference
-    for ( int i=0; i<NGP; i++ )
+    for ( int i=0; i<NGP*NGP; i++ )
     {
-        this->gauss_points_global[i*NGP+0] += this->sysref_centre[0];
-    }
-    for ( int i=0; i<NGP; i++ )
-    {
-        this->gauss_points_global[i*NGP+1] += this->sysref_centre[1];
-    }
-    for ( int i=0; i<NGP; i++ )
-    {
-        this->gauss_points_global[i*NGP+2] += this->sysref_centre[2];
+        this->gauss_points_global_x[i] += this->sysref_centre[0];
+        this->gauss_points_global_y[i] += this->sysref_centre[1];
+        this->gauss_points_global_z[i] += this->sysref_centre[2];
     }
 
     // Calculate jacobi determinant chunks
@@ -512,9 +499,9 @@ void PanelGeomT<NumNodes>::calculate_integration_properties( void )
 }
 
 
-template<int NumNodes>
+template<int NumNodes, int NGP>
 template<int N>
-void PanelGeomT<NumNodes>::local_to_global_vec( 
+void PanelGeomT<NumNodes, NGP>::local_to_global_vec( 
                                                     cusfloat*   xi, 
                                                     cusfloat*   eta,
                                                     cusfloat*   global_pos
@@ -600,8 +587,8 @@ void PanelGeomT<NumNodes>::local_to_global_vec(
 }
 
 
-template<int NumNodes>
-void PanelGeomT<NumNodes>::local_coords_from_z_proj(
+template<int NumNodes, int NGP>
+void PanelGeomT<NumNodes, NGP>::local_coords_from_z_proj(
                                                         cusfloat    x,
                                                         cusfloat    y,
                                                         cusfloat&   xi,
@@ -651,8 +638,8 @@ void PanelGeomT<NumNodes>::local_coords_from_z_proj(
 }
 
 
-template<int NumNodes>
-PanelGeomT<NumNodes>::PanelGeomT(
+template<int NumNodes, int NGP>
+PanelGeomT<NumNodes, NGP>::PanelGeomT(
                                     cusfloat*   x_in,
                                     cusfloat*   y_in,
                                     cusfloat*   z_in,
@@ -677,11 +664,14 @@ PanelGeomT<NumNodes>::PanelGeomT(
 
     // Calculate panel properties
     this->calculate_properties( cog );
+
+    // Calculate integration properties
+    this->calculate_integration_properties( );
 }
 
 
-template<int NumNodes>
-PanelGeomT<NumNodes>::~PanelGeomT(
+template<int NumNodes, int NGP>
+PanelGeomT<NumNodes, NGP>::~PanelGeomT(
                         void
                     )
 {
@@ -693,8 +683,8 @@ PanelGeomT<NumNodes>::~PanelGeomT(
 }
 
 
-template<int NumNodes>
-void PanelGeomT<NumNodes>::write(
+template<int NumNodes, int NGP>
+void PanelGeomT<NumNodes, NGP>::write(
                                     std::string finame
                                 )
 {
@@ -717,8 +707,8 @@ void PanelGeomT<NumNodes>::write(
 }
 
 
-template<int NumNodes>
-std::ostream& operator<< ( std::ostream& os, PanelGeomT<NumNodes>& panel )
+template<int NumNodes, int NGP>
+std::ostream& operator<< ( std::ostream& os, PanelGeomT<NumNodes, NGP>& panel )
 {
     std::cout << "PANEL PROPERTIES:" << std::endl;
     std::cout << " - PANEL COORDINATES: " << std::endl;

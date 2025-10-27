@@ -6,7 +6,7 @@
 #include "../config.hpp"
 
 
-template<int NumNodes>
+template<int NumNodes, int NGP>
 struct PanelGeomT
 {
     static_assert(NumNodes == 3 || NumNodes == 4, "Only triangle and quadrilateral panels supported.");
@@ -24,7 +24,9 @@ public:
     cusfloat                center[3]                       = {0.0, 0.0, 0.0};
     cusfloat                center_wl[3]                    = {0.0, 0.0, 0.0};
     cusfloat                global_to_local_mat[9];
-    cusfloat                gauss_points_global[3*NUM_GP2];
+    cusfloat                gauss_points_global_x[NUM_GP2];
+    cusfloat                gauss_points_global_y[NUM_GP2];
+    cusfloat                gauss_points_global_z[NUM_GP2];
     cusfloat                jac_det_gauss_points[NUM_GP2];
     cusfloat                is_move_f                       = 0.0;
     bool                    is_wl_boundary                  = false;
@@ -77,7 +79,6 @@ public:
                                                     cusfloat*   cog
                                     );
 
-    template<int NGP>
     void    calculate_integration_properties(
                                                     void
                                         );
