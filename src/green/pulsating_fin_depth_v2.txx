@@ -46,6 +46,37 @@ void         Fxy(
     // Calculate Bessel functions
     bessel_factory.calculate_cheby( n, XB );
 
+    // Check for region location
+    std::size_t r00_count = 0;
+    std::size_t r00_pos[N];
+    cusfloat    r00_results_dx[N];
+    std::size_t r11_count = 0;
+    std::size_t r11_pos[N];
+    cusfloat    r11_results_dx[N];
+    cusfloat    x_r00[N];
+    cusfloat    x_r11[N];
+    cusfloat    y_r00[N];
+    cusfloat    y_r11[N];
+    cusfloat    x_min = 1e-2;
+    cusfloat    y_min = 10.0;
+    for ( std::size_t i=0; i<N; i++ )
+    {
+        if ( XB[i] < x_min )
+        {
+            r00_pos[r00_count]  = i;
+            x_r00[r00_count]    = XB[i];
+            y_r00[r00_count]    = YB[i];
+            r00_count++;
+        }
+        else
+        {
+            r11_pos[r11_count]  = i;
+            x_r11[r11_count]    = XB[i];
+            y_r11[r11_count]    = YB[i];
+            r11_count++;
+        }
+    }
+
     // Calculate auxiliar variables
     cusfloat SQRT[N];
     cusfloat EXPY[N];
@@ -60,28 +91,56 @@ void         Fxy(
     lv_exp<cusfloat>( n, EXPY, EXPY );
     
     // Calculate auxiliar variables in case of lid panel
-    // STATIC_COND( IS_LID_PANEL,  );
-
     STATIC_LOOP( n, N, STATIC_COND( IS_LID_PANEL, LOG_SQRT[i] = SQRT[i] + YB[i]; ) )
 
     STATIC_COND( IS_LID_PANEL, lv_log<cusfloat>( n, LOG_SQRT, LOG_SQRT ); );
 
-    // Calculate Chebyshev expansions
-    STATIC_COND( ONLY_FCN or ONLY_FCNDZ,        (R11CEV<N, mode_loop>::evaluate( n, XB, YB, results ));        )
-    STATIC_COND( ONLY_FCNDR,                    (R11_dXCEV<N, mode_loop>::evaluate( n, XB, YB, results_dx ));  )
+    // Calculate FXY and dFdY functions
+    STATIC_COND( ONLY_FCN or ONLY_FCNDZ, (R11CEV<N, mode_loop>::evaluate( n, XB, YB, results )); )
 
-    // Add Bessel functions contribution
-    STATIC_LOOP( n, N, STATIC_COND( ONLY_FCN or ONLY_FCNDZ,    results[i]      *= - 2.0;           ) )
-    STATIC_LOOP( n, N, STATIC_COND( ONLY_FCNDR,                results_dx[i]   *= -2.0 * XINV[i]; ) )
+    STATIC_LOOP( n, N, STATIC_COND( ONLY_FCN or ONLY_FCNDZ,    results[i]      *= - 2.0;                                                                    ) )
+    STATIC_LOOP( n, N, STATIC_COND( ONLY_FCN or ONLY_FCNDZ,    results[i]      -= PI * EXPY[i] * ( bessel_factory.struve0[i] + bessel_factory.y0[i] );      ) )
+
+    // Calculate dFdX
+    if ( r11_count < 1 ) // All the points are in the R00 region
+    {
+        STATIC_COND( ONLY_FCNDR,  (R00_dXCEV<N, mode_loop>::evaluate( n, XB, YB, results_dx ));  )
+    }
+    else if ( r00_count < 1 ) // All the points are in the R11 region
+    {
+        STATIC_COND( ONLY_FCNDR,  (R11_dXCEV<N, mode_loop>::evaluate( n, XB, YB, results_dx ));  )
+
+        STATIC_LOOP( n, N, STATIC_COND( ONLY_FCNDR,  results_dx[i]   *= -2.0 * XINV[i];                                                                     ) )
+        STATIC_LOOP( n, N, STATIC_COND( ONLY_FCNDR,  results_dx[i]   += 2.0 * XINV[i] * YB[i] / SQRT[i];                                                    ) )
+        STATIC_LOOP( n, N, STATIC_COND( ONLY_FCNDR,  results_dx[i]   += PI * EXPY[i] * ( bessel_factory.y1[i] + bessel_factory.struve1[i] - 2.0 / PI );     ) )
+    }
+    else // Partially some of the points are in the R00 region and the others int the R11 region
+    {
+        STATIC_COND( ONLY_FCNDR, (R00_dXCEV<N, STATIC_LOOP_OFF>::evaluate( r00_count, x_r00, y_r00, r00_results_dx )  ); )
+        STATIC_COND( ONLY_FCNDR, (R11_dXCEV<N, STATIC_LOOP_OFF>::evaluate( r11_count, x_r11, y_r11, r11_results_dx )  ); )
+
+        LOOP_DEF( r11_count, STATIC_COND( ONLY_FCNDR,  r11_results_dx[i]        *= -2.0 * XINV[r11_pos[i]];                                                                                     ) )
+        LOOP_DEF( r11_count, STATIC_COND( ONLY_FCNDR,  r11_results_dx[i]        += 2.0 * XINV[r11_pos[i]] * YB[r11_pos[i]] / SQRT[r11_pos[i]];                                                  ) )
+        LOOP_DEF( r11_count, STATIC_COND( ONLY_FCNDR,  r11_results_dx[i]        += PI * EXPY[r11_pos[i]] * ( bessel_factory.y1[r11_pos[i]] + bessel_factory.struve1[r11_pos[i]] - 2.0 / PI );   ) )
+
+        LOOP_DEF( r00_count, STATIC_COND( ONLY_FCNDR,  results_dx[r00_pos[i]]   = r00_results_dx[i];                                                                                            ) )
+        LOOP_DEF( r11_count, STATIC_COND( ONLY_FCNDR,  results_dx[r11_pos[i]]   = r11_results_dx[i];                                                                                            ) )
+
+    }
+
+    STATIC_LOOP( n, N, STATIC_COND( ONLY_FCNDR, results_dx[i] = ( XB[i] < x_min && YB[i] > y_min ) ? 0.0 : results_dx[i]; ))
     
-    STATIC_LOOP( n, N, STATIC_COND( ONLY_FCN or ONLY_FCNDZ,    results[i]      -= PI * EXPY[i] * ( bessel_factory.struve0[i] + bessel_factory.y0[i] ); ) )
-    STATIC_LOOP( n, N, STATIC_COND( ONLY_FCNDR,                results_dx[i]   += 2.0 * XINV[i] * YB[i] / SQRT[i];                                      ) )
-
-    STATIC_LOOP( n, N, STATIC_COND( ONLY_FCNDR,                results_dx[i]   += PI * EXPY[i] * ( bessel_factory.y1[i] + bessel_factory.struve1[i] - 2.0 / PI );   ) )
-    STATIC_LOOP( n, N, STATIC_COND( ONLY_FCNDZ,                results_dy[i]    = - results[i] - 2.0 / SQRT[i];                                                       ) )
-
     // Remove singular value if panel LID
     STATIC_LOOP( n, N, STATIC_COND( IS_LID_PANEL,              results[i]      -= 2.0 * ( LOG2_GAMMA - LOG_SQRT[i] ); ) )
+    
+    // Check for extreme cases
+    STATIC_LOOP( n, N, STATIC_COND( ONLY_FCN,   results[i]      = ( X[i] > 0.25 && Y[i] < 1e-5 ) ? -PI * EXPY[i] * ( bessel_factory.struve0[i] + bessel_factory.y0[i] ) : results[i]; ))
+    STATIC_LOOP( n, N, STATIC_COND( ONLY_FCNDR, results_dx[i]   = ( X[i] > 0.25 && Y[i] < 1e-5 ) ? PI * EXPY[i] * ( bessel_factory.y1[i] + bessel_factory.struve1[i] - 2.0 / PI ) : results_dx[i]; ))
+    STATIC_LOOP( n, N, STATIC_COND( ONLY_FCNDR, results_dx[i]   = ( X[i] < 1e-5 && Y[i] > 0.5 ) ? 0.0 : results_dx[i]; ))
+
+    // Calculate dFdY
+    STATIC_LOOP( n, N, STATIC_COND( ONLY_FCNDZ,                results_dy[i]    = - results[i] - 2.0 / SQRT[i];                                             ) )
+
 }
 
 
@@ -229,7 +288,8 @@ void        john_series(
                                                 WaveDispersionFONK      &wave_data,
                                                 cuscomplex*             G,
                                                 cuscomplex*             G_dr,
-                                                cuscomplex*             G_dz
+                                                cuscomplex*             G_dz,
+                                                cuscomplex*             G_dzeta
                         )
 {
     /**
@@ -259,21 +319,45 @@ void        john_series(
     // Calculate vertical distances between the source and
     // the field point
     cusfloat ccz[N];
+    cusfloat csz[N];
     cusfloat scz[N];
     cusfloat ci_g[N];
     cusfloat ci_g_dr[N];
     cusfloat ci_g_dz[N];
+    cusfloat ci_g_dzeta[N];
     cusfloat c_real[N];
     cusfloat c_real_dz[N];
+    cusfloat c_real_dzeta[N];
     cusfloat c_g_imag[N];
     cusfloat c_g_dr_imag[N];
     cusfloat c_g_dz_imag[N];
+    cusfloat c_g_dzeta_imag[N];
     cusfloat expsum[N];
     cusfloat expsum_dz[N];
+    cusfloat expsum_dzeta[N];
     cusfloat k0r[N];
     cusfloat knir[N];
     cusfloat knizetah[N];
     cusfloat knizh[N];
+    cusfloat rank_f[N];
+    cusfloat rank_dfdr[N];
+    cusfloat rank_dfdz[N];
+    cusfloat rank_dfdzeta[N];
+    cusfloat R2[N];
+    cusfloat r1_inv[N];
+    cusfloat r2_inv[N];
+    cusfloat r3_inv[N];
+    cusfloat r4_inv[N];
+    cusfloat r5_inv[N];
+    cusfloat r6_inv[N];
+    cusfloat r1_inv_2[N];
+    cusfloat r2_inv_2[N];
+    cusfloat r3_inv_2[N];
+    cusfloat r4_inv_2[N];
+    cusfloat r5_inv_2[N];
+    cusfloat r6_inv_2[N];
+    cusfloat v1[N];
+    cusfloat v2[N];
     cusfloat v3[N];
     cusfloat v4[N];
     cusfloat v5[N];
@@ -284,13 +368,110 @@ void        john_series(
     STATIC_COND( ONLY_FCN,      ( clear_vector<cusfloat,N>( c_g_imag )    );      )
     STATIC_COND( ONLY_FCNDR,    ( clear_vector<cusfloat,N>( c_g_dr_imag ) );      )
     STATIC_COND( ONLY_FCNDZ,    ( clear_vector<cusfloat,N>( c_g_dz_imag ) );      )
+    STATIC_COND( ONLY_FCNDZ,    ( clear_vector<cusfloat,N>( c_g_dzeta_imag ) );   )
 
     for ( std::size_t i=0; i<N; i++ )
     {
+        v1[i] = std::abs( z[i] - zeta[i] );
+    }
+
+    for ( std::size_t i=0; i<N; i++ )
+    {
+        v2[i] = z[i] + zeta[i] + 2.0 * h;
         v3[i] = z[i] + zeta[i];
         v4[i] = z[i] - zeta[i] + 2.0 * h;
         v5[i] = zeta[i] - z[i] + 2.0 * h;
         v6[i] = z[i] + zeta[i] + 4.0 * h;
+    }
+
+    // std::cout << "JS - R: " << R[0] << " - z: " << z[0] << " - zeta: " << zeta[0] << std::endl;
+
+    // Calculate rankine terms to substract from Green function
+    for ( std::size_t i=0; i<N; i++ )
+    {
+        R2[i] = pow2s( R[i] );
+    }
+
+    for ( std::size_t i=0; i<N; i++ )
+    {
+        r1_inv_2[i] = 1.0 / ( R2[i] + pow2s( v1[i] ) );
+        r2_inv_2[i] = 1.0 / ( R2[i] + pow2s( v2[i] ) );
+        r3_inv_2[i] = 1.0 / ( R2[i] + pow2s( v3[i] ) );
+        r4_inv_2[i] = 1.0 / ( R2[i] + pow2s( v4[i] ) );
+        r5_inv_2[i] = 1.0 / ( R2[i] + pow2s( v5[i] ) );
+        r6_inv_2[i] = 1.0 / ( R2[i] + pow2s( v6[i] ) );
+    }
+
+    lv_sqrt<cusfloat>( N, r1_inv_2, r1_inv );
+    lv_sqrt<cusfloat>( N, r2_inv_2, r2_inv );
+    lv_sqrt<cusfloat>( N, r3_inv_2, r3_inv );
+    lv_sqrt<cusfloat>( N, r4_inv_2, r4_inv );
+    lv_sqrt<cusfloat>( N, r5_inv_2, r5_inv );
+    lv_sqrt<cusfloat>( N, r6_inv_2, r6_inv );
+
+    for ( std::size_t i=0; i<N; i++ )
+    {
+        STATIC_COND( ONLY_FCN, rank_f[i] = r1_inv[i] + r2_inv[i] + r3_inv[i] + r4_inv[i] + r5_inv[i] + r6_inv[i]; )
+    }
+
+    for ( std::size_t i=0; i<N; i++ )
+    {
+        STATIC_COND( 
+                        ONLY_FCNDR, 
+                        rank_dfdr[i] = ( 
+                                            r1_inv[i] * r1_inv_2[i]
+                                            + 
+                                            r2_inv[i] * r2_inv_2[i]
+                                            + 
+                                            r3_inv[i] * r3_inv_2[i]
+                                            + 
+                                            r4_inv[i] * r4_inv_2[i]
+                                            + 
+                                            r5_inv[i] * r5_inv_2[i]
+                                            + 
+                                            r6_inv[i] * r6_inv_2[i]
+                                        ) * R[i];
+                )
+    }
+
+    for ( std::size_t i=0; i<N; i++ )
+    {
+        STATIC_COND( 
+                        ONLY_FCNDZ,
+                        rank_dfdz[i] = ( 
+                                            r1_inv[i] * r1_inv_2[i] * v1[i] * sign( v1[i] )
+                                            + 
+                                            r2_inv[i] * r2_inv_2[i] * v2[i]
+                                            + 
+                                            r3_inv[i] * r3_inv_2[i] * v3[i]
+                                            + 
+                                            r4_inv[i] * r4_inv_2[i] * v4[i]
+                                            -
+                                            r5_inv[i] * r5_inv_2[i] * v5[i]
+                                            + 
+                                            r6_inv[i] * r6_inv_2[i] * v6[i]
+                                        );
+                    )
+    }
+
+    for ( std::size_t i=0; i<N; i++ )
+    {
+        STATIC_COND( 
+                        ONLY_FCNDZ,
+                        rank_dfdzeta[i] = ( 
+                                                r1_inv[i] * r1_inv_2[i] * v1[i] * sign( v1[i] )
+                                                + 
+                                                r2_inv[i] * r2_inv_2[i] * v2[i]
+                                                + 
+                                                r3_inv[i] * r3_inv_2[i] * v3[i]
+                                                - 
+                                                r4_inv[i] * r4_inv_2[i] * v4[i]
+                                                +
+                                                r5_inv[i] * r5_inv_2[i] * v5[i]
+                                                + 
+                                                r6_inv[i] * r6_inv_2[i] * v6[i]
+                                            );
+                    )
     }
 
     // Calcuate real root series part
@@ -301,49 +482,80 @@ void        john_series(
 
     bessel_factory.calculate_cheby( N, k0r );
 
+    cusfloat c0, c1, c2, c3;
     for ( std::size_t i=0; i<N; i++ )
     {
+        c0 = exp(  k0 * v3[i] );
+        c1 = exp( -k0 * v4[i] );
+        c2 = exp( -k0 * v5[i] );
+        c3 = exp( -k0 * v6[i] );
+
         STATIC_COND( 
                         ONLY_FCN or ONLY_FCNDR,  
                         expsum[i]       = (
-                                            + exp( k0 * v3[i] )
-                                            + exp( -k0 * v4[i] )
-                                            + exp( -k0 * v5[i] )
-                                            + exp( -k0 * v6[i] )
+                                            + c0
+                                            + c1
+                                            + c2
+                                            + c3
                                         );
                     )
         
         STATIC_COND( 
                         ONLY_FCNDZ, 
                         expsum_dz[i]    = - (
-                                            - exp( k0 * v3[i] )
-                                            + exp( -k0 * v4[i] )
-                                            - exp( -k0 * v5[i] )
-                                            + exp( -k0 * v6[i] )
+                                            - c0
+                                            + c1
+                                            - c2
+                                            + c3
+                                        ) * k0;
+                    )
+
+        STATIC_COND( 
+                        ONLY_FCNDZ, 
+                        expsum_dzeta[i] = - (
+                                            - c0
+                                            - c1
+                                            + c2
+                                            + c3
                                         ) * k0;
                     )
     }
 
     for ( std::size_t i=0; i<N; i++ )
     {
-        STATIC_COND( ONLY_FCN or ONLY_FCNDR,    c_real[i]       = - wave_data.k0nu * expsum[i]; )
-        STATIC_COND( ONLY_FCNDZ,                c_real_dz[i]    = - wave_data.k0nu * expsum_dz[i]; )
+        STATIC_COND( ONLY_FCN or ONLY_FCNDR,    c_real[i]       = - wave_data.k0nu * expsum[i];         )
+        STATIC_COND( ONLY_FCNDZ,                c_real_dz[i]    = - wave_data.k0nu * expsum_dz[i];      )
+        STATIC_COND( ONLY_FCNDZ,                c_real_dzeta[i] = - wave_data.k0nu * expsum_dzeta[i];   )
     }
 
     for ( std::size_t i=0; i<N; i++ )
     {
-        STATIC_COND( ONLY_FCN,      G[i]    = + c_real[i] * ( bessel_factory.y0[i] - 1i * bessel_factory.j0[i] );       )
-        STATIC_COND( ONLY_FCNDR,    G_dr[i] = - c_real[i] * k0 * ( bessel_factory.y1[i] - 1i * bessel_factory.j1[i] );  )
-        STATIC_COND( ONLY_FCNDZ,    G_dz[i] = + c_real_dz[i] * ( bessel_factory.y0[i] - 1i * bessel_factory.j0[i] );    )
+        STATIC_COND( ONLY_FCN,                  G[i]            = + c_real[i] * ( bessel_factory.y0[i] - 1i * bessel_factory.j0[i] );       )
+        STATIC_COND( ONLY_FCNDR,                G_dr[i]         = - c_real[i] * k0 * ( bessel_factory.y1[i] - 1i * bessel_factory.j1[i] );  )
+        STATIC_COND( ONLY_FCNDZ,                G_dz[i]         = + c_real_dz[i] * ( bessel_factory.y0[i] - 1i * bessel_factory.j0[i] );    )
+        STATIC_COND( ONLY_FCNDZ,                G_dzeta[i]      = + c_real_dzeta[i] * ( bessel_factory.y0[i] - 1i * bessel_factory.j0[i] ); )
+    }
+
+    // std::cout << "G:        " << G[0] << std::endl;
+    // std::cout << "G_dr:     " << G_dr[0] << std::endl;
+    // std::cout << "G_dz:     " << G_dz[0] << std::endl;
+    // std::cout << "G_dzeta:  " << G_dzeta[0] << std::endl;
+
+    // Pre-calculate static loop terms
+    for ( std::size_t i=0; i<N; i++ )
+    {
+        zetah[i]    = zeta[i] + h;
+        zh[i]       = z[i] + h;
     }
 
     // Calculate imag root series part
-    cusfloat    c_max       = 0.0;
-    cusfloat    c_g_max     = 0.0;
-    cusfloat    c_g_dr_max  = 0.0;
-    cusfloat    c_g_dz_max  = 0.0;
-    int         count_k     = 0;
-    cusfloat    kni         = 0.0;
+    cusfloat    c_max           = 0.0;
+    cusfloat    c_g_max         = 0.0;
+    cusfloat    c_g_dr_max      = 0.0;
+    cusfloat    c_g_dz_max      = 0.0;
+    cusfloat    c_g_dzeta_max   = 0.0;
+    int         count_k         = 0;
+    cusfloat    kni             = 0.0;
 
     while (true)
     {
@@ -351,11 +563,7 @@ void        john_series(
         kni = wave_data.kn[count_k];
 
         // Calculate local loop variables
-        for ( std::size_t i=0; i<N; i++ )
-        {
-            zetah[i]    = zeta[i] + h;
-            zh[i]       = z[i] + h;
-        }
+        
 
         for ( std::size_t i=0; i<N; i++ )
         {
@@ -366,14 +574,16 @@ void        john_series(
 
         for ( std::size_t i=0; i<N; i++ )
         {
-            ccz[i]     = 4.0 * wave_data.knnu[count_k] * cos( knizetah[i] );
-            scz[i]     = ccz[i];
+            ccz[i]      = 4.0 * wave_data.knnu[count_k] * cos( knizetah[i] );
+            scz[i]      = ccz[i];
+            csz[i]      = 4.0 * wave_data.knnu[count_k] * cos( knizh[i] );
         }
 
         for ( std::size_t i=0; i<N; i++ )
         {
-            STATIC_COND( ONLY_FCN or ONLY_FCNDR,    ccz[i]     = cos( knizh[i] ) * ccz[i]; )
-            STATIC_COND( ONLY_FCNDZ,                scz[i]     = sin( knizh[i] ) * scz[i]; )
+            STATIC_COND( ONLY_FCN or ONLY_FCNDR,    ccz[i]     = cos( knizh[i] )    * ccz[i]; )
+            STATIC_COND( ONLY_FCNDZ,                scz[i]     = sin( knizh[i] )    * scz[i]; )
+            STATIC_COND( ONLY_FCNDZ,                csz[i]     = sin( knizetah[i] ) * csz[i]; )
         }
 
         // Calculate Bessel function for kni*R
@@ -382,16 +592,20 @@ void        john_series(
         // Calculate i term of the series
         for ( std::size_t i=0; i<N; i++ )
         {
-            STATIC_COND( ONLY_FCN,      ci_g[i]     = + ccz[i] * bessel_factory.k0[i];          )
-            STATIC_COND( ONLY_FCNDR,    ci_g_dr[i]  = - ccz[i] * kni * bessel_factory.k1[i];    )
-            STATIC_COND( ONLY_FCNDZ,    ci_g_dz[i]  = - scz[i] * kni * bessel_factory.k0[i];    )
+            STATIC_COND( ONLY_FCN,      ci_g[i]         = + ccz[i] * bessel_factory.k0[i];          )
+            STATIC_COND( ONLY_FCNDR,    ci_g_dr[i]      = - ccz[i] * kni * bessel_factory.k1[i];    )
+            STATIC_COND( ONLY_FCNDZ,    ci_g_dz[i]      = - scz[i] * kni * bessel_factory.k0[i];    )
+            STATIC_COND( ONLY_FCNDZ,    ci_g_dzeta[i]   = - csz[i] * kni * bessel_factory.k0[i];    )
         }
+
+        // std::cout << "kn: " << kni << " - TG: " << ci_g[0] << " - TdGdR: " << ci_g_dr[0] << " - TdGdz: " << ci_g_dz[0] << " - TdGdzeta: " << ci_g_dzeta[0] << std::endl;
 
         for ( std::size_t i=0; i<N; i++ )
         {
-            STATIC_COND( ONLY_FCN,      c_g_imag[i]     += ci_g[i];     )
-            STATIC_COND( ONLY_FCNDR,    c_g_dr_imag[i]  += ci_g_dr[i];  )
-            STATIC_COND( ONLY_FCNDZ,    c_g_dz_imag[i]  += ci_g_dz[i];  )
+            STATIC_COND( ONLY_FCN,      c_g_imag[i]         += ci_g[i];         )
+            STATIC_COND( ONLY_FCNDR,    c_g_dr_imag[i]      += ci_g_dr[i];      )
+            STATIC_COND( ONLY_FCNDZ,    c_g_dz_imag[i]      += ci_g_dz[i];      )
+            STATIC_COND( ONLY_FCNDZ,    c_g_dzeta_imag[i]   += ci_g_dzeta[i];   )
         }
 
         // std::cout << "knnu: " << wave_data.knnu[count_k] << " - knir: " << knir[0] << " - ccz: " << ccz[0] << " - scz: " << scz[0] << " - besselk0(kni*R): " << bessel_factory.k0[0] << " - G_imag: " << c_g_imag[0] << std::endl;
@@ -399,29 +613,32 @@ void        john_series(
         // Check for convergence
         for ( std::size_t i=0; i<N; i++ )
         {
-            STATIC_COND( ONLY_FCN,      ci_g[i]         = std::abs( ci_g[i] );      )
-            STATIC_COND( ONLY_FCNDR,    ci_g_dr[i]      = std::abs( ci_g_dr[i] );   )
-            STATIC_COND( ONLY_FCNDZ,    ci_g_dz[i]      = std::abs( ci_g_dz[i] );   )
+            STATIC_COND( ONLY_FCN,      ci_g[i]         = std::abs( ci_g[i] );          )
+            STATIC_COND( ONLY_FCNDR,    ci_g_dr[i]      = std::abs( ci_g_dr[i] );       )
+            STATIC_COND( ONLY_FCNDZ,    ci_g_dz[i]      = std::abs( ci_g_dz[i] );       )
+            STATIC_COND( ONLY_FCNDZ,    ci_g_dzeta[i]   = std::abs( ci_g_dzeta[i] );    )
         }
 
-        c_g_max     = 0.0;
-        c_g_dr_max  = 0.0;
-        c_g_dz_max  = 0.0;
+        c_g_max         = 0.0;
+        c_g_dr_max      = 0.0;
+        c_g_dz_max      = 0.0;
+        c_g_dzeta_max   = 0.0;
         for ( std::size_t i=0; i<N; i++ )
         {
-            STATIC_COND( ONLY_FCN,      c_g_max         = std::max( c_g_max, ci_g[i] );         )
-            STATIC_COND( ONLY_FCNDR,    c_g_dr_max      = std::max( c_g_dr_max, ci_g_dr[i] );   )
-            STATIC_COND( ONLY_FCNDZ,    c_g_dz_max      = std::max( c_g_dz_max, ci_g_dz[i] );   )
+            STATIC_COND( ONLY_FCN,      c_g_max         = std::max( c_g_max, ci_g[i] );             )
+            STATIC_COND( ONLY_FCNDR,    c_g_dr_max      = std::max( c_g_dr_max, ci_g_dr[i] );       )
+            STATIC_COND( ONLY_FCNDZ,    c_g_dz_max      = std::max( c_g_dz_max, ci_g_dz[i] );       )
+            STATIC_COND( ONLY_FCNDZ,    c_g_dzeta_max   = std::max( c_g_dzeta_max, ci_g_dzeta[i] ); )
         }
 
-        c_max = std::max( c_g_max, std::max( c_g_dr_max, c_g_dz_max ) );
+        c_max = std::max( c_g_max, std::max( c_g_dr_max, std::max( c_g_dz_max, c_g_dzeta_max ) ) );
         if ( c_max < 1e-6 )
         {
             break;
         }
 
         // Check for the limit in imaginary roots
-        #ifdef DEBUG_BUILD
+        // #ifdef DEBUG_BUILD
         if (count_k > (wave_data.num_kn-2))
         {
             std::cerr << "Jonh series could not converge up to the precision required with" << std::endl;
@@ -438,20 +655,37 @@ void        john_series(
             std::cerr << "* Current term value is: " << ci_g[0] << " - " << ci_g_dr[0] << " - " << ci_g_dz[0] << std::endl;
             throw std::runtime_error("Jonh series value could not converge. See log file for details.");
         }
-        #endif
+        // #endif
 
         // Update counter
         count_k++;
     }
 
     // Add series values
+    // std::cout << "Gsum: " << c_g_imag[0] << " - dGdRsum: " << c_g_imag[0] << " - dGdzsum: " << c_g_dz_imag[0] << std::endl;
+    // std::cout << "G_dzeta:  " << G_dzeta[0] << " - c_g_dzeta_imag: " << c_g_dzeta_imag[0] << std::endl;
     for ( std::size_t i=0; i<N; i++ )
     {
-        STATIC_COND( ONLY_FCN,      G[i]    += c_g_imag[i];     )
-        STATIC_COND( ONLY_FCNDR,    G_dr[i] += c_g_dr_imag[i];  )
-        STATIC_COND( ONLY_FCNDZ,    G_dr[i] += c_g_dz_imag[i];  )
+        STATIC_COND( ONLY_FCN,      G[i]        += c_g_imag[i];         )
+        STATIC_COND( ONLY_FCNDR,    G_dr[i]     += c_g_dr_imag[i];      )
+        STATIC_COND( ONLY_FCNDZ,    G_dz[i]     += c_g_dz_imag[i];      )
+        STATIC_COND( ONLY_FCNDZ,    G_dzeta[i]  += c_g_dzeta_imag[i];   )
     }
 
+    // std::cout << "G:        " << G[0] << std::endl;
+    // std::cout << "G_dr:     " << G_dr[0] << std::endl;
+    // std::cout << "G_dz:     " << G_dz[0] << std::endl;
+    // std::cout << "G_dzeta:  " << G_dzeta[0] << std::endl;
+
+    // Substract rankine terms
+    // for ( std::size_t i=0; i<N; i++ )
+    // {
+    //     STATIC_COND( ONLY_FCN,      G[i]    -= cuscomplex( rank_f[i], 0.0 ); )
+    //     STATIC_COND( ONLY_FCN,      G_dr[i] -= cuscomplex( rank_dfdr[i], 0.0 ); )
+    //     STATIC_COND( ONLY_FCN,      G_dz[i] -= cuscomplex( rank_dfdz[i], 0.0 ); )
+    // }
+
+    // std::cout << "JS res -> G: " << G[0] << " - dGdr: " << G_dr[0] << " - dGdz: " << G_dz[0] << std::endl;
 }
 
 
@@ -832,15 +1066,16 @@ void        wave_term_fin_depth_integral(
 
 template<std::size_t N, int mode_f, int mode_dfdr, int mode_dfdz, int mode_fslid>
 void        wave_term_integral(
-                                                cusfloat*                   R,
-                                                cusfloat*                   z,
+                                                cusfloat*                   Ri,
+                                                cusfloat*                   zi,
                                                 cusfloat*                   zeta,
                                                 cusfloat                    h,
                                                 BesselFactoryVecUpTo<N>     &bessel_factory,
                                                 WaveDispersionFONK          &wave_data,
                                                 cuscomplex*                 G,
                                                 cuscomplex*                 G_dr,
-                                                cuscomplex*                 G_dz
+                                                cuscomplex*                 G_dz,
+                                                cuscomplex*                 G_dzeta
                                         )
 {
     /**
@@ -865,6 +1100,15 @@ void        wave_term_integral(
     cusfloat k0     = wave_data.k0;
     cusfloat nu     = wave_data.nu;
     cusfloat k0nu   = wave_data.k0nu;
+
+    // Check minimum distances from Source to field point
+    cusfloat R[N];
+    cusfloat z[N];
+    for ( std::size_t i=0; i<N; i++ )
+    {
+        R[i] = ( Ri[i] < 1e-5 ) ? 1e-5: Ri[i];
+        z[i] = ( std::abs( zi[i]-zeta[i] ) < 1e-5 ) ? zi[i]-1e-5: zi[i];
+    }
 
     // Allocate space for local variables
     cusfloat A[N];
@@ -910,9 +1154,16 @@ void        wave_term_integral(
     // Calculate sign( z - zeta ) for dB case
     for ( std::size_t i=0; i<N; i++ )
     {
-        sg_z_p_zeta[i] = sign( z[i] + zeta[i] );
-        sg_z_m_zeta[i] = sign( z[i] - zeta[i] );
+        sg_z_p_zeta[i]  = sign( z[i] + zeta[i] );
+        sg_z_m_zeta[i]  = sign( z[i] - zeta[i] );
     }
+
+    // for ( std::size_t i=0; i<N; i++ )
+    // {
+    //     sg_z_p_zeta[i] = ( v2[i] < FS_SEL_THR ) ? 0.0 : sg_z_p_zeta[i];
+    //     // sg_z_p_zeta[i] = ( v2[i] < FS_SEL_THR ) ? -1.0 : -1.0;
+    //     sg_z_m_zeta[i] = ( v0[i] < FS_SEL_THR ) ? 0.0 : sg_z_m_zeta[i];
+    // }
 
     // Calculate integrals expansion hyperparameters
     cusfloat H = nu * h;
@@ -951,6 +1202,8 @@ void        wave_term_integral(
     std::size_t b1_gt1_pos[N];
     cusfloat    X_gt1[N];
     cusfloat    Y_gt1[N];
+
+    // std::cout << "WI - R: " << R[0] << " - z: " << z[0] << " - zeta: " << zeta[0] << std::endl;
 
     for ( std::size_t i=0; i<N; i++ )
     {
@@ -1021,19 +1274,31 @@ void        wave_term_integral(
     cusfloat G_real[N];
     cusfloat G_dr_real[N];
     cusfloat G_dz_real[N];
+    cusfloat G_dzeta_real[N];
+
+    // for ( std::size_t i=0; i<N; i++ )
+    // {
+    //     STATIC_COND( ONLY_FCN,      G_real[i]       = 0.0;      )
+    //     STATIC_COND( ONLY_FCNDR,    G_dr_real[i]    = 0.0;   )
+    //     STATIC_COND( ONLY_FCNDZ,    G_dz_real[i]    = 0.0;   )
+    // }
 
     for ( std::size_t i=0; i<N; i++ )
     {
         STATIC_COND( ONLY_FCN,      G_real[i]       = res_fcn0[i];      )
         STATIC_COND( ONLY_FCNDR,    G_dr_real[i]    = res_fcn0_da[i];   )
         STATIC_COND( ONLY_FCNDZ,    G_dz_real[i]    = res_fcn0_db[i] * sg_z_m_zeta[i];   )
+        STATIC_COND( ONLY_FCNDZ,    G_dzeta_real[i] = - res_fcn0_db[i] * sg_z_m_zeta[i];   )
     }
+
+    
 
     for ( std::size_t i=0; i<b1_lt1_count; i++ )
     {
         STATIC_COND( ONLY_FCN,      G_real[b1_lt1_pos[i]]       += res_fcn1_blt1[i];    )
         STATIC_COND( ONLY_FCNDR,    G_dr_real[b1_lt1_pos[i]]    += res_fcn1_blt1_da[i]; )
         STATIC_COND( ONLY_FCNDZ,    G_dz_real[b1_lt1_pos[i]]    += res_fcn1_blt1_db[i]; )
+        STATIC_COND( ONLY_FCNDZ,    G_dzeta_real[b1_lt1_pos[i]] += res_fcn1_blt1_db[i]; )
     }
 
     for ( std::size_t i=0; i<b1_gt1_count; i++ )
@@ -1041,6 +1306,7 @@ void        wave_term_integral(
         STATIC_COND( ONLY_FCN,      G_real[b1_gt1_pos[i]]       += res_fcn1_bgt1[i];    )
         STATIC_COND( ONLY_FCNDR,    G_dr_real[b1_gt1_pos[i]]    += res_fcn1_bgt1_da[i]; )
         STATIC_COND( ONLY_FCNDZ,    G_dz_real[b1_gt1_pos[i]]    += res_fcn1_bgt1_db[i]; )
+        STATIC_COND( ONLY_FCNDZ,    G_dzeta_real[b1_gt1_pos[i]] += res_fcn1_bgt1_db[i]; )
     }
 
     cusfloat h2  = h * h;
@@ -1050,24 +1316,28 @@ void        wave_term_integral(
         STATIC_COND( ONLY_FCN,      G_real[i]       /= h;   )
         STATIC_COND( ONLY_FCNDR,    G_dr_real[i]    /= h2;  )
         STATIC_COND( ONLY_FCNDZ,    G_dz_real[i]    /= h2;  )
+        STATIC_COND( ONLY_FCNDZ,    G_dzeta_real[i] /= h2;  )
     }
 
     for ( std::size_t i=0; i<b1_gt1_count; i++ )
     {
         STATIC_COND( ONLY_FCN,      G_real[b1_gt1_pos[i]]       += nu * res_fxy_bgt1[i];        )
         STATIC_COND( ONLY_FCNDR,    G_dr_real[b1_gt1_pos[i]]    += nu2 * res_fxy_bgt1_dx[i];    )
+        // STATIC_COND( ONLY_FCNDZ,    G_dz_real[b1_gt1_pos[i]]    -= nu2 * res_fxy_bgt1_dy[i];    )
         STATIC_COND( ONLY_FCNDZ,    G_dz_real[b1_gt1_pos[i]]    += nu2 * res_fxy_bgt1_dy[i] * sg_z_p_zeta[i];    )
+        STATIC_COND( ONLY_FCNDZ,    G_dzeta_real[b1_gt1_pos[i]] += nu2 * res_fxy_bgt1_dy[i] * sg_z_p_zeta[i];    )
     }
 
     // for ( std::size_t i=0; i<N; i++ )
     // {
     //     STATIC_COND( ONLY_FCN,      G_real[i]       = nu * res_fxy_bgt1[i];        )
     //     STATIC_COND( ONLY_FCNDR,    G_dr_real[i]    = nu2 * res_fxy_bgt1_dx[i];    )
-    //     STATIC_COND( ONLY_FCNDZ,    G_dz_real[i]    = nu2 * res_fxy_bgt1_dy[i] * sg_z_p_zeta[i];    )
+    //     STATIC_COND( ONLY_FCNDZ,    G_dz_real[i]    = -nu2 * res_fxy_bgt1_dy[i];    )
+    //     // STATIC_COND( ONLY_FCNDZ,    G_dz_real[i]    = nu2 * res_fxy_bgt1_dy[i] * sg_z_p_zeta[i];    )
     // }
 
     // Calculate exponential terms for imaginary part
-    cusfloat expsum[N], expsum_dz[N];
+    cusfloat expsum[N], expsum_dz[N], expsum_dzeta[N];
     cusfloat c0 = 0.0, c1 = 0.0, c2 = 0.0, c3 = 0.0;
     cusfloat m0 = 0.0;
     for ( std::size_t i=0; i<N; i++ )
@@ -1081,8 +1351,10 @@ void        wave_term_integral(
         // Calculate exponential sumation
         m0  = c1 + c3;
 
-        STATIC_COND( ONLY_FCN or ONLY_FCNDR,    expsum[i]       = m0 + c0 + c2;                             )
-        STATIC_COND( ONLY_FCNDZ,                expsum_dz[i]    = m0 + c0 * sign( z[i] + zeta[i] ) - c2;    )
+        STATIC_COND( ONLY_FCN or ONLY_FCNDR,    expsum[i]       = m0 + c0 + c2;                         )
+        // STATIC_COND( ONLY_FCNDZ,                expsum_dz[i]    = m0 - c0 - c2;    )
+        STATIC_COND( ONLY_FCNDZ,                expsum_dz[i]    = m0 + c0 * sg_z_p_zeta[i] - c2;        )
+        STATIC_COND( ONLY_FCNDZ,                expsum_dzeta[i] = c0 * sg_z_p_zeta[i] - c1 + c2 + c3;   )
     }
 
     // Calculate beseel functions
@@ -1095,24 +1367,156 @@ void        wave_term_integral(
         STATIC_COND( ONLY_FCNDR,                j1_vec[i] = besselj1( k0 * R[i] ); )
     }
 
-    // Calculate green function values
-    for ( std::size_t i=0; i<N; i++ )
-    {
-        STATIC_COND( ONLY_FCNDR, G_dr_real[i] = ( R[i] < 1e-4 ) ? 0.0 : G_dr_real[i]; )
-    }
+    // // Calculate green function values
+    // for ( std::size_t i=0; i<N; i++ )
+    // {
+    //     STATIC_COND( ONLY_FCNDR, G_dr_real[i] = ( R[i] < 1e-4 ) ? 0.0 : G_dr_real[i]; )
+    // }
 
     for ( std::size_t i=0; i<N; i++ )
     {
-        STATIC_COND( ONLY_FCN, G[i]      = cuscomplex( G_real[i], k0nu * expsum[i] * j0_vec[i]               ); )
-        STATIC_COND( ONLY_FCNDR, G_dr[i] = cuscomplex( G_dr_real[i], -k0nu * expsum[i] * j1_vec[i] * k0      ); )
-        STATIC_COND( ONLY_FCNDZ, G_dz[i] = cuscomplex( G_dz_real[i], -k0nu * expsum_dz[i] * j0_vec[i] * k0   ); )
+        STATIC_COND( ONLY_FCN,      G[i]       = cuscomplex( G_real[i],             k0nu * expsum[i] * j0_vec[i]               ); )
+        STATIC_COND( ONLY_FCNDR,    G_dr[i]    = cuscomplex( G_dr_real[i],         -k0nu * expsum[i] * j1_vec[i] * k0          ); )
+        STATIC_COND( ONLY_FCNDZ,    G_dz[i]    = cuscomplex( G_dz_real[i],         -k0nu * expsum_dz[i] * j0_vec[i] * k0       ); )
+        STATIC_COND( ONLY_FCNDZ,    G_dzeta[i] = cuscomplex( G_dzeta_real[i],      -k0nu * expsum_dzeta[i] * j0_vec[i] * k0    ); )
     }
+
+
+    // cusfloat rank_f[N];
+    // cusfloat rank_dfdr[N];
+    // cusfloat rank_dfdz[N];
+    // cusfloat rank_dfdzeta[N];
+    // cusfloat R2[N];
+    // cusfloat r1_inv[N];
+    // cusfloat r2_inv[N];
+    // cusfloat r3_inv[N];
+    // cusfloat r4_inv[N];
+    // cusfloat r5_inv[N];
+    // cusfloat r6_inv[N];
+    // cusfloat r1_inv_2[N];
+    // cusfloat r2_inv_2[N];
+    // cusfloat r3_inv_2[N];
+    // cusfloat r4_inv_2[N];
+    // cusfloat r5_inv_2[N];
+    // cusfloat r6_inv_2[N];
+    // // cusfloat v0[N];
+    // // cusfloat v1[N];
+
+    // for ( std::size_t i=0; i<N; i++ )
+    // {
+    //     v0[i] = std::abs( z[i] - zeta[i] );
+    // }
+
+    // for ( std::size_t i=0; i<N; i++ )
+    // {
+    //     v1[i] = z[i] + zeta[i] + 2.0 * h;
+    // }
+
+    // //Calculate rankine terms to substract from Green function
+    // for ( std::size_t i=0; i<N; i++ )
+    // {
+    //     R2[i] = pow2s( R[i] );
+    // }
+
+    // for ( std::size_t i=0; i<N; i++ )
+    // {
+    //     r1_inv_2[i] = 1.0 / ( R2[i] + pow2s( v0[i] ) );
+    //     r2_inv_2[i] = 1.0 / ( R2[i] + pow2s( v1[i] ) );
+    //     r3_inv_2[i] = 1.0 / ( R2[i] + pow2s( v2[i] ) );
+    //     r4_inv_2[i] = 1.0 / ( R2[i] + pow2s( v3[i] ) );
+    //     r5_inv_2[i] = 1.0 / ( R2[i] + pow2s( v4[i] ) );
+    //     r6_inv_2[i] = 1.0 / ( R2[i] + pow2s( v5[i] ) );
+    // }
+
+    // lv_sqrt<cusfloat>( N, r1_inv_2, r1_inv );
+    // lv_sqrt<cusfloat>( N, r2_inv_2, r2_inv );
+    // lv_sqrt<cusfloat>( N, r3_inv_2, r3_inv );
+    // lv_sqrt<cusfloat>( N, r4_inv_2, r4_inv );
+    // lv_sqrt<cusfloat>( N, r5_inv_2, r5_inv );
+    // lv_sqrt<cusfloat>( N, r6_inv_2, r6_inv );
+
+    // for ( std::size_t i=0; i<N; i++ )
+    // {
+    //     STATIC_COND( ONLY_FCN, rank_f[i] = r1_inv[i] + r2_inv[i] + r3_inv[i] + r4_inv[i] + r5_inv[i] + r6_inv[i]; )
+    // }
+
+    // for ( std::size_t i=0; i<N; i++ )
+    // {
+    //     STATIC_COND( 
+    //                     ONLY_FCNDR, 
+    //                     rank_dfdr[i] = -( 
+    //                                         r1_inv[i] * r1_inv_2[i]
+    //                                         + 
+    //                                         r2_inv[i] * r2_inv_2[i]
+    //                                         + 
+    //                                         r3_inv[i] * r3_inv_2[i]
+    //                                         + 
+    //                                         r4_inv[i] * r4_inv_2[i]
+    //                                         + 
+    //                                         r5_inv[i] * r5_inv_2[i]
+    //                                         + 
+    //                                         r6_inv[i] * r6_inv_2[i]
+    //                                     ) * R[i];
+    //             )
+    // }
+
+    // for ( std::size_t i=0; i<N; i++ )
+    // {
+    //     STATIC_COND( 
+    //                     ONLY_FCNDZ,
+    //                     rank_dfdz[i] = -( 
+    //                                         r1_inv[i] * r1_inv_2[i] * v0[i] * sign( v0[i] )
+    //                                         + 
+    //                                         r2_inv[i] * r2_inv_2[i] * v1[i]
+    //                                         + 
+    //                                         r3_inv[i] * r3_inv_2[i] * v2[i]
+    //                                         + 
+    //                                         r4_inv[i] * r4_inv_2[i] * v3[i]
+    //                                         -
+    //                                         r5_inv[i] * r5_inv_2[i] * v4[i]
+    //                                         + 
+    //                                         r6_inv[i] * r6_inv_2[i] * v5[i]
+    //                                     );
+    //                 )
+    // }
+
+    // for ( std::size_t i=0; i<N; i++ )
+    // {
+    //     STATIC_COND( 
+    //                     ONLY_FCNDZ,
+    //                     rank_dfdzeta[i] = -( 
+    //                                         r1_inv[i] * r1_inv_2[i] * v0[i] * sign( v0[i] )
+    //                                         + 
+    //                                         r2_inv[i] * r2_inv_2[i] * v1[i]
+    //                                         + 
+    //                                         r3_inv[i] * r3_inv_2[i] * v2[i]
+    //                                         - 
+    //                                         r4_inv[i] * r4_inv_2[i] * v3[i]
+    //                                         +
+    //                                         r5_inv[i] * r5_inv_2[i] * v4[i]
+    //                                         + 
+    //                                         r6_inv[i] * r6_inv_2[i] * v5[i]
+    //                                     );
+    //                 )
+    // }
+
+    // // Substract rankine terms
+    // for ( std::size_t i=0; i<N; i++ )
+    // {
+    //     STATIC_COND( ONLY_FCN,      G[i]        += cuscomplex( rank_f[i], 0.0        ); )
+    //     STATIC_COND( ONLY_FCN,      G_dr[i]     += cuscomplex( rank_dfdr[i], 0.0     ); )
+    //     STATIC_COND( ONLY_FCN,      G_dz[i]     += cuscomplex( rank_dfdz[i], 0.0     ); )
+    //     STATIC_COND( ONLY_FCN,      G_dzeta[i]  += cuscomplex( rank_dfdzeta[i], 0.0  ); )
+    // }
+
+    // std::cout << "WI res -> G: " << G[0] << " - dGdr: " << G_dr[0] << " - dGdz: " << G_dz[0] << std::endl;
+
 
     // for ( std::size_t i=0; i<N; i++ )
     // {
     //     STATIC_COND( ONLY_FCN, G[i]         = cuscomplex( G_real[i],    2.0 * PI * nu * std::exp( -nu * v2[i] ) * j0_vec[i]             ); )
     //     STATIC_COND( ONLY_FCNDR, G_dr[i]    = cuscomplex( G_dr_real[i], -2.0 * PI * pow2s( nu ) * std::exp( -nu * v2[i] ) * j1_vec[i]   ); )
-    //     STATIC_COND( ONLY_FCNDZ, G_dz[i]    = cuscomplex( G_dz_real[i], 2.0 * PI * pow2s( nu ) * std::exp( -nu * v2[i] ) * j0_vec[i]    ); )
+    //     STATIC_COND( ONLY_FCNDZ, G_dz[i]    = cuscomplex( G_dz_real[i], -2.0 * PI * pow2s( nu ) * std::exp( -nu * v2[i] ) * j0_vec[i] * sg_z_p_zeta[i]    ); )
     // }
 
 }

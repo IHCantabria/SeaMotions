@@ -114,7 +114,8 @@ template<
                                                                         WaveDispersionFONK      &wave_data,
                                                                         cuscomplex*             G,
                                                                         cuscomplex*             G_dr,
-                                                                        cuscomplex*             G_dz
+                                                                        cuscomplex*             G_dz,
+                                                                        cuscomplex*             G_dzeta
                                                                 );
 
 
@@ -122,7 +123,8 @@ template<
             std::size_t N, 
             int         mode_f, 
             int         mode_dfdr, 
-            int         mode_dfdz
+            int         mode_dfdz,
+            int         mode_fslid
         >                           void        wave_term_integral(
                                                                         cusfloat*                   R,
                                                                         cusfloat*                   z,
@@ -132,7 +134,8 @@ template<
                                                                         WaveDispersionFONK          &wave_data,
                                                                         cuscomplex*                 G,
                                                                         cuscomplex*                 G_dr,
-                                                                        cuscomplex*                 G_dz
+                                                                        cuscomplex*                 G_dz,
+                                                                        cuscomplex*                 G_dzeta
                                                                     );
 
 
