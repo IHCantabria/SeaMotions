@@ -176,6 +176,9 @@ struct ChebyshevEvaluatorBaseVector
             }
         }
 
+        // Scale results if any
+        STATIC_COND( Derived::fcn_log_scale, STATIC_LOOP( n, N, result[i] = std::pow( 10.0, result[i] ); ) )
+
     }
 
     static void get_block_props( const std::size_t n, cusfloat* xs, cusfloat* ys, std::size_t* sp, std::size_t* bd, std::size_t* ntv )
