@@ -35,6 +35,7 @@ public:
     int         field_points_nb     = 0;
     int         field_points_np     = 0;
     T*          field_values        = nullptr;
+    int         field_values_np     = 0;
     int         fields_np           = 0;
     bool        is_sysmat_field     = false;
     int         start_col           = 0;
@@ -72,8 +73,32 @@ public:
                 );
 
     // Define class methods
+    void clear_field_values( void );
+
+    void clear_sysmat( void );
 
 };
+
+
+template<typename T>
+void MatLinGroup<T>::clear_field_values(
+                                            void
+                                        )
+{
+    clear_vector( this->sysmat_nrows * this->fields_np, this->field_values );
+}
+
+
+template<typename T>
+void MatLinGroup<T>::clear_sysmat(
+                                            void
+                                        )
+{
+    clear_vector( this->field_values_np, this->field_values );
+    clear_vector( this->sysmat_nrows * this->sysmat_ncols, this->sysmat );
+}
+
+
 
 
 template<typename T>
@@ -150,6 +175,9 @@ MatLinGroup<T>::MatLinGroup(
     this->sysmat_nrows      = sysmat_nrows_in;
     this->sysmat_ncols      = sysmat_ncols_in;
 
+    // Define size dependent constant attributes
+    this->field_values_np   = this->fields_np * this->sysmat_nrows;
+
     // Allocate space for the system matrixes
     this->sysmat            = generate_empty_vector<T>( this->sysmat_nrows * this->sysmat_ncols );
     this->sysmat_steady     = generate_empty_vector<T>( this->sysmat_nrows * this->sysmat_ncols );
@@ -158,7 +186,7 @@ MatLinGroup<T>::MatLinGroup(
     this->cog_to_field_points   = generate_empty_vector<cusfloat>( this->_dims_np * this->sysmat_nrows );
     this->field_points          = generate_empty_vector<cusfloat>( this->_dims_np * this->sysmat_nrows );
     this->field_points_cnp      = generate_empty_vector<int>( this->field_points_nb+1 );
-    this->field_values          = generate_empty_vector<T>( this->fields_np * this->sysmat_nrows );
+    this->field_values          = generate_empty_vector<T>( this->field_values_np );
 }
 
 
