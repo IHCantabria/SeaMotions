@@ -13,7 +13,7 @@
 #include "../math/math_interface.hpp"
 #include "../math/math_tools.hpp"
 #include "../math/special_math.hpp"
-#include "pulsating_fin_depth_v2.hpp"
+#include "pulsating_fin_depth.hpp"
 #include "chebyshev_evaluator_interface.hpp"
 
 // Include namespaces
