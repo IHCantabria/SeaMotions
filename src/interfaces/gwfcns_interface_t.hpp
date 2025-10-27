@@ -4,7 +4,7 @@
 // Include local modules
 #include "../containers/source_node.hpp"
 #include "../green/integrals_db.hpp"
-#include "../green/pulsating_fin_depth_v2.hpp"
+#include "../green/pulsating_fin_depth.hpp"
 #include "../waves/wave_dispersion_fo.hpp"
 
 
@@ -23,6 +23,7 @@ protected:
     SourceNode*                 _source_i               = nullptr;
     SourceNode*                 _source_j               = nullptr;
     cuscomplex                  _source_value           = 0.0;
+    cusfloat                    _z[N];
     cusfloat                    _water_depth            = 0.0;
     WaveDispersionFONK          _wave_data;
 
@@ -34,10 +35,12 @@ protected:
 public:
     // Define public attributes
     cuscomplex    G[N];         // Green function value
-    cuscomplex    dG_dn[N];     // Green function normal derivative
+    cuscomplex    dG_dn_sf[N];  // Green function normal derivative
+    cuscomplex    dG_dn_pf[N];  // Green function normal derivative
     cuscomplex    dG_dx[N];     // Green function x derivative
     cuscomplex    dG_dy[N];     // Green function y derivative
     cuscomplex    dG_dz[N];     // Green function z derivative
+    cuscomplex    dG_dzeta[N];  // Green function zeta derivative
 
     // Define constructors and destructors
     GWFcnsInterfaceT( )   = default;
@@ -51,13 +54,20 @@ public:
                 );
 
     // Define class methods
+    void        initialize( 
+                                    cusfloat    ang_freq,
+                                    cusfloat    water_depth,
+                                    cusfloat    grav_acc
+                            );
+    
     template<auto Kernel>
     void        operator()( 
-                                cusfloat*   xi,
-                                cusfloat*   eta,
-                                cusfloat*   x,
-                                cusfloat*   y,
-                                cusfloat*   z
+                                    cusfloat*   xi,
+                                    cusfloat*   eta,
+                                    cusfloat*   x,
+                                    cusfloat*   y,
+                                    cusfloat*   z,
+                                    bool        verbose=false
                            );
 
     void        set_ang_freq(

@@ -22,6 +22,23 @@ void    GWFcnsInterfaceT<N>::_initialize(
 
 
 template<std::size_t N>
+void    GWFcnsInterfaceT<N>::initialize(
+                                            cusfloat    ang_freq,
+                                            cusfloat    water_depth,
+                                            cusfloat    grav_acc
+                                        )
+{
+    // Storage environment properties
+    this->_grav_acc     = grav_acc;
+    this->_water_depth  = water_depth;
+
+    // Launch internal initialization
+    this->_initialize( ang_freq );
+
+}
+
+
+template<std::size_t N>
 GWFcnsInterfaceT<N>::GWFcnsInterfaceT( 
                                             SourceNode* source_i,
                                             SourceNode* source_j,
@@ -45,20 +62,23 @@ GWFcnsInterfaceT<N>::GWFcnsInterfaceT(
 template<std::size_t N>
 template<auto Kernel>
 void        GWFcnsInterfaceT<N>::operator()( 
+                                            cusfloat*   xi_l,
+                                            cusfloat*   eta_l,
                                             cusfloat*   xi,
                                             cusfloat*   eta,
-                                            cusfloat*   x,
-                                            cusfloat*   y,
-                                            cusfloat*   z
+                                            cusfloat*   zeta,
+                                            bool        verbose
                                         )
 {
     // Calculate horizontal radius
     cusfloat source_x = this->_source_j->position[0];
     cusfloat source_y = this->_source_j->position[1];
+    cusfloat source_z = this->_source_j->position[2];
     for ( std::size_t i=0; i<N; i++ )
     {
-        this->_dX[i] = source_x - x[i];
-        this->_dY[i] = source_y - y[i];
+        this->_dX[i]    = source_x - xi[i];
+        this->_dY[i]    = source_y - eta[i];
+        this->_z[i]     = source_z;
     }
 
     for ( std::size_t i=0; i<N; i++ )
@@ -71,21 +91,22 @@ void        GWFcnsInterfaceT<N>::operator()(
         this->_R[i] = std::max( this->_R[i], 1e-12 );
     }
 
-    lv_sqrt( N, this->_R, this->_R );
+    lv_sqrt<cusfloat>( N, this->_R, this->_R );
 
     // Calculate Green function values
     Kernel(
                 this->_R, 
-                this->_source_j->position[2],
-                z,
+                this->_z,
+                zeta,
                 this->_water_depth,
                 this->_bessel_factory, 
                 this->_wave_data,
                 this->G,
                 this->_dG_dR,
-                this->dG_dz
+                this->dG_dz,
+                this->dG_dzeta
             );
-    
+
     // Calculate X and Y cartesian coordinates derivatives
     for ( std::size_t i=0; i<N; i++ )
     {
@@ -94,39 +115,38 @@ void        GWFcnsInterfaceT<N>::operator()(
 
     for ( std::size_t i=0; i<N; i++ )
     {
-        this->_dG_dy[i] = this->_dG_dR[i] * this->_dY[i] / this->_R[i];
+        this->dG_dy[i] = this->_dG_dR[i] * this->_dY[i] / this->_R[i];
     }
 
     // Calculate normal derivate
-    cusfloat nx = this->_source_j->normal_vec[0];
-    cusfloat ny = this->_source_j->normal_vec[1];
-    cusfloat nz = this->_source_j->normal_vec[2];
+    cusfloat nx_sf = this->_source_j->normal_vec[0];
+    cusfloat ny_sf = this->_source_j->normal_vec[1];
+    cusfloat nz_sf = this->_source_j->normal_vec[2];
+
+    cusfloat nx_pf = this->_source_i->normal_vec[0];
+    cusfloat ny_pf = this->_source_i->normal_vec[1];
+    cusfloat nz_pf = this->_source_i->normal_vec[2];
 
     for ( std::size_t i=0; i<N; i++ )
     {
-        this->dG_dn[i] = (
-                            this->dG_dx[i] * nx
+        this->dG_dn_sf[i] = (
+                            this->dG_dx[i] * nx_sf
                             +
-                            this->dG_dy[i] * ny
+                            this->dG_dy[i] * ny_sf
                             +
-                            this->dG_dz[i] * nz
+                            this->dG_dz[i] * nz_sf
+                        );
+        
+        this->dG_dn_pf[i] = (
+                            - 
+                            this->dG_dx[i] * nx_pf
+                            -
+                            this->dG_dy[i] * ny_pf
+                            +
+                            this->dG_dzeta[i] * nz_pf
                         );
     }
-    // cuscomplex  dG_dn   =   (
-    //                             dG_dX * this->_source_j->normal_vec[0]
-    //                             +
-    //                             dG_dY * this->_source_j->normal_vec[1]
-    //                             +
-    //                             dG_dZ * this->_source_j->normal_vec[2]
-    //                         );
     
-    // Get local shape function value
-    // cusfloat    shp_val = shape_functions( 
-    //                                         this->_source_i->p_order,
-    //                                         this->_source_i->q_order,
-    //                                         xi, 
-    //                                         eta 
-    //                                     );
 }
 
 
