@@ -288,7 +288,9 @@ void        quadrature_panel_t(
                                         T*                  panel,
                                         U                   target_fcn,
                                         cuscomplex&         result_G,
-                                        cuscomplex&         result_G_dn
+                                        cuscomplex&         result_G_dn_sf,
+                                        cuscomplex&         result_G_dn_pf,
+                                        bool                verbose=false
                                     )
 {
     // Calculate function value
@@ -297,25 +299,27 @@ void        quadrature_panel_t(
                                                 panel->yl, 
                                                 panel->gauss_points_global_x, 
                                                 panel->gauss_points_global_y, 
-                                                panel->gauss_points_global_z
+                                                panel->gauss_points_global_z,
+                                                verbose
                                             );
 
-    result_G    = 0.0;
-    result_G_dn = 0.0;
+    result_G        = 0.0;
+    result_G_dn_sf  = 0.0;
+    result_G_dn_pf  = 0.0;
     for ( int i=0; i<NGP*NGP; i++ )
     {
-        // result_G += gp->weights[i]*gp->weights[j]*fcn_val*
-        // result_G += ( 
-        //                 GaussPointsT<2,NGP>::weights_x[i] 
-        //                 * 
-        //                 GaussPointsT<2,NGP>::weights_y[i]
-        //                 *
-        //                 G[i]
-        //                 *
-        //                 panel->jac_det_gauss_points[i]
-        //             );
-        GAUSS_2D_LOOP( result_G,    target_fcn.G       );
-        GAUSS_2D_LOOP( result_G_dn, target_fcn.dG_dn   );
+        GAUSS_2D_LOOP( result_G,        target_fcn.G            );
+        GAUSS_2D_LOOP( result_G_dn_sf,  target_fcn.dG_dn_sf     );
+        GAUSS_2D_LOOP( result_G_dn_pf,  target_fcn.dG_dn_pf     );
+
+        if ( verbose )
+        {
+            std::cout << "Wx: " << GaussPointsT<2,NGP>::weights_x[i];
+            std::cout << " - Wy: " << GaussPointsT<2,NGP>::weights_y[i];
+            std::cout << " - fcn: " << target_fcn.G[i];
+            std::cout << " - Jac: " << panel->jac_det_gauss_points[i] << std::endl;
+        }
+
     }
 
 }
