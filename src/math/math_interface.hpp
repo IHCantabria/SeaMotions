@@ -303,7 +303,25 @@ inline const auto& lasrt2<float>    = slasrt2;
 template<>
 inline const auto& lasrt2<double>   = dlasrt2;
 
-// Interface for ScaLapack routines
+
+// Interface for ScaLapack condition number calculation routines
+template<typename T>
+inline const auto& pgecon = psgecon;
+
+template<>
+inline const auto& pgecon<float> = psgecon;
+
+template<>
+inline const auto& pgecon<double> = pdgecon;
+
+template<>
+inline const auto& pgecon<std::complex<float>> = pcgecon;
+
+template<>
+inline const auto& pgecon<std::complex<double>> = pzgecon;
+
+
+// Interface for ScaLapack LU solver routines
 template<typename T>
 inline const auto& pgesv = psgesv;
 
@@ -318,6 +336,40 @@ inline const auto& pgesv<std::complex<float>> = pcgesv;
 
 template<>
 inline const auto& pgesv<std::complex<double>> = pzgesv;
+
+
+// Interface for ScaLapack LU decomposition routines
+template<typename T>
+inline const auto& pgetrf = psgetrf;
+
+template<>
+inline const auto& pgetrf<float> = psgetrf;
+
+template<>
+inline const auto& pgetrf<double> = pdgetrf;
+
+template<>
+inline const auto& pgetrf<std::complex<float>> = pcgetrf;
+
+template<>
+inline const auto& pgetrf<std::complex<double>> = pzgetrf;
+
+
+// Interface for ScaLapack matrix norm routines
+template<typename T>
+inline const auto& plange = pdlange;
+
+template<>
+inline const auto& plange<float> = pslange;
+
+template<>
+inline const auto& plange<double> = pdlange;
+
+template<>
+inline const auto& plange<std::complex<float>> = pclange;
+
+template<>
+inline const auto& plange<std::complex<double>> = pzlange;
 
 
 #endif
