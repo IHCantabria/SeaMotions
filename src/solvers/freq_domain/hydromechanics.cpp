@@ -67,8 +67,8 @@ void    calculate_hydromechanic_coeffs_lin(
                                                             * 
                                                             mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->area
                                                         );
-                            added_mass[index]       +=  rho_w * press_i.imag( ) / ang_freq;
-                            damping_rad[index]      -=  rho_w * press_i.real( );
+                            added_mass[index]       +=  rho_w * press_i.real( );
+                            damping_rad[index]      +=  rho_w * press_i.imag( ) * ang_freq;
                             panels_press[index_1]   = - cuscomplex( 0.0, 1.0 ) * rho_w * ang_freq * panels_pot[index_1] ;
                         }
                     }
