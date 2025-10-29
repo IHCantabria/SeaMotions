@@ -126,7 +126,7 @@ void Hydrostatics::_calculate(
             panel->get_panel_xy_proj( panel_proj );
 
             // Get normal sign
-            normal_sign = (cusfloat)sign( mesh->panels[i]->normal_vec[2] );
+            normal_sign = -(cusfloat)sign( mesh->panels[i]->normal_vec[2] );
 
             // std::cout << "Panel: " << i << " - nz: " << mesh->panels[i]->normal_vec[2] << std::endl;
 
