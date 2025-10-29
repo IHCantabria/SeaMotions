@@ -20,24 +20,21 @@ void    MeshGroup::define_mirror_panels(
     for ( int i=0; i<this->panels_tnp; i++ )
     {
         panel_i = this->panels[i];
-        if ( panel_i->type == DIFFRAC_PANEL_CODE )
+        // Get the z mirrored values
+        for ( int j=0; j<panel_i->num_nodes; j++ )
         {
-            // Get the z mirrored values
-            for ( int j=0; j<panel_i->num_nodes; j++ )
-            {
-                zm[j] = -panel_i->z[j];
-            }
-
-            // Create new panel
-            this->panels_mirror[i] = new PanelGeom(
-                                                        panel_i->num_nodes,
-                                                        panel_i->x,
-                                                        panel_i->y,
-                                                        zm,
-                                                        panel_i->type,
-                                                        cog
-                                                    );
+            zm[j] = -panel_i->z[j];
         }
+
+        // Create new panel
+        this->panels_mirror[i] = new PanelGeom(
+                                                    panel_i->num_nodes,
+                                                    panel_i->x,
+                                                    panel_i->y,
+                                                    zm,
+                                                    panel_i->type,
+                                                    cog
+                                                );
     }
 }
 
