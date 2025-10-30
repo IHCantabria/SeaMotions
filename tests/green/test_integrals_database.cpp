@@ -181,8 +181,8 @@ void compare_2d_database( std::string fipath, std::string db_name )
     cusfloat        result_dx0[N];
 
     // Define chebyshev evaluator functions
-    using TEV       = ChebyshevEvaluatorBaseVector<ChebyshevTraits<T>, N>;
-    using T_dX0EV   = ChebyshevEvaluatorBaseVector<ChebyshevTraits<T_dX0>, N>;
+    using TEV       = ChebyshevEvaluatorBaseVector<ChebyshevTraits<T>, N, STATIC_LOOP_ON>;
+    using T_dX0EV   = ChebyshevEvaluatorBaseVector<ChebyshevTraits<T_dX0>, N, STATIC_LOOP_ON>;
 
     // Load data
     RefData<2, 2> ref_data( fipath );
@@ -242,9 +242,9 @@ void compare_3d_database( std::string fipath, std::string db_name )
     cusfloat        result_dx1[N];
 
     // Define chebyshev evaluator functions
-    using TEV       = ChebyshevEvaluatorBaseVector<ChebyshevTraits<T>, N>;
-    using T_dX0EV   = ChebyshevEvaluatorBaseVector<ChebyshevTraits<T_dX0>, N>;
-    using T_dX1EV   = ChebyshevEvaluatorBaseVector<ChebyshevTraits<T_dX1>, N>;
+    using TEV       = ChebyshevEvaluatorBaseVector<ChebyshevTraits<T>, N, STATIC_LOOP_ON>;
+    using T_dX0EV   = ChebyshevEvaluatorBaseVector<ChebyshevTraits<T_dX0>, N, STATIC_LOOP_ON>;
+    using T_dX1EV   = ChebyshevEvaluatorBaseVector<ChebyshevTraits<T_dX1>, N, STATIC_LOOP_ON>;
 
     // Load data
     RefData<3, 3> ref_data( fipath );
