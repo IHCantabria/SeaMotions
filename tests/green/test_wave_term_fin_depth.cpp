@@ -11,17 +11,22 @@
 // Include local modules
 #include "../../src/config.hpp"
 #include "../../src/green/pulsating_fin_depth.hpp"
-#include "../../src/green/pulsating_fin_depth_cheby.hpp"
+#include "../../src/green/integrals_database.hpp"
+#include "../../src/math/bessel_factory.hpp"
 #include "../../src/math/math_tools.hpp"
 #include "../../src/tools.hpp"
-#include "../../src/waves.hpp"
+#include "../../src/waves/wave_dispersion_fo.hpp"
 
 // Load namespace for inline complex literals
 using namespace std::literals::complex_literals;
 
 
-// Define test tolerances
-cusfloat JOHN_TOL = 1e-7;
+// Define test tolerances. This tolearance is looser due to differences detected in 
+// infinite depth term used by Mackay. This term is opaque as it comes in a tabulated 
+// form with out knowledge of the underlying calculation method (Not the theoretical 
+// but the computational one)
+cusfloat TEST_TOL = 5e-3; // 
+
 
 
 struct RefData
@@ -71,6 +76,7 @@ struct RefData
         for (int i=0; i<this->num_H; i++)
         {
             infile >> this->H[i];
+            this->H[i] += 1e-9;
         }
 
         // Read Z parameter space
@@ -139,12 +145,12 @@ struct RefData
 };
 
 
-template<typename T>
+template<int fnc_type, int mode_f, int mode_dfdr, int mode_dfdz>
 bool launch_integral(
-                std::string file_path, 
-                T f_def,
-                std::string function_type
-                )
+                        std::string file_path, 
+                        std::string function_type,
+                        int         function_pos
+                    )
 {
     // Define test result flag
     bool pass = true;
@@ -155,58 +161,101 @@ bool launch_integral(
     cusfloat g = ref_data.grav_acc;
     cusfloat h = ref_data.water_depth;
 
-    // Load integrals database
-    IntegralsDb idb;
-    build_integrals_db(idb);
+    // Create an instance of Bessel Factory class
+    constexpr std::size_t N = 1;
+    BesselFactoryVecUpTo<N> bessel_factory;
 
     // Loop over refence data to check over all parameter
     // space
-    cuscomplex jc, jr;
-    cusfloat nu = 0.0;
-    const int num_kn = 30;
-    int rd_index = 0;
-    cusfloat w = 0.0;
-    for (int i=0; i<ref_data.num_A; i++)
+    cusfloat            Avec[N];
+    cuscomplex          Gp;
+    cuscomplex          G[N];
+    cuscomplex          G_dr[N];
+    cuscomplex          G_dz[N];
+    cuscomplex          G_dzeta[N];
+    cusfloat            zvec[N];
+    cusfloat            zetavec[N];
+    cuscomplex          jc, jr;
+    cusfloat            nu = 0.0;
+    constexpr int       num_kn = 30;
+    int                 rd_index = 0;
+    cusfloat            w = 0.1;
+    WaveDispersionFONK  wave_data(w, h, g);
+
+    for (int i=0; i<ref_data.num_H; i++)
     {
-        for (int j=0; j<ref_data.num_H; j++)
+        // Calculate dependent variables on H parameter
+        nu = ref_data.H[i]/h;
+        w = std::sqrt(nu*g);
+        wave_data.update_full( w, h, g );
+
+        // Fold integrals coefficients
+        if constexpr( fnc_type == 1 )
         {
-            // Fold integrals coefficients
-            idb.fold_h(ref_data.H[j]);
+            fold_database( ref_data.H[i] );
+            std::cout << "Database folded!" << std::endl;
+        }
 
-            // Calculate dependent variables on H parameter
-            nu = ref_data.H[j]/h;
-            w = std::sqrt(nu*g);
-            WaveDispersionFO wave_data(w, num_kn, h, g);
-            wave_data.calculate_john_terms();
-
+        std::cout << "I: " << i << std::endl;
+        for (int j=0; j<ref_data.num_A; j++)
+        {
             for (int k=0; k<ref_data.num_z; k++)
             {
-                // Calculate Green function integral value
-                jc = f_def(
-                            ref_data.A[i]*ref_data.water_depth,
-                            ref_data.z[k],
-                            ref_data.zeta[k],
-                            ref_data.water_depth,
-                            wave_data,
-                            idb
+                // Storage scalar values into vector ones
+                Avec[0]     = ref_data.A[j] * ref_data.water_depth;
+                zvec[0]     = ref_data.z[k];
+                zetavec[0]  = ref_data.zeta[k];
+
+                // Calculate index data
+                rd_index = (
+                                i*(ref_data.num_H*ref_data.num_A)
+                                + j*ref_data.num_A
+                                + k
                             );
 
-                // Get reference data
-                rd_index = (
-                            i*(ref_data.num_H*ref_data.num_z)
-                            + j*ref_data.num_z
-                            + k
-                            );
-                jr = ref_data.g_series[rd_index];
+                std::cout << "I: " << i << " - J: " << j << " - K: " << k << std::endl;
+                // Calculate Green function integral value
+                // wave_term_fin_depth_integral<N>( N, Avec, zvec, zetavec, h, bessel_factory, wave_data, G, G_dr, G_dz );
+                if constexpr( fnc_type == 0)
+                {
+                    Gp = john_series(Avec[0], zvec[0], zetavec[0], h , wave_data);
+                    john_series<N, mode_f, mode_dfdr, mode_dfdz>( Avec, zvec, zetavec, h, bessel_factory, wave_data, G, G_dr, G_dz, G_dzeta );
+                }
+                else
+                {
+                    wave_term_integral<N, mode_f, mode_dfdr, mode_dfdz, FSLID_OFF>( Avec, zvec, zetavec, h, bessel_factory, wave_data, G, G_dr, G_dz, G_dzeta );
+                }
+                
+                if ( function_pos == 0 )
+                {
+                    jc = G[0];
+                }
+                else if ( function_pos == 1 )
+                {
+                    jc = G_dr[0];
+                }
+                else if ( function_pos == 2 )
+                {
+                    jc = G_dz[0];
+                }
+                else if ( function_pos == 3 )
+                {
+                    jc = G_dzeta[0];
+                }
+
+                // We compare against the conjugate
+                // vector as the reference values are ouputed with time sign exp(iwt) while 
+                // Seamotions works with exp(-iwt) (waves goes from -X to +X)
+                jr = std::conj( ref_data.g_series[rd_index] );
 
                 // Compare values and check with tolerance
-                if (!assert_complex_equality(jc, jr, JOHN_TOL))
+                if (!assert_complex_equality(jc, jr, TEST_TOL))
                 {
                     std::cerr << "Integral method " << function_type;
                     std::cerr <<" does not converge to the expected value " << std::endl;
                     std::cerr << "for the following input parameters: " << std::endl;
-                    std::cerr << "  - R/h: " << ref_data.A[i] << std::endl;
-                    std::cerr << "  - R: " << ref_data.A[i]*h << std::endl;
+                    std::cerr << "  - R/h: " << ref_data.A[j] << std::endl;
+                    std::cerr << "  - R: " << ref_data.A[j]*h << std::endl;
                     std::cerr << "  - z: " << ref_data.z[k] << std::endl;
                     std::cerr << "  - zeta: " << ref_data.zeta[k] << std::endl;
                     std::cerr << "  - h: " << h << std::endl;
@@ -217,93 +266,7 @@ bool launch_integral(
                     std::cerr << " - Expected value: " << jr << std::endl;
                     std::cerr << " - Calculated value: " << jc << std::endl;
                     std::cerr << " - Difference value: " << jc-jr << std::endl;
-                    pass = false;
-                    goto exit;
-                }
-            }
-        }
-    }
-
-    exit:
-        return pass;
-}
-
-
-bool launch_john(
-                std::string file_path, 
-                std::function <cuscomplex(
-                                        cusfloat,
-                                        cusfloat,
-                                        cusfloat,
-                                        cusfloat,
-                                        WaveDispersionFO&
-                                        )> f_def,
-                std::string function_type
-                )
-{
-    // Define test result flag
-    bool pass = true;
-
-    // Read refernce data
-    RefData ref_data;
-    ref_data.load_data(file_path);
-    cusfloat g = ref_data.grav_acc;
-    cusfloat h = ref_data.water_depth;
-
-    // Loop over refence data to check over all parameter
-    // space
-    cuscomplex jc, jr;
-    cusfloat nu = 0.0;
-    const int num_kn = 30;
-    int rd_index = 0;
-    cusfloat w = 0.0;
-    for (int i=0; i<ref_data.num_A; i++)
-    {
-        for (int j=0; j<ref_data.num_H; j++)
-        {
-            // Calculate dependent variables on H parameter
-            nu = ref_data.H[j]/h;
-            w = std::sqrt(nu*g);
-            WaveDispersionFO wave_data(w, num_kn, h, g);
-            wave_data.calculate_john_terms();
-
-            for (int k=0; k<ref_data.num_z; k++)
-            {
-                // Calculate John series value
-                jc = f_def(
-                    ref_data.A[i]*ref_data.water_depth,
-                    ref_data.z[k],
-                    ref_data.zeta[k],
-                    ref_data.water_depth,
-                    wave_data
-                    );
-
-                // Get John series reference data
-                rd_index = (
-                            i*(ref_data.num_H*ref_data.num_z)
-                            + j*ref_data.num_z
-                            + k
-                            );
-                jr = ref_data.g_series[rd_index];
-
-                // Compare values and check with tolerance
-                if (!assert_complex_equality(jc, jr, JOHN_TOL))
-                {
-                    std::cerr << "John series " << function_type;
-                    std::cerr <<" does not converge to the expected value " << std::endl;
-                    std::cerr << "for the following input parameters: " << std::endl;
-                    std::cerr << "  - R/h: " << ref_data.A[i] << std::endl;
-                    std::cerr << "  - R: " << ref_data.A[i]*h << std::endl;
-                    std::cerr << "  - z: " << ref_data.z[k] << std::endl;
-                    std::cerr << "  - zeta: " << ref_data.zeta[k] << std::endl;
-                    std::cerr << "  - h: " << h << std::endl;
-                    std::cerr << "  - nu: " << nu << std::endl;
-                    std::cerr << "  - k0: " << wave_data.k0 << std::endl;
-                    std::cerr << "  - num_kn: " << num_kn << std::endl;
-                    std::cerr << "Numerical error description: " << std::endl;
-                    std::cerr << " - Expected value: " << jr << std::endl;
-                    std::cerr << " - Calculated value: " << jc << std::endl;
-                    std::cerr << " - Difference value: " << jc-jr << std::endl;
+                    std::cerr << " - Index: " << rd_index << std::endl;
                     pass = false;
                     goto exit;
                 }
@@ -319,7 +282,7 @@ bool launch_john(
 int main(int argc, char* argv[])
 {
     // Read command line arguments
-    if (!check_num_cmd_args(argc, 6))
+    if ( !check_num_cmd_args( argc, 8 ) )
     {
         return 1;
     }
@@ -327,47 +290,53 @@ int main(int argc, char* argv[])
     std::string file_path_john(argv[1]);
     std::string file_path_john_dr(argv[2]);
     std::string file_path_john_dz(argv[3]);
-    std::string file_path_Gint(argv[4]);
-    std::string file_path_Gint_dr(argv[5]);
-    std::string file_path_Gint_dz(argv[6]);
+    std::string file_path_john_dzeta(argv[4]);
+    std::string file_path_Gint(argv[5]);
+    std::string file_path_Gint_dr(argv[6]);
+    std::string file_path_Gint_dz(argv[7]);
+    std::string file_path_Gint_dzeta(argv[8]);
 
     // Declare variable for the logic system
     bool pass = false;
 
     // Launch test to check the John eigenfunction
     // expansion
-    pass = launch_john(
-                        file_path_john, 
-                        static_cast<cuscomplex (*)(
-                                    cusfloat,
-                                    cusfloat,
-                                    cusfloat,
-                                    cusfloat,
-                                    WaveDispersionFO&)>(&john_series),
-                        "G"
-                        );
+    std::cout << "here" << std::endl;
+    pass = launch_integral<0, G_ON, DGDR_OFF, DGDZ_OFF>(
+                                                            file_path_john, 
+                                                            "G",
+                                                            0
+                                                        );
     if (!pass)
     {
         return 1;
     }
 
-    pass = launch_john(file_path_john_dr, john_series_dr, "dG_dr");
+    pass = launch_integral<0, G_OFF, DGDR_ON, DGDZ_OFF>(
+                                                            file_path_john_dr, 
+                                                            "dG_dr",
+                                                            1
+                                                        );
     if (!pass)
     {
         return 1;
     }
 
-    pass = launch_john(
-                        file_path_john_dz,
-                        static_cast<cuscomplex (*)(
-                                    cusfloat,
-                                    cusfloat,
-                                    cusfloat,
-                                    cusfloat,
-                                    WaveDispersionFO&)
-                                    >(&john_series_dz),
-                        "dG_dz"
-                        );
+    pass = launch_integral<0, G_OFF, DGDR_OFF, DGDZ_ON>(
+                                                            file_path_john_dz,
+                                                            "dG_dz",
+                                                            2
+                                                        );
+    if (!pass)
+    {
+        return 1;
+    }
+
+    pass = launch_integral<0, G_OFF, DGDR_OFF, DGDZ_ON>(
+                                                            file_path_john_dzeta,
+                                                            "dG_dzeta",
+                                                            3
+                                                        );
     if (!pass)
     {
         return 1;
@@ -375,30 +344,41 @@ int main(int argc, char* argv[])
 
     // Launch test to check the Green function
     // integral approximation method
-    pass = launch_integral(
-                            file_path_Gint, 
-                            static_cast<cuscomplex(*)(
-                                                    cusfloat,
-                                                    cusfloat,
-                                                    cusfloat,
-                                                    cusfloat,
-                                                    WaveDispersionFO&,
-                                                    IntegralsDb&
-                                                    )>(G_integral), 
-                            "G_integral"
-                        );
+    pass = launch_integral<1, G_ON, DGDR_OFF, DGDZ_OFF>(
+                                                            file_path_Gint, 
+                                                            "G_integral",
+                                                            0
+                                                        );
     if (!pass)
     {
         return 1;
     }
 
-    pass = launch_integral(file_path_Gint_dr, G_integral_dr, "G_integral_dr");
+    pass = launch_integral<1, G_OFF, DGDR_ON, DGDZ_OFF>(
+                                                            file_path_Gint_dr, 
+                                                            "G_integral_dr",
+                                                            1
+                                                        );
     if (!pass)
     {
         return 1;
     }
 
-    pass = launch_integral(file_path_Gint_dz, G_integral_dz, "G_integral_dz");
+    pass = launch_integral<1, G_OFF, DGDR_OFF, DGDZ_ON>(
+                                                            file_path_Gint_dz, 
+                                                            "G_integral_dz",
+                                                            2
+                                                        );
+    if (!pass)
+    {
+        return 1;
+    }
+
+    pass = launch_integral<1, G_OFF, DGDR_OFF, DGDZ_ON>(
+                                                            file_path_Gint_dzeta, 
+                                                            "G_integral_dzeta",
+                                                            3
+                                                        );
     if (!pass)
     {
         return 1;
