@@ -1,4 +1,38 @@
 
+/********************************************************************************
+ * @file    test_wave_term_fin_depth_integrals.cpp
+ * @brief   Unit tests for finite water depth wave term integral databases
+ * 
+ * @details This module performs comprehensive validation of the Chebyshev-based
+ *          interpolation databases used for finite water depth Green's function
+ *          integrals. It compares computed values against reference data for
+ *          various integral types (L1, L2, L3, M1, M2, M3, R11) and their
+ *          derivatives.
+ * 
+ *          The tests support both local (strict) and global (statistical) error
+ *          control modes, allowing flexible validation of interpolation accuracy
+ *          across 1D, 2D, and 3D parameter spaces.
+ * 
+ *          The reference data is taken from two sources. The first source is the 
+ *          original Matlab codes developed by Ed.Mackay and published in github. 
+ *          Datasets calculated withe these codes are L1, L2, L3, M1, M2 and M3. 
+ *          Reference data to calculate R11 is taken from script generate_test_data.py.
+ *          The point for doing this is that "L" and "M" integrals are calculated with 
+ *          Mackay's codes that are different from the coded used to calculate the reference
+ *          Chebyshev coefficients used by SeaMotions so it is a double check of the implementation.
+ *          R11 (corresponding to the infinite water depth integral) is not taken from Mackay's codes
+ *          as it as detected some discreprancies with reference routines that are not aligned 
+ *          with Newman's results. Therefore, R11 reference data is taken directly from the 
+ *          machinary used to generate the Chebyshev coefficients in SeaMotions. 
+ *          
+ * 
+ * @note    Reference data files are expected to be located in the "tests/tests_data/green_depth_tables/"
+ * 
+ * @author  Sergio Fernandez Ruano
+ * @date    November 4, 2025
+ * @version 1.0
+ ********************************************************************************/
+
 // Include general usage libraries
 #include <fstream>
 
@@ -15,7 +49,7 @@
 {                                                                                                                   \
     if( ( err_count / N ) > 0.01 )                                                                                  \
     {                                                                                                               \
-        std::cerr << "TEST FAILED for " << db_name << " and " << fcn_type << " function" << std::endl;               \
+        std::cerr << "TEST FAILED for " << db_name << " and " << fcn_type << " function" << std::endl;              \
         std::cerr << "--> Global Analysis: test exceeds the number of faults over the threshold." << std::endl;     \
         throw std::exception( );                                                                                    \
     }                                                                                                               \
