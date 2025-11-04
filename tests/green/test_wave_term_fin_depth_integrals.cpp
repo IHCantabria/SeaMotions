@@ -1,332 +1,446 @@
 
 // Include general usage libraries
 #include <fstream>
-#include <iostream>
-#include <string>
 
 // Include local modules
 #include "../../src/config.hpp"
-#include "../../src/green/pulsating_fin_depth_cheby.hpp"
-#include "../../src/tools.hpp"
+#include "../../src/green/chebyshev_traits.hpp"
+#include "../../src/green/chebyshev_evaluator_interface.hpp"
+#include "../../src/green/integrals_database.hpp"
+#include "../../src/green/fin_depth_coeffs/L1.hpp"
 
 
-cusfloat EPS_INTEGRALS = 1e-6;
+/************ Define module macros ******************/
+#define CHECK_GLOBAL_ERROR( err_thr, N, err, err_count, db_name, fcn_type )                                         \
+{                                                                                                                   \
+    if( ( err_count / N ) > 0.01 )                                                                                  \
+    {                                                                                                               \
+        std::cerr << "TEST FAILED for " << db_name << " and " << fcn_type << " function" << std::endl;               \
+        std::cerr << "--> Global Analysis: test exceeds the number of faults over the threshold." << std::endl;     \
+        throw std::exception( );                                                                                    \
+    }                                                                                                               \
+                                                                                                                    \
+    if ( err > 10 * err_thr )                                                                                       \
+    {                                                                                                               \
+        std::cerr << "TEST FAILED for " << db_name << " and" << fcn_type << " function" << std::endl;               \
+        std::cerr << "--> Global Analysis: test exceeds the error threshold value in a factor of 10." << std::endl; \
+        throw std::exception( );                                                                                    \
+    }                                                                                                               \
+}                                                                                                                   \
+
+#define COND_LINE( expr, line )     \
+{                                   \
+    if constexpr( expr )            \
+    {                               \
+        line;                       \
+    }                               \
+}                                   \
+
+#define UPDATE_GLOBAL_ERROR( r0, r1, max_err, count_thr )   \
+{                                                           \
+    cusfloat err = std::abs( r0 - r1 );                     \
+    if ( err > max_err )                                    \
+    {                                                       \
+        max_err = err;                                      \
+    }                                                       \
+    count_thr++;                                            \
+}                                                           \
 
 
+enum class ErrorControl{ Local, Global };
+
+
+cusfloat EPS_PREC = 5E-4;
+
+
+template<int N, int M>
 struct RefData
 {
-    cusfloat* a;
-    cusfloat* b;
-    cusfloat* g_int;
-    cusfloat* h;
-    bool is_loaded_1d = false;
-    bool is_loaded_3d = false;
-    int num_points = 0;
+public:
+    cusfloat*   X0          = nullptr;
+    cusfloat*   X1          = nullptr;
+    cusfloat*   X2          = nullptr;
+    cusfloat*   G           = nullptr;
+    cusfloat*   G_dx0       = nullptr;
+    cusfloat*   G_dx1       = nullptr;
+    int         num_x0      = 0;
+    int         num_x1      = 0;
+    int         num_x2      = 0;
+    int         total_size  = 0;
 
-    ~RefData(void)
-    {
-        if (this->is_loaded_1d)
-        {
-            delete [] this->g_int;
-            delete [] this->h;
-        }
-        else if (this->is_loaded_3d)
-        {
-            delete [] this->a;
-            delete [] this->b;
-            delete [] this->g_int;
-            delete [] this->h;
-        }
-    }
+    static_assert( N>0 || N<4 );
+    static_assert( M>0 || M<4 );
 
-    void load_data_1d(std::string file_path)
+    RefData( std::string fipath )
     {
-        // Create auxiliar strings
-        std::string s0, s1, s2, s3;
+        std::string aux_str;
 
         // Open file unit
-        std::ifstream infile(file_path);
+        std::ifstream infile( fipath );
 
-        // Read number of points
-        infile >> s0 >> this->num_points;
-
-        // Allocate heap memory
-        this->g_int = new cusfloat [this->num_points];
-        this->h = new cusfloat [this->num_points];
-
-        // Read header
-        infile >> s0 >> s1;
-
-        // Loop over points to read data
-        for (int i=0; i<this->num_points; i++)
+        // Read number of X0 values
+        infile >> aux_str >> this->num_x0;
+        this->X0 = generate_empty_vector<cusfloat>( this->num_x0 );
+        for ( int i=0; i<this->num_x0; i++ )
         {
-            infile >> this->h[i] >> this->g_int[i];
+            infile >> this->X0[i];
         }
 
-        // Activate flag to show that the data is
-        // loaded
-        this->is_loaded_1d = true;    
-
-        // Close file unit
-        infile.close();
-    }
-
-    void load_data_3d(std::string file_path)
-    {
-        // Create auxiliar strings
-        std::string s0, s1, s2, s3;
-
-        // Open file unit
-        std::ifstream infile(file_path);
-
-        // Read number of points
-        infile >> s0 >> this->num_points;
-
-        // Allocate heap memory
-        this->a = new cusfloat [this->num_points];
-        this->b = new cusfloat [this->num_points];
-        this->g_int = new cusfloat [this->num_points];
-        this->h = new cusfloat [this->num_points];
-
-        // Read header
-        infile >> s0 >> s1 >> s2 >> s3;
-
-        // Loop over points to read data
-        for (int i=0; i<this->num_points; i++)
+        if constexpr( N > 1 )
         {
-            infile >> this->a[i] >> this->b[i] >> this->h[i] >> this->g_int[i];
-        }
-
-        // Activate flag to show that the data is
-        // loaded
-        this->is_loaded_3d = true;    
-
-        // Close file unit
-        infile.close();
-    }
-
-    void print_data(void)
-    {
-        if(this->is_loaded_1d)
-        {
-            std::cout << "Number of points: " << this->num_points << std::endl;
-            std::cout << "   H    " << "   G_int  " << std::endl;
-            for (int i=0; i<this->num_points; i++)
+            // Read number of X1 values
+            infile >> aux_str >> this->num_x1;
+            this->X1 = generate_empty_vector<cusfloat>( this->num_x1 );
+            for ( int i=0; i<this->num_x1; i++ )
             {
-                std::cout << this->h[i] << " " << this->g_int[i] << std::endl;
+                infile >> this->X1[i];
+            }
+
+            // Read number of X2 values
+            if constexpr( N > 2 )
+            {
+                infile >> aux_str >> this->num_x2;
+                this->X2 = generate_empty_vector<cusfloat>( this->num_x2 );
+                for ( int i=0; i<this->num_x2; i++ )
+                {
+                    infile >> this->X2[i];
+                }
             }
         }
-        else if(this->is_loaded_3d)
+
+        // Allocate space to storage space for functions
+        COND_LINE( N > 0, this->total_size  = this->num_x0 );
+        COND_LINE( N > 1, this->total_size *= this->num_x1 );
+        COND_LINE( N > 2, this->total_size *= this->num_x2 );
+
+        COND_LINE( M > 0, this->G       = generate_empty_vector<cusfloat>( this->total_size ) );
+        COND_LINE( M > 1, this->G_dx0   = generate_empty_vector<cusfloat>( this->total_size ) );
+        COND_LINE( M > 2, this->G_dx1   = generate_empty_vector<cusfloat>( this->total_size ) );
+
+        // Read functions header
+        COND_LINE( M > 0, infile >> aux_str );
+        COND_LINE( M > 1, infile >> aux_str );
+        COND_LINE( M > 2, infile >> aux_str );
+
+        // Read functions value
+        for ( int i=0; i<this->total_size; i++ )
         {
-            std::cout << "Number of points: " << this->num_points << std::endl;
-            std::cout << "   A   " << "   B   " << "   H    " << "   G_int  " << std::endl;
-            for (int i=0; i<this->num_points; i++)
-            {
-                std::cout << this->a[i] << " " << this->b[i] << " ";
-                std::cout << this->h[i] << " " << this->g_int[i] << std::endl;
-            }
+            COND_LINE( M > 0, infile >> this->G[i] );
+            COND_LINE( M > 1, infile >> this->G_dx0[i] );
+            COND_LINE( M > 2, infile >> this->G_dx1[i] );
         }
+
+        // Close file unit
+        infile.close( );
     }
+
+    void print( void )
+    {
+        // Print out integral domain extents
+        COND_LINE( N > 0, std::cout << "Num.X0: " << this->num_x0 << std::endl );
+        COND_LINE( N > 0, print_vector( this->num_x0, this->X0, 0, 6 ) );
+        COND_LINE( N > 1, std::cout << "Num.X1: " << this->num_x1 << std::endl );
+        COND_LINE( N > 1, print_vector( this->num_x1, this->X1, 0, 6 ) );
+        COND_LINE( N > 2, std::cout << "Num.X2: " << this->num_x2 << std::endl );
+        COND_LINE( N > 2, print_vector( this->num_x2, this->X2, 0, 6 ) );
+
+        // Print out function values
+        COND_LINE( M > 0, std::cout << "G" );
+        COND_LINE( M > 1, std::cout << "    G_dx0" );
+        COND_LINE( M > 2, std::cout << "    G_dx1" );
+        COND_LINE( M > 0, std::cout << std::endl );
+
+        for ( int i=0; i<this->total_size; i++ )
+        {
+            COND_LINE( M > 0, std::cout << this->G[i] );
+            COND_LINE( M > 1, std::cout << "    " << this->G_dx0[i] );
+            COND_LINE( M > 2, std::cout << "    " << this->G_dx1[i] );
+            COND_LINE( M > 0, std::cout << std::endl );
+        }   
+    }
+
+    ~RefData( )
+    {
+        COND_LINE( M > 0, mkl_free( this->X0 ) );
+        COND_LINE( M > 1, mkl_free( this->X1 ) );
+        COND_LINE( M > 2, mkl_free( this->X2 ) );
+
+        COND_LINE( M > 0, mkl_free( this->G ) );
+        COND_LINE( M > 1, mkl_free( this->G_dx0 ) );
+        COND_LINE( M > 2, mkl_free( this->G_dx1 ) );
+    }
+
 };
 
 
-bool launch_test_1d(P3* lobj, std::string file_path, std::string test_name)
+template<typename T, ErrorControl EC>
+void compare_1d_database( std::string fipath, std::string db_name )
 {
-    // Read reference data
-    RefData ref_data;
-    ref_data.load_data_1d(file_path);
+    std::cout << "COMPARE " << db_name << " DATABASE" << std::endl;
+    // Define chebyshev evaluator functions
+    using TEV       = ChebyshevTraits<T>;
 
-    // Loop over data checking the subroutines
-    bool flag = true;
-    cusfloat diff = 0.0;
-    for (int i=0; i<ref_data.num_points; i++)
+    // Load data
+    RefData<1, 1> ref_data( fipath );
+
+    // Prepare data variables to global error control if any
+    cusfloat    g_max_err       = 0.0;
+    int         g_count_thr     = 0;
+
+    // Loop over database to check its value
+    for ( int i=0; i<ref_data.num_x0; i++ )
     {
-        // Check using direct method
-        lobj->calculate_h_1D(ref_data.h[i]);
-        diff = lobj->int_1d-ref_data.g_int[i];
-        if (abs(diff)>EPS_INTEGRALS)
+        // Fold database
+        fold_database_1d<T>( ref_data.X0[i] );
+
+        if ( !assert_scalar_equality( TEV::coeffs, ref_data.G[i], EPS_PREC ) )
         {
-            std::cout << "Test " << test_name << " - direct method: has ";
-            std::cout << "an error of: " << diff;
-            std::cout << " which is above the requested limits." << std::endl;
-            flag = false;
-            break;
+            if constexpr( EC == ErrorControl::Local )
+            {
+                std::cerr << "TEST FAILED for " << db_name << " and G function" << std::endl;
+                std::cerr << "Expected: " << ref_data.G[i] << " - Calculated: " << TEV::coeffs << std::endl;
+                std::cerr << "H[" << i << "]: " << ref_data.X0[i] << std::endl;
+                throw std::exception( );
+            }
+            else if constexpr( EC == ErrorControl::Global )
+            {
+                UPDATE_GLOBAL_ERROR( TEV::coeffs, ref_data.G[i], g_max_err, g_count_thr )
+            }
+        }
+    }
+
+    // Check global error if selected
+    if constexpr( EC == ErrorControl::Global )
+    {
+        int N2 = ref_data.num_x0;
+        CHECK_GLOBAL_ERROR( EPS_PREC, N2, g_max_err,     g_count_thr,     db_name, "G"     )
+    }
+    std::cout << " -> DONE" << std::endl;
+}
+
+
+template<typename T, typename T_dX0, ErrorControl EC>
+void compare_2d_database( std::string fipath, std::string db_name )
+{
+    std::cout << "COMPARE " << db_name << " DATABASE" << std::endl;
+    // Define local variables
+    constexpr int   N = 1;
+    int             index = 0;
+    cusfloat        result[N];
+    cusfloat        result_dx0[N];
+
+    // Define chebyshev evaluator functions
+    using TEV       = ChebyshevEvaluatorBaseVector<ChebyshevTraits<T>, N, STATIC_LOOP_ON>;
+    using T_dX0EV   = ChebyshevEvaluatorBaseVector<ChebyshevTraits<T_dX0>, N, STATIC_LOOP_ON>;
+
+    // Load data
+    RefData<2, 2> ref_data( fipath );
+
+    // Prepare data variables to global error control if any
+    cusfloat    g_max_err       = 0.0;
+    int         g_count_thr     = 0;
+    cusfloat    g_dx0_max_err   = 0.0;
+    int         g_dx0_count_thr = 0;
+
+    // Loop over database to check its value
+    for ( int i=0; i<ref_data.num_x0; i++ )
+    {
+        for ( int j=0; j<ref_data.num_x1; j++ )
+        {
+            index = ( 
+                            i * ( ref_data.num_x0 )
+                            +
+                            j
+                        );
+            
+            // Interpolate in the database
+            TEV::evaluate( N, &(ref_data.X0[i]), &(ref_data.X1[j]), result );
+            T_dX0EV::evaluate( N, &(ref_data.X0[i]), &(ref_data.X1[j]), result_dx0 );
+
+            if ( !assert_scalar_equality( result[0], ref_data.G[index], EPS_PREC ) )
+            {
+                if constexpr( EC == ErrorControl::Local )
+                {
+                    std::cerr << "TEST FAILED for " << db_name << " and G function" << std::endl;
+                    std::cerr << "Expected: " << ref_data.G[index] << " - Calculated: " << result[0] << std::endl;
+                    std::cerr << "A[" << i  << "]: " << ref_data.X0[i] << " - B[" << j << "]: " << ref_data.X1[j] << std::endl;
+                    throw std::exception( );
+                }
+                else if constexpr( EC == ErrorControl::Global )
+                {
+                    UPDATE_GLOBAL_ERROR( result[0], ref_data.G[index], g_max_err, g_count_thr )
+                }
+            }
+            
+            if ( !assert_scalar_equality( result_dx0[0], ref_data.G_dx0[index], EPS_PREC ) )
+            {
+                if constexpr( EC == ErrorControl::Local )
+                {
+                    std::cerr << "TEST FAILED for " << db_name << " and G_dA function" << std::endl;
+                    std::cerr << "Expected: " << ref_data.G_dx0[index] << " - Calculated: " << result_dx0[0] << std::endl;
+                    std::cerr << "A[" << i  << "]: " << ref_data.X0[i] << " - B[" << j << "]: " << ref_data.X1[j] << " - H[" << j << "]: " << std::endl;
+                    throw std::exception( );
+                }
+                else if constexpr( EC == ErrorControl::Global )
+                {
+                    UPDATE_GLOBAL_ERROR( result_dx0[0], ref_data.G_dx0[index], g_dx0_max_err, g_dx0_count_thr )
+                }
+            }
         }
 
     }
 
-    return flag;
+    // Check global error if selected
+    if constexpr( EC == ErrorControl::Global )
+    {
+        int N2 = ref_data.num_x0 * ref_data.num_x1;
+        CHECK_GLOBAL_ERROR( EPS_PREC, N2, g_max_err,     g_count_thr,     db_name, "G"     )
+        CHECK_GLOBAL_ERROR( EPS_PREC, N2, g_dx0_max_err, g_dx0_count_thr, db_name, "G_dx0" )
+    }
+    std::cout << " -> DONE" << std::endl;
 }
 
 
-bool launch_test_3d(P3* lobj, std::string file_path, std::string test_name)
+template<typename T, typename T_dX0, typename T_dX1, ErrorControl EC>
+void compare_3d_database( std::string fipath, std::string db_name )
 {
-    // Read reference data
-    RefData ref_data;
-    ref_data.load_data_3d(file_path);
+    std::cout << "COMPARE " << db_name << " DATABASE" << std::endl;
+    // Define local variables
+    constexpr int   N = 1;
+    int             index = 0;
+    cusfloat        result[N];
+    cusfloat        result_dx0[N];
+    cusfloat        result_dx1[N];
 
-    // Loop over data checking the subroutines
-    bool flag = true;
-    cusfloat diff = 0.0;
-    cusfloat sol_i = 0.0;
-    for (int i=0; i<ref_data.num_points; i++)
+    // Define chebyshev evaluator functions
+    using TEV       = ChebyshevEvaluatorBaseVector<ChebyshevTraits<T>, N, STATIC_LOOP_ON>;
+    using T_dX0EV   = ChebyshevEvaluatorBaseVector<ChebyshevTraits<T_dX0>, N, STATIC_LOOP_ON>;
+    using T_dX1EV   = ChebyshevEvaluatorBaseVector<ChebyshevTraits<T_dX1>, N, STATIC_LOOP_ON>;
+
+    // Load data
+    RefData<3, 3> ref_data( fipath );
+
+    // Prepare data variables to global error control if any
+    cusfloat    g_max_err       = 0.0;
+    int         g_count_thr     = 0;
+    cusfloat    g_dx0_max_err   = 0.0;
+    int         g_dx0_count_thr = 0;
+    cusfloat    g_dx1_max_err   = 0.0;
+    int         g_dx1_count_thr = 0;
+
+    // Loop over database to check its value
+    for ( int i=0; i<ref_data.num_x2; i++ )
     {
-        // Check using direct method
-        sol_i = lobj->get_value_abh(
-                                    ref_data.a[i],
-                                    ref_data.b[i],
-                                    ref_data.h[i]
-                                    );
-        diff = sol_i-ref_data.g_int[i];
-        if (abs(diff)>EPS_INTEGRALS)
-        {
-            std::cout << "Test " << test_name << " - direct method: has ";
-            std::cout << "an error of: " << diff;
-            std::cout << " which is above the requested limits." << std::endl;
-            flag = false;
-            break;
-        }
+        // std::cout << "X2: " << ref_data.X2[i] << std::endl;
+        // Fold database
+        fold_database_3d<T>( ref_data.X2[i] );
+        fold_database_3d<T_dX0>( ref_data.X2[i] );
+        fold_database_3d<T_dX1>( ref_data.X2[i] );
 
-        // Check using simple folding method
-        lobj->fold_h(ref_data.h[i]);
-        sol_i = lobj->get_value_ab(ref_data.a[i], ref_data.b[i]);
-        diff = sol_i-ref_data.g_int[i];
-        if (abs(diff)>EPS_INTEGRALS)
+        for ( int j=0; j<ref_data.num_x0; j++ )
         {
-            std::cout << "Test " << test_name << " - simple fold method: has ";
-            std::cout << "an error of: " << diff;
-            std::cout << " which is above the requested limits." << std::endl;
-            flag = false;
-            break;
-        }
+            for ( int k=0; k<ref_data.num_x1; k++ )
+            {
+                // Interpolate in the database
+                TEV::evaluate( N, &(ref_data.X0[j]), &(ref_data.X1[k]), result );
+                T_dX0EV::evaluate( N, &(ref_data.X0[j]), &(ref_data.X1[k]), result_dx0 );
+                T_dX1EV::evaluate( N, &(ref_data.X0[j]), &(ref_data.X1[k]), result_dx1 );
 
-        // Check using simple folding method
-        lobj->fold_h(ref_data.h[i]);
-        lobj->fold_b(ref_data.b[i]);
-        sol_i = lobj->get_value_a(ref_data.a[i]);
-        diff = sol_i-ref_data.g_int[i];
-        if (abs(diff)>EPS_INTEGRALS)
-        {
-            std::cout << "Test " << test_name << " - double fold method: has ";
-            std::cout << "an error of: " << diff;
-            std::cout << " which is above the requested limits." << std::endl;
-            flag = false;
-            break;
+                // Compare result with the target
+                index = ( 
+                            i * ( ref_data.num_x0 * ref_data.num_x1 )
+                            +
+                            j * ( ref_data.num_x1 )
+                            +
+                            k
+                        );
+                // std::cout << "Index: " << index << std::endl;
+                
+                if ( !assert_scalar_equality( result[0], ref_data.G[index], EPS_PREC ) )
+                {
+                    if constexpr( EC == ErrorControl::Local )
+                    {
+                        std::cerr << "TEST FAILED for " << db_name << " and G function" << std::endl;
+                        std::cerr << "Expected: " << ref_data.G[index] << " - Calculated: " << result[0] << std::endl;
+                        std::cerr << "A[" << j  << "]: " << ref_data.X0[j] << " - B[" << k << "]: " << ref_data.X1[k] << " - H[" << i << "]: " << ref_data.X2[i] << std::endl;
+                        throw std::exception( );
+                    }
+                    else if constexpr( EC == ErrorControl::Global )
+                    {
+                        UPDATE_GLOBAL_ERROR( result[0], ref_data.G[index], g_max_err, g_count_thr )
+                    }
+                }
+                
+                if ( !assert_scalar_equality( result_dx0[0], ref_data.G_dx0[index], EPS_PREC ) )
+                {
+                    if constexpr( EC == ErrorControl::Local )
+                    {
+                        std::cerr << "TEST FAILED for " << db_name << " and G_dA function" << std::endl;
+                        std::cerr << "Expected: " << ref_data.G_dx0[index] << " - Calculated: " << result_dx0[0] << std::endl;
+                        std::cerr << "A[" << j  << "]: " << ref_data.X0[j] << " - B[" << k << "]: " << ref_data.X1[k] << " - H[" << i << "]: " << ref_data.X2[i] << std::endl;
+                        throw std::exception( );
+                    }
+                    else if constexpr( EC == ErrorControl::Global )
+                    {
+                        UPDATE_GLOBAL_ERROR( result_dx0[0], ref_data.G_dx0[index], g_dx0_max_err, g_dx0_count_thr )
+                    }
+                }
+                
+                if ( !assert_scalar_equality( result_dx1[0], ref_data.G_dx1[index], EPS_PREC ) )
+                {
+                    if constexpr( EC == ErrorControl::Local )
+                    {
+                        std::cerr << "TEST FAILED for " << db_name << " and G_dB function" << std::endl;
+                        std::cerr << "Expected: " << ref_data.G_dx1[index] << " - Calculated: " << result_dx1[0] << std::endl;
+                        std::cerr << "A[" << j  << "]: " << ref_data.X0[j] << " - B[" << k << "]: " << ref_data.X1[k] << " - H[" << i << "]: " << ref_data.X2[i] << std::endl;
+                        throw std::exception( );
+                    }
+                    else if constexpr( EC == ErrorControl::Global )
+                    {
+                        UPDATE_GLOBAL_ERROR( result_dx1[0], ref_data.G_dx1[index], g_dx1_max_err, g_dx1_count_thr )
+                    }
+                }
+            }
         }
     }
 
-    return flag;
+    // Check global error if selected
+    if constexpr( EC == ErrorControl::Global )
+    {
+        int N2 = ref_data.num_x0 * ref_data.num_x1 * ref_data.num_x2;
+        CHECK_GLOBAL_ERROR( EPS_PREC, N2, g_max_err,     g_count_thr,     db_name, "G"     )
+        CHECK_GLOBAL_ERROR( EPS_PREC, N2, g_dx0_max_err, g_dx0_count_thr, db_name, "G_dx0" )
+        CHECK_GLOBAL_ERROR( EPS_PREC, N2, g_dx1_max_err, g_dx1_count_thr, db_name, "G_dx1" )
+    }
+
+    std::cout << " -> DONE" << std::endl;
 }
 
 
-int main(int argc, char* argv[])
+int main( int argc, char* argv[] )
 {
     // Read command line arguments
-    if (!check_num_cmd_args(argc, 14))
+    if ( !check_num_cmd_args( argc, 7 ) )
     {
         return 1;
     }
 
-    std::string file_path_l1(argv[1]);
-    std::string file_path_l1_da(argv[2]);
-    std::string file_path_l1_db(argv[3]);
-    std::string file_path_l2(argv[4]);
-    std::string file_path_l3(argv[5]);
-    std::string file_path_l3_da(argv[6]);
-    std::string file_path_l3_db(argv[7]);
-    std::string file_path_m1(argv[8]);
-    std::string file_path_m1_da(argv[9]);
-    std::string file_path_m1_db(argv[10]);
-    std::string file_path_m2(argv[11]);
-    std::string file_path_m3(argv[12]);
-    std::string file_path_m3_da(argv[13]);
-    std::string file_path_m3_db(argv[14]);
-
-    // Launch test L1
-    P3* l1 = new P3();
-    set_data_l1(l1);
-    launch_test_3d(l1, file_path_l1, "L1");
-
-    // Launch test L1_dA
-    P3* l1_da = new P3();
-    set_data_l1_da(l1_da);
-    launch_test_3d(l1_da, file_path_l1_da, "L1_dA");
-
-    // Launch test L1_dB
-    P3* l1_db = new P3();
-    set_data_l1_db(l1_db);
-    launch_test_3d(l1_db, file_path_l1_db, "L1_dB");
-
-    // Launch test L2
-    P3* l2 = new P3();
-    set_data_l2(l2);
-    launch_test_1d(l2, file_path_l2, "L2");
-
-    // Launch test L3
-    P3* l3 = new P3();
-    set_data_l3(l3);
-    launch_test_3d(l3, file_path_l3, "L3");
-
-    // Launch test L3_dA
-    P3* l3_da = new P3();
-    set_data_l3_da(l3_da);
-    launch_test_3d(l3_da, file_path_l3_da, "L3_dA");
+    std::string l1_fipath(argv[1]);
+    std::string l2_fipath(argv[2]);
+    std::string l3_fipath(argv[3]);
+    std::string m1_fipath(argv[4]);
+    std::string m2_fipath(argv[5]);
+    std::string m3_fipath(argv[6]);
+    std::string r11_fipath(argv[7]);
     
-    // Launch test L3_dB
-    P3* l3_db = new P3();
-    set_data_l3_db(l3_db);
-    launch_test_3d(l3_db, file_path_l3_db, "L3_dB");
-
-    // Launch test M1
-    P3* m1 = new P3();
-    set_data_m1(m1);
-    launch_test_3d(m1, file_path_m1, "M1");
-
-    // Launch test M1_dA
-    P3* m1_da = new P3();
-    set_data_m1_da(m1_da);
-    launch_test_3d(m1_da, file_path_m1_da, "M1_dA");
-
-    // Launch test M1_dB
-    P3* m1_db = new P3();
-    set_data_m1_db(m1_db);
-    launch_test_3d(m1_db, file_path_m1_db, "M1_dB");
-
-    // Launch test M2
-    P3* m2 = new P3();
-    set_data_m2(m2);
-    launch_test_1d(m2, file_path_m2, "M2");
-
-    // Launch test M3
-    P3* m3 = new P3();
-    set_data_m3(m3);
-    launch_test_3d(m3, file_path_m3, "M3");
-
-    // Launch test M3_dA
-    P3* m3_da = new P3();
-    set_data_m3_da(m3_da);
-    launch_test_3d(m3_da, file_path_m3_da, "M3_dA");
-
-    // Launch test M3_dB
-    P3* m3_db = new P3();
-    set_data_m3_db(m3_db);
-    launch_test_3d(m3_db, file_path_m3_db, "M3_dB");
-
-    // Delete heap memory allocation
-    delete l1;
-    delete l1_da;
-    delete l1_db;
-    delete l2;
-    delete l3;
-    delete l3_da;
-    delete l3_db;
-    delete m1;
-    delete m1_da;
-    delete m1_db;
-    delete m2;
-    delete m3;
-    delete m3_da;
-    delete m3_db;
+    // Launch database comparison
+    compare_3d_database<L1C, L1_dAC, L1_dBC, ErrorControl::Local>( l1_fipath, "L1" );
+    compare_1d_database<L2C, ErrorControl::Local>( l2_fipath, "L2" );
+    compare_3d_database<L3C, L3_dAC, L3_dBC, ErrorControl::Local>( l3_fipath, "L3" );
+    compare_3d_database<M1C, M1_dAC, M1_dBC, ErrorControl::Local>( m1_fipath, "M1" );
+    compare_1d_database<M2C, ErrorControl::Local>( m2_fipath, "M2" );
+    compare_3d_database<M3C, M3_dAC, M3_dBC, ErrorControl::Local>( m3_fipath, "M3" );
+    compare_2d_database<R11C, R11_dXC, ErrorControl::Local>( r11_fipath, "R11" );
 
     return 0;
 }
