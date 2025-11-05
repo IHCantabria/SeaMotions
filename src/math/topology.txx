@@ -65,10 +65,10 @@ inline  void    jacobi_mat_2d_vec(
     shape_fcn_der_2d_vec<NV, NP>( xi, eta, dNdxi, dNdeta );
 
     // Calculate jacobi matrix entries    
-    JACMAT2D_DOT_PRODUCT( jac_mat[0], xn, dNdxi, NP, NV )
-    JACMAT2D_DOT_PRODUCT( jac_mat[1], xn, dNdeta, NP, NV )
-    JACMAT2D_DOT_PRODUCT( jac_mat[2], yn, dNdxi, NP, NV )
-    JACMAT2D_DOT_PRODUCT( jac_mat[3], yn, dNdeta, NP, NV )
+    JACMAT2D_DOT_PRODUCT( jac_mat, 0, xn, dNdxi, NP, NV )
+    JACMAT2D_DOT_PRODUCT( jac_mat, 1, xn, dNdeta, NP, NV )
+    JACMAT2D_DOT_PRODUCT( jac_mat, 2, yn, dNdxi, NP, NV )
+    JACMAT2D_DOT_PRODUCT( jac_mat, 3, yn, dNdeta, NP, NV )
 
 }
 
@@ -90,10 +90,10 @@ inline  void    shape_fcn_2d_vec(
      * 
      */
 
-    static_assert(NumNodes == 3 || NumNodes == 4, "Only triangle and quadrilateral panels supported.");
+    static_assert(NV == 3 || NV == 4, "Only triangle and quadrilateral panels supported.");
 
     // Switch in between elements type
-    if ( constexpr( NV == 3 ) )
+    if constexpr( NV == 3 )
     {
         for ( int i=0; i<NP; i++ )
         {
@@ -103,7 +103,7 @@ inline  void    shape_fcn_2d_vec(
         }
     }
 
-    if ( constexpr( NV == 4 ) )
+    if constexpr( NV == 4 )
     {
         for ( int i=0; i<NP; i++ )
         {
@@ -161,7 +161,7 @@ inline  void    shape_fcn_deta_2d_vec(
      */
 
     // Switch in between elements type
-    if ( constexpr( NV == 3 ) )
+    if constexpr( NV == 3 )
     {
         for ( int i=0; i<NP; i++ )
         {
@@ -172,7 +172,7 @@ inline  void    shape_fcn_deta_2d_vec(
     }
 
     // Calculate shape function values for rectangular regions
-    if ( constexpr( NV == 4 ) )
+    if constexpr( NV == 4 )
     {
         for ( int i=0; i<NP; i++ )
         {
@@ -201,7 +201,7 @@ inline  void    shape_fcn_dxi_2d_vec(
      */
 
     // Calculate shape function values for simplex regions
-    if ( constexpr( NV == 3 ) )
+    if constexpr( NV == 3 )
     {
         for ( int i=0; i<NP; i++ )
         {
@@ -212,7 +212,7 @@ inline  void    shape_fcn_dxi_2d_vec(
     }
 
     // Calculate shape function values for rectangular regions
-    if ( constexpr( NV == 4 ) )
+    if constexpr( NV == 4 )
     {
         for ( int i=0; i<NP; i++ )
         {

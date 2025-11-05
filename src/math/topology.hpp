@@ -14,17 +14,17 @@ const int MAX_LIN_NODES = 4;
 /*******************************************/
 /************* Define MACROS ***************/
 /*******************************************/
-#define JACMAT2D_DOT_PRODUCT( jac_mat, coord, shape_der, NP, NV )   \
-{                                                                   \
-    for ( int i=0; i<NP; i++ )                                      \
-    {                                                               \
-        jac_mat[4*i+0] = 0;                                         \
-        for ( int j=0; j<NV; j++ )                                  \
-        {                                                           \
-            jac_mat[4*i+0] += coord[j] * shape_der[i*NV+j];         \
-        }                                                           \
-    }                                                               \
-}                                                                   \
+#define JACMAT2D_DOT_PRODUCT( jac_mat, col_idx, coord, shape_der, NP, NV )      \
+{                                                                               \
+    for ( int i=0; i<NP; i++ )                                                  \
+    {                                                                           \
+        jac_mat[4*i+col_idx] = 0;                                               \
+        for ( int j=0; j<NV; j++ )                                              \
+        {                                                                       \
+            jac_mat[4*i+col_idx] += coord[j] * shape_der[i*NV+j];               \
+        }                                                                       \
+    }                                                                           \
+}                                                                               \
 
 /*******************************************/
 /******* FUNCTION DECLARATION  BLOCK********/
