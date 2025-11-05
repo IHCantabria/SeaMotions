@@ -265,7 +265,7 @@ struct ChebyshevEvaluatorBase
         cusfloat result = 0.0;
         // std::cout << "Evaluate chebyshev: " << xs << " " << ys << std::endl;
         // std::cout << "Evaluate chebyshev: " << xsm << " " << ysm << std::endl;
-        evaluate_chebyshev_polynoials_2d<Derived::max_cheby_order>( 
+        evaluate_chebyshev_polynomials_2d<Derived::max_cheby_order>( 
                                                                         &(Derived::coeffs[start_pos]), 
                                                                         &(Derived::ncx[start_pos]),
                                                                         &(Derived::ncy[start_pos]),
