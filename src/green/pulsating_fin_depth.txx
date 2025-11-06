@@ -1276,19 +1276,12 @@ void        wave_term_integral(
     cusfloat G_dz_real[N];
     cusfloat G_dzeta_real[N];
 
-    // for ( std::size_t i=0; i<N; i++ )
-    // {
-    //     STATIC_COND( ONLY_FCN,      G_real[i]       = 0.0;      )
-    //     STATIC_COND( ONLY_FCNDR,    G_dr_real[i]    = 0.0;   )
-    //     STATIC_COND( ONLY_FCNDZ,    G_dz_real[i]    = 0.0;   )
-    // }
-
     for ( std::size_t i=0; i<N; i++ )
     {
-        STATIC_COND( ONLY_FCN,      G_real[i]       = res_fcn0[i];      )
-        STATIC_COND( ONLY_FCNDR,    G_dr_real[i]    = res_fcn0_da[i];   )
-        STATIC_COND( ONLY_FCNDZ,    G_dz_real[i]    = res_fcn0_db[i] * sg_z_m_zeta[i];   )
-        STATIC_COND( ONLY_FCNDZ,    G_dzeta_real[i] = - res_fcn0_db[i] * sg_z_m_zeta[i];   )
+        STATIC_COND( ONLY_FCN,      G_real[i]       = res_fcn0[i];                          )
+        STATIC_COND( ONLY_FCNDR,    G_dr_real[i]    = res_fcn0_da[i];                       )
+        STATIC_COND( ONLY_FCNDZ,    G_dz_real[i]    = res_fcn0_db[i] * sg_z_m_zeta[i];      )
+        STATIC_COND( ONLY_FCNDZ,    G_dzeta_real[i] = - res_fcn0_db[i] * sg_z_m_zeta[i];    )
     }
 
     
@@ -1321,20 +1314,11 @@ void        wave_term_integral(
 
     for ( std::size_t i=0; i<b1_gt1_count; i++ )
     {
-        STATIC_COND( ONLY_FCN,      G_real[b1_gt1_pos[i]]       += nu * res_fxy_bgt1[i];        )
-        STATIC_COND( ONLY_FCNDR,    G_dr_real[b1_gt1_pos[i]]    += nu2 * res_fxy_bgt1_dx[i];    )
-        // STATIC_COND( ONLY_FCNDZ,    G_dz_real[b1_gt1_pos[i]]    -= nu2 * res_fxy_bgt1_dy[i];    )
-        STATIC_COND( ONLY_FCNDZ,    G_dz_real[b1_gt1_pos[i]]    += nu2 * res_fxy_bgt1_dy[i] * sg_z_p_zeta[i];    )
-        STATIC_COND( ONLY_FCNDZ,    G_dzeta_real[b1_gt1_pos[i]] += nu2 * res_fxy_bgt1_dy[i] * sg_z_p_zeta[i];    )
+        STATIC_COND( ONLY_FCN,      G_real[b1_gt1_pos[i]]       += nu * res_fxy_bgt1[i];                        )
+        STATIC_COND( ONLY_FCNDR,    G_dr_real[b1_gt1_pos[i]]    += nu2 * res_fxy_bgt1_dx[i];                    )
+        STATIC_COND( ONLY_FCNDZ,    G_dz_real[b1_gt1_pos[i]]    += nu2 * res_fxy_bgt1_dy[i] * sg_z_p_zeta[i];   )
+        STATIC_COND( ONLY_FCNDZ,    G_dzeta_real[b1_gt1_pos[i]] += nu2 * res_fxy_bgt1_dy[i] * sg_z_p_zeta[i];   )
     }
-
-    // for ( std::size_t i=0; i<N; i++ )
-    // {
-    //     STATIC_COND( ONLY_FCN,      G_real[i]       = nu * res_fxy_bgt1[i];        )
-    //     STATIC_COND( ONLY_FCNDR,    G_dr_real[i]    = nu2 * res_fxy_bgt1_dx[i];    )
-    //     STATIC_COND( ONLY_FCNDZ,    G_dz_real[i]    = -nu2 * res_fxy_bgt1_dy[i];    )
-    //     // STATIC_COND( ONLY_FCNDZ,    G_dz_real[i]    = nu2 * res_fxy_bgt1_dy[i] * sg_z_p_zeta[i];    )
-    // }
 
     // Calculate exponential terms for imaginary part
     cusfloat expsum[N], expsum_dz[N], expsum_dzeta[N];
@@ -1352,7 +1336,6 @@ void        wave_term_integral(
         m0  = c1 + c3;
 
         STATIC_COND( ONLY_FCN or ONLY_FCNDR,    expsum[i]       = m0 + c0 + c2;                         )
-        // STATIC_COND( ONLY_FCNDZ,                expsum_dz[i]    = m0 - c0 - c2;    )
         STATIC_COND( ONLY_FCNDZ,                expsum_dz[i]    = m0 + c0 * sg_z_p_zeta[i] - c2;        )
         STATIC_COND( ONLY_FCNDZ,                expsum_dzeta[i] = c0 * sg_z_p_zeta[i] - c1 + c2 + c3;   )
     }
@@ -1367,12 +1350,6 @@ void        wave_term_integral(
         STATIC_COND( ONLY_FCNDR,                j1_vec[i] = besselj1( k0 * R[i] ); )
     }
 
-    // // Calculate green function values
-    // for ( std::size_t i=0; i<N; i++ )
-    // {
-    //     STATIC_COND( ONLY_FCNDR, G_dr_real[i] = ( R[i] < 1e-4 ) ? 0.0 : G_dr_real[i]; )
-    // }
-
     for ( std::size_t i=0; i<N; i++ )
     {
         STATIC_COND( ONLY_FCN,      G[i]       = cuscomplex( G_real[i],             k0nu * expsum[i] * j0_vec[i]               ); )
@@ -1381,151 +1358,4 @@ void        wave_term_integral(
         STATIC_COND( ONLY_FCNDZ,    G_dzeta[i] = cuscomplex( G_dzeta_real[i],      -k0nu * expsum_dzeta[i] * j0_vec[i] * k0    ); )
     }
 
-
-    // cusfloat rank_f[N];
-    // cusfloat rank_dfdr[N];
-    // cusfloat rank_dfdz[N];
-    // cusfloat rank_dfdzeta[N];
-    // cusfloat R2[N];
-    // cusfloat r1_inv[N];
-    // cusfloat r2_inv[N];
-    // cusfloat r3_inv[N];
-    // cusfloat r4_inv[N];
-    // cusfloat r5_inv[N];
-    // cusfloat r6_inv[N];
-    // cusfloat r1_inv_2[N];
-    // cusfloat r2_inv_2[N];
-    // cusfloat r3_inv_2[N];
-    // cusfloat r4_inv_2[N];
-    // cusfloat r5_inv_2[N];
-    // cusfloat r6_inv_2[N];
-    // // cusfloat v0[N];
-    // // cusfloat v1[N];
-
-    // for ( std::size_t i=0; i<N; i++ )
-    // {
-    //     v0[i] = std::abs( z[i] - zeta[i] );
-    // }
-
-    // for ( std::size_t i=0; i<N; i++ )
-    // {
-    //     v1[i] = z[i] + zeta[i] + 2.0 * h;
-    // }
-
-    // //Calculate rankine terms to substract from Green function
-    // for ( std::size_t i=0; i<N; i++ )
-    // {
-    //     R2[i] = pow2s( R[i] );
-    // }
-
-    // for ( std::size_t i=0; i<N; i++ )
-    // {
-    //     r1_inv_2[i] = 1.0 / ( R2[i] + pow2s( v0[i] ) );
-    //     r2_inv_2[i] = 1.0 / ( R2[i] + pow2s( v1[i] ) );
-    //     r3_inv_2[i] = 1.0 / ( R2[i] + pow2s( v2[i] ) );
-    //     r4_inv_2[i] = 1.0 / ( R2[i] + pow2s( v3[i] ) );
-    //     r5_inv_2[i] = 1.0 / ( R2[i] + pow2s( v4[i] ) );
-    //     r6_inv_2[i] = 1.0 / ( R2[i] + pow2s( v5[i] ) );
-    // }
-
-    // lv_sqrt<cusfloat>( N, r1_inv_2, r1_inv );
-    // lv_sqrt<cusfloat>( N, r2_inv_2, r2_inv );
-    // lv_sqrt<cusfloat>( N, r3_inv_2, r3_inv );
-    // lv_sqrt<cusfloat>( N, r4_inv_2, r4_inv );
-    // lv_sqrt<cusfloat>( N, r5_inv_2, r5_inv );
-    // lv_sqrt<cusfloat>( N, r6_inv_2, r6_inv );
-
-    // for ( std::size_t i=0; i<N; i++ )
-    // {
-    //     STATIC_COND( ONLY_FCN, rank_f[i] = r1_inv[i] + r2_inv[i] + r3_inv[i] + r4_inv[i] + r5_inv[i] + r6_inv[i]; )
-    // }
-
-    // for ( std::size_t i=0; i<N; i++ )
-    // {
-    //     STATIC_COND( 
-    //                     ONLY_FCNDR, 
-    //                     rank_dfdr[i] = -( 
-    //                                         r1_inv[i] * r1_inv_2[i]
-    //                                         + 
-    //                                         r2_inv[i] * r2_inv_2[i]
-    //                                         + 
-    //                                         r3_inv[i] * r3_inv_2[i]
-    //                                         + 
-    //                                         r4_inv[i] * r4_inv_2[i]
-    //                                         + 
-    //                                         r5_inv[i] * r5_inv_2[i]
-    //                                         + 
-    //                                         r6_inv[i] * r6_inv_2[i]
-    //                                     ) * R[i];
-    //             )
-    // }
-
-    // for ( std::size_t i=0; i<N; i++ )
-    // {
-    //     STATIC_COND( 
-    //                     ONLY_FCNDZ,
-    //                     rank_dfdz[i] = -( 
-    //                                         r1_inv[i] * r1_inv_2[i] * v0[i] * sign( v0[i] )
-    //                                         + 
-    //                                         r2_inv[i] * r2_inv_2[i] * v1[i]
-    //                                         + 
-    //                                         r3_inv[i] * r3_inv_2[i] * v2[i]
-    //                                         + 
-    //                                         r4_inv[i] * r4_inv_2[i] * v3[i]
-    //                                         -
-    //                                         r5_inv[i] * r5_inv_2[i] * v4[i]
-    //                                         + 
-    //                                         r6_inv[i] * r6_inv_2[i] * v5[i]
-    //                                     );
-    //                 )
-    // }
-
-    // for ( std::size_t i=0; i<N; i++ )
-    // {
-    //     STATIC_COND( 
-    //                     ONLY_FCNDZ,
-    //                     rank_dfdzeta[i] = -( 
-    //                                         r1_inv[i] * r1_inv_2[i] * v0[i] * sign( v0[i] )
-    //                                         + 
-    //                                         r2_inv[i] * r2_inv_2[i] * v1[i]
-    //                                         + 
-    //                                         r3_inv[i] * r3_inv_2[i] * v2[i]
-    //                                         - 
-    //                                         r4_inv[i] * r4_inv_2[i] * v3[i]
-    //                                         +
-    //                                         r5_inv[i] * r5_inv_2[i] * v4[i]
-    //                                         + 
-    //                                         r6_inv[i] * r6_inv_2[i] * v5[i]
-    //                                     );
-    //                 )
-    // }
-
-    // // Substract rankine terms
-    // for ( std::size_t i=0; i<N; i++ )
-    // {
-    //     STATIC_COND( ONLY_FCN,      G[i]        += cuscomplex( rank_f[i], 0.0        ); )
-    //     STATIC_COND( ONLY_FCN,      G_dr[i]     += cuscomplex( rank_dfdr[i], 0.0     ); )
-    //     STATIC_COND( ONLY_FCN,      G_dz[i]     += cuscomplex( rank_dfdz[i], 0.0     ); )
-    //     STATIC_COND( ONLY_FCN,      G_dzeta[i]  += cuscomplex( rank_dfdzeta[i], 0.0  ); )
-    // }
-
-    // std::cout << "WI res -> G: " << G[0] << " - dGdr: " << G_dr[0] << " - dGdz: " << G_dz[0] << std::endl;
-
-
-    // for ( std::size_t i=0; i<N; i++ )
-    // {
-    //     STATIC_COND( ONLY_FCN, G[i]         = cuscomplex( G_real[i],    2.0 * PI * nu * std::exp( -nu * v2[i] ) * j0_vec[i]             ); )
-    //     STATIC_COND( ONLY_FCNDR, G_dr[i]    = cuscomplex( G_dr_real[i], -2.0 * PI * pow2s( nu ) * std::exp( -nu * v2[i] ) * j1_vec[i]   ); )
-    //     STATIC_COND( ONLY_FCNDZ, G_dz[i]    = cuscomplex( G_dz_real[i], -2.0 * PI * pow2s( nu ) * std::exp( -nu * v2[i] ) * j0_vec[i] * sg_z_p_zeta[i]    ); )
-    // }
-
-}
-
-
-template<std::size_t N>
-void        custom_template(
-                                cusfloat* R
-                            )
-{
-    double a = 0.0;
 }
