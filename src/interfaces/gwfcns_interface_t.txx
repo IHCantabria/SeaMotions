@@ -62,12 +62,12 @@ GWFcnsInterfaceT<N>::GWFcnsInterfaceT(
 template<std::size_t N>
 template<auto Kernel>
 void        GWFcnsInterfaceT<N>::operator()( 
-                                            cusfloat*   xi_l,
-                                            cusfloat*   eta_l,
+                                            cusfloat*   ,
+                                            cusfloat*   ,
                                             cusfloat*   xi,
                                             cusfloat*   eta,
                                             cusfloat*   zeta,
-                                            bool        verbose
+                                            bool        
                                         )
 {
     // Calculate horizontal radius
