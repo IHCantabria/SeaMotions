@@ -590,7 +590,7 @@ private:
 
     }
 
-    void _calculate_i0( cusfloat* x )
+    void _calculate_i0( void )
     {
         for ( int i=0; i<N; i++ )
         {
@@ -657,7 +657,7 @@ private:
         }
     }
 
-    void _calculate_j0( cusfloat* x )
+    void _calculate_j0( void )
     {
         for ( int i=0; i<N; i++ )
         {
@@ -707,7 +707,7 @@ private:
         }
     }
 
-    void _calculate_k0( cusfloat* x )
+    void _calculate_k0( void )
     {
         for ( int i=0; i<N; i++ )
         {
@@ -771,7 +771,7 @@ private:
         }
     }
 
-    void _calculate_y0( cusfloat* x )
+    void _calculate_y0( void )
     {
         for ( int i=0; i<N; i++ )
         {
@@ -796,7 +796,7 @@ private:
         }
     }
 
-    void _calculate_y1( cusfloat* x )
+    void _calculate_y1( void )
     {
         for ( int i=0; i<N; i++ )
         {
@@ -822,7 +822,7 @@ private:
         }
     }
 
-    void _calculate_struve0( cusfloat* x )
+    void _calculate_struve0( void )
     {
         for ( int i=0; i<N; i++ )
         {
@@ -846,7 +846,7 @@ private:
         }
     }
 
-    void _calculate_struve1( cusfloat* x )
+    void _calculate_struve1( void )
     {
         for ( int i=0; i<N; i++ )
         {
@@ -1139,7 +1139,7 @@ private:
         lv_sqrt<cusfloat>( N, this->_x_inv, this->_fcn_sqrtx_inv );
     }
 
-    void _calculate_modified_aux_fcns( cusfloat* x )
+    void _calculate_modified_aux_fcns( void )
     {
         // Calculate function values
         lv_log<cusfloat>( N, &(this->_powers_modk[1*N]), this->_fcn_logpowers );
@@ -1255,16 +1255,16 @@ private:
         this->_calculate_standard_aux_fcns( n, x );
 
         // Calculate first kind bessel functions
-        this->_calculate_j0( n, x );
+        this->_calculate_j0( n );
         this->_calculate_j1( n, x );
 
         // Calculate second king bessel functions
-        this->_calculate_y0( n, x );
-        this->_calculate_y1( n, x );
+        this->_calculate_y0( n );
+        this->_calculate_y1( n );
 
         // Calculate struve functions
-        this->_calculate_struve0( n, x );
-        this->_calculate_struve1( n, x );
+        this->_calculate_struve0( n );
+        this->_calculate_struve1( n );
 
     }
 
@@ -1277,18 +1277,18 @@ private:
         this->_calculate_inverse_powers_modk( n, x );
 
         // Calculate standard auxiliar functions
-        this->_calculate_modified_aux_fcns( n, x );
+        this->_calculate_modified_aux_fcns( n );
 
         // Calculate first order modified
-        this->_calculate_i0( n, x );
+        this->_calculate_i0( n );
         this->_calculate_i1( n, x );
 
-        this->_calculate_k0( n, x );
+        this->_calculate_k0( n );
         this->_calculate_k1( n, x );
 
     }
 
-    void _calculate_i0( int n, cusfloat* x )
+    void _calculate_i0( int n )
     {
         for ( int i=0; i<n; i++ )
         {
@@ -1355,7 +1355,7 @@ private:
         }
     }
 
-    void _calculate_j0( int n, cusfloat* x )
+    void _calculate_j0( int n )
     {
         for ( int i=0; i<n; i++ )
         {
@@ -1405,7 +1405,7 @@ private:
         }
     }
 
-    void _calculate_k0( int n, cusfloat* x )
+    void _calculate_k0( int n )
     {
         for ( int i=0; i<n; i++ )
         {
@@ -1468,7 +1468,7 @@ private:
         }
     }
 
-    void _calculate_y0( int n, cusfloat* x )
+    void _calculate_y0( int n )
     {
         for ( int i=0; i<n; i++ )
         {
@@ -1493,7 +1493,7 @@ private:
         }
     }
 
-    void _calculate_y1( int n, cusfloat* x )
+    void _calculate_y1( int n )
     {
         for ( int i=0; i<n; i++ )
         {
@@ -1519,7 +1519,7 @@ private:
         }
     }
 
-    void _calculate_struve0( int n, cusfloat* x )
+    void _calculate_struve0( int n )
     {
         for ( int i=0; i<n; i++ )
         {
@@ -1543,7 +1543,7 @@ private:
         }
     }
 
-    void _calculate_struve1( int n, cusfloat* x )
+    void _calculate_struve1( int n )
     {
         for ( int i=0; i<n; i++ )
         {
@@ -1836,7 +1836,7 @@ private:
         lv_sqrt<cusfloat>( n, this->_x_inv, this->_fcn_sqrtx_inv );
     }
 
-    void _calculate_modified_aux_fcns( int n, cusfloat* x )
+    void _calculate_modified_aux_fcns( int n )
     {
         // Calculate function values
         lv_log<cusfloat>( n, &(this->_powers_modk[1*n]), this->_fcn_logpowers );
@@ -2006,7 +2006,7 @@ private:
 
     }
 
-    void _calculate_i0( cusfloat* x )
+    void _calculate_i0( void )
     {
         for ( int i=0; i<N; i++ )
         {
@@ -2041,7 +2041,7 @@ private:
         }
     }
 
-    void _calculate_i1( cusfloat* x )
+    void _calculate_i1( void )
     {
         for ( int i=0; i<N; i++ )
         {
@@ -2078,7 +2078,7 @@ private:
         }
     }
 
-    void _calculate_j0( cusfloat* x )
+    void _calculate_j0( void )
     {
         for ( int i=0; i<N; i++ )
         {
@@ -2106,7 +2106,7 @@ private:
         }
     }
 
-    void _calculate_j1( cusfloat* x )
+    void _calculate_j1( void )
     {
         for ( int i=0; i<N; i++ )
         {
@@ -2134,7 +2134,7 @@ private:
         }
     }
 
-    void _calculate_k0( cusfloat* x )
+    void _calculate_k0( void )
     {
         for ( int i=0; i<N; i++ )
         {
@@ -2203,7 +2203,7 @@ private:
         }
     }
 
-    void _calculate_y0( cusfloat* x )
+    void _calculate_y0( void )
     {
         for ( int i=0; i<N; i++ )
         {
@@ -2229,7 +2229,7 @@ private:
         }
     }
 
-    void _calculate_y1( cusfloat* x )
+    void _calculate_y1( void )
     {
         for ( int i=0; i<N; i++ )
         {
@@ -2257,7 +2257,7 @@ private:
         }
     }
 
-    void _calculate_struve0( cusfloat* x )
+    void _calculate_struve0( void )
     {
         for ( int i=0; i<N; i++ )
         {
@@ -2283,7 +2283,7 @@ private:
         }
     }
 
-    void _calculate_struve1( cusfloat* x )
+    void _calculate_struve1( void )
     {
         for ( int i=0; i<N; i++ )
         {
@@ -2586,7 +2586,7 @@ private:
         lv_sqrt<cusfloat>( N, this->_x_inv, this->_fcn_sqrtx_inv );
     }
 
-    void _calculate_modified_aux_fcns( cusfloat* x )
+    void _calculate_modified_aux_fcns( void )
     {
         // Calculate function values
         lv_log<cusfloat>( N, &(this->_powers_modk[1*N]), this->_fcn_logpowers );
