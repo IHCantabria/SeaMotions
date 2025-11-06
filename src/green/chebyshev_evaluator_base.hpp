@@ -7,7 +7,7 @@
 // Include local modules
 #include "../config.hpp"
 #include "../static_tools.hpp"
-#include "../math/chebyshev.hpp"
+#include "../math/chebyshev_evaluation.hpp"
 #include "../math/math_tools.hpp"
 
 
