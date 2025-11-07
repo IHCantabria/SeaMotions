@@ -7,9 +7,11 @@
 #include "../../containers/simulation_data.hpp"
 #include "../../inout/input.hpp"
 #include "../../interfaces/gwfcns_interface_t.hpp"
+#include "../../math/integration.hpp"
 #include "../../math/scalapack_solver.hpp"
 #include "../../mesh/mesh_group.hpp"
 #include "../../static_tools.hpp"
+#include "../../waves/waves_common.hpp"
 
 // Declare auxiliary macros
 #define COL_MAJOR_INDEX( index, row_count, col_count, num_rows_local ) index_cm = col_count * num_rows_local + row_count;
