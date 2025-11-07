@@ -981,25 +981,12 @@ void        Mesh::_load_simply_mesh(
                                     )
 {
     // Define auxiliar variable to help in the file parsing
-    int                 a0                  = 0;
-    int                 a1                  = 0;
     int                 aux_int;
     std::string         aux_str;
     std::string         _body_name;
-    int                 elem_count          = 0;
-    int                 elem_valid_count    = 0;
-    int                 elem_total          = 0;
-    int                 elem_id             = 0;
-    int                 header_code         = 0;
     std::istringstream  iss;
-    int                 items_np            = 0;
     std::string         line;
-    int                 mnpe                = 0;
-    int                 node_count          = 0;
-    int                 node_id             = 0;
     int                 npe                 = 0;
-    int                 section_id          = 0;
-    int                 sel_count           = 0;
 
     // Lower case body name to compare with the 
     // names read from files
@@ -1100,7 +1087,7 @@ Mesh::Mesh(
     else
     {
         std::cerr << "ERROR - Mesh file extension: " << file_ext << " is not valid." << std::endl; 
-        throw std::exception( "Mesh file extension is not valid." );
+        throw std::runtime_error( "Mesh file extension is not valid." );
     }
 
     // Generate vector with the panels type
