@@ -5,6 +5,7 @@
 #include "../../containers/matlin_group.hpp"
 #include "../../containers/mpi_config.hpp"
 #include "../../containers/simulation_data.hpp"
+#include "../../green/source.hpp"
 #include "../../inout/input.hpp"
 #include "../../interfaces/gwfcns_interface_t.hpp"
 #include "../../math/integration.hpp"
