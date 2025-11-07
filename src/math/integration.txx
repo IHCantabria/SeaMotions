@@ -290,7 +290,7 @@ void        quadrature_panel_t(
                                         cuscomplex&         result_G,
                                         cuscomplex&         result_G_dn_sf,
                                         cuscomplex&         result_G_dn_pf,
-                                        bool                verbose=false
+                                        bool                verbose
                                     )
 {
     // Calculate function value

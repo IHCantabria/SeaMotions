@@ -31,7 +31,10 @@ typedef std::function <cuscomplex(cuscomplex)> fcc_type;
 /********************************************************/
 /*************** Function Declaration *******************/
 /********************************************************/
-template<typename T, typename U>    inline  cuscomplex  adaptive_quadrature_panel(
+template<
+            typename T, 
+            typename U
+        >                   inline  cuscomplex  adaptive_quadrature_panel(
                                                                                         T*              panel,
                                                                                         U               fcn,
                                                                                         cusfloat        abs_tol,
@@ -57,25 +60,41 @@ template<typename T, typename U>    inline  cuscomplex  adaptive_quadrature_pane
                                                                                         bool            verbose
                                                                                 );
 
-template<typename T, typename U>            cuscomplex  quadrature_panel(
+template<
+            typename T, 
+            typename U
+        >                                   cuscomplex  quadrature_panel(
                                                                                         T*              panel,
                                                                                         U               target_fcn,
                                                                                         int             gp_order
                                                                         );
 
-template<typename T, typename U>            cuscomplex  quadrature_panel(
+template<
+            typename T, 
+            typename U
+        >                                   cuscomplex  quadrature_panel(
                                                                                         T*              panel,
                                                                                         U               target_fcn,
                                                                                         GaussPoints*    gp
                                                                     );
 
-template<typename T, typename U, int NGP>   void        quadrature_panel_t(
-                                                                                        T*              panel,
-                                                                                        U               target_fcn,
-                                                                                        cuscomplex*     result
+template<
+            typename T, 
+            typename U,
+            auto Kernel,
+            int NGP
+        >                                   void        quadrature_panel_t(
+                                                                                        T*                  panel,
+                                                                                        U                   target_fcn,
+                                                                                        cuscomplex&         result_G,
+                                                                                        cuscomplex&         result_G_dn_sf,
+                                                                                        cuscomplex&         result_G_dn_pf,
+                                                                                        bool                verbose=false
                                                                         );
 
-template<typename Functor>                  cusfloat    romberg_quadrature(   
+template<
+            typename Functor
+        >                                   cusfloat    romberg_quadrature(   
                                                                                         Functor         f, 
                                                                                         cusfloat        a, 
                                                                                         cusfloat        b, 
