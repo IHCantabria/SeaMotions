@@ -53,6 +53,8 @@ constexpr cusfloat  EPS_PRECISION       = 1e-14;
 constexpr cusfloat  EPS_PRECISION_ORDER = -14;
 #endif
 
+typedef std::vector<size_t> vector_st;
+
 #define MEMALINGR alignas(32)
 
 constexpr int       G_ON                    = 1;                // Flag used as template argument to SET the calculation of the potential green function
