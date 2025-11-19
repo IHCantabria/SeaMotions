@@ -161,3 +161,18 @@ inline  void    split_string(
 
     }
 }
+
+
+template<typename T>
+std::string vec_to_str( const std::vector<T>& vec )
+{
+    std::stringstream ss;
+    ss << "( " << vec[0];
+    for ( size_t i=1; i<vec.size( ); i++ )
+    {
+        ss << ", " << vec[i];
+    }
+    ss << " )";
+
+    return ss.str( );
+}

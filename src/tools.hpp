@@ -202,6 +202,10 @@ template<typename T>    inline  void        split_string(
                                                                             std::string* str 
                                                         );
 
+template<typename T>            std::string vec_to_str(
+                                                                            const std::vector<T> &vec
+                                                        );
+
 #include "tools.txx"
 
 #endif
