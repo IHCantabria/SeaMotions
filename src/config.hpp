@@ -3,6 +3,7 @@
 #define __config_hpp
 
 #include <complex>
+#include <vector>
 
 // Check if the program has been build in debug mode
 #ifdef DEBUG_BUILD
