@@ -20,6 +20,8 @@ public:
     int         proc_root   = 0;
 
     // Define class constructors and destructor
+    MpiConfig( void );
+
     MpiConfig(
                     int proc_rank_in,
                     int procs_total_in,

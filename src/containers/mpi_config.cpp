@@ -56,6 +56,30 @@ bool    MpiConfig::is_root( void )
 }
 
 
+MpiConfig::MpiConfig( void )
+{
+    // Get total number of processors
+    int _procs_total = 0;
+    MPI_Comm_size(
+                    MPI_COMM_WORLD,
+                    &_procs_total
+                );
+
+    // Get current process rank
+    int _proc_rank = 0;
+    MPI_Comm_rank(
+                    MPI_COMM_WORLD,
+                    &_proc_rank
+                );
+
+    // Storage MPI configuration
+    this->mpi_comm      = MPI_COMM_WORLD;
+    this->proc_rank     = _proc_rank;
+    this->procs_total   = _procs_total;
+    this->proc_root     = 0;
+}
+
+
 MpiConfig::MpiConfig(
                         int proc_rank_in,
                         int procs_total_in,
