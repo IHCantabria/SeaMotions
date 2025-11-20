@@ -88,6 +88,25 @@
 )                                                                                                   \
 
 
+#define INFO( message )                                                                             \
+if ( mpi_config.is_root( ) ) std::cout << message;                                                  \
+
+
+#define MPI_TIC( name )                                                                             \
+{                                                                                                   \
+    MPI_Barrier( MPI_COMM_WORLD );                                                                  \
+    double name##_tic = MPI_Wtime( );                                                               \
+}                                                                                                   \
+
+
+#define MPI_TOC( name )                                                                             \
+{                                                                                                   \
+    MPI_Barrier( MPI_COMM_WORLD );                                                                  \
+    double name##_toc       = MPI_Wtime( );                                                         \
+    double name##_elapsed   = name##_toc - name##_tic;                                              \
+}                                                                                                   \
+
+
 #define SAVE_DATASET_CHUNK(                                                                         \
                                 fid,                                                                \
                                 dset_name,                                                          \
