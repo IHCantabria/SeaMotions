@@ -354,7 +354,6 @@ SimulationData::SimulationData(
                                     int         bodies_np_in,
                                     int         dofs_np_in,
                                     int         heads_np_in,
-                                    int         rows_local_np,
                                     int         rows_np
                                 )
 {
@@ -372,7 +371,7 @@ SimulationData::SimulationData(
     this->damping_rad       = generate_empty_vector<cusfloat>( this->hydmech_np );
     this->froude_krylov     = generate_empty_vector<cuscomplex>( this->wave_exc_np );
     this->raos              = generate_empty_vector<cuscomplex>( this->wave_exc_np );
-    this->intensities       = generate_empty_vector<cuscomplex>( ( dofs_np_in + heads_np_in ) * rows_local_np );
+    this->intensities       = generate_empty_vector<cuscomplex>( ( dofs_np_in + heads_np_in ) * rows_np );
     this->panels_potential  = generate_empty_vector<cuscomplex>( ( dofs_np_in + heads_np_in ) * rows_np );
     this->panels_pressure   = generate_empty_vector<cuscomplex>( ( dofs_np_in + heads_np_in ) * rows_np );
     this->wave_diffrac      = generate_empty_vector<cuscomplex>( this->wave_exc_np );

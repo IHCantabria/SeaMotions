@@ -201,7 +201,6 @@ public:
                         int         bodies_np,
                         int         dofs_np,
                         int         heads_np,
-                        int         rows_local_np,
                         int         rows_np
                     );
 
