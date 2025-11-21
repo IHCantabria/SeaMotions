@@ -69,11 +69,15 @@ public:
     ~FormulationKernelBackend( );
 
     // Define class public methods
-    void solve(             
+    int     size(
+                            void
+                );
+    
+    void    solve(             
                             cusfloat w 
                 );
 
-    void update_results( 
+    void    update_results( 
                             SimulationData* sim_data 
                         );
 

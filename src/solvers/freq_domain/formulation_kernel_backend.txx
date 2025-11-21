@@ -1,6 +1,8 @@
 
 // Include local modules
 #include "formulation_kernel_backend.hpp"
+#include "../../green/integrals_database.hpp"
+#include "panel_fields.hpp"
 
 
 template<std::size_t N, int mode_pf>
@@ -707,6 +709,13 @@ FormulationKernelBackend<N, mode_pf>::~FormulationKernelBackend( )
     delete this->_pot_gp;
 
     STATIC_COND( ONLY_PF, delete this->_pf_gp; );
+}
+
+
+template<std::size_t N, int mode_pf>
+int FormulationKernelBackend<N, mode_pf>::size( void )
+{
+    return this->_solver->num_rows;
 }
 
 
