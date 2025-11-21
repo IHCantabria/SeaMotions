@@ -22,6 +22,14 @@ cusfloat    angfreq_to_freq(
 }
 
 
+cusfloat    angfreq_to_period( 
+                                cusfloat angfreq 
+                            )
+{
+    return 2.0 * PI / angfreq;
+}
+
+
 int assert_complex_equality(
                                 cuscomplex u, 
                                 cuscomplex v, 
