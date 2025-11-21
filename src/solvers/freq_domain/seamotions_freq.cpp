@@ -4,9 +4,9 @@
 #include <string>
 
 // Include local modules
-#include "../../containers/mpi_config.hpp"
+#include "../../containers/mpi_timer.hpp"
 #include "freq_solver_tools.hpp"
-#include "../../hydrostatics.hpp"
+#include "frequency_solver.hpp"
 #include "../../inout/output.hpp"
 #include "../../inout/reader.hpp"
 #include "../../tools.hpp"
@@ -31,135 +31,34 @@ int main( int argc, char* argv[] )
     /*****************************************/
     /****** Initialize MPI environment *******/
     /*****************************************/
-
-    // Init MPI
     MPI_Init( NULL, NULL );
 
-    // Get total number of processors
-    int procs_total = 0;
-    MPI_Comm_size(
-                    MPI_COMM_WORLD,
-                    &procs_total
-                );
-
-    // Get current process rank
-    int proc_rank = 0;
-    MPI_Comm_rank(
-                    MPI_COMM_WORLD,
-                    &proc_rank
-                );
-
-    // Declare container to hold MPI configuration
-    MpiConfig mpi_config( 
-                            proc_rank,
-                            procs_total,
-                            0,
-                            MPI_COMM_WORLD
-                        );
-
-
     /*****************************************/
-    /**** Launch Hydrostatics Calculation ****/
+    /****** Initialize Frequency Solver ******/
     /*****************************************/
-    MPI_Barrier( MPI_COMM_WORLD );
-    double hydrostat_tstart     = MPI_Wtime( );
-    double case_tstart          = MPI_Wtime( );
+    MpiTimer case_timer;
+
+    FrequencySolver<NUM_GP, PF_ON> freq_solver( input );
     
-    Hydrostatics** hydrostatics = new Hydrostatics*[input->bodies_np];
-    for ( int i=0; i<input->bodies_np; i++ )
-    {
-        hydrostatics[i] =   new Hydrostatics( 
-                                                input->bodies[i]->mesh,
-                                                input->water_density,
-                                                input->grav_acc,
-                                                input->bodies[i]->mass,
-                                                input->bodies[i]->cog,
-                                                input->bodies[i]->rad_inertia,
-                                                &mpi_config
-                                            );
-    }
-    MPI_Barrier( MPI_COMM_WORLD );
-    double hydrostat_tend = MPI_Wtime( );
-
-    if ( mpi_config.is_root( ) )
-    {
-        std::cout << "Execution time [s]: " << ( hydrostat_tend - hydrostat_tstart ) << std::endl;
-    }
-
     /*****************************************/
-    /********* Launch Output System **********/
+    /******** First Order Solution ***********/
     /*****************************************/
-    Output* output = nullptr;
-    
-    if ( mpi_config.is_root( ) )
-    {
-        output = new Output( input );
-    }
-
-    /*****************************************/
-    /****** Storage Initial Parameters *******/
-    /*****************************************/
-
-    if ( mpi_config.is_root( ) )
-    {
-        // Storage frequency set
-        output->save_frequencies( input->freqs );
-
-        // Storage headings set
-        output->save_headings( input->heads.data( ) );
-
-        // Storage structural mass
-        if ( input->out_struct_mass )
-        {
-            output->save_structural_mass( );
-        }
-
-        // Storage hydrostatic stiffness matrix
-        if ( input->out_hydstiff )
-        {
-            output->save_hydstiffness( hydrostatics );
-        }
-
-        // Storage mesh
-        if (  input->out_mesh )
-        {
-            output->save_mesh( );
-        }
-
-    }
-
-    /*****************************************/
-    /***** Calculate Source Distribution *****/
-    /*****************************************/
-    calculate_freq_domain_coeffs(
-                                    &mpi_config,
-                                    input, 
-                                    hydrostatics,
-                                    output 
-                                );
+    freq_solver.calculate_first_order( );
 
     /*****************************************/
     /********* Close MPI environment *********/
     /*****************************************/
-    double case_tend = MPI_Wtime( );
+    case_timer.stop( );
     MPI_Finalize( );
 
     /*****************************************/
-    /**** Delete heap memory allocations *****/
+    /**** Close program and final actions ****/
     /*****************************************/
-    delete input;
-    delete output;
 
-    for ( int i=0; i<input->bodies_np; i++ )
+    // Print Elapsed time
+    if ( freq_solver.mpi_config->is_root( ) )
     {
-        delete hydrostatics[i];
-    }
-    delete [] hydrostatics;
-
-
-    if ( mpi_config.is_root( ) )
-    {
-        std::cout << "Elapsed wall time for calculation [s]: " << case_tend - case_tstart << std::endl;
+        std::cout << "Elapsed wall time for calculation [s]: " << case_timer << std::endl;
         std::cout << "Seamotions Freqcuency ended!" << std::endl;
     }
 
