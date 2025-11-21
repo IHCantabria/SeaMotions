@@ -33,6 +33,10 @@ const cusfloat LOG2_GAMMA = std::log( 2.0 ) - EULERGAMMA;
                                             cusfloat    angfreq_to_freq( 
                                                                                     cusfloat angfreq 
                                                                         );
+
+                                            cusfloat    angfreq_to_period( 
+                                                                                    cusfloat angfreq 
+                                                                        );
                                                                     
                                             int         assert_complex_equality(
                                                                                     cuscomplex  u, 
