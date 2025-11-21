@@ -1126,7 +1126,6 @@ Mesh::~Mesh(
                                         void 
             )
 {
-    std::cout << "Deleting mesh object..." << std::endl;
     // Delete source nodes
     if ( this->_is_source_nodes )
     {
