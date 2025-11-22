@@ -2,8 +2,9 @@
 #pragma once
 
 // Include general usage libraries
-#include <ostream>
+#include <iomanip>
 #include <mpi.h>
+#include <ostream>
 
 
 class MpiTimer 
@@ -11,7 +12,7 @@ class MpiTimer
 public:
     // sync: whether to call MPI_Barrier on stop
     // sync_on_print: whether operator<< should call stop() internally
-    MpiTimer( MPI_Comm comm = MPI_COMM_WORLD, bool sync = true, bool sync_on_print = false )
+    MpiTimer( MPI_Comm comm = MPI_COMM_WORLD, bool sync = true, bool sync_on_print = true )
         : _comm( comm ), _sync( sync ), _sync_on_print( sync_on_print )
     {
         if ( _sync ) MPI_Barrier( _comm );
@@ -59,7 +60,7 @@ inline std::ostream& operator<<( std::ostream& os, MpiTimer& t )
         t.stop( );  // barrier + elapsed calculation
     }
 
-    os << t.elapsed( ) << " s";
+    os << std::setw( 15 ) << std::fixed << std::setprecision( 3 ) << t.elapsed( ) << " s";
 
     return os;
 }
