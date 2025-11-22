@@ -89,7 +89,7 @@
 
 
 #define INFO( message )                                                                             \
-if ( mpi_config->is_root( ) ) std::cout << message;                                                 \
+if ( mpi_config->is_root( ) ) std::cout << message << std::flush;                                   \
 
 
 #define MPI_TIC( name )                                                                             \
