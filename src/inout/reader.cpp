@@ -560,11 +560,8 @@ std::string _read_channel_name( std::ifstream& infile )
 }
 
 
-Input* read_input_files( std::string folder_path )
+void read_input_files( Input* input, std::string folder_path )
 {
-    // Instantiate an Input object
-    Input* input = new Input();
-
     // Save case folder path
     input->case_fopath = folder_path;
 
@@ -576,6 +573,16 @@ Input* read_input_files( std::string folder_path )
 
     // Configure inputs
     input->configure( );
+}
+
+
+Input* read_input_files( std::string folder_path )
+{
+    // Instantiate an Input object
+    Input* input = new Input();
+
+    // Call to overloaded function to fill in structure
+    read_input_files( input, folder_path );
 
     return input;
 }

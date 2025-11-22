@@ -77,6 +77,11 @@ template<typename T>    inline  void            _read_compact_list(
                                                                         std::string         folder_path
                                                                 );
 
+                                void            read_input_files( 
+                                                                        Input*              input,
+                                                                        std::string         folder_path
+                                                                );
+
                                 void            _skip_header(           
                                                                         std::ifstream&      infile, 
                                                                         int&                line_count, 
