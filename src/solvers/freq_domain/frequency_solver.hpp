@@ -56,6 +56,8 @@ public:
     /**** Declare class methods ****/
     void calculate_first_order( );
 
+    void calculate_global_static_matrixes( );
+
     void calculate_hydrostatics( );
 
     void initialize_mesh_groups( );

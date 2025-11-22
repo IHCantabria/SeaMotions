@@ -4,6 +4,7 @@
 #include "diffraction.hpp"
 #include "frequency_solver.hpp"
 #include "froude_krylov.hpp"
+#include "global_static_matrix.hpp"
 #include "hydromechanics.hpp"
 #include "../../hydrostatics.hpp"
 #include "../../math/math_tools.hpp"
@@ -231,6 +232,31 @@ void FrequencySolver<N, mode_pf>::calculate_hydrostatics( void )
 
 
 template<std::size_t N, int mode_pf>
+void FrequencySolver<N, mode_pf>::calculate_global_static_matrixes( void )
+{
+    // Calculate global structural mass
+    if ( this->mpi_config->is_root( ) )
+    {
+        calculate_global_structural_mass(
+                                            input,
+                                            sim_data->structural_mass_p0
+                                        );
+    }
+
+
+    // Calculate global stiffness matrix
+    if ( this->mpi_config->is_root( ) )
+    {
+        calculate_global_hydstiffness(
+                                            input,
+                                            hydrostatics,
+                                            sim_data->hydrostiff_p0
+                                        );
+    }
+}
+
+
+template<std::size_t N, int mode_pf>
 FrequencySolver<N, mode_pf>::FrequencySolver( Input* input_in )
 {
     // Storage input sytem pointer
@@ -248,7 +274,6 @@ FrequencySolver<N, mode_pf>::FrequencySolver( Input* input_in )
     // Create mesh group
     this->initialize_mesh_groups( );
 
-
     // Allocate space for the simulation data
     this->sim_data  = new SimulationData(
                                             this->input,
@@ -261,6 +286,10 @@ FrequencySolver<N, mode_pf>::FrequencySolver( Input* input_in )
 
     // Generate formulation kernel
     this->kernel = new FormulationKernelBackend<NUM_GP, PF_OFF>( this->input, this->mpi_config, this->mesh_gp );
+
+    // Calculate mass and hydrostatic stiffness matrixes
+    // used for the calculation of the RAOs.
+    this->calculate_global_static_matrixes( );
 
 }
 
