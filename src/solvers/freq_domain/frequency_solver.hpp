@@ -13,6 +13,12 @@
 #include "../../tools.hpp"
 
 
+// Define maximum pipe out message width to align 
+// elapsed times and to have a more clearer view 
+// of the output
+constexpr int FSOL_MSG_WIDTH = 50;
+
+
 /*******************************************************/
 /************** Declare Module Macros ******************/
 /*******************************************************/
@@ -33,36 +39,43 @@
 template<std::size_t N, int mode_pf>
 class FrequencySolver
 {
+private:
+    /**** Declare class private methods ****/
+    void _calculate_global_static_matrixes( );
+
+    void _calculate_hydrostatics( );
+
+    void _generate_formulation_kernel( );
+
+    void _initialize_mesh_groups( );
+
+    void _initialize_output_system( );
+
 public:
     // Declare public attributes
-    FormulationKernelBackend<NUM_GP, PF_OFF>*   kernel          = nullptr;
-    Hydrostatics**                              hydrostatics    = nullptr;
-    Input*                                      input           = nullptr;
-    MeshGroup*                                  mesh_gp         = nullptr;
-    MeshGroup*                                  mesh_fs_qtf_gp  = nullptr;
-    MpiConfig*                                  mpi_config      = nullptr;
-    Output*                                     output          = nullptr;
-    SimulationData*                             sim_data        = nullptr;
-    
+    FormulationKernelBackend<NUM_GP, PF_OFF>*   kernel          = nullptr;  // Kernel of the formulation. It solves the raddiation diffraction problem. It can be CPU or GPU based.
+    Hydrostatics**                              hydrostatics    = nullptr;  // 
+    Input*                                      input           = nullptr;  // 
+    MeshGroup*                                  mesh_gp         = nullptr;  // 
+    MeshGroup*                                  mesh_fs_qtf_gp  = nullptr;  // 
+    MpiConfig*                                  mpi_config      = nullptr;  // 
+    Output*                                     output          = nullptr;  // 
+    SimulationData*                             sim_data        = nullptr;  // 
 
     /**** Define constructors ****/
-    FrequencySolver( ) = default;
 
-    FrequencySolver( Input* input );
+    // Default Constructor
+    // FrequencySolver( ) = default;
+
+    // Normal constructor. Builds case configuration and initialization
+    // based on the contents of the input system.
+    FrequencySolver( Input* input, MpiConfig* mpi_config_in );
 
     /**** Declare destructor ****/
     ~FrequencySolver( );
 
-    /**** Declare class methods ****/
+    /* Declare class public methods */
     void calculate_first_order( );
-
-    void calculate_global_static_matrixes( );
-
-    void calculate_hydrostatics( );
-
-    void initialize_mesh_groups( );
-
-    void initialize_output_system( );
 
 };
 

@@ -1,5 +1,9 @@
 
+// Include general usage libraries
+#include <iomanip>
+
 // Include local module
+#include "../../containers/logger.hpp"
 #include "../../containers/mpi_timer.hpp"
 #include "diffraction.hpp"
 #include "frequency_solver.hpp"
@@ -18,8 +22,7 @@ void FrequencySolver<N, mode_pf>::calculate_first_order( void )
     // Loop over frequencies
     for ( int i=0; i<this->input->angfreqs_np; i++ )
     {
-        INFO( "FO -> Calculating period: " << angfreq_to_period( this->input->angfreqs[i] ) << " s\n" )
-
+        LOG_TASK_SS( "FO - Calculating period: " << std::setw( 10 ) << std::fixed << std::setprecision( 3 ) << angfreq_to_period( this->input->angfreqs[i] ) << " s" )
         // Start time measurement for the current frequency
         MpiTimer freq_timer;
 
@@ -66,7 +69,7 @@ void FrequencySolver<N, mode_pf>::calculate_first_order( void )
         REDUCE_FO_ROOT( wave_diffrac,  wave_exc, cuscomplex )
         
         // Generate total wave excitation forces
-        if ( mpi_config->is_root( ) )
+        if ( this->mpi_config->is_root( ) )
         {
             sv_add(
                         this->sim_data->wave_exc_np,
@@ -77,7 +80,7 @@ void FrequencySolver<N, mode_pf>::calculate_first_order( void )
         }
         
         // Calculate RAOs
-        if ( mpi_config->is_root( ) )
+        if ( this->mpi_config->is_root( ) )
         {
             calculate_raos(
                                 this->input,
@@ -94,8 +97,8 @@ void FrequencySolver<N, mode_pf>::calculate_first_order( void )
 
         
         // Storage results
-        MpiTimer storage_timer;       
-        if ( input->out_pressure )
+        // MpiTimer storage_timer;       
+        if ( this->input->out_pressure )
         {
             MPI_Reduce(
                             this->sim_data->panels_pressure,
@@ -194,45 +197,39 @@ void FrequencySolver<N, mode_pf>::calculate_first_order( void )
         }
         
         // Print out execution times
-        storage_timer.stop( );
-        freq_timer.stop( );
-
-        if ( this->mpi_config->is_root( ) )
-        {
-            std::cout << "Execution time [s]: " << freq_timer;
-            std::cout << " - Disk Storage time [s]: " << storage_timer << std::endl;
-        }
+        LOG_TASK_TIME( freq_timer )
+        
     }
 }
 
 
 template<std::size_t N, int mode_pf>
-void FrequencySolver<N, mode_pf>::calculate_hydrostatics( void )
+void FrequencySolver<N, mode_pf>::_calculate_hydrostatics( void )
 {
-    INFO( "Calculating hydrostatics..." )
+    LOG_TASK( "Calculating hydrostatics..." )
     MpiTimer hydro_timer;
 
     this->hydrostatics = new Hydrostatics*[this->input->bodies_np];
     for ( int i=0; i<input->bodies_np; i++ )
     {
-        hydrostatics[i] =   new Hydrostatics( 
-                                                this->input->bodies[i]->mesh,
-                                                this->input->water_density,
-                                                this->input->grav_acc,
-                                                this->input->bodies[i]->mass,
-                                                this->input->bodies[i]->cog,
-                                                this->input->bodies[i]->rad_inertia,
-                                                this->mpi_config
-                                            );
+        this->hydrostatics[i]   =   new Hydrostatics( 
+                                                        this->input->bodies[i]->mesh,
+                                                        this->input->water_density,
+                                                        this->input->grav_acc,
+                                                        this->input->bodies[i]->mass,
+                                                        this->input->bodies[i]->cog,
+                                                        this->input->bodies[i]->rad_inertia,
+                                                        this->mpi_config
+                                                    );
     }
 
-    hydro_timer.stop( );
-    INFO( " --> Done! Elapsed Time: " << hydro_timer << "\n" )
+    LOG_TASK_TIME( hydro_timer )
+
 }
 
 
 template<std::size_t N, int mode_pf>
-void FrequencySolver<N, mode_pf>::calculate_global_static_matrixes( void )
+void FrequencySolver<N, mode_pf>::_calculate_global_static_matrixes( void )
 {
     // Calculate global structural mass
     if ( this->mpi_config->is_root( ) )
@@ -257,22 +254,22 @@ void FrequencySolver<N, mode_pf>::calculate_global_static_matrixes( void )
 
 
 template<std::size_t N, int mode_pf>
-FrequencySolver<N, mode_pf>::FrequencySolver( Input* input_in )
+FrequencySolver<N, mode_pf>::FrequencySolver( Input* input_in, MpiConfig* mpi_config_in )
 {
     // Storage input sytem pointer
     this->input = input_in;
 
     // Create MPI environment configuration
-    this->mpi_config = new MpiConfig( );
+    this->mpi_config = mpi_config_in;
 
     // Calculate hydrostatics
-    this->calculate_hydrostatics( );
+    this->_calculate_hydrostatics( );
 
     // Create output system
-    this->initialize_output_system( );
+    this->_initialize_output_system( );
     
     // Create mesh group
-    this->initialize_mesh_groups( );
+    this->_initialize_mesh_groups( );
 
     // Allocate space for the simulation data
     this->sim_data  = new SimulationData(
@@ -285,11 +282,11 @@ FrequencySolver<N, mode_pf>::FrequencySolver( Input* input_in )
                                         );
 
     // Generate formulation kernel
-    this->kernel = new FormulationKernelBackend<NUM_GP, PF_OFF>( this->input, this->mpi_config, this->mesh_gp );
+    this->_generate_formulation_kernel( );
 
     // Calculate mass and hydrostatic stiffness matrixes
     // used for the calculation of the RAOs.
-    this->calculate_global_static_matrixes( );
+    this->_calculate_global_static_matrixes( );
 
 }
 
@@ -314,16 +311,23 @@ FrequencySolver<N, mode_pf>::~FrequencySolver( void )
     // Delete output system
     delete this->output;
 
-    // Delete MPI config
-    delete this->mpi_config;
-
 }
 
 
 template<std::size_t N, int mode_pf>
-void FrequencySolver<N, mode_pf>::initialize_mesh_groups( void )
+void FrequencySolver<N, mode_pf>::_generate_formulation_kernel( void )
 {
-    INFO( "Initialize mesh groups..." )
+    LOG_TASK( "Generating kernel..." )
+    MpiTimer kernel_timer;
+    this->kernel = new FormulationKernelBackend<NUM_GP, PF_OFF>( this->input, this->mpi_config, this->mesh_gp );
+    LOG_TASK_TIME( kernel_timer )
+}
+
+
+template<std::size_t N, int mode_pf>
+void FrequencySolver<N, mode_pf>::_initialize_mesh_groups( void )
+{
+    LOG_TASK( "Initialize mesh groups..." )
     MpiTimer mesh_timer;
     
     // Group all meshes in a vector
@@ -334,13 +338,13 @@ void FrequencySolver<N, mode_pf>::initialize_mesh_groups( void )
     }
 
     // Create new mesh from the meshes of all objects
-    this->mesh_gp   = new MeshGroup( 
-                                        all_meshes,
-                                        input->bodies_np,
-                                        input->is_wl_points
-                                    );
+    this->mesh_gp       = new MeshGroup( 
+                                            all_meshes,
+                                            input->bodies_np,
+                                            input->is_wl_points
+                                        );
 
-    Mesh**      fs_mesh         = nullptr;
+    Mesh**      fs_mesh = nullptr;
     if ( this->input->is_fs_qtf )
     {
         // Create vector with the QTF FS mesh to feed the
@@ -349,9 +353,9 @@ void FrequencySolver<N, mode_pf>::initialize_mesh_groups( void )
         fs_mesh[0]      = this->input->bodies[0]->mesh_fs_qtf;
 
         // Create partition circle water line if required
-        if ( input->out_qtf_so_model == 2 )
+        if ( this->input->out_qtf_so_model == 2 )
         {
-            fs_mesh[0]->detect_pc_points( input->wl_det_prec );
+            fs_mesh[0]->detect_pc_points( this->input->wl_det_prec );
         }
 
         // Create mesh group
@@ -362,25 +366,27 @@ void FrequencySolver<N, mode_pf>::initialize_mesh_groups( void )
                                                 );
     }
 
-    if ( input->is_log_sin_ana )
+    if ( this->input->is_log_sin_ana )
     {
-        mesh_gp->define_mirror_panels( );
+        this->mesh_gp->define_mirror_panels( );
     }
 
     // Delete allocated heap memory
     delete []   all_meshes;
     delete []   fs_mesh;
 
-    mesh_timer.stop( );
-    INFO( " --> Done! Time Elapsed: " << mesh_timer << "\n" )
+    LOG_TASK_TIME( mesh_timer )
 
 }
 
 
 template<std::size_t N, int mode_pf>
-void FrequencySolver<N, mode_pf>::initialize_output_system( void )
+void FrequencySolver<N, mode_pf>::_initialize_output_system( void )
 {
-    INFO( "Creating output system..." )
+    LOG_TASK( "Creating output system..." )
+    MpiTimer output_timer;
+
+    // Create output system
     if ( this->mpi_config->is_root( ) )
     {
         this->output = new Output( this->input );
@@ -415,5 +421,6 @@ void FrequencySolver<N, mode_pf>::initialize_output_system( void )
 
     }
 
-    INFO( " --> Done!" << "\n" ) // Output system created and initialized
+    LOG_TASK_TIME( output_timer )
+
 }
