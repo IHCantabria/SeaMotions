@@ -199,7 +199,6 @@ void read_body(
     fs::path mesh_foname_( std::string( "mesh" ) );
     fs::path mesh_finame_( body->mesh_finame );
     fs::path mesh_fipath_ = folder_path_ / mesh_foname_ / mesh_finame_;
-
     body->mesh      = new   Mesh( 
                                     mesh_fipath_.string( ),
                                     body->mesh_body_name,
@@ -208,6 +207,24 @@ void read_body(
                                     DIFFRAC_PANEL_CODE                                
                                   );
     body->is_mesh   = true;
+    
+    // Write mesh
+    fs::path mesh_foname_1_( std::string( "0_mesh" ) );
+    fs::path results_foname_( std::string( "1_results" ) );
+    fs::path results_mesh_fipath_ = folder_path_ / results_foname_;
+    fs::path plot_mesh_fipath_ = results_mesh_fipath_ / mesh_foname_1_;
+    
+    if ( !fs::exists( results_mesh_fipath_) )
+    {
+        fs::create_directory( results_mesh_fipath_ );
+    }
+
+    if ( !fs::exists( plot_mesh_fipath_) )
+    {
+        fs::create_directory( plot_mesh_fipath_ );
+    }
+
+    body->mesh->write( plot_mesh_fipath_.string( ) );
 
     // Load lid if it is required by the user
     if ( body->lid_type == 1 )
