@@ -441,7 +441,7 @@ SimulationData::~SimulationData(
 
         if ( this->_input->out_pressure )
         {
-            mkl_free( this->panels_potential_p0 );
+            mkl_free( this->panels_pressure_p0 );
         }
     }
 
