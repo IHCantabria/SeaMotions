@@ -1,13 +1,12 @@
 
 // Include general usage libraries
+#include <iostream>
 #include "mpi.h"
 #include <string>
 
 // Include local modules
 #include "../../containers/mpi_timer.hpp"
-#include "freq_solver_tools.hpp"
 #include "frequency_solver.hpp"
-#include "../../inout/output.hpp"
 #include "../../inout/reader.hpp"
 #include "../../tools.hpp"
 
@@ -24,30 +23,51 @@ int main( int argc, char* argv[] )
     std::string case_fopath(argv[1]);
 
     /*****************************************/
-    /************ Read Input data ************/
-    /*****************************************/
-    Input* input = read_input_files( case_fopath );
-
-    /*****************************************/
     /****** Initialize MPI environment *******/
     /*****************************************/
     MPI_Init( NULL, NULL );
+
+    // Get total number of processors
+    int procs_total = 0;
+    MPI_Comm_size(
+                    MPI_COMM_WORLD,
+                    &procs_total
+                );
+
+    // Get current process rank
+    int proc_rank = 0;
+    MPI_Comm_rank(
+                    MPI_COMM_WORLD,
+                    &proc_rank
+                );
+
+    // Create MPI Configuration system
+    MpiConfig mpi_config( proc_rank, procs_total, MPI_ROOT_PROC_ID, MPI_COMM_WORLD );
+    MPI_Barrier( MPI_COMM_WORLD );
+
+
+    /*****************************************/
+    /************ Read Input data ************/
+    /*****************************************/
+    Input input;
+    read_input_files( &input, case_fopath );
+    
 
     /*****************************************/
     /****** Initialize Frequency Solver ******/
     /*****************************************/
     MpiTimer case_timer;
 
-    FrequencySolver<NUM_GP, PF_ON> freq_solver( input );
+    FrequencySolver<NUM_GP, PF_ON> freq_solver( &input, &mpi_config );
     
-    /*****************************************/
-    /******** First Order Solution ***********/
-    /*****************************************/
+    // /*****************************************/
+    // /******** First Order Solution ***********/
+    // /*****************************************/
     freq_solver.calculate_first_order( );
 
-    /*****************************************/
-    /********* Close MPI environment *********/
-    /*****************************************/
+    // /*****************************************/
+    // /********* Close MPI environment *********/
+    // /*****************************************/
     case_timer.stop( );
     MPI_Finalize( );
 
@@ -56,7 +76,7 @@ int main( int argc, char* argv[] )
     /*****************************************/
 
     // Print Elapsed time
-    if ( freq_solver.mpi_config->is_root( ) )
+    if ( mpi_config.is_root( ) )
     {
         std::cout << "Elapsed wall time for calculation [s]: " << case_timer << std::endl;
         std::cout << "Seamotions Freqcuency ended!" << std::endl;
