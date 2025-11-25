@@ -65,7 +65,7 @@ public:
     /**** Define constructors ****/
 
     // Default Constructor
-    // FrequencySolver( ) = default;
+    FrequencySolver( ) = default;
 
     // Normal constructor. Builds case configuration and initialization
     // based on the contents of the input system.
