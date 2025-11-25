@@ -698,7 +698,7 @@ void        Mesh::_load_gmsh_mesh(
 
     // Calculate maximum number of nodes per element
     std::size_t sel_count = 0;
-    std::vector<int> elements_sel;
+    std::vector<int> elements_sel( elements.size( ) );
     elements_sel.reserve( elements.size( ) );
     for ( std::size_t i=0; i<elements.size( ); i++ )
     {
@@ -1277,7 +1277,7 @@ void        Mesh::set_elements_type(
                                     )
 {
     // Allocate resources to storage elements type
-    this->elems_type    = new int[ this->elems_np ];
+    this->elems_type    = generate_empty_vector<int>( this->elems_np );
 
     // Loop over elements to set their type
     for ( int i=0; i<elems_np; i++ )
