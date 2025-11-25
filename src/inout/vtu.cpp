@@ -23,7 +23,6 @@ bool    write_vtu_binary_appended(
                                 )
 {
     // Open file unit
-    std::cout << "FilePath: " << filename << std::endl;
     std::ofstream out( filename, std::ios::binary );
     if ( !out.is_open( ) ) 
     {
