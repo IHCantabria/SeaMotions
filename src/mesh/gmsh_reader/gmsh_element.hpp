@@ -31,7 +31,6 @@ public:
           type(other.type),
           nodes(other.nodes)   // deep copy
     {
-        std::cout << "Copy Constructor..." << std::endl << std::flush;
     }
 
     // ------------------------------------------------------------
@@ -42,8 +41,6 @@ public:
           type(other.type),
           nodes(std::move(other.nodes))   // steal vector storage
     {
-        std::cout << "Move Constructor..." << std::endl << std::flush;
-
         // optional: reset moved-from object
         other.id = -1;
         other.type = -1;
@@ -54,18 +51,12 @@ public:
     // ------------------------------------------------------------
     GmshElement& operator=(const GmshElement& other)
     {
-        std::cout << "Copy assignement operator..." << std::endl << std::flush;
         if (this != &other)
         {
             id    = other.id;
             type  = other.type;
             nodes = other.nodes;  // deep copy
-            for ( std::size_t i=0; i<other.nodes.size( ); i++ )
-            {
-                std::cout << "I: " << this->nodes[i] << " - " << other.nodes[i] << std::endl << std::flush;
-            }
         }
-        std::cout << "Copy assignement operator... -> Done!" << std::endl << std::flush;
         return *this;
     }
 
@@ -74,7 +65,6 @@ public:
     // ------------------------------------------------------------
     GmshElement& operator=(GmshElement&& other) noexcept
     {
-        std::cout << "Move assignement operator..." << std::endl << std::flush;
         if (this != &other)
         {
             id    = other.id;
