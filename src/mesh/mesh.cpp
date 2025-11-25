@@ -1,11 +1,14 @@
 
 // Include general usage libraries
 #include <cassert>
+#include <filesystem>
 
 // Include local modules
+#include "./gmsh_reader/read_gmsh.hpp"
 #include "../math/shape_functions.hpp"
 #include "mesh.hpp"
 #include "../tools.hpp"
+#include "../inout/vtu.hpp"
 
 
 void        Mesh::_calculate_bounding_box(
@@ -655,9 +658,99 @@ void        Mesh::_joint_meshes(
 }
 
 
+void        Mesh::_load_gmsh_mesh(
+                                                std::string file_path,
+                                                std::string body_name
+                                    )
+{
+    // Read nodes and elements using the GMsh 4.1 file reader
+    std::vector<GmshNode> nodes;
+    std::vector<GmshElement> elements;
+    read_gmsh_41( file_path, nodes, elements );
+
+    // Define auxiliar variable to help in the file parsing
+    std::string         aux_str;
+    std::string         _body_name;
+    int                 elem_count          = 0;
+    std::istringstream  iss;
+    std::string         line;
+    int                 mnpe                = 0;
+
+    // Lower case body name to compare with the 
+    // names read from files
+    str_to_lower( &body_name );
+
+    // Read mesh dimensions
+    this->nodes_np  = nodes.size( );
+
+    // Allocate space for the mesh variables
+    this->x = generate_empty_vector<cusfloat>( this->nodes_np );
+    this->y = generate_empty_vector<cusfloat>( this->nodes_np );
+    this->z = generate_empty_vector<cusfloat>( this->nodes_np );
+
+    // Load nodes data in Mesh structure
+    for ( std::size_t i=0; i<nodes.size( ); i++ )
+    {
+        this->x[i] = nodes[i].x;
+        this->y[i] = nodes[i].y;
+        this->z[i] = nodes[i].z;
+    }
+
+    // Calculate maximum number of nodes per element
+    std::size_t sel_count = 0;
+    std::vector<int> elements_sel;
+    elements_sel.reserve( elements.size( ) );
+    for ( std::size_t i=0; i<elements.size( ); i++ )
+    {
+        if ( this->_is_valid_type( elements[i].nodes.size( ) ) )
+        {
+            if ( static_cast<int>( elements[i].nodes.size( ) ) > mnpe )
+            {
+                mnpe = elements[i].nodes.size( );
+            }
+            elements_sel[sel_count] = i;
+            sel_count++;
+        }
+    }
+
+    // Storage maximum elements per node values and 
+    // it's extended counterpart to storage the number of 
+    // elements per node in the same vector
+    this->mnpe      = mnpe;
+    this->enrl      = mnpe + 1;
+
+    // Allocate space for the connectivity matrix
+    this->elems_np  = sel_count;
+    this->elems     = generate_empty_vector<int>( this->enrl * this->elems_np );
+
+    elem_count      = 0;
+    int elem_sel    = 0;
+    for ( std::size_t i=0; i<sel_count; i++ )
+    {
+        elem_sel = elements_sel[i];
+        if ( this->_is_valid_type( elements[elem_sel].nodes.size( ) ) )
+        {
+            this->elems[ this->enrl*elem_count ] = elements[elem_sel].nodes.size( );
+            for ( int j=1; j<static_cast<int>( elements[elem_sel].nodes.size( ) )+1; j++ )
+            {
+                this->elems[ this->enrl*elem_count + j ] = elements[elem_sel].nodes[j-1] - 1;
+                if ( this->elems[ this->enrl*elem_count + j ] < 0 )
+                {
+                    std::cerr << "Node number below 0 for GMsh mesh!" << std::endl;
+                    throw std::runtime_error( "" );
+                }
+            }
+            elem_count++;
+        }
+    }
+
+
+}
+
+
 void        Mesh::_load_poly_mesh( 
-                                               std::string file_path,
-                                               std::string body_name
+                                                std::string file_path,
+                                                std::string body_name
                                )
 {
     // Define auxiliar variable to help in the file parsing
@@ -1071,7 +1164,8 @@ Mesh::Mesh(
             )
 {
     // Storage the required input attributes
-    this->_is_move_f = static_cast<cusfloat>( !is_fix );
+    this->_is_move_f    = static_cast<cusfloat>( !is_fix );
+    this->name          = body_name;
 
     // Load mesh
     std::string file_ext = get_fipath_extension( file_path );
@@ -1080,7 +1174,11 @@ Mesh::Mesh(
     {
         this->_load_poly_mesh( file_path, body_name );
     }
-    else if ( file_ext.compare( ".symplymesh.dat" ) )
+    else if ( file_ext.compare( ".msh" ) == 0 )
+    {
+        this->_load_gmsh_mesh( file_path, body_name );
+    }
+    else if ( file_ext.compare( ".symplymesh.dat" ) == 0 )
     {
         this->_load_simply_mesh( file_path, body_name );
     }
@@ -1089,6 +1187,9 @@ Mesh::Mesh(
         std::cerr << "ERROR - Mesh file extension: " << file_ext << " is not valid." << std::endl; 
         throw std::runtime_error( "Mesh file extension is not valid." );
     }
+
+    // Detect elements type
+    this->set_elements_type( );
 
     // Generate vector with the panels type
     this->set_all_panels_type( panel_type );
@@ -1146,6 +1247,7 @@ Mesh::~Mesh(
 
     // Delete elements
     mkl_free( this->elems );
+    mkl_free( this->elems_type );
 
     // Delete panel type
     mkl_free( this->panels_type );
@@ -1166,5 +1268,62 @@ void        Mesh::set_all_panels_type(
     for ( int i=0; i<this->elems_np; i++ )
     {
         this->panels_type[i] = panel_type;
+    }
+}
+
+
+void        Mesh::set_elements_type(
+                                                void
+                                    )
+{
+    // Allocate resources to storage elements type
+    this->elems_type    = new int[ this->elems_np ];
+
+    // Loop over elements to set their type
+    for ( int i=0; i<elems_np; i++ )
+    {
+        if ( this->elems[ i*this->enrl + 0 ] == 3 )
+        {
+            this->elems_type[ i ] = 5;
+        }
+        else if ( this->elems[ i*this->enrl + 0 ] == 4 )
+        {
+            this->elems_type[i] = 9;
+        }
+    }
+}
+
+
+void        Mesh::write(
+                                                std::string fopath
+                        )
+{
+    // Get current process ID
+    // Get current process rank
+    int proc_rank = 0;
+    MPI_Comm_rank(
+                    MPI_COMM_WORLD,
+                    &proc_rank
+                );
+    if ( proc_rank == MPI_ROOT_PROC_ID )
+    {
+        // Compose file path
+        std::string finame_ext = this->name + ".vtu";
+        std::filesystem::path dir ( fopath );
+        std::filesystem::path file ( finame_ext );
+        std::filesystem::path filepath = dir / file;
+        
+        // Write mesh
+        write_vtu_binary_appended( 
+                                    filepath.string( ),
+                                    this->nodes_np,
+                                    this->x,
+                                    this->y,
+                                    this->z,
+                                    this->elems_np,
+                                    this->enrl,
+                                    this->elems,
+                                    this->elems_type
+                                );
     }
 }

@@ -59,6 +59,11 @@ void        _calculate_fs_centre(
                                         std::vector<Mesh*>  meshes
                         );
 
+    void    _load_gmsh_mesh( 
+                                        std::string         file_path,
+                                        std::string         body_name
+                            );
+
     void    _load_poly_mesh( 
                                         std::string         file_path,
                                         std::string         body_name
@@ -73,9 +78,11 @@ public:
     // Define class attributes
     int             bodies_np       = 1;
     int*            elems           = nullptr;
+    int*            elems_type      = nullptr;
     int             elems_np        = 0;
     int             enrl            = 0;
     int             mnpe            = 0;
+    std::string     name            = "NoName";
     int             nodes_np        = 0;
     PanelGeom**     panels          = nullptr;
     PanelGeom**     panels_wl       = nullptr;
@@ -148,6 +155,16 @@ public:
     void        set_all_panels_type(
                                         int                 panel_type
                                    );
+
+
+    void        set_elements_type(
+                                        void
+                                );
+
+    
+    void        write( 
+                                        std::string         fipath
+                        );
     
 };
 
