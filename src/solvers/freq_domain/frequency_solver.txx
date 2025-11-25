@@ -98,6 +98,32 @@ void FrequencySolver<N, mode_pf>::calculate_first_order( void )
         
         // Storage results
         // MpiTimer storage_timer;       
+        if ( this->input->out_sources )
+        {
+            MPI_Reduce(
+                            this->sim_data->intensities,
+                            this->sim_data->intensities_p0,
+                            this->kernel->size( ) * ( this->input->dofs_np + this->input->heads_np ),
+                            mpi_cuscomplex,
+                            MPI_SUM,
+                            this->mpi_config->proc_root,
+                            MPI_COMM_WORLD
+                        );
+        }
+
+        if ( this->input->out_potential )
+        {
+            MPI_Reduce(
+                            this->sim_data->panels_potential,
+                            this->sim_data->panels_potential_p0,
+                            this->kernel->size( ) * ( this->input->dofs_np + this->input->heads_np ),
+                            mpi_cuscomplex,
+                            MPI_SUM,
+                            this->mpi_config->proc_root,
+                            MPI_COMM_WORLD
+                        );
+        }
+
         if ( this->input->out_pressure )
         {
             MPI_Reduce(
@@ -170,7 +196,7 @@ void FrequencySolver<N, mode_pf>::calculate_first_order( void )
                 this->output->save_fields_data( 
                                                     i,
                                                     _DN_SRC_INT,
-                                                    this->sim_data->intensities
+                                                    this->sim_data->intensities_p0
                                                 );
             }
 
@@ -180,7 +206,7 @@ void FrequencySolver<N, mode_pf>::calculate_first_order( void )
                 this->output->save_fields_data( 
                                                     i,
                                                     _DN_POT_INT,
-                                                    this->sim_data->panels_potential
+                                                    this->sim_data->panels_potential_p0
                                                 );
             }
 
