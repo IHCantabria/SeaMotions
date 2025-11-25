@@ -151,7 +151,6 @@ void    MeshGroup::define_mirror_panels(
     delete [] this->panels;
     delete [] this->panels_np;
     delete [] this->panels_cnp;
-    delete [] this->panels_wl_cnp;
     delete [] this->source_nodes;
     delete [] this->source_nodes_np;
     delete [] this->source_nodes_cnp;
@@ -169,5 +168,6 @@ void    MeshGroup::define_mirror_panels(
     {
         delete [] this->panels_wl;
         delete [] this->panels_wl_np;
+        delete [] this->panels_wl_cnp;
     }
 }
