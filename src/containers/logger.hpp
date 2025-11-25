@@ -5,6 +5,7 @@
 #include <iostream>
 #include <iomanip>
 #include <mutex>
+#include "mpi.h"
 #include <sstream>
 #include <string>
 
@@ -70,8 +71,10 @@ private:
 
 public:
     /* Declare class constructors */
-    // Default constructor
-    Logger( ) = default;
+    // No arguments contructor. It checks the root process 
+    // internally. This allows to use the logger out of 
+    // block codes where MpiConfig is present.
+    Logger( );
 
     // Constructor that allows to change root and time column
     Logger( bool is_root );

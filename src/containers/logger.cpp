@@ -1,5 +1,6 @@
 
 // Include local modules
+#include "../config.hpp"
 #include "logger.hpp"
 
 
@@ -36,6 +37,21 @@ void Logger::log( Level level, const std::string& msg )
         std::cout   << this->_color( level ) << this->_prefix( level )
                     << msg << TermColor::RESET << std::endl << std::flush;
     }
+}
+
+
+Logger::Logger( void )
+{
+    // Get current process by using the MPI system
+    // Get current process rank
+    int proc_rank = 0;
+    MPI_Comm_rank(
+                    MPI_COMM_WORLD,
+                    &proc_rank
+                );
+
+    // Check if it is the root process
+    this->_is_root = proc_rank == MPI_ROOT_PROC_ID;
 }
 
 
