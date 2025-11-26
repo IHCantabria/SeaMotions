@@ -9,6 +9,7 @@
 #include "frequency_solver.hpp"
 #include "../../inout/reader.hpp"
 #include "../../tools.hpp"
+#include "../../version.hpp"
 
 
 
@@ -47,6 +48,32 @@ int main( int argc, char* argv[] )
 
 
     /*****************************************/
+    /******** Print Header Section ***********/
+    /*****************************************/
+    const int width         = 50;
+    std::string title       = "SeaMotions";
+    std::string version     = "Version " + VERSION_LABEL;
+
+    auto center =   [ & ]
+                    ( const std::string& s ) 
+                    {
+                        int padding = ( width - s.size( ) ) / 2;
+                        return std::string( padding, ' ' ) + s;
+                    };
+
+    if ( mpi_config.is_root( ) )
+    {
+        std::cout << std::string( width , '=') << "\n"
+                << center( title )   << "\n"
+                << center( version ) << "\n"
+                << std::string( width , '=') << "\n\n";
+
+        std::cout << " -> Case Path: " << case_fopath << "\n\n";
+        
+    }
+
+
+    /*****************************************/
     /************ Read Input data ************/
     /*****************************************/
     Input input;
@@ -78,8 +105,9 @@ int main( int argc, char* argv[] )
     // Print Elapsed time
     if ( mpi_config.is_root( ) )
     {
-        std::cout << "Elapsed wall time for calculation [s]: " << case_timer << std::endl;
-        std::cout << "Seamotions Freqcuency ended!" << std::endl;
+        std::cout << std::endl << std::endl;
+        std::cout << " -> Seamotions (Frequency) finished!" << std::endl;
+        std::cout << " ---> Elapsed wall time for calculation [s]: " << case_timer << std::endl;
     }
 
     return 0;
