@@ -63,6 +63,7 @@ int main( int argc, char* argv[] )
 
     if ( mpi_config.is_root( ) )
     {
+        std::cout << std::endl;
         std::cout << std::string( width , '=') << "\n"
                 << center( title )   << "\n"
                 << center( version ) << "\n"
