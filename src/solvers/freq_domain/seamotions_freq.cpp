@@ -7,6 +7,7 @@
 // Include local modules
 #include "../../containers/mpi_timer.hpp"
 #include "frequency_solver.hpp"
+#include "../../cli_header_banner.hpp"
 #include "../../inout/reader.hpp"
 #include "../../tools.hpp"
 #include "../../version.hpp"
@@ -50,28 +51,7 @@ int main( int argc, char* argv[] )
     /*****************************************/
     /******** Print Header Section ***********/
     /*****************************************/
-    const int width         = 50;
-    std::string title       = "SeaMotions";
-    std::string version     = "Version " + VERSION_LABEL;
-
-    auto center =   [ & ]
-                    ( const std::string& s ) 
-                    {
-                        int padding = ( width - s.size( ) ) / 2;
-                        return std::string( padding, ' ' ) + s;
-                    };
-
-    if ( mpi_config.is_root( ) )
-    {
-        std::cout << std::endl;
-        std::cout << std::string( width , '=') << "\n"
-                << center( title )   << "\n"
-                << center( version ) << "\n"
-                << std::string( width , '=') << "\n\n";
-
-        std::cout << " -> Case Path: " << case_fopath << "\n\n";
-        
-    }
+    cli_header_banner<true>( case_fopath, "Frequency" );
 
 
     /*****************************************/
