@@ -48,7 +48,7 @@ protected:
                                 );
     
     void    _create_panels(
-                                        cusfloat*           cog
+                                        void
                             );
     
     bool    _is_valid_type( 
@@ -73,6 +73,10 @@ protected:
                                         std::string file_path,
                                         std::string body_name
                             );
+
+    void    _update_panels_properties(
+                                        cusfloat* cog
+                                    );
 
 public:
     // Define class attributes
