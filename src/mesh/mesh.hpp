@@ -25,7 +25,7 @@
 
 struct Mesh
 {
-private:
+protected:
     // Define class attributes
     cusfloat    _fs_centre_x        = 0.0;
     cusfloat    _fs_centre_y        = 0.0;
@@ -35,15 +35,15 @@ private:
     bool        _is_fs_radius       = false;
     cusfloat    _is_move_f          = 0.0;
     bool        _is_source_nodes    = false;
-    int         valid_elem_type[2]  = { 3, 4 };
-    int         valid_elem_type_np  = 2;
+    int         _valid_elem_type[2] = { 3, 4 };
+    int         _valid_elem_type_np = 2;
 
     // Define class methods
     void    _calculate_bounding_box(
                                         void
                                     );
 
-void        _calculate_fs_centre(
+    void    _calculate_fs_centre(
                                         void
                                 );
     

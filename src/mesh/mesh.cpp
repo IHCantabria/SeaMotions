@@ -560,9 +560,9 @@ bool        Mesh::_is_valid_type(
                                )
 {
     bool is_valid = false;
-    for ( int i=0; i<this->valid_elem_type_np; i++ )
+    for ( int i=0; i<this->_valid_elem_type_np; i++ )
     {
-        if ( elem_type == this->valid_elem_type[i] )
+        if ( elem_type == this->_valid_elem_type[i] )
         {
             is_valid = true;
             break;
