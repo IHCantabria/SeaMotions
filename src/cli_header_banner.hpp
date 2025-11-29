@@ -11,7 +11,7 @@
 
 
 template<bool is_mpi>
-inline void show_header_banner( std::string case_fopath, std::string solver )
+inline void cli_header_banner( std::string case_fopath, std::string solver )
 {
     /*****************************************/
     /******** Print Header Section ***********/
