@@ -126,16 +126,36 @@ void        Mesh::calculate_fs_radius(
 
 
 void        Mesh::_create_panels(
-                                               void
+                                               int          panel_type,
+                                               cusfloat*    cog
                                )
 {
     // Create array to stogate the panels
     this->panels = new PanelGeom* [this->elems_np];
 
     // Create panel instances
+    int*    nodes_pos   = nullptr;
+    int     npe         = 0;
+    int     offset      = 0;
     for ( int i=0; i<this->elems_np; i++ )
     {
-        this->panels[i] = new PanelGeom;
+        // Get element nodes position information
+        offset      = i*this->enrl;
+        nodes_pos   = &(this->elems[offset+1]);
+        npe         = this->elems[offset];
+
+        // Create new panel
+        this->panels[i] = new PanelGeom(
+                                            npe,
+                                            nodes_pos,
+                                            this->x,
+                                            this->y,
+                                            this->z,
+                                            this->_is_move_f,
+                                            panel_type,
+                                            cog
+                                        );
+
     }
 
 }
@@ -1157,11 +1177,8 @@ Mesh::Mesh(
     this->_calculate_bounding_box( );
 
     // Create panels for each element
-    this->_create_panels( );
+    this->_create_panels( panel_type, cog );
 
-    // Update panel properties
-    this->_update_panels_properties( cog );
-    
 }
 
 
@@ -1181,10 +1198,8 @@ Mesh::Mesh(
     this->_calculate_bounding_box( );
 
     // Create panels for each element
-    this->_create_panels( );
+    this->_create_panels( DIFFRAC_PANEL_CODE, cog );
 
-    // Update panel properties
-    this->_update_panels_properties( cog );
 }
 
 
@@ -1263,47 +1278,25 @@ void        Mesh::_update_panels_properties(
                                                 cusfloat* cog
                                             )
 {
-    // Loop over elements to create every single panel
-    int node_num    = 0;
-    int npe         = 0;
+    // Create panel instances
+    int*    nodes_pos   = nullptr;
+    int     npe         = 0;
+    int     offset      = 0;
     for ( int i=0; i<this->elems_np; i++ )
     {
-        // Get nodes per element
-        npe = this->elems[i*this->enrl];
+        // Get element nodes position information
+        offset      = i*this->enrl;
+        nodes_pos   = &(this->elems[offset+1]);
+        npe         = this->elems[offset];
 
-        // Get panel vertexes form element list
-        this->panels[i]->num_nodes = npe;
-        for ( int j=0; j<npe; j++ )
-        {
-            node_num                = this->elems[(i*this->enrl)+j+1];
-            this->panels[i]->x[j]   = this->x[node_num];
-            this->panels[i]->y[j]   = this->y[node_num];
-            this->panels[i]->z[j]   = this->z[node_num];
-        }
-
-        // Set panel movility
-        this->panels[i]->is_move_f = this->_is_move_f;
-
-        // Calculate panel properties
-        this->panels[i]->calculate_properties( cog );
-
-        // Set panel type
-        if ( std::abs( this->panels[i]->center[2] ) < FS_SEL_THR )
-        {
-            this->panels[i]->type = LID_PANEL_CODE;
-        }
-        else
-        {
-            this->panels[i]->type = DIFFRAC_PANEL_CODE;
-        }
-
-        // Calculate integration properties
-        this->panels[i]->calculate_integration_properties<NUM_GP>( );
-
-        if ( this->panels[i]->type == LID_PANEL_CODE )
-        {
-            this->panels[i]->calcualte_free_surface_singularity( );
-        }
+        // Update panel info
+        this->panels[i]->set_new_properties(
+                                                npe,
+                                                nodes_pos,
+                                                this->x,
+                                                this->y,
+                                                this->z
+                                            );
 
     }
 }

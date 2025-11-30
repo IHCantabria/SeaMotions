@@ -47,7 +47,8 @@ protected:
                                 );
     
     void    _create_panels(
-                                        void
+                                        int                 panel_type,
+                                        cusfloat*           cog
                             );
     
     bool    _is_valid_type( 
@@ -69,12 +70,12 @@ protected:
                            );
 
     void    _load_simply_mesh( 
-                                        std::string file_path,
-                                        std::string body_name
+                                        std::string         file_path,
+                                        std::string         body_name
                             );
 
     void    _update_panels_properties(
-                                        cusfloat* cog
+                                        cusfloat*           cog
                                     );
 
 public:
