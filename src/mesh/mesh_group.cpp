@@ -32,8 +32,10 @@ void    MeshGroup::define_mirror_panels(
                                                     panel_i->x,
                                                     panel_i->y,
                                                     zm,
+                                                    panel_i->is_move_f,
                                                     panel_i->type,
-                                                    cog
+                                                    cog,
+                                                    false
                                                 );
     }
 }
