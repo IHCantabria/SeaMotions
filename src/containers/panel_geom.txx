@@ -73,7 +73,7 @@ void PanelGeom::check_underwater(
     // Loop over gauss points to make z=0 
     // in order to perfom hydrostatic 
     // pressure integration correctly
-    for ( std::size_t i=0; i<NGP*NPG; i++ )
+    for ( std::size_t i=0; i<NGP*NGP; i++ )
     {
         if ( this->gauss_points_global_z[i] > 0.0 )
         {
