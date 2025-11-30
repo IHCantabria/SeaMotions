@@ -408,6 +408,38 @@ void PanelGeom::get_source_nodes_data(
 }
 
 
+void PanelGeom::initialize( 
+                                cusfloat*   cog,
+                                bool        force_auto_type
+                            )
+{
+    // Calculate panel properties
+    this->calculate_properties( cog );
+
+    // Check panel type if any
+    if ( force_auto_type )
+    {
+        if ( std::abs( this->center[2] ) < FS_SEL_THR )
+        {
+            this->type = LID_PANEL_CODE;
+        }
+        else
+        {
+            this->type = DIFFRAC_PANEL_CODE;
+        }
+    }
+
+    // Calculate integral properties
+    this->calculate_integration_properties<NUM_GP>( );
+
+    // Calculate free surface singularity if necessary
+    if ( this->type == LID_PANEL_CODE )
+    {
+        this->calcualte_free_surface_singularity( );
+    }
+}
+
+
 int PanelGeom::is_inside( cusfloat* field_point )
 {
     // Check if the field point is inside of the bounding box
@@ -594,31 +626,15 @@ PanelGeom::PanelGeom(
     // Set panel movility
     this->is_move_f = is_move_f_in;
 
-    // Calculate panel properties
-    this->calculate_properties( cog );
-
-    // Set panel type. It is interpreted based on the distance to the FS
+    // Set panel type
     this->type = type_in;
-    if ( force_auto_type )
-    {
-        if ( std::abs( this->center[2] ) < FS_SEL_THR )
-        {
-            this->type = LID_PANEL_CODE;
-        }
-        else
-        {
-            this->type = DIFFRAC_PANEL_CODE;
-        }
-    }
 
-    // Calculate integral properties
-    this->calculate_integration_properties<NUM_GP>( );
+    // Initialize
+    this->initialize( 
+                        cog,
+                        force_auto_type
+                    );
 
-    // Calculate free surface singularity if necessary
-    if ( this->type == LID_PANEL_CODE )
-    {
-        this->calcualte_free_surface_singularity( );
-    }
 }
 
 
@@ -631,6 +647,51 @@ PanelGeom::~PanelGeom(
         mkl_free( this->_source_positions );
         mkl_free( this->_source_normal_vec );
     }
+}
+
+
+void PanelGeom::set_new_properties(
+                                        int         npe,
+                                        cusfloat*   x_in,
+                                        cusfloat*   y_in,
+                                        cusfloat*   z_in
+                                    )
+{
+    // Copy input nodes
+    this->num_nodes = npe;
+    for ( int i=0; i<npe; i++ )
+    {
+        this->x[i] = x_in[i];
+        this->y[i] = y_in[i];
+        this->z[i] = z_in[i];
+    }
+
+    // Reinitialize panel
+    this->initialize( this->body_cog, false );
+
+}
+
+
+void PanelGeom::set_new_properties(
+                                        int         npe,
+                                        cusfloat*   x_in,
+                                        cusfloat*   y_in,
+                                        cusfloat*   z_in,
+                                        cusfloat*   cog
+                                    )
+{
+    // Copy input nodes
+    this->num_nodes = npe;
+    for ( int i=0; i<npe; i++ )
+    {
+        this->x[i] = x_in[i];
+        this->y[i] = y_in[i];
+        this->z[i] = z_in[i];
+    }
+
+    // Reinitialize panel
+    this->initialize( cog, false );
+    
 }
 
 

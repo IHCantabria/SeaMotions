@@ -146,6 +146,11 @@ public:
                                                     cusfloat*    node_pos
                                     );
 
+    void    initialize(
+                                                    cusfloat*   cog,
+                                                    bool        force_auto_type
+                        );
+
     int     is_inside(                  
                                                     cusfloat*   field_point
                         );
@@ -155,6 +160,21 @@ public:
                                                     cusfloat    eta,
                                                     cusfloat*   global_pos
                                );
+
+    void    set_new_properties(
+                                                    int         npe,
+                                                    cusfloat*   x_in,
+                                                    cusfloat*   y_in,
+                                                    cusfloat*   z_in
+                                );
+
+    void    set_new_properties(
+                                                    int         npe,
+                                                    cusfloat*   x_in,
+                                                    cusfloat*   y_in,
+                                                    cusfloat*   z_in,
+                                                    cusfloat*   cog_in
+                                );
 
     void    write( 
                                                     std::string finame
