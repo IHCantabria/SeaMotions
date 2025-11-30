@@ -19,8 +19,7 @@
 #include "../../src/tools.hpp"
 
 // Define panels type
-#define DIFFRAC_PANEL_CODE  0
-#define LID_PANEL_CODE      1
+
 
 
 struct Mesh
