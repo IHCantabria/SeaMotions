@@ -52,6 +52,7 @@ public:
     cusfloat                local_to_global_mat[9];
     int                     location_zone           = -999;
     static constexpr int    MAX_PANEL_NODES         = 4;
+    int                     nodes_pos[MAX_PANEL_NODES];
     cusfloat                normal_vec[6]           = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
     cusfloat                normal_vec_wl[6]        = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
     int                     num_nodes               = 0;
@@ -89,7 +90,7 @@ public:
 
     PanelGeom(
                                         int         npe,
-                                        int*        nodes_pos,
+                                        int*        nodes_pos_in,
                                         cusfloat*   x_in,
                                         cusfloat*   y_in,
                                         cusfloat*   z_in,
@@ -190,7 +191,7 @@ public:
 
     void    set_new_properties(
                                                     int         npe,
-                                                    int*        nodes_pos,
+                                                    int*        nodes_pos_in,
                                                     cusfloat*   x_in,
                                                     cusfloat*   y_in,
                                                     cusfloat*   z_in
@@ -198,7 +199,7 @@ public:
 
     void    set_new_properties(
                                                     int         npe,
-                                                    int*        nodes_pos,
+                                                    int*        nodes_pos_in,
                                                     cusfloat*   x_in,
                                                     cusfloat*   y_in,
                                                     cusfloat*   z_in,

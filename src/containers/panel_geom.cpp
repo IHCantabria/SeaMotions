@@ -640,7 +640,7 @@ PanelGeom::PanelGeom(
 
 PanelGeom::PanelGeom(
                         int         npe,
-                        int*        nodes_pos,
+                        int*        nodes_pos_in,
                         cusfloat*   x_in,
                         cusfloat*   y_in,
                         cusfloat*   z_in,
@@ -654,9 +654,10 @@ PanelGeom::PanelGeom(
     this->num_nodes = npe;
     for ( int j=0; j<npe; j++ )
     {
-        this->x[j]   = x_in[nodes_pos[j]];
-        this->y[j]   = y_in[nodes_pos[j]];
-        this->z[j]   = z_in[nodes_pos[j]];
+        this->x[j]          = x_in[nodes_pos_in[j]];
+        this->y[j]          = y_in[nodes_pos_in[j]];
+        this->z[j]          = z_in[nodes_pos_in[j]];
+        this->nodes_pos[j]  = nodes_pos_in[j];
     }
 
     // Set panel movility
@@ -733,7 +734,7 @@ void PanelGeom::set_new_properties(
 
 void PanelGeom::set_new_properties(
                                         int         npe,
-                                        int*        nodes_pos,
+                                        int*        nodes_pos_in,
                                         cusfloat*   x_in,
                                         cusfloat*   y_in,
                                         cusfloat*   z_in
@@ -743,9 +744,10 @@ void PanelGeom::set_new_properties(
     this->num_nodes = npe;
     for ( int i=0; i<npe; i++ )
     {
-        this->x[i] = x_in[nodes_pos[i]];
-        this->y[i] = y_in[nodes_pos[i]];
-        this->z[i] = z_in[nodes_pos[i]];
+        this->x[i]          = x_in[nodes_pos_in[i]];
+        this->y[i]          = y_in[nodes_pos_in[i]];
+        this->z[i]          = z_in[nodes_pos_in[i]];
+        this->nodes_pos[i]  = nodes_pos_in[i];
     }
 
     // Reinitialize panel
@@ -756,7 +758,7 @@ void PanelGeom::set_new_properties(
 
 void PanelGeom::set_new_properties(
                                         int         npe,
-                                        int*        nodes_pos,
+                                        int*        nodes_pos_in,
                                         cusfloat*   x_in,
                                         cusfloat*   y_in,
                                         cusfloat*   z_in,
@@ -767,9 +769,10 @@ void PanelGeom::set_new_properties(
     this->num_nodes = npe;
     for ( int i=0; i<npe; i++ )
     {
-        this->x[i] = x_in[nodes_pos[i]];
-        this->y[i] = y_in[nodes_pos[i]];
-        this->z[i] = z_in[nodes_pos[i]];
+        this->x[i]          = x_in[nodes_pos_in[i]];
+        this->y[i]          = y_in[nodes_pos_in[i]];
+        this->z[i]          = z_in[nodes_pos_in[i]];
+        this->nodes_pos[i]  = nodes_pos_in[i];
     }
 
     // Reinitialize panel
