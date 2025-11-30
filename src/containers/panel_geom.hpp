@@ -81,8 +81,10 @@ public:
                                         cusfloat*   x_in,
                                         cusfloat*   y_in,
                                         cusfloat*   z_in,
+                                        int         is_move_f_in,
                                         int         type_in,
-                                        cusfloat*   cog
+                                        cusfloat*   cog,
+                                        bool        force_auto_type=true
                 );
     
     ~PanelGeom( 

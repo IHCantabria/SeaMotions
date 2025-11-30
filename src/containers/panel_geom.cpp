@@ -576,8 +576,10 @@ PanelGeom::PanelGeom(
                         cusfloat*   x_in,
                         cusfloat*   y_in,
                         cusfloat*   z_in,
+                        int         is_move_f_in,
                         int         type_in,
-                        cusfloat*   cog
+                        cusfloat*   cog,
+                        bool        force_auto_type
                     )
 {
     // Get panel vertexes form element list
@@ -589,14 +591,34 @@ PanelGeom::PanelGeom(
         this->z[j]   = z_in[j];
     }
 
-    // Set panel type
-    this->type = type_in;
+    // Set panel movility
+    this->is_move_f = is_move_f_in;
 
     // Calculate panel properties
     this->calculate_properties( cog );
 
+    // Set panel type. It is interpreted based on the distance to the FS
+    this->type = type_in;
+    if ( force_auto_type )
+    {
+        if ( std::abs( this->center[2] ) < FS_SEL_THR )
+        {
+            this->type = LID_PANEL_CODE;
+        }
+        else
+        {
+            this->type = DIFFRAC_PANEL_CODE;
+        }
+    }
+
     // Calculate integral properties
     this->calculate_integration_properties<NUM_GP>( );
+
+    // Calculate free surface singularity if necessary
+    if ( this->type == LID_PANEL_CODE )
+    {
+        this->calcualte_free_surface_singularity( );
+    }
 }
 
 
