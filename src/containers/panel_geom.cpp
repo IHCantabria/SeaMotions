@@ -638,6 +638,42 @@ PanelGeom::PanelGeom(
 }
 
 
+PanelGeom::PanelGeom(
+                        int         npe,
+                        int*        nodes_pos,
+                        cusfloat*   x_in,
+                        cusfloat*   y_in,
+                        cusfloat*   z_in,
+                        int         is_move_f_in,
+                        int         type_in,
+                        cusfloat*   cog,
+                        bool        force_auto_type
+                    )
+{
+    // Get panel vertexes form element list
+    this->num_nodes = npe;
+    for ( int j=0; j<npe; j++ )
+    {
+        this->x[j]   = x_in[nodes_pos[j]];
+        this->y[j]   = y_in[nodes_pos[j]];
+        this->z[j]   = z_in[nodes_pos[j]];
+    }
+
+    // Set panel movility
+    this->is_move_f = is_move_f_in;
+
+    // Set panel type
+    this->type = type_in;
+
+    // Initialize
+    this->initialize( 
+                        cog,
+                        force_auto_type
+                    );
+
+}
+
+
 PanelGeom::~PanelGeom(
                         void
                     )
@@ -687,6 +723,53 @@ void PanelGeom::set_new_properties(
         this->x[i] = x_in[i];
         this->y[i] = y_in[i];
         this->z[i] = z_in[i];
+    }
+
+    // Reinitialize panel
+    this->initialize( cog, false );
+    
+}
+
+
+void PanelGeom::set_new_properties(
+                                        int         npe,
+                                        int*        nodes_pos,
+                                        cusfloat*   x_in,
+                                        cusfloat*   y_in,
+                                        cusfloat*   z_in
+                                    )
+{
+    // Copy input nodes
+    this->num_nodes = npe;
+    for ( int i=0; i<npe; i++ )
+    {
+        this->x[i] = x_in[nodes_pos[i]];
+        this->y[i] = y_in[nodes_pos[i]];
+        this->z[i] = z_in[nodes_pos[i]];
+    }
+
+    // Reinitialize panel
+    this->initialize( this->body_cog, false );
+
+}
+
+
+void PanelGeom::set_new_properties(
+                                        int         npe,
+                                        int*        nodes_pos,
+                                        cusfloat*   x_in,
+                                        cusfloat*   y_in,
+                                        cusfloat*   z_in,
+                                        cusfloat*   cog
+                                    )
+{
+    // Copy input nodes
+    this->num_nodes = npe;
+    for ( int i=0; i<npe; i++ )
+    {
+        this->x[i] = x_in[nodes_pos[i]];
+        this->y[i] = y_in[nodes_pos[i]];
+        this->z[i] = z_in[nodes_pos[i]];
     }
 
     // Reinitialize panel

@@ -86,6 +86,18 @@ public:
                                         cusfloat*   cog,
                                         bool        force_auto_type=true
                 );
+
+    PanelGeom(
+                                        int         npe,
+                                        int*        nodes_pos,
+                                        cusfloat*   x_in,
+                                        cusfloat*   y_in,
+                                        cusfloat*   z_in,
+                                        int         is_move_f_in,
+                                        int         type_in,
+                                        cusfloat*   cog,
+                                        bool        force_auto_type=true
+                );
     
     ~PanelGeom( 
                                         void 
@@ -170,6 +182,23 @@ public:
 
     void    set_new_properties(
                                                     int         npe,
+                                                    cusfloat*   x_in,
+                                                    cusfloat*   y_in,
+                                                    cusfloat*   z_in,
+                                                    cusfloat*   cog_in
+                                );
+
+    void    set_new_properties(
+                                                    int         npe,
+                                                    int*        nodes_pos,
+                                                    cusfloat*   x_in,
+                                                    cusfloat*   y_in,
+                                                    cusfloat*   z_in
+                                );
+
+    void    set_new_properties(
+                                                    int         npe,
+                                                    int*        nodes_pos,
                                                     cusfloat*   x_in,
                                                     cusfloat*   y_in,
                                                     cusfloat*   z_in,
