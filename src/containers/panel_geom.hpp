@@ -1,4 +1,23 @@
 
+/*
+ * Copyright (c) 2025 Sergio Fernández Ruano / IHCantabria
+ *
+ * This file is part of SeaMotions Software.
+ *
+ * SeaMotions is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeaMotions is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #pragma once
 
 // Include local modules
@@ -31,6 +50,7 @@ public:
     cusfloat                len_wl                  = 0;
     cusfloat                length                  = 0.0;
     cusfloat                local_to_global_mat[9];
+    int                     location_zone           = -999;
     static constexpr int    MAX_PANEL_NODES         = 4;
     cusfloat                normal_vec[6]           = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
     cusfloat                normal_vec_wl[6]        = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
@@ -70,63 +90,72 @@ public:
                 );
 
     // Add method to calculate the geometric propertiess
-    void    calcualte_free_surface_singularity( void );
+    void    calcualte_free_surface_singularity( 
+                                                    void 
+                                                );
 
     template<int NGP>
-    void    calculate_integration_properties( void );
+    void    calculate_integration_properties( 
+                                                    void 
+                                            );
 
     void    calculate_properties(       
-                                        cusfloat*   cog
+                                                    cusfloat*   cog
                                 );
 
+    template<int NGP>
+    void    check_underwater( 
+                                                    void
+                            );
+
     void    calculate_source_nodes(
-                                        int         poly_order,
-                                        cusfloat*   cog
+                                                    int         poly_order,
+                                                    cusfloat*   cog
                                     );
 
     void    get_node_position( 
-                                        int         num_node, 
-                                        cusfloat*   node_pos
+                                                    int         num_node, 
+                                                    cusfloat*   node_pos
                                );
 
     void    get_panel_xy_proj( 
-                                        PanelGeom*  new_panel 
+                                                    PanelGeom*  new_panel 
                             );
 
     void    get_source_nodes_data(
-                                        cusfloat*&  position,
-                                        cusfloat*&  normals_vec
+                                                    cusfloat*&  position,
+                                                    cusfloat*&  normals_vec
                                 );
 
     void    local_coords_from_z_proj(
-                                        cusfloat    x,
-                                        cusfloat    y,
-                                        cusfloat&   xi,
-                                        cusfloat&   eta
+                                                    cusfloat    x,
+                                                    cusfloat    y,
+                                                    cusfloat&   xi,
+                                                    cusfloat&   eta
                                     );
 
     void    get_node_local_position(   
-                                        int          num_node, 
-                                        cusfloat*    node_pos
+                                                    int          num_node, 
+                                                    cusfloat*    node_pos
                                    );
 
     void    get_node_local_position_c(   
-                                        int          num_node, 
-                                        cusfloat*    node_pos
+                                                    int          num_node, 
+                                                    cusfloat*    node_pos
                                     );
 
     int     is_inside(                  
-                                        cusfloat*   field_point
+                                                    cusfloat*   field_point
                         );
 
     void    local_to_global( 
-                                        cusfloat    xi, 
-                                        cusfloat    eta,
-                                        cusfloat*   global_pos
+                                                    cusfloat    xi, 
+                                                    cusfloat    eta,
+                                                    cusfloat*   global_pos
                                );
 
     void    write( 
-                                        std::string finame
+                                                    std::string finame
                 );
 
     friend std::ostream& operator<< ( std::ostream& os, PanelGeom& panel );
