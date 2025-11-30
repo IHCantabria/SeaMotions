@@ -1307,7 +1307,6 @@ void        Mesh::write(
                         )
 {
     // Get current process ID
-    // Get current process rank
     int proc_rank = 0;
     MPI_Comm_rank(
                     MPI_COMM_WORLD,
