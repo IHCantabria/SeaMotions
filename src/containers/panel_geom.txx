@@ -60,13 +60,26 @@ void PanelGeom::check_underwater(
                                             void
                                 )
 {
+    // Define local variables
+    constexpr cusfloat fs_z = 0.0;
+
     // Check for points above water surface ( Z = 0 )
     int above_np = 0;
-    for ( int j=0; j<this->num_nodes; j++ )
+    for ( int i=0; i<this->num_nodes; i++ )
     {
-        if ( this->z[j] > 0.0 )
+        if ( this->z[i] > fs_z )
         {
             above_np++;
+        }
+    }
+
+    // Check how many nodes are lying on the FS
+    int count_fs = 0;
+    for ( int i=0; i<this->num_nodes; i++ )
+    {
+        if ( std::abs( this->z[i] - fs_z ) < FS_SEL_THR )
+        {
+            count_fs++;
         }
     }
 
@@ -75,9 +88,9 @@ void PanelGeom::check_underwater(
     // pressure integration correctly
     for ( std::size_t i=0; i<NGP*NGP; i++ )
     {
-        if ( this->gauss_points_global_z[i] > 0.0 )
+        if ( this->gauss_points_global_z[i] > fs_z )
         {
-            this->gauss_points_global_z[i]  = 0.0;
+            this->gauss_points_global_z[i]  = fs_z;
         }
     }
 
@@ -95,7 +108,23 @@ void PanelGeom::check_underwater(
     }
     else
     {
-        this->location_zone = 0;
+        // Check if the free surface cuts along an edge 
+        // of the element
+        if ( count_fs == 2 )
+        {
+            if ( above_np > 0 )
+            {
+                this->location_zone = 1;
+            }
+            else
+            {
+                this->location_zone = -1;
+            }
+        }
+        else
+        {
+            this->location_zone = 0;
+        }
     }
 
 }
