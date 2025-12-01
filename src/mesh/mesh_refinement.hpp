@@ -27,12 +27,14 @@
 void    refine_underwater_quadrilateral( 
                                             PanelGeom*                  panel,
                                             std::vector<PanelGeom*>&    fs_panels,
-                                            int&                        fs_panels_count
+                                            int&                        fs_panels_count,
+                                            int&                        last_node_index
                                         );
 
 
 void    refine_underwater_triangle( 
                                             PanelGeom*                  panel,
                                             std::vector<PanelGeom*>&    fs_panels,
-                                            int&                        fs_panels_count
+                                            int&                        fs_panels_count,
+                                            int&                        last_node_index
                                     );

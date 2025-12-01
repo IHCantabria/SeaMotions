@@ -27,7 +27,8 @@
 void    refine_underwater_quadrilateral( 
                                             PanelGeom*                  panel,
                                             std::vector<PanelGeom*>&    fs_panels,
-                                            int&                        fs_panels_count
+                                            int&                        fs_panels_count,
+                                            int&                        last_node_index
                                         )
 {
     // Define local variables
@@ -36,12 +37,20 @@ void    refine_underwater_quadrilateral(
 
     // Detect nodes location -> Underwater: 0 | Abovewater: 1
     int nodes_loc[nodes_np] = { 0, 0, 0, 0 };
+    int nodes_loc_cum       = 0;
     for ( int i=0; i<nodes_np; i++ )
     {
         if ( panel->z[i] > fs_z )
         {
             nodes_loc[i] = 1;
+            nodes_loc_cum++;
         }
+    }
+
+    bool triangle_below = false;
+    if ( nodes_loc_cum > 2 )
+    {
+        triangle_below = true;
     }
 
     // Loop around panel nodes to detect intersections
@@ -83,6 +92,17 @@ void    refine_underwater_quadrilateral(
         }
     }
 
+    // Check for consecutive sides
+    bool is_consecutive = std::abs( edge_num[1] - edge_num[0] ) == 1;
+    int  nnf            = 3;
+    int  nnb            = 2;
+
+    if ( is_consecutive )
+    {
+        nnf = 2;
+        nnb = 1;
+    }
+
     // Get order from first underwater to abovewater
     int nn[ nodes_np ];
     for ( int i=0; i<nodes_np; i++ )
@@ -92,135 +112,214 @@ void    refine_underwater_quadrilateral(
 
     // Calculate free surface crossings
     cusfloat fsi0[3];
+    int      fsi0n = -1;
     cusfloat fsi1[3];
+    int      fsi1n = -1;
     cusfloat lm = 0.0;
 
     lm      = -panel->z[ nn[0] ] / ( panel->z[ nn[1] ] - panel->z[ nn[0] ] );
-    fsi0[0] = lm * ( panel->x[ nn[1] ] - panel->x[ nn[0] ] );
-    fsi0[1] = lm * ( panel->y[ nn[1] ] - panel->y[ nn[0] ] );
-    fsi0[2] = 0.0;
+    fsi0[0] = panel->x[ nn[0] ] + lm * ( panel->x[ nn[1] ] - panel->x[ nn[0] ] );
+    fsi0[1] = panel->y[ nn[0] ] + lm * ( panel->y[ nn[1] ] - panel->y[ nn[0] ] );
+    fsi0[2] = panel->z[ nn[0] ] + lm * ( panel->z[ nn[1] ] - panel->z[ nn[0] ] );
+    fsi0n   = last_node_index;
+    last_node_index++;
 
-    lm      = -panel->z[ nn[2] ] / ( panel->z[ nn[3] ] - panel->z[ nn[2] ] );
-    fsi1[0] = lm * ( panel->x[ nn[3] ] - panel->x[ nn[2] ] );
-    fsi1[1] = lm * ( panel->y[ nn[3] ] - panel->y[ nn[2] ] );
-    fsi1[2] = 0.0;
+    lm      = -panel->z[ nn[nnb] ] / ( panel->z[ nn[nnf] ] - panel->z[ nn[nnb] ] );
+    fsi1[0] = panel->x[ nn[nnb] ] + lm * ( panel->x[ nn[nnf] ] - panel->x[ nn[nnb] ] );
+    fsi1[1] = panel->y[ nn[nnb] ] + lm * ( panel->y[ nn[nnf] ] - panel->y[ nn[nnb] ] );
+    fsi1[2] = panel->z[ nn[nnb] ] + lm * ( panel->z[ nn[nnf] ] - panel->z[ nn[nnb] ] );
+    fsi1n   = last_node_index;
+    last_node_index++;
 
     // Compose new nodal arrangements
     cusfloat x_new[ nodes_np ];
     cusfloat y_new[ nodes_np ];
     cusfloat z_new[ nodes_np ];
+    int      nodes_pos[ nodes_np ];
 
-    if ( std::abs( edge_num[1] - edge_num[0] ) > 1 ) // Crossed edges are not consecutives
+    if ( !is_consecutive ) // Crossed edges are not consecutives
     {
         // Storage first node
-        x_new[0]    = panel->x[ nn[0] ];
-        y_new[0]    = panel->y[ nn[0] ];
-        z_new[0]    = panel->z[ nn[0] ];
+        x_new[0]        = panel->x[ nn[0] ];
+        y_new[0]        = panel->y[ nn[0] ];
+        z_new[0]        = panel->z[ nn[0] ];
+        nodes_pos[0]    = panel->nodes_pos[ nn[0] ];
 
         // Storage first free surface intersection
-        x_new[1]    = fsi0[0];
-        y_new[1]    = fsi0[1];
-        z_new[1]    = fsi0[2];
+        x_new[1]        = fsi0[0];
+        y_new[1]        = fsi0[1];
+        z_new[1]        = fsi0[2];
+        nodes_pos[1]    = fsi0n;
 
         // Storage second free surface intersection
-        x_new[2]    = fsi1[0];
-        y_new[2]    = fsi1[1];
-        z_new[2]    = fsi1[2];
+        x_new[2]        = fsi1[0];
+        y_new[2]        = fsi1[1];
+        z_new[2]        = fsi1[2];
+        nodes_pos[2]    = fsi1n;
 
         // Storage fourth node
-        x_new[3]    = panel->x[ nn[3] ];
-        y_new[3]    = panel->y[ nn[3] ];
-        z_new[3]    = panel->z[ nn[3] ];
+        x_new[3]        = panel->x[ nn[3] ];
+        y_new[3]        = panel->y[ nn[3] ];
+        z_new[3]        = panel->z[ nn[3] ];
+        nodes_pos[3]    = panel->nodes_pos[ nn[3] ];
 
         // Add new panel
         fs_panels[ fs_panels_count ]->set_new_properties(
                                                             nodes_np,
+                                                            nodes_pos,
+                                                            false,
                                                             x_new,
                                                             y_new,
                                                             z_new
                                                         );
-        fs_panels_count++;
+        if ( fs_panels[ fs_panels_count ]->area > MIN_PANEL_AREA )
+        {
+            fs_panels_count++;
+        }
 
     }
     else // Crossed edges are consecutive
     {
-        /* Calculate first triange */
+        if ( triangle_below )
+        {
+            // Storage T0 - N0
+            x_new[0]        = panel->x[ nn[0] ];
+            y_new[0]        = panel->y[ nn[0] ];
+            z_new[0]        = panel->z[ nn[0] ];
+            nodes_pos[0]    = panel->nodes_pos[ nn[0] ];
+    
+            // Storage T0 - N1
+            x_new[1]        = fsi0[0];
+            y_new[1]        = fsi0[1];
+            z_new[1]        = fsi0[2];
+            nodes_pos[1]    = fsi0n;
+    
+            // Storage T0 - N2
+            x_new[2]        = fsi1[0];
+            y_new[2]        = fsi1[1];
+            z_new[2]        = fsi1[2];
+            nodes_pos[2]    = fsi1n;
+    
+            // Add new panel for T0
+            fs_panels[ fs_panels_count ]->set_new_properties(
+                                                                3,
+                                                                nodes_pos,
+                                                                false,
+                                                                x_new,
+                                                                y_new,
+                                                                z_new
+                                                            );
+            if ( fs_panels[ fs_panels_count ]->area > MIN_PANEL_AREA )
+            {
+                fs_panels_count++;
+            }
+        }
+        else
+        {
+            /* Calculate first triange */
+    
+            // Storage T0 - N0
+            x_new[0]        = panel->x[ nn[0] ];
+            y_new[0]        = panel->y[ nn[0] ];
+            z_new[0]        = panel->z[ nn[0] ];
+            nodes_pos[0]    = panel->nodes_pos[ nn[0] ];
+    
+            // Storage T0 - N1
+            x_new[1]        = fsi0[0];
+            y_new[1]        = fsi0[1];
+            z_new[1]        = fsi0[2];
+            nodes_pos[1]    = fsi0n;
+    
+            // Storage T0 - N2
+            x_new[2]        = panel->x[ nn[3] ];
+            y_new[2]        = panel->y[ nn[3] ];
+            z_new[2]        = panel->z[ nn[3] ];
+            nodes_pos[0]    = panel->nodes_pos[ nn[3] ];
+    
+            // Add new panel for T0
+            fs_panels[ fs_panels_count ]->set_new_properties(
+                                                                3,
+                                                                nodes_pos,
+                                                                false,
+                                                                x_new,
+                                                                y_new,
+                                                                z_new
+                                                            );
+            if ( fs_panels[ fs_panels_count ]->area > MIN_PANEL_AREA )
+            {
+                fs_panels_count++;
+            }
+    
+            /* Calculate second triange */
+    
+            // Storage T1 - N0
+            x_new[0]        = fsi0[0];
+            y_new[0]        = fsi0[1];
+            z_new[0]        = fsi0[2];
+            nodes_pos[0]    = fsi0n;
 
-        // Storage T0 - N0
-        x_new[0]    = panel->x[ nn[0] ];
-        y_new[0]    = panel->y[ nn[0] ];
-        z_new[0]    = panel->z[ nn[0] ];
+    
+            // Storage T1 - N1
+            x_new[1]        = fsi1[0];
+            y_new[1]        = fsi1[1];
+            z_new[1]        = fsi1[2];
+            nodes_pos[1]    = fsi1n;
+    
+            // Storage T1 - N2
+            x_new[2]        = panel->x[ nn[3] ];
+            y_new[2]        = panel->y[ nn[3] ];
+            z_new[2]        = panel->z[ nn[3] ];
+            nodes_pos[2]    = panel->nodes_pos[ nn[3] ];
+    
+            // Add new panel for T1
+            fs_panels[ fs_panels_count ]->set_new_properties(
+                                                                3,
+                                                                nodes_pos,
+                                                                false,
+                                                                x_new,
+                                                                y_new,
+                                                                z_new
+                                                            );
+            if ( fs_panels[ fs_panels_count ]->area > MIN_PANEL_AREA )
+            {
+                fs_panels_count++;
+            }
+    
+            /* Calculate thrid triange */
+    
+            // Storage T2 - N0
+            x_new[0]        = fsi1[0];
+            y_new[0]        = fsi1[1];
+            z_new[0]        = fsi1[2];
+            nodes_pos[0]    = fsi1n;
+    
+            // Storage T2 - N1
+            x_new[1]        = panel->x[ nn[2] ];
+            y_new[1]        = panel->y[ nn[2] ];
+            z_new[1]        = panel->z[ nn[2] ];
+            nodes_pos[1]    = panel->nodes_pos[ nn[2] ];
+    
+            // Storage T2 - N2
+            x_new[2]        = panel->x[ nn[3] ];
+            y_new[2]        = panel->y[ nn[3] ];
+            z_new[2]        = panel->z[ nn[3] ];
+            nodes_pos[2]    = panel->nodes_pos[ nn[3] ];
+    
+            // Add new panel for T2
+            fs_panels[ fs_panels_count ]->set_new_properties(
+                                                                3,
+                                                                nodes_pos,
+                                                                false,
+                                                                x_new,
+                                                                y_new,
+                                                                z_new
+                                                            );
+            if ( fs_panels[ fs_panels_count ]->area > MIN_PANEL_AREA )
+            {
+                fs_panels_count++;
+            }
 
-        // Storage T0 - N1
-        x_new[1]    = fsi0[0];
-        y_new[1]    = fsi0[1];
-        z_new[1]    = fsi0[2];
-
-        // Storage T0 - N2
-        x_new[2]    = panel->x[ nn[3] ];
-        y_new[2]    = panel->y[ nn[3] ];
-        z_new[2]    = panel->z[ nn[3] ];
-
-        // Add new panel for T0
-        fs_panels[ fs_panels_count ]->set_new_properties(
-                                                            3,
-                                                            x_new,
-                                                            y_new,
-                                                            z_new
-                                                        );
-        fs_panels_count++;
-
-        /* Calculate second triange */
-
-        // Storage T1 - N0
-        x_new[0]    = fsi0[0];
-        y_new[0]    = fsi0[1];
-        z_new[0]    = fsi0[2];
-
-        // Storage T1 - N1
-        x_new[1]    = fsi1[0];
-        y_new[1]    = fsi1[1];
-        z_new[1]    = fsi1[2];
-
-        // Storage T1 - N2
-        x_new[2]    = panel->x[ nn[3] ];
-        y_new[2]    = panel->y[ nn[3] ];
-        z_new[2]    = panel->z[ nn[3] ];
-
-        // Add new panel for T1
-        fs_panels[ fs_panels_count ]->set_new_properties(
-                                                            3,
-                                                            x_new,
-                                                            y_new,
-                                                            z_new
-                                                        );
-        fs_panels_count++;
-
-        /* Calculate thrid triange */
-
-        // Storage T2 - N0
-        x_new[0]    = fsi1[0];
-        y_new[0]    = fsi1[1];
-        z_new[0]    = fsi1[2];
-
-        // Storage T2 - N1
-        x_new[1]    = panel->x[ nn[2] ];
-        y_new[1]    = panel->y[ nn[2] ];
-        z_new[1]    = panel->z[ nn[2] ];
-
-        // Storage T2 - N2
-        x_new[2]    = panel->x[ nn[3] ];
-        y_new[2]    = panel->y[ nn[3] ];
-        z_new[2]    = panel->z[ nn[3] ];
-
-        // Add new panel for T2
-        fs_panels[ fs_panels_count ]->set_new_properties(
-                                                            3,
-                                                            x_new,
-                                                            y_new,
-                                                            z_new
-                                                        );
-        fs_panels_count++;
+        }
 
     }
 
@@ -230,7 +329,8 @@ void    refine_underwater_quadrilateral(
 void    refine_underwater_triangle( 
                                             PanelGeom*                  panel,
                                             std::vector<PanelGeom*>&    fs_panels,
-                                            int&                        fs_panels_count
+                                            int&                        fs_panels_count,
+                                            int&                        last_node_index
                                     )
 {
     // Define local variables
@@ -239,11 +339,13 @@ void    refine_underwater_triangle(
 
     // Detect nodes location -> Underwater: 0 | Abovewater: 1
     int nodes_loc[nodes_np] = { 0, 0, 0 };
+    int nodes_loc_cum       = 0;
     for ( int i=0; i<nodes_np; i++ )
     {
         if ( panel->z[i] > fs_z )
         {
             nodes_loc[i] = 1;
+            nodes_loc_cum++;
         }
     }
 
@@ -265,7 +367,7 @@ void    refine_underwater_triangle(
             if ( edge_count > 1 )
             {
                 Logger logger;
-                logger.error( "Quadrilateral element has more than two sides intersecting the free surface" );
+                logger.error( "Triangular element has more than two sides intersecting the free surface" );
                 throw std::runtime_error( "" );
             }
 
@@ -286,6 +388,17 @@ void    refine_underwater_triangle(
         }
     }
 
+    // Check for consecutive sides
+    bool is_consecutive = nodes_loc_cum == 1;
+    int  nnf            = 0;
+    int  nnb            = 2;
+
+    if ( is_consecutive )
+    {
+        nnf = 2;
+        nnb = 1;
+    }
+
     // Get order from first underwater to abovewater
     int nn[ nodes_np ];
     for ( int i=0; i<nodes_np; i++ )
@@ -295,107 +408,181 @@ void    refine_underwater_triangle(
 
     // Calculate free surface crossings
     cusfloat fsi0[3];
+    int      fsi0n = -1;
     cusfloat fsi1[3];
+    int      fsi1n = -1;
     cusfloat lm = 0.0;
 
     lm      = -panel->z[ nn[0] ] / ( panel->z[ nn[1] ] - panel->z[ nn[0] ] );
-    fsi0[0] = lm * ( panel->x[ nn[1] ] - panel->x[ nn[0] ] );
-    fsi0[1] = lm * ( panel->y[ nn[1] ] - panel->y[ nn[0] ] );
-    fsi0[2] = 0.0;
+    fsi0[0] = panel->x[ nn[0] ] + lm * ( panel->x[ nn[1] ] - panel->x[ nn[0] ] );
+    fsi0[1] = panel->y[ nn[0] ] + lm * ( panel->y[ nn[1] ] - panel->y[ nn[0] ] );
+    fsi0[2] = panel->z[ nn[0] ] + lm * ( panel->z[ nn[1] ] - panel->z[ nn[0] ] );
+    fsi0n   = last_node_index;
+    last_node_index++;
 
-    lm      = -panel->z[ nn[1] ] / ( panel->z[ nn[2] ] - panel->z[ nn[1] ] );
-    fsi1[0] = lm * ( panel->x[ nn[2] ] - panel->x[ nn[1] ] );
-    fsi1[1] = lm * ( panel->y[ nn[2] ] - panel->y[ nn[1] ] );
-    fsi1[2] = 0.0;
-
-    // Calculate mid-point in between the first
-    // and the last nodes
-    cusfloat midp[3];
-    midp[0] = ( panel->x[ nn[0] ] + panel->x[ nn[2] ] ) / 2.0;
-    midp[1] = ( panel->y[ nn[0] ] + panel->y[ nn[2] ] ) / 2.0;
-    midp[2] = ( panel->z[ nn[0] ] + panel->z[ nn[2] ] ) / 2.0;
+    lm      = -panel->z[ nn[nnb] ] / ( panel->z[ nn[nnf] ] - panel->z[ nn[nnb] ] );
+    fsi1[0] = panel->x[ nn[nnb] ] + lm * ( panel->x[ nn[nnf] ] - panel->x[ nn[nnb] ] );
+    fsi1[1] = panel->y[ nn[nnb] ] + lm * ( panel->y[ nn[nnf] ] - panel->y[ nn[nnb] ] );
+    fsi1[2] = panel->z[ nn[nnb] ] + lm * ( panel->z[ nn[nnf] ] - panel->z[ nn[nnb] ] );
+    fsi1n   = last_node_index;
+    last_node_index++;
 
     // Allocate space for new nodes
     cusfloat x_new[ nodes_np ];
     cusfloat y_new[ nodes_np ];
     cusfloat z_new[ nodes_np ];
+    int      nodes_pos[ nodes_np ];
 
-    /* Calculate first triange */
+    // Re-mesh according to the case
+    if ( is_consecutive )
+    {
+        // Calculate mid-point in between the first
+        // and the last nodes
+        cusfloat midp[3];
+        int      midpn = 0;
+        midp[0] = ( panel->x[ nn[0] ] + panel->x[ nn[2] ] ) / 2.0;
+        midp[1] = ( panel->y[ nn[0] ] + panel->y[ nn[2] ] ) / 2.0;
+        midp[2] = ( panel->z[ nn[0] ] + panel->z[ nn[2] ] ) / 2.0;
+        midpn   = last_node_index;
+        last_node_index++;
+    
+        /* Calculate first triange */
+    
+        // Storage T0 - N0
+        x_new[0]        = panel->x[ nn[0] ];
+        y_new[0]        = panel->y[ nn[0] ];
+        z_new[0]        = panel->z[ nn[0] ];
+        nodes_pos[0]    = panel->nodes_pos[ nn[0] ];
+    
+        // Storage T0 - N1
+        x_new[1]        = fsi0[0];
+        y_new[1]        = fsi0[1];
+        z_new[1]        = fsi0[2];
+        nodes_pos[1]    = fsi0n;
+    
+    
+        // Storage T0 - N2
+        x_new[2]        = midp[0];
+        y_new[2]        = midp[1];
+        z_new[2]        = midp[2];
+        nodes_pos[2]    = midpn;
+    
+        // Add new panel for T0
+        fs_panels[ fs_panels_count ]->set_new_properties(
+                                                            3,
+                                                            nodes_pos,
+                                                            false,
+                                                            x_new,
+                                                            y_new,
+                                                            z_new
+                                                        );
+        if ( fs_panels[ fs_panels_count ]->area > MIN_PANEL_AREA )
+        {
+            fs_panels_count++;
+        }
+    
+        /* Calculate second triange */
+    
+        // Storage T1 - N0
+        x_new[0]        = fsi0[0];
+        y_new[0]        = fsi0[1];
+        z_new[0]        = fsi0[2];
+        nodes_pos[0]    = fsi0n;
+    
+        // Storage T1 - N1
+        x_new[1]        = fsi1[0];
+        y_new[1]        = fsi1[1];
+        z_new[1]        = fsi1[2];
+        nodes_pos[1]    = fsi1n;
+    
+        // Storage T1 - N2
+        x_new[2]        = midp[0];
+        y_new[2]        = midp[1];
+        z_new[2]        = midp[2];
+        nodes_pos[2]    = midpn;
+    
+        // Add new panel for T1
+        fs_panels[ fs_panels_count ]->set_new_properties(
+                                                            3,
+                                                            nodes_pos,
+                                                            false,
+                                                            x_new,
+                                                            y_new,
+                                                            z_new
+                                                        );
+        if ( fs_panels[ fs_panels_count ]->area > MIN_PANEL_AREA )
+        {
+            fs_panels_count++;
+        }
+    
+        /* Calculate third triange */
+    
+        // Storage T2 - N0
+        x_new[0]        = fsi1[0];
+        y_new[0]        = fsi1[1];
+        z_new[0]        = fsi1[2];
+        nodes_pos[0]    = fsi1n;
+    
+        // Storage T2 - N1
+        x_new[1]        = panel->x[ nn[2] ];
+        y_new[1]        = panel->y[ nn[2] ];
+        z_new[1]        = panel->z[ nn[2] ];
+        nodes_pos[1]    = panel->nodes_pos[ nn[2] ];
+    
+        // Storage T2 - N2
+        x_new[2]        = midp[0];
+        y_new[2]        = midp[1];
+        z_new[2]        = midp[2];
+        nodes_pos[2]    = midpn;
+    
+        // Add new panel for T2
+        fs_panels[ fs_panels_count ]->set_new_properties(
+                                                            3,
+                                                            nodes_pos,
+                                                            false,
+                                                            x_new,
+                                                            y_new,
+                                                            z_new
+                                                        );
+        if ( fs_panels[ fs_panels_count ]->area > MIN_PANEL_AREA )
+        {
+            fs_panels_count++;
+        }
 
-    // Storage T0 - N0
-    x_new[0]    = panel->x[ nn[0] ];
-    y_new[0]    = panel->y[ nn[0] ];
-    z_new[0]    = panel->z[ nn[0] ];
-
-    // Storage T0 - N1
-    x_new[1]    = fsi0[0];
-    y_new[1]    = fsi0[1];
-    z_new[1]    = fsi0[2];
-
-    // Storage T0 - N2
-    x_new[2]    = midp[0];
-    y_new[2]    = midp[1];
-    z_new[2]    = midp[2];
-
-    // Add new panel for T0
-    fs_panels[ fs_panels_count ]->set_new_properties(
-                                                        3,
-                                                        x_new,
-                                                        y_new,
-                                                        z_new
-                                                    );
-    fs_panels_count++;
-
-    /* Calculate second triange */
-
-    // Storage T1 - N0
-    x_new[0]    = fsi0[0];
-    y_new[0]    = fsi0[1];
-    z_new[0]    = fsi0[2];
-
-    // Storage T1 - N1
-    x_new[1]    = fsi1[0];
-    y_new[1]    = fsi1[1];
-    z_new[1]    = fsi1[2];
-
-    // Storage T1 - N2
-    x_new[2]    = midp[0];
-    y_new[2]    = midp[1];
-    z_new[2]    = midp[2];
-
-    // Add new panel for T1
-    fs_panels[ fs_panels_count ]->set_new_properties(
-                                                        3,
-                                                        x_new,
-                                                        y_new,
-                                                        z_new
-                                                    );
-    fs_panels_count++;
-
-    /* Calculate third triange */
-
-    // Storage T2 - N0
-    x_new[0]    = fsi1[0];
-    y_new[0]    = fsi1[1];
-    z_new[0]    = fsi1[2];
-
-    // Storage T2 - N1
-    x_new[1]    = panel->x[ nn[2] ];
-    y_new[1]    = panel->y[ nn[2] ];
-    z_new[1]    = panel->z[ nn[2] ];
-
-    // Storage T2 - N2
-    x_new[2]    = midp[0];
-    y_new[2]    = midp[1];
-    z_new[2]    = midp[2];
-
-    // Add new panel for T2
-    fs_panels[ fs_panels_count ]->set_new_properties(
-                                                        3,
-                                                        x_new,
-                                                        y_new,
-                                                        z_new
-                                                    );
-    fs_panels_count++;
+    }
+    else
+    {
+        // Storage T1 - N0
+        x_new[0]        = fsi0[0];
+        y_new[0]        = fsi0[1];
+        z_new[0]        = fsi0[2];
+        nodes_pos[0]    = fsi0n;
+    
+        // Storage T1 - N1
+        x_new[1]        = fsi1[0];
+        y_new[1]        = fsi1[1];
+        z_new[1]        = fsi1[2];
+        nodes_pos[1]    = fsi1n;
+    
+        // Storage T1 - N2
+        x_new[2]        = panel->x[ nn[0] ];
+        y_new[2]        = panel->y[ nn[0] ];
+        z_new[2]        = panel->z[ nn[0] ];
+        nodes_pos[2]    = panel->nodes_pos[ nn[0] ];
+    
+        // Add new panel for T1
+        fs_panels[ fs_panels_count ]->set_new_properties(
+                                                            3,
+                                                            nodes_pos,
+                                                            false,
+                                                            x_new,
+                                                            y_new,
+                                                            z_new
+                                                        );
+        if ( fs_panels[ fs_panels_count ]->area > MIN_PANEL_AREA )
+        {
+            fs_panels_count++;
+        }
+    }
 
 }
