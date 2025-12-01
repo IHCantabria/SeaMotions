@@ -70,6 +70,7 @@ constexpr cusfloat  FS_SEL_THR              = 1e-3;             // Free surface 
 constexpr int       FSLID_ON                = 1;                // Flag used as template argument to REMOVE log singularity for free surface panels
 constexpr int       FSLID_OFF               = 0;                // Flag used as template argument to NOT REMOVE log singularity for free surface panels
 constexpr int       LID_PANEL_CODE          = 1;                // Flag used to mark the panel as lid
+constexpr cusfloat  MIN_PANEL_AREA          = 1e-5;             // Minimum panel area to be considered a workable panel during mesh refinement process
 constexpr int       NUM_GP                  = 2;                // Number of Gauss Points used for numerical integration
 constexpr int       NUM_GP2                 = NUM_GP*NUM_GP;    // Squared number of gauss points ( just for convenience along the code )
 constexpr int       NUM_GP3                 = NUM_GP2*NUM_GP;   // Cubic number of gauss points ( just for convenience along the code )
