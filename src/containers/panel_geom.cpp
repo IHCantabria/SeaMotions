@@ -614,14 +614,8 @@ PanelGeom::PanelGeom(
                         bool        force_auto_type
                     )
 {
-    // Get panel vertexes form element list
-    this->num_nodes = npe;
-    for ( int j=0; j<npe; j++ )
-    {
-        this->x[j]   = x_in[j];
-        this->y[j]   = y_in[j];
-        this->z[j]   = z_in[j];
-    }
+    // Storage input arguments
+    this->_read_node_list( npe, x_in, y_in, z_in );
 
     // Set panel movility
     this->is_move_f = is_move_f_in;
@@ -641,6 +635,7 @@ PanelGeom::PanelGeom(
 PanelGeom::PanelGeom(
                         int         npe,
                         int*        nodes_pos_in,
+                        bool        use_node_mask,
                         cusfloat*   x_in,
                         cusfloat*   y_in,
                         cusfloat*   z_in,
@@ -650,15 +645,15 @@ PanelGeom::PanelGeom(
                         bool        force_auto_type
                     )
 {
-    // Get panel vertexes form element list
-    this->num_nodes = npe;
-    for ( int j=0; j<npe; j++ )
-    {
-        this->x[j]          = x_in[nodes_pos_in[j]];
-        this->y[j]          = y_in[nodes_pos_in[j]];
-        this->z[j]          = z_in[nodes_pos_in[j]];
-        this->nodes_pos[j]  = nodes_pos_in[j];
-    }
+    // Storage input arguments
+    this->_read_node_list_mask( 
+                                    npe, 
+                                    nodes_pos_in, 
+                                    use_node_mask, 
+                                    x_in, 
+                                    y_in, 
+                                    z_in 
+                                );
 
     // Set panel movility
     this->is_move_f = is_move_f_in;
@@ -687,8 +682,30 @@ PanelGeom::~PanelGeom(
 }
 
 
-void PanelGeom::set_new_properties(
+void PanelGeom::_read_node_list(
                                         int         npe,
+                                        cusfloat*   x_in,
+                                        cusfloat*   y_in,
+                                        cusfloat*   z_in
+                                )
+{
+    // Read nodes per element
+    this->num_nodes = npe;
+
+    // Load input nodes
+    for ( int j=0; j<npe; j++ )
+    {
+        this->x[j]   = x_in[j];
+        this->y[j]   = y_in[j];
+        this->z[j]   = z_in[j];
+    }
+}
+
+
+void PanelGeom::_read_node_list_mask(
+                                        int         npe,
+                                        int*        nodes_pos_in,
+                                        bool        use_node_mask,
                                         cusfloat*   x_in,
                                         cusfloat*   y_in,
                                         cusfloat*   z_in
@@ -696,12 +713,43 @@ void PanelGeom::set_new_properties(
 {
     // Copy input nodes
     this->num_nodes = npe;
+    if ( use_node_mask )
+    {
+        for ( int i=0; i<npe; i++ )
+        {
+            this->x[i]          = x_in[ nodes_pos_in[i] ];
+            this->y[i]          = y_in[ nodes_pos_in[i] ];
+            this->z[i]          = z_in[ nodes_pos_in[i] ];
+        }
+    }
+    else
+    {
+        for ( int i=0; i<npe; i++ )
+        {
+            this->x[i]          = x_in[i];
+            this->y[i]          = y_in[i];
+            this->z[i]          = z_in[i];
+        }
+    }
+
+    // Storage node mask
     for ( int i=0; i<npe; i++ )
     {
-        this->x[i] = x_in[i];
-        this->y[i] = y_in[i];
-        this->z[i] = z_in[i];
+        this->nodes_pos[i]  = nodes_pos_in[i];
     }
+
+}
+
+
+void PanelGeom::set_new_properties(
+                                        int         npe,
+                                        cusfloat*   x_in,
+                                        cusfloat*   y_in,
+                                        cusfloat*   z_in
+                                    )
+{
+    // Storage input arguments
+    this->_read_node_list( npe, x_in, y_in, z_in );
 
     // Reinitialize panel
     this->initialize( this->body_cog, false );
@@ -717,14 +765,8 @@ void PanelGeom::set_new_properties(
                                         cusfloat*   cog
                                     )
 {
-    // Copy input nodes
-    this->num_nodes = npe;
-    for ( int i=0; i<npe; i++ )
-    {
-        this->x[i] = x_in[i];
-        this->y[i] = y_in[i];
-        this->z[i] = z_in[i];
-    }
+    // Storage input arguments
+    this->_read_node_list( npe, x_in, y_in, z_in );
 
     // Reinitialize panel
     this->initialize( cog, false );
@@ -735,20 +777,21 @@ void PanelGeom::set_new_properties(
 void PanelGeom::set_new_properties(
                                         int         npe,
                                         int*        nodes_pos_in,
+                                        bool        use_node_mask,
                                         cusfloat*   x_in,
                                         cusfloat*   y_in,
                                         cusfloat*   z_in
                                     )
 {
-    // Copy input nodes
-    this->num_nodes = npe;
-    for ( int i=0; i<npe; i++ )
-    {
-        this->x[i]          = x_in[nodes_pos_in[i]];
-        this->y[i]          = y_in[nodes_pos_in[i]];
-        this->z[i]          = z_in[nodes_pos_in[i]];
-        this->nodes_pos[i]  = nodes_pos_in[i];
-    }
+    // Storage input arguments
+    this->_read_node_list_mask( 
+                                    npe, 
+                                    nodes_pos_in, 
+                                    use_node_mask, 
+                                    x_in, 
+                                    y_in, 
+                                    z_in 
+                                );
 
     // Reinitialize panel
     this->initialize( this->body_cog, false );
@@ -759,21 +802,22 @@ void PanelGeom::set_new_properties(
 void PanelGeom::set_new_properties(
                                         int         npe,
                                         int*        nodes_pos_in,
+                                        bool        use_node_mask,
                                         cusfloat*   x_in,
                                         cusfloat*   y_in,
                                         cusfloat*   z_in,
                                         cusfloat*   cog
                                     )
 {
-    // Copy input nodes
-    this->num_nodes = npe;
-    for ( int i=0; i<npe; i++ )
-    {
-        this->x[i]          = x_in[nodes_pos_in[i]];
-        this->y[i]          = y_in[nodes_pos_in[i]];
-        this->z[i]          = z_in[nodes_pos_in[i]];
-        this->nodes_pos[i]  = nodes_pos_in[i];
-    }
+    // Storage input arguments
+    this->_read_node_list_mask( 
+                                    npe, 
+                                    nodes_pos_in, 
+                                    use_node_mask, 
+                                    x_in, 
+                                    y_in, 
+                                    z_in 
+                                );
 
     // Reinitialize panel
     this->initialize( cog, false );

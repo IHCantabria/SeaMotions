@@ -28,10 +28,27 @@
 struct PanelGeom
 {
 private:
-    // Define class attributes
+    // Define prive class attributes
     bool                    _is_source_nodes        = false;
     cusfloat*               _source_normal_vec      = nullptr;
     cusfloat*               _source_positions       = nullptr;
+
+    // Define private class methods
+    void    _read_node_list( 
+                                    int         npe,
+                                    cusfloat*   x_in,
+                                    cusfloat*   y_in,
+                                    cusfloat*   z_in
+                            );
+
+    void    _read_node_list_mask(  
+                                    int         npe,
+                                    int*        nodes_pos_in,
+                                    bool        use_node_mask,
+                                    cusfloat*   x_in,
+                                    cusfloat*   y_in,
+                                    cusfloat*   z_in
+                                );
 
 public:
     // Define class attributes
@@ -91,6 +108,7 @@ public:
     PanelGeom(
                                         int         npe,
                                         int*        nodes_pos_in,
+                                        bool        use_node_mask,
                                         cusfloat*   x_in,
                                         cusfloat*   y_in,
                                         cusfloat*   z_in,
@@ -192,6 +210,7 @@ public:
     void    set_new_properties(
                                                     int         npe,
                                                     int*        nodes_pos_in,
+                                                    bool        use_node_mask,
                                                     cusfloat*   x_in,
                                                     cusfloat*   y_in,
                                                     cusfloat*   z_in
@@ -200,6 +219,7 @@ public:
     void    set_new_properties(
                                                     int         npe,
                                                     int*        nodes_pos_in,
+                                                    bool        use_node_mask,
                                                     cusfloat*   x_in,
                                                     cusfloat*   y_in,
                                                     cusfloat*   z_in,
