@@ -148,6 +148,7 @@ void        Mesh::_create_panels(
         this->panels[i] = new PanelGeom(
                                             npe,
                                             nodes_pos,
+                                            true,
                                             this->x,
                                             this->y,
                                             this->z,
@@ -1293,9 +1294,11 @@ void        Mesh::_update_panels_properties(
         this->panels[i]->set_new_properties(
                                                 npe,
                                                 nodes_pos,
+                                                true,
                                                 this->x,
                                                 this->y,
-                                                this->z
+                                                this->z,
+                                                cog
                                             );
 
     }
