@@ -10,7 +10,7 @@
 
 
 template<typename T>
-inline  void    _read_channel_list( 
+inline  void    read_channel_list( 
                                         std::ifstream&  infile,
                                         std::string     target_file,
                                         std::string     target_signal,
@@ -40,7 +40,7 @@ inline  void    _read_channel_list(
         }
 
         // Get signal value
-        read_signal     = _read_channel_value( infile, aux_var );
+        read_signal     = read_channel_value( infile, aux_var );
         CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
         // Storage signal value
@@ -62,7 +62,7 @@ inline  void    _read_channel_list(
 
 
 template<typename T>
-inline std::string  _read_channel_value( 
+inline std::string  read_channel_value( 
                                             std::ifstream& infile, 
                                             T& signal
                                         )
@@ -92,7 +92,7 @@ inline std::string  _read_channel_value(
 
 
 template<typename T>
-inline  void    _read_channel_matrix( 
+inline  void    read_channel_matrix( 
                                         std::ifstream&  infile, 
                                         int             rows_np, 
                                         int             cols_np, 
@@ -117,7 +117,7 @@ inline  void    _read_channel_matrix(
 
 
 template<typename T>
-inline  void    _read_list_contraction(
+inline  void    read_list_contraction(
                                         std::ifstream&  infile,
                                         int&            line_count,
                                         std::string     target_file,
@@ -177,7 +177,7 @@ inline  void    _read_list_contraction(
             pos_ddot = item.find( ":" );
             if ( !( pos_ddot < 0 ) )
             {
-                _read_compact_list(
+                read_compact_list(
                                         item,
                                         container
                                     );
@@ -212,7 +212,7 @@ inline  void    _read_list_contraction(
 
 
 template<typename T>
-inline  void    _read_compact_list(
+inline  void    read_compact_list(
                                     std::string     item,
                                     std::vector<T>& container
                                 )

@@ -37,7 +37,7 @@
                                                                         BodyDef*    body
                                                         );
 
-template<typename T>    inline  void            _read_channel_list( 
+template<typename T>    inline  void            read_channel_list( 
                                                                         std::ifstream&      infile,
                                                                         std::string         target_file,
                                                                         std::string         target_signal,
@@ -45,30 +45,30 @@ template<typename T>    inline  void            _read_channel_list(
                                                                         std::vector<T>&     list
                                                                     );
 
-                                std::string     _read_channel_name( 
+                                std::string     read_channel_name( 
                                                                         std::ifstream&      infile 
                                                                 );
 
-template<typename T>    inline  std::string     _read_channel_value( 
+template<typename T>    inline  std::string     read_channel_value( 
                                                                         std::ifstream&      infile, 
                                                                         T&                  channel
                                                                     );
 
-template<typename T>    inline  void            _read_channel_matrix( 
+template<typename T>    inline  void            read_channel_matrix( 
                                                                         std::ifstream&      infile, 
                                                                         int                 rows_np, 
                                                                         int                 cols_np, 
                                                                         T                   channel
                                                                     );
 
-template<typename T>    inline  void            _read_list_contraction(
+template<typename T>    inline  void            read_list_contraction(
                                                                         std::ifstream&  infile,
                                                                         int&            line_count,
                                                                         std::string     target_file,
                                                                         std::vector<T>& container
                                                                         );
 
-template<typename T>    inline  void            _read_compact_list(
+template<typename T>    inline  void            read_compact_list(
                                                                         std::string     item,
                                                                         std::vector<T>& container
                                                                     );
@@ -82,7 +82,7 @@ template<typename T>    inline  void            _read_compact_list(
                                                                         std::string         folder_path
                                                                 );
 
-                                void            _skip_header(           
+                                void            skip_header(           
                                                                         std::ifstream&      infile, 
                                                                         int&                line_count, 
                                                                         int                 np 

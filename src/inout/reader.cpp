@@ -68,11 +68,11 @@ void read_body(
     CHECK_FILE_UNIT_STATUS( infile, file_path );
 
     // Read file header line
-    _skip_header( infile, line_count, 1 );
+    skip_header( infile, line_count, 1 );
 
     // Read file version
     target_signal   = "version";
-    read_signal     = _read_channel_value( infile, _version );
+    read_signal     = read_channel_value( infile, _version );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
     CHECK_INPUT_FILE_VERSION( VERSION_LABEL, _version, file_path );
 
@@ -81,11 +81,11 @@ void read_body(
     //////////////////////////////////////////////
 
     // Skip header
-    _skip_header( infile, line_count, 3 );
+    skip_header( infile, line_count, 3 );
 
     // Read Is Fix
     target_signal   = "IsFix";
-    read_signal     = _read_channel_value( infile, body->is_fix );
+    read_signal     = read_channel_value( infile, body->is_fix );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     //////////////////////////////////////////////
@@ -93,77 +93,77 @@ void read_body(
     //////////////////////////////////////////////
 
     // Skip header
-    _skip_header( infile, line_count, 3 );
+    skip_header( infile, line_count, 3 );
 
     // Read mass
     target_signal   = "BodyMass";
-    read_signal     = _read_channel_value( infile, body->mass );
+    read_signal     = read_channel_value( infile, body->mass );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read COGX
     target_signal   = "COGX";
-    read_signal     = _read_channel_value( infile, body->cog[0] );
+    read_signal     = read_channel_value( infile, body->cog[0] );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read COGY
     target_signal   = "COGY";
-    read_signal     = _read_channel_value( infile, body->cog[1] );
+    read_signal     = read_channel_value( infile, body->cog[1] );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read COGZ
     target_signal   = "COGZ";
-    read_signal     = _read_channel_value( infile, body->cog[2] );
+    read_signal     = read_channel_value( infile, body->cog[2] );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read switch to define how the intertia is defined, by the 
     // radius of gyrantion or by the inertial matrix components
     target_signal   = "IBR";
-    read_signal     = _read_channel_value( infile, body->interia_by_rad );
+    read_signal     = read_channel_value( infile, body->interia_by_rad );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read IXX
     target_signal   = "IXX";
-    read_signal     = _read_channel_value( infile, body->inertia[0] );
+    read_signal     = read_channel_value( infile, body->inertia[0] );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read IXY
     target_signal   = "IXY";
-    read_signal     = _read_channel_value( infile, body->inertia[1] );
+    read_signal     = read_channel_value( infile, body->inertia[1] );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read IXZ
     target_signal   = "IXZ";
-    read_signal     = _read_channel_value( infile, body->inertia[2] );
+    read_signal     = read_channel_value( infile, body->inertia[2] );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read IYY
     target_signal   = "IYY";
-    read_signal     = _read_channel_value( infile, body->inertia[3] );
+    read_signal     = read_channel_value( infile, body->inertia[3] );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read IYZ
     target_signal   = "IYZ";
-    read_signal     = _read_channel_value( infile, body->inertia[4] );
+    read_signal     = read_channel_value( infile, body->inertia[4] );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read IZZ
     target_signal   = "IZZ";
-    read_signal     = _read_channel_value( infile, body->inertia[5] );
+    read_signal     = read_channel_value( infile, body->inertia[5] );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read RXX
     target_signal   = "RXX";
-    read_signal     = _read_channel_value( infile, body->rad_inertia[0] );
+    read_signal     = read_channel_value( infile, body->rad_inertia[0] );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read RYY
     target_signal   = "RYY";
-    read_signal     = _read_channel_value( infile, body->rad_inertia[1] );
+    read_signal     = read_channel_value( infile, body->rad_inertia[1] );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read RZZ
     target_signal   = "RZZ";
-    read_signal     = _read_channel_value( infile, body->rad_inertia[2] );
+    read_signal     = read_channel_value( infile, body->rad_inertia[2] );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     if ( body->interia_by_rad )
@@ -178,21 +178,21 @@ void read_body(
     //////////////////////////////////////////////
 
     // Skip header
-    _skip_header( infile, line_count, 3 );
+    skip_header( infile, line_count, 3 );
 
     // Read mesh body name
     target_signal   = "BodyName";
-    read_signal     = _read_channel_value( infile, body->mesh_body_name );
+    read_signal     = read_channel_value( infile, body->mesh_body_name );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read mesh file name
     target_signal   = "MeshFile";
-    read_signal     = _read_channel_value( infile, body->mesh_finame );
+    read_signal     = read_channel_value( infile, body->mesh_finame );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read usage of internal lid
     target_signal   = "LidType";
-    read_signal     = _read_channel_value( infile, body->lid_type );
+    read_signal     = read_channel_value( infile, body->lid_type );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Load mesh for the current body
@@ -311,11 +311,11 @@ void    read_case(
     CHECK_FILE_UNIT_STATUS( infile, file_path );
 
     // Read file header line
-    _skip_header( infile, line_count, 1 );
+    skip_header( infile, line_count, 1 );
 
     // Read file version
     target_signal   = "version";
-    read_signal     = _read_channel_value( infile, _version );
+    read_signal     = read_channel_value( infile, _version );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
     CHECK_INPUT_FILE_VERSION( VERSION_LABEL, _version, file_path );
 
@@ -324,76 +324,76 @@ void    read_case(
     //////////////////////////////////////////////
 
     // Skip header
-    _skip_header( infile, line_count, 3 );
+    skip_header( infile, line_count, 3 );
 
     // Read flag to block the quadrature adaptation algorithm
     target_signal   = "BlockAdapt";
-    read_signal     = _read_channel_value( infile, input->is_block_adaption );
+    read_signal     = read_channel_value( infile, input->is_block_adaption );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read flag to use the fast solver configuration
     target_signal   = "FastSolver";
-    read_signal     = _read_channel_value( infile, input->is_fast_solver );
+    read_signal     = read_channel_value( infile, input->is_fast_solver );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read gauss order for the numerical integration
     target_signal   = "GaussOrder";
-    read_signal     = _read_channel_value( infile, input->gauss_order );
+    read_signal     = read_channel_value( infile, input->gauss_order );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read absolute error for green function normal derivative integration over panel
     target_signal   = "GFDnAbsErr";
-    read_signal     = _read_channel_value( infile, input->gfdn_abs_err );
+    read_signal     = read_channel_value( infile, input->gfdn_abs_err );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read relative error for green function normal derivative integration over panel
     target_signal   = "GFDnRelErr";
-    read_signal     = _read_channel_value( infile, input->gfdn_rel_err );
+    read_signal     = read_channel_value( infile, input->gfdn_rel_err );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read number of Kotchin expansion coefficients
     target_signal   = "KochinNC";
-    read_signal     = _read_channel_value( infile, input->kochin_np );
+    read_signal     = read_channel_value( infile, input->kochin_np );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read method to solver the logarithmic singularity
     target_signal   = "LogSingAna";
-    read_signal     = _read_channel_value( infile, input->is_log_sin_ana );
+    read_signal     = read_channel_value( infile, input->is_log_sin_ana );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read polynomial order to interpolate the solution
     target_signal   = "PolyOrder";
-    read_signal     = _read_channel_value( infile, input->poly_order );
+    read_signal     = read_channel_value( infile, input->poly_order );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read absolute error for potential integration over panel
     target_signal   = "PotAbsErr";
-    read_signal     = _read_channel_value( infile, input->pot_abs_err );
+    read_signal     = read_channel_value( infile, input->pot_abs_err );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read relative error for potential integration over panel
     target_signal   = "PotRelErr";
-    read_signal     = _read_channel_value( infile, input->pot_rel_err );
+    read_signal     = read_channel_value( infile, input->pot_rel_err );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read absolute error for pressure integration over panel
     target_signal   = "PressAbsErr";
-    read_signal     = _read_channel_value( infile, input->press_abs_err );
+    read_signal     = read_channel_value( infile, input->press_abs_err );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read relative error for pressure integration over panel
     target_signal   = "PressRelErr";
-    read_signal     = _read_channel_value( infile, input->press_rel_err );
+    read_signal     = read_channel_value( infile, input->press_rel_err );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read QTF second order potential model
     target_signal   = "QTFSOModel";
-    read_signal     = _read_channel_value( infile, input->out_qtf_so_model );
+    read_signal     = read_channel_value( infile, input->out_qtf_so_model );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read water line points detection precision
     target_signal   = "WLDetPrec";
-    read_signal     = _read_channel_value( infile, input->wl_det_prec );
+    read_signal     = read_channel_value( infile, input->wl_det_prec );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     //////////////////////////////////////////////
@@ -401,11 +401,11 @@ void    read_case(
     //////////////////////////////////////////////
 
     // Skip header
-    _skip_header( infile, line_count, 3 );
+    skip_header( infile, line_count, 3 );
 
     // Read bodies name definition
     target_signal = "BodyFN";
-    _read_channel_list(
+    read_channel_list(
                             infile,
                             target_file,
                             target_signal,
@@ -419,76 +419,76 @@ void    read_case(
     //////////////////////////////////////////////
 
     // Skip header
-    _skip_header( infile, line_count, 3 );
+    skip_header( infile, line_count, 3 );
 
     // Read output flag for diffraction force
     target_signal   = "OutDiffrac";
-    read_signal     = _read_channel_value( infile, input->out_diffrac );
+    read_signal     = read_channel_value( infile, input->out_diffrac );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read output flag for Froude-Krylov force
     target_signal   = "OutFK";
-    read_signal     = _read_channel_value( infile, input->out_fk );
+    read_signal     = read_channel_value( infile, input->out_fk );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read output flag for hydromechanic coefficients
     target_signal   = "OutHydMech";
-    read_signal     = _read_channel_value( infile, input->out_hydmech );
+    read_signal     = read_channel_value( infile, input->out_hydmech );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read output flag for hydrostatic stiffness matrix
     target_signal   = "OutHydStiff";
-    read_signal     = _read_channel_value( infile, input->out_hydstiff );
+    read_signal     = read_channel_value( infile, input->out_hydstiff );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read output flag for potential over the panels
     target_signal   = "OutPot";
-    read_signal     = _read_channel_value( infile, input->out_potential );
+    read_signal     = read_channel_value( infile, input->out_potential );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read output flag for pressure over the panels
     target_signal   = "OutPress";
-    read_signal     = _read_channel_value( infile, input->out_pressure );
+    read_signal     = read_channel_value( infile, input->out_pressure );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read output flag for mean drift
     target_signal   = "OutMDrift";
-    read_signal     = _read_channel_value( infile, input->out_mdrift );
+    read_signal     = read_channel_value( infile, input->out_mdrift );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read output flag for mesh
     target_signal   = "OutMesh";
-    read_signal     = _read_channel_value( infile, input->out_mesh );
+    read_signal     = read_channel_value( infile, input->out_mesh );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read output flag for quadratic transfer functions
     target_signal   = "OutQTF";
-    read_signal     = _read_channel_value( infile, input->out_qtf );
+    read_signal     = read_channel_value( infile, input->out_qtf );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read output flag for quadratic transfer functions components
     target_signal   = "OutQTFComp";
-    read_signal     = _read_channel_value( infile, input->out_qtf_comp );
+    read_signal     = read_channel_value( infile, input->out_qtf_comp );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read output flag for response amplitude operator
     target_signal   = "OutRAOs";
-    read_signal     = _read_channel_value( infile, input->out_raos );
+    read_signal     = read_channel_value( infile, input->out_raos );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read output flag for sources intensity over the panels
     target_signal   = "OutSources";
-    read_signal     = _read_channel_value( infile, input->out_sources );
+    read_signal     = read_channel_value( infile, input->out_sources );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read output flag for structural mass
     target_signal   = "OutStMass";
-    read_signal     = _read_channel_value( infile, input->out_struct_mass );
+    read_signal     = read_channel_value( infile, input->out_struct_mass );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read output flag for wave excitation forces
     target_signal   = "OutWex";
-    read_signal     = _read_channel_value( infile, input->out_wex );
+    read_signal     = read_channel_value( infile, input->out_wex );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
     
     //////////////////////////////////////////////
@@ -496,21 +496,21 @@ void    read_case(
     //////////////////////////////////////////////
 
     // Skip header
-    _skip_header( infile, line_count, 3 );
+    skip_header( infile, line_count, 3 );
 
     // Read water density
     target_signal   = "RhoW";
-    read_signal     = _read_channel_value( infile, input->water_density );
+    read_signal     = read_channel_value( infile, input->water_density );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
     
     // Read gravitational acceleration
     target_signal   = "GravAcc";
-    read_signal     = _read_channel_value( infile, input->grav_acc );
+    read_signal     = read_channel_value( infile, input->grav_acc );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read end simulation time
     target_signal   = "WaterDepth";
-    read_signal     = _read_channel_value( infile, input->water_depth );
+    read_signal     = read_channel_value( infile, input->water_depth );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     //////////////////////////////////////////////
@@ -518,15 +518,15 @@ void    read_case(
     //////////////////////////////////////////////
 
     // Skip header
-    _skip_header( infile, line_count, 3 );
+    skip_header( infile, line_count, 3 );
 
     // Read headings units
     target_signal   = "HeadUnits";
-    read_signal     = _read_channel_value( infile, input->heads_units );
+    read_signal     = read_channel_value( infile, input->heads_units );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read list contraction
-    _read_list_contraction(
+    read_list_contraction(
                                 infile,
                                 line_count,
                                 target_file,
@@ -539,15 +539,15 @@ void    read_case(
     //////////////////////////////////////////////
 
     // Skip header
-    _skip_header( infile, line_count, 3 );
+    skip_header( infile, line_count, 3 );
 
     // Read headings units
     target_signal   = "FreqUnit";
-    read_signal     = _read_channel_value( infile, input->freqs_unit );
+    read_signal     = read_channel_value( infile, input->freqs_unit );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read list contraction
-    _read_list_contraction(
+    read_list_contraction(
                                 infile,
                                 line_count,
                                 target_file,
@@ -605,7 +605,7 @@ Input* read_input_files( std::string folder_path )
 }
 
 
-void _skip_header( 
+void skip_header( 
                     std::ifstream&  infile, 
                     int&            line_count, 
                     int             np 
