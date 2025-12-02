@@ -560,7 +560,7 @@ void    read_case(
 }
 
 
-std::string _read_channel_name( std::ifstream& infile )
+std::string read_channel_name( std::ifstream& infile )
 {
     // Generate local auxiliar variables
     std::string aux_str, line, channel_name;
