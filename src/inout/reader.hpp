@@ -31,61 +31,73 @@
 
 
                                 void            read_body(
-                                                                        Input*      input,
-                                                                        std::string folder_path,
-                                                                        std::string target_file,
-                                                                        BodyDef*    body
+                                                                            Input*                          input,
+                                                                            std::string                     folder_path,
+                                                                            std::string                     target_file,
+                                                                            BodyDef*                        body
                                                         );
 
+                                void            read_bodies( 
+                                                                            std::string folder_path,
+                                                                            Input*      input
+                                                            );
+
 template<typename T>    inline  void            read_channel_list( 
-                                                                        std::ifstream&      infile,
-                                                                        std::string         target_file,
-                                                                        std::string         target_signal,
-                                                                        int&                line_count,
-                                                                        std::vector<T>&     list
+                                                                            std::ifstream&                  infile,
+                                                                            std::string                     target_file,
+                                                                            std::string                     target_signal,
+                                                                            int&                            line_count,
+                                                                            std::vector<T>&                 list
                                                                     );
 
                                 std::string     read_channel_name( 
-                                                                        std::ifstream&      infile 
+                                                                            std::ifstream&                  infile 
                                                                 );
 
 template<typename T>    inline  std::string     read_channel_value( 
-                                                                        std::ifstream&      infile, 
-                                                                        T&                  channel
+                                                                            std::ifstream&                  infile, 
+                                                                            T&                              channel
                                                                     );
 
 template<typename T>    inline  void            read_channel_matrix( 
-                                                                        std::ifstream&      infile, 
-                                                                        int                 rows_np, 
-                                                                        int                 cols_np, 
-                                                                        T                   channel
+                                                                            std::ifstream&                  infile, 
+                                                                            int                             rows_np, 
+                                                                            int                             cols_np, 
+                                                                            T                               channel
                                                                     );
 
 template<typename T>    inline  void            read_list_contraction(
-                                                                        std::ifstream&  infile,
-                                                                        int&            line_count,
-                                                                        std::string     target_file,
-                                                                        std::vector<T>& container
-                                                                        );
+                                                                            std::ifstream&                  infile,
+                                                                            int&                            line_count,
+                                                                            std::string                     target_file,
+                                                                            std::vector<T>&                 container
+                                                                    );
 
 template<typename T>    inline  void            read_compact_list(
-                                                                        std::string     item,
-                                                                        std::vector<T>& container
+                                                                            std::string                     item,
+                                                                            std::vector<T>&                 container
                                                                     );
 
                                 Input*          read_input_files( 
-                                                                        std::string         folder_path
+                                                                            std::string                     folder_path
                                                                 );
 
                                 void            read_input_files( 
-                                                                        Input*              input,
-                                                                        std::string         folder_path
+                                                                            Input*                          input,
+                                                                            std::string                     folder_path
                                                                 );
 
+template<typename T>    inline  void    read_table_row_header(
+                                                                            std::ifstream&                  infile,
+                                                                            int&                            line_count,
+                                                                            std::vector<std::string>&       row_header,
+                                                                            std::vector<std::vector<T>>&    row_values
+                                                            );
+
                                 void            skip_header(           
-                                                                        std::ifstream&      infile, 
-                                                                        int&                line_count, 
-                                                                        int                 np 
+                                                                            std::ifstream&                  infile, 
+                                                                            int&                            line_count, 
+                                                                            int                             np 
                                                             );
 
 
