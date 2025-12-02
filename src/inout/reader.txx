@@ -154,8 +154,9 @@ inline  void    read_list_contraction(
         }
 
         // Check if reading a header line
-        int pos = line.find( "/***" );
-        if ( !( pos < 0 ) )
+        int pos_h = line.find( "/***" );
+        int pos_c = line.find( "-->" );
+        if ( !( pos_h < 0 ) || !( pos_c < 0 ) )
         {
             infile.seekg( read_pos );
             break;
@@ -313,4 +314,71 @@ inline  void    read_compact_list(
     {
         container.push_back( cmp_list[2] );
     }
+}
+
+
+template<typename T>
+inline  void    read_table_row_header(
+                                        std::ifstream&                  infile,
+                                        int&                            line_count,
+                                        std::vector<std::string>&       row_header,
+                                        std::vector<std::vector<T>>&    row_values
+                                    )
+{
+    // Check input types
+    static_assert(
+                    std::disjunction<
+                                        std::is_same<T, cusfloat>,
+                                        std::is_same<T, int>
+                                    >( ),
+                    "Input type not allowed!"
+                );
+    
+    // Loop over lines until the next section header is found
+    std::string                 astr            ;
+    T                           a0              ;
+    T                           a1              ;
+    T                           a2              ;
+    T                           a3              ;
+    std::string                 line            ;
+
+    while ( true )
+    {
+        // Read the current file position
+        auto read_pos = infile.tellg( );
+
+        // Check if there is more lines to read
+        if (!( std::getline( infile, line ) ))
+        {
+            break;
+        }
+
+        // Check if reading a header line
+        int pos = line.find( "/***" );
+        if ( !( pos < 0 ) )
+        {
+            infile.seekg( read_pos );
+            break;
+        }
+
+        // Process line
+        std::istringstream iss( line );
+        iss >> astr >> a0 >> a1 >> a2 >> a3;
+
+        // Storage values
+        row_header.push_back( astr );
+
+        std::vector<T> rw;
+        rw.push_back( a0 );
+        rw.push_back( a1 );
+        rw.push_back( a2 );
+        rw.push_back( a3 );
+
+        row_values.push_back( rw );
+
+        // Increment line count
+        line_count++;
+
+    }
+
 }
