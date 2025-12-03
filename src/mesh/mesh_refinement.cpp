@@ -59,6 +59,7 @@ void    refine_underwater_quadrilateral(
     int j           = 0;
     int uw_to_abw   = 0;
 
+    // Get first node from bottom to top
     for ( int i=0; i<nodes_np; i++ )
     {
         // Get forward index
@@ -66,6 +67,35 @@ void    refine_underwater_quadrilateral(
 
         // Check if intersect free surface
         if ( nodes_loc[i] != nodes_loc[j] )
+        {
+            // Check direction
+            if ( 
+                    ( nodes_loc[i] == 0 )
+                    &&
+                    ( nodes_loc[j] == 1 )
+                )
+            {
+                uw_to_abw = i;
+            }
+
+        }
+    }
+
+    // Get order from first underwater to abovewater
+    int nn[ nodes_np ];
+    for ( int i=0; i<nodes_np; i++ )
+    {
+        nn[i] = ( uw_to_abw + i ) % nodes_np;
+    }
+
+    // Get consecutive edges
+    for ( int i=0; i<nodes_np; i++ )
+    {
+        // Get forward index
+        j = ( i + 1 ) % nodes_np;
+
+        // Check if intersect free surface
+        if ( nodes_loc[nn[i]] != nodes_loc[nn[j]] )
         {
             // Check for overpassing the edge count
             if ( edge_count > 1 )
@@ -78,16 +108,6 @@ void    refine_underwater_quadrilateral(
             // Add new edge
             edge_num[edge_count] = i;
             edge_count++;
-
-            // Check direction
-            if ( 
-                    ( nodes_loc[i] == 0 )
-                    &&
-                    ( nodes_loc[j] == 1 )
-                )
-            {
-                uw_to_abw = i;
-            }
 
         }
     }
@@ -103,31 +123,30 @@ void    refine_underwater_quadrilateral(
         nnb = 1;
     }
 
-    // Get order from first underwater to abovewater
-    int nn[ nodes_np ];
-    for ( int i=0; i<nodes_np; i++ )
-    {
-        nn[i] = ( uw_to_abw + i ) % nodes_np;
-    }
-
     // Calculate free surface crossings
     cusfloat fsi0[3];
-    int      fsi0n = -1;
+    int      fsi0n  = -1;
     cusfloat fsi1[3];
-    int      fsi1n = -1;
-    cusfloat lm = 0.0;
+    int      fsi1n  = -1;
+    cusfloat lm     = 0.0;
+    int      idx0   = 0;
+    int      idx1   = 0;
 
-    lm      = -panel->z[ nn[0] ] / ( panel->z[ nn[1] ] - panel->z[ nn[0] ] );
-    fsi0[0] = panel->x[ nn[0] ] + lm * ( panel->x[ nn[1] ] - panel->x[ nn[0] ] );
-    fsi0[1] = panel->y[ nn[0] ] + lm * ( panel->y[ nn[1] ] - panel->y[ nn[0] ] );
-    fsi0[2] = panel->z[ nn[0] ] + lm * ( panel->z[ nn[1] ] - panel->z[ nn[0] ] );
+    idx0    = nn[ ( edge_num[0]     ) % panel->num_nodes ];
+    idx1    = nn[ ( edge_num[0] + 1 ) % panel->num_nodes ];
+    lm      = -panel->z[ idx0 ] / ( panel->z[ idx1 ] - panel->z[ idx0 ] );
+    fsi0[0] = panel->x[ idx0 ] + lm * ( panel->x[ idx1 ] - panel->x[ idx0 ] );
+    fsi0[1] = panel->y[ idx0 ] + lm * ( panel->y[ idx1 ] - panel->y[ idx0 ] );
+    fsi0[2] = panel->z[ idx0 ] + lm * ( panel->z[ idx1 ] - panel->z[ idx0 ] );
     fsi0n   = last_node_index;
     last_node_index++;
 
-    lm      = -panel->z[ nn[nnb] ] / ( panel->z[ nn[nnf] ] - panel->z[ nn[nnb] ] );
-    fsi1[0] = panel->x[ nn[nnb] ] + lm * ( panel->x[ nn[nnf] ] - panel->x[ nn[nnb] ] );
-    fsi1[1] = panel->y[ nn[nnb] ] + lm * ( panel->y[ nn[nnf] ] - panel->y[ nn[nnb] ] );
-    fsi1[2] = panel->z[ nn[nnb] ] + lm * ( panel->z[ nn[nnf] ] - panel->z[ nn[nnb] ] );
+    idx0    = nn[ ( edge_num[1]     ) % panel->num_nodes ];
+    idx1    = nn[ ( edge_num[1] + 1 ) % panel->num_nodes ];
+    lm      = -panel->z[ idx0 ] / ( panel->z[ idx1 ] - panel->z[ idx0 ] );
+    fsi1[0] = panel->x[ idx0 ] + lm * ( panel->x[ idx1 ] - panel->x[ idx0 ] );
+    fsi1[1] = panel->y[ idx0 ] + lm * ( panel->y[ idx1 ] - panel->y[ idx0 ] );
+    fsi1[2] = panel->z[ idx0 ] + lm * ( panel->z[ idx1 ] - panel->z[ idx0 ] );
     fsi1n   = last_node_index;
     last_node_index++;
 
@@ -355,6 +374,7 @@ void    refine_underwater_triangle(
     int j           = 0;
     int uw_to_abw   = 0;
 
+    // Get first node from bottom to top
     for ( int i=0; i<nodes_np; i++ )
     {
         // Get forward index
@@ -363,18 +383,6 @@ void    refine_underwater_triangle(
         // Check if intersect free surface
         if ( nodes_loc[i] != nodes_loc[j] )
         {
-            // Check for overpassing the edge count
-            if ( edge_count > 1 )
-            {
-                Logger logger;
-                logger.error( "Triangular element has more than two sides intersecting the free surface" );
-                throw std::runtime_error( "" );
-            }
-
-            // Add new edge
-            edge_num[edge_count] = i;
-            edge_count++;
-
             // Check direction
             if ( 
                     ( nodes_loc[i] == 0 )
@@ -384,6 +392,37 @@ void    refine_underwater_triangle(
             {
                 uw_to_abw = i;
             }
+
+        }
+    }
+
+    // Get order from first underwater to abovewater
+    int nn[ nodes_np ];
+    for ( int i=0; i<nodes_np; i++ )
+    {
+        nn[i] = ( uw_to_abw + i ) % nodes_np;
+    }
+
+    // Get consecutive edges
+    for ( int i=0; i<nodes_np; i++ )
+    {
+        // Get forward index
+        j = ( i + 1 ) % nodes_np;
+
+        // Check if intersect free surface
+        if ( nodes_loc[nn[i]] != nodes_loc[nn[j]] )
+        {
+            // Check for overpassing the edge count
+            if ( edge_count > 1 )
+            {
+                Logger logger;
+                logger.error( "Quadrilateral element has more than two sides intersecting the free surface" );
+                throw std::runtime_error( "" );
+            }
+
+            // Add new edge
+            edge_num[edge_count] = i;
+            edge_count++;
 
         }
     }
@@ -399,31 +438,30 @@ void    refine_underwater_triangle(
         nnb = 1;
     }
 
-    // Get order from first underwater to abovewater
-    int nn[ nodes_np ];
-    for ( int i=0; i<nodes_np; i++ )
-    {
-        nn[i] = ( uw_to_abw + i ) % nodes_np;
-    }
-
     // Calculate free surface crossings
     cusfloat fsi0[3];
-    int      fsi0n = -1;
+    int      fsi0n  = -1;
     cusfloat fsi1[3];
-    int      fsi1n = -1;
-    cusfloat lm = 0.0;
+    int      fsi1n  = -1;
+    cusfloat lm     = 0.0;
+    int      idx0   = 0;
+    int      idx1   = 0;
 
-    lm      = -panel->z[ nn[0] ] / ( panel->z[ nn[1] ] - panel->z[ nn[0] ] );
-    fsi0[0] = panel->x[ nn[0] ] + lm * ( panel->x[ nn[1] ] - panel->x[ nn[0] ] );
-    fsi0[1] = panel->y[ nn[0] ] + lm * ( panel->y[ nn[1] ] - panel->y[ nn[0] ] );
-    fsi0[2] = panel->z[ nn[0] ] + lm * ( panel->z[ nn[1] ] - panel->z[ nn[0] ] );
+    idx0    = nn[ ( edge_num[0]     ) % panel->num_nodes ];
+    idx1    = nn[ ( edge_num[0] + 1 ) % panel->num_nodes ];
+    lm      = -panel->z[ idx0 ] / ( panel->z[ idx1 ] - panel->z[ idx0 ] );
+    fsi0[0] = panel->x[ idx0 ] + lm * ( panel->x[ idx1 ] - panel->x[ idx0 ] );
+    fsi0[1] = panel->y[ idx0 ] + lm * ( panel->y[ idx1 ] - panel->y[ idx0 ] );
+    fsi0[2] = panel->z[ idx0 ] + lm * ( panel->z[ idx1 ] - panel->z[ idx0 ] );
     fsi0n   = last_node_index;
     last_node_index++;
 
-    lm      = -panel->z[ nn[nnb] ] / ( panel->z[ nn[nnf] ] - panel->z[ nn[nnb] ] );
-    fsi1[0] = panel->x[ nn[nnb] ] + lm * ( panel->x[ nn[nnf] ] - panel->x[ nn[nnb] ] );
-    fsi1[1] = panel->y[ nn[nnb] ] + lm * ( panel->y[ nn[nnf] ] - panel->y[ nn[nnb] ] );
-    fsi1[2] = panel->z[ nn[nnb] ] + lm * ( panel->z[ nn[nnf] ] - panel->z[ nn[nnb] ] );
+    idx0    = nn[ ( edge_num[1]     ) % panel->num_nodes ];
+    idx1    = nn[ ( edge_num[1] + 1 ) % panel->num_nodes ];
+    lm      = -panel->z[ idx0 ] / ( panel->z[ idx1 ] - panel->z[ idx0 ] );
+    fsi1[0] = panel->x[ idx0 ] + lm * ( panel->x[ idx1 ] - panel->x[ idx0 ] );
+    fsi1[1] = panel->y[ idx0 ] + lm * ( panel->y[ idx1 ] - panel->y[ idx0 ] );
+    fsi1[2] = panel->z[ idx0 ] + lm * ( panel->z[ idx1 ] - panel->z[ idx0 ] );
     fsi1n   = last_node_index;
     last_node_index++;
 
