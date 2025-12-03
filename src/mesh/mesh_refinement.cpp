@@ -234,7 +234,7 @@ void    refine_underwater_quadrilateral(
             x_new[2]        = panel->x[ nn[3] ];
             y_new[2]        = panel->y[ nn[3] ];
             z_new[2]        = panel->z[ nn[3] ];
-            nodes_pos[0]    = panel->nodes_pos[ nn[3] ];
+            nodes_pos[2]    = panel->nodes_pos[ nn[3] ];
     
             // Add new panel for T0
             fs_panels[ fs_panels_count ]->set_new_properties(
