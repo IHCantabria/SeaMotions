@@ -58,22 +58,30 @@ public:
     ~StabilityMesh( );
 
     /* Declare class methods */
-    void    check_underwater_panels( 
-                                        void 
+    void        check_underwater_panels( 
+                                                void 
                                     );
 
-    void    move(
-                                        cusfloat            x,
-                                        cusfloat            y,
-                                        cusfloat            z,
-                                        cusfloat            rx,
-                                        cusfloat            ry,
-                                        cusfloat            rz
-                );
+    int         get_elems_np(           
+                                                void
+                            ) const override;
 
-    void    write_underwater_panels(
-                                        std::string         fopath,
-                                        std::string         finame
-                                    );
+    PanelGeom*  get_panel(           
+                                                const int idx
+                            ) const override;
+
+    void        move(
+                                                cusfloat            x,
+                                                cusfloat            y,
+                                                cusfloat            z,
+                                                cusfloat            rx,
+                                                cusfloat            ry,
+                                                cusfloat            rz
+                    );
+
+    void        write_underwater_panels(
+                                                std::string         fopath,
+                                                std::string         finame
+                                        );
     
 };

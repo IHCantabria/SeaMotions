@@ -72,6 +72,14 @@ void StabilityMesh::check_underwater_panels(
 }
 
 
+int     StabilityMesh::get_elems_np(
+                                        void
+                                    ) const
+{
+    return this->elems_np + this->fs_panels_np;
+}                        
+
+
 void StabilityMesh::_initialize( 
                                     void 
                                 )
@@ -170,6 +178,24 @@ void    StabilityMesh::move(
     this->_update_panels_properties(
                                         this->cog
                                     );
+}
+
+
+PanelGeom* StabilityMesh::get_panel( 
+                                                    const int   idx
+                                    ) const
+{
+    PanelGeom*  p = nullptr;
+    if ( idx > ( this->elems_np - 1 ) )
+    {
+        p = this->fs_panels[ idx - this->elems_np ];
+    }
+    else
+    {
+        p = this->panels[idx];
+    }
+
+    return p;
 }
 
 

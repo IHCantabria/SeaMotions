@@ -127,48 +127,56 @@ public:
         );
 
     // Define class methods
-    void        calculate_fs_radius(
-                                        void
+            void        calculate_fs_radius(
+                                                void
+                                            );
+
+            void        define_source_nodes(
+                                                int                 poly_order,
+                                                cusfloat*           cog
+                                        );
+
+            void        detect_pc_points(
+                                                cusfloat            wl_det_prec
+                                        );
+
+            void        detect_wl_points(
+                                                cusfloat           wl_det_prec
+                                        );
+
+            cusfloat    get_fs_radius(
+                                                void
+                                        );
+    
+            void        get_elem_nodes( 
+                                                int                 elem_num, 
+                                                int&                npe, 
+                                                cusfloat*           xn, 
+                                                cusfloat*           yn,
+                                                cusfloat*           zn
                                     );
 
-    void        define_source_nodes(
-                                        int                 poly_order,
-                                        cusfloat*           cog
-                                   );
+    virtual int        get_elems_np(           
+                                                void
+                                    ) const;
 
-    void        detect_pc_points(
-                                        cusfloat            wl_det_prec
-                                );
+    virtual PanelGeom*  get_panel(
+                                                const int           idx
+                                    ) const;
 
-    void        detect_wl_points(
-                                        cusfloat           wl_det_prec
-                                );
-
-    cusfloat    get_fs_radius(
-                                        void
-                                );
-    
-    void        get_elem_nodes( 
-                                        int                 elem_num, 
-                                        int&                npe, 
-                                        cusfloat*           xn, 
-                                        cusfloat*           yn,
-                                        cusfloat*           zn
-                               );
-
-    void        set_all_panels_type(
-                                        int                 panel_type
-                                   );
+            void        set_all_panels_type(
+                                                int                 panel_type
+                                        );
 
 
-    void        set_elements_type(
-                                        void
-                                );
+            void        set_elements_type(
+                                                void
+                                        );
 
     
-    void        write( 
-                                        std::string         fipath
-                        );
+            void        write( 
+                                                std::string         fipath
+                                );
     
 };
 

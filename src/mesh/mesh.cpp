@@ -526,6 +526,14 @@ void        Mesh::get_elem_nodes(
 }
 
 
+int         Mesh::get_elems_np(
+                                                void
+                                ) const
+{
+    return this->elems_np;
+}
+
+
 cusfloat    Mesh::get_fs_radius(
                                         void
                                 )
@@ -533,6 +541,14 @@ cusfloat    Mesh::get_fs_radius(
     assert( this->_is_fs_radius && "There is no FS radius loaded in Mesh class." );
 
     return this->_fs_radius;
+}
+
+
+PanelGeom* Mesh::get_panel(
+                                        const int idx
+                            ) const
+{
+    return this->panels[idx];
 }
 
 
