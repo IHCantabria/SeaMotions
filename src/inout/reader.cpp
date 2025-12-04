@@ -571,7 +571,7 @@ std::string read_channel_name( std::ifstream& infile )
     // Get signal value and name from the line
     // read
     std::istringstream iss(line);
-    iss >> channel_name >> aux_str;
+    iss >> aux_str >> channel_name >> aux_str;
 
     return channel_name;
 }
