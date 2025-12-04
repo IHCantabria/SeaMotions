@@ -429,6 +429,9 @@ void PanelGeom::initialize(
         }
     }
 
+    // Check zone location: Underwater | Free Surface | Abovewater
+    this->check_underwater<NUM_GP>( );
+
     // Calculate integral properties
     this->calculate_integration_properties<NUM_GP>( );
 
