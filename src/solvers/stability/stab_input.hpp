@@ -64,6 +64,7 @@ public:
     bool                        out_eq          ;           // Flag to switch the output of the equilibrium algorithm
     bool                        out_gz          ;           // Flag to switch the output of GZ curves
     bool                        out_hs          ;           // Flag to switch the output of hydrostatic values
+    cusfloat                    rad_gyr[3]      ;           // Radius of gyration from the cog
     std::vector<std::string>    tag_eq          ;           // Storage of equilibrium tag cases names
     cusfloat                    water_density   = 0.0;      // Water density of the stability test location
 

@@ -136,6 +136,21 @@ void StabInput::_read_input_file(
     read_signal     = read_channel_value( infile, this->cog[2] );
     CHECK_SIGNAL_NAME( read_signal, target_signal, this->_finame, line_count );
 
+    // Read RX
+    target_signal   = "RX";
+    read_signal     = read_channel_value( infile, this->rad_gyr[0] );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, this->_finame, line_count );
+
+    // Read RY
+    target_signal   = "RY";
+    read_signal     = read_channel_value( infile, this->rad_gyr[1] );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, this->_finame, line_count );
+
+    // Read RZ
+    target_signal   = "RZ";
+    read_signal     = read_channel_value( infile, this->rad_gyr[2] );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, this->_finame, line_count );
+
     // Read Mesh file nanme
     target_signal   = "BodyName";
     read_signal     = read_channel_value( infile, this->body_name );
