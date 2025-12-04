@@ -210,6 +210,19 @@ inline cuscomplex adaptive_quadrature_panel(
 }
 
 
+template<int NGP, typename T, typename F, typename P>
+inline void gauss2d_loop(T& storage, F&& f, const P* panel)
+{
+    for (int i = 0; i < NGP*NGP; i++)
+    {
+        storage += GaussPointsT<2,NGP>::weights_x[i] *
+                   GaussPointsT<2,NGP>::weights_y[i] *
+                   f(i) *
+                   panel->jac_det_gauss_points[i];
+    }
+}
+
+
 template<typename T, typename U>
 cuscomplex  quadrature_panel(
                                 T*          panel,
@@ -306,21 +319,24 @@ void        quadrature_panel_t(
     result_G        = 0.0;
     result_G_dn_sf  = 0.0;
     result_G_dn_pf  = 0.0;
-    for ( int i=0; i<NGP*NGP; i++ )
-    {
-        GAUSS_2D_LOOP( result_G,        target_fcn.G            );
-        GAUSS_2D_LOOP( result_G_dn_sf,  target_fcn.dG_dn_sf     );
-        GAUSS_2D_LOOP( result_G_dn_pf,  target_fcn.dG_dn_pf     );
 
-        if ( verbose )
-        {
-            std::cout << "Wx: " << GaussPointsT<2,NGP>::weights_x[i];
-            std::cout << " - Wy: " << GaussPointsT<2,NGP>::weights_y[i];
-            std::cout << " - fcn: " << target_fcn.G[i];
-            std::cout << " - Jac: " << panel->jac_det_gauss_points[i] << std::endl;
-        }
+    gauss2d_loop<NGP*NGP>(
+                                result_G,
+                                [&](int i){ return target_fcn.G[i]; },
+                                panel
+                            );
 
-    }
+    gauss2d_loop<NGP*NGP>(
+                                result_G_dn_sf,
+                                [&](int i){ return target_fcn.dG_dn_sf[i]; },
+                                panel
+                            );
+
+    gauss2d_loop<NGP*NGP>(
+                                result_G_dn_pf,
+                                [&](int i){ return target_fcn.dG_dn_pf[i]; },
+                                panel
+                            );
 
 }
 

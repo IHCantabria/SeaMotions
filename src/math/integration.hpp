@@ -61,6 +61,18 @@ template<
                                                                                 );
 
 template<
+            int NGP, 
+            typename T, 
+            typename F, 
+            typename P
+        >
+                                    inline  void        gauss2d_loop(
+                                                                                        T&              storage, 
+                                                                                        F&&             f, 
+                                                                                        const P*        panel
+                                                                    );
+
+template<
             typename T, 
             typename U
         >                                   cuscomplex  quadrature_panel(
