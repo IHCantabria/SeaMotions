@@ -339,23 +339,23 @@ void        quadrature_panel_t(
     result_G_dn_sf  = 0.0;
     result_G_dn_pf  = 0.0;
 
-    gauss2d_loop<NGP*NGP>(
-                                result_G,
-                                [&](int i){ return target_fcn.G[i]; },
-                                panel
-                            );
+    gauss2d_loop<NGP>(
+                            result_G,
+                            [&](int i){ return target_fcn.G[i]; },
+                            panel
+                        );
 
-    gauss2d_loop<NGP*NGP>(
-                                result_G_dn_sf,
-                                [&](int i){ return target_fcn.dG_dn_sf[i]; },
-                                panel
-                            );
+    gauss2d_loop<NGP>(
+                            result_G_dn_sf,
+                            [&](int i){ return target_fcn.dG_dn_sf[i]; },
+                            panel
+                        );
 
-    gauss2d_loop<NGP*NGP>(
-                                result_G_dn_pf,
-                                [&](int i){ return target_fcn.dG_dn_pf[i]; },
-                                panel
-                            );
+    gauss2d_loop<NGP>(
+                            result_G_dn_pf,
+                            [&](int i){ return target_fcn.dG_dn_pf[i]; },
+                            panel
+                        );
 
 }
 
