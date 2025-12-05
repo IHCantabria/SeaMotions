@@ -1,3 +1,25 @@
+
+##################################################################
+#
+#   Copyright (c) 2025 Sergio Fernández Ruano / IHCantabria
+#
+#   This file is part of SeaMotions Software.
+#
+#   SeaMotions is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   SeaMotions is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program. If not, see <https://www.gnu.org/licenses/>.
+#
+##################################################################
+
 cmake_minimum_required(VERSION 3.9)
 project(SEAMOTIONS CXX)
 
@@ -122,6 +144,7 @@ set(
         seamotions_freq_src
         ${sm_freq_module_files}
         "./src/config.hpp"
+        "./src/cli_header_banner.hpp"
         ${containers_module_files}
         ${green_module_files}
         ${interfaces_module_files}
@@ -145,24 +168,63 @@ set_hdf5_target( seamotions_freq )
 set( INSTALL_PATH "${CMAKE_SOURCE_DIR}/bin/releases/seamotions_freq-${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}" )
 set( INSTALL_BIN_PATH ${INSTALL_PATH}/bin )
 
+
+# Add SeaMotions frequency solver
+set(
+        seamotions_stab_src
+        ${sm_stab_module_files}
+        "./src/config.hpp"
+        "./src/cli_header_banner.hpp"
+        ${containers_module_files}
+        ${interfaces_module_files}
+        ${hydrostatic_module_files}
+        ${inout_module_files}
+        ${math_module_files}
+        ${mesh_module_files}
+        ${tools_module_files}
+        ${waves_module_files}
+        ${version_module_files}
+    )
+
+add_executable(
+                    seamotions_stab
+                    ${seamotions_stab_src}
+                )
+set_mkl_lib_target( seamotions_stab )
+set_mpi_target( seamotions_stab )
+set_hdf5_target( seamotions_stab )
+
 if ( WIN32 )
+    # install(
+    #         TARGETS seamotions_freq
+    #         CONFIGURATIONS Release
+    #         RUNTIME_DEPENDENCIES
+    #         DIRECTORIES ${DEPENDENCY_PATHS}
+    #         PRE_EXCLUDE_REGEXES "api-ms-" "ext-ms-" "hdf5" "mkl" "libmmd" "libomp" "svml" "libmpi" "impi" "AzureAttestManager.*" "AzureAttestManager.*" "wpaxholder.*"
+    #         POST_EXCLUDE_REGEXES "AzureAttestManager.*" "AzureAttestManager.*"
+    #         DESTINATION ${INSTALL_BIN_PATH}
+    #         )
     install(
-            TARGETS seamotions_freq
-            CONFIGURATIONS Release
-            RUNTIME_DEPENDENCIES
-            DIRECTORIES ${DEPENDENCY_PATHS}
-            PRE_EXCLUDE_REGEXES "api-ms-" "ext-ms-" "hdf5" "mkl" "libmmd" "libomp" "svml" "libmpi"
-            DESTINATION ${INSTALL_BIN_PATH}
-            )
+        TARGETS seamotions_freq
+        CONFIGURATIONS Release
+        RUNTIME DESTINATION ${INSTALL_BIN_PATH}
+    )
+
+    # Copy known runtime DLLs
+    install(
+        DIRECTORY ${CMAKE_SOURCE_DIR}/bin/runtime_dlls/
+        DESTINATION ${INSTALL_BIN_PATH}
+        FILES_MATCHING PATTERN "*.dll"
+    )
     install(
             DIRECTORY ${CMAKE_SOURCE_DIR}/bin/runtime_dlls
             DESTINATION ${INSTALL_BIN_PATH}
             FILES_MATCHING PATTERN "*.dll"
             )
-    install(
-            FILES ${CMAKE_SOURCE_DIR}/bin/febos_ddm.bat
-            DESTINATION ${INSTALL_BIN_PATH}
-            )
+    # install(
+    #         FILES ${CMAKE_SOURCE_DIR}/bin/febos_ddm.bat
+    #         DESTINATION ${INSTALL_BIN_PATH}
+    #         )
     install(
             DIRECTORY ${CMAKE_SOURCE_DIR}/examples
             DESTINATION ${INSTALL_PATH}
