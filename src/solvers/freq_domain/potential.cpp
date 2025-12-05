@@ -4,7 +4,7 @@
 
 #include "../../containers/matlin_group.hpp"
 #include "../../green/source.hpp"
-#include "../../interfaces/hmf_interface.hpp"
+// #include "../../interfaces/hmf_interface.hpp"
 #include "../../math/integration.hpp"
 #include "../../math/math_interface.hpp"
 #include "tools.hpp"
@@ -66,7 +66,7 @@ void    calculate_influence_potmat_steady(
                 if ( 
                         mesh_gp->source_nodes[i]->panel->type == DIFFRAC_PANEL_CODE
                         &&
-                        mesh_gp->source_nodes[j]->panel->type == DIFFRAC_PANEL_CODE
+                        mesh_gp->source_nodes[j]->panel->type == LID_PANEL_CODE
                     )
                 {
                     // Calculate potential contribution for r0

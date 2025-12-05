@@ -1,12 +1,30 @@
 
-#ifndef __freq_solver_tools_hpp
-#define __freq_solver_tools_hpp
+/*
+ * Copyright (c) 2025 Sergio Fernández Ruano / IHCantabria
+ *
+ * This file is part of SeaMotions Software.
+ *
+ * SeaMotions is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeaMotions is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+#pragma once
 
 // Include local modules
 #include "../../containers/mpi_config.hpp"
-#include "../../interfaces/hmf_interface.hpp"
-#include "../../interfaces/grfdn_interface.hpp"
-#include "../../interfaces/gwfdn_interface.hpp"
+// #include "../../interfaces/hmf_interface.hpp"
+// #include "../../interfaces/grfdn_interface.hpp"
+// #include "../../interfaces/gwfdn_interface.hpp"
 #include "../../hydrostatics.hpp"
 #include "../../inout/input.hpp"
 #include "../../inout/output.hpp"
@@ -54,5 +72,3 @@ void    freq_domain_nonlinear_solver(
                                                 Hydrostatics**  hydrostatics,
                                                 Output*         output
                                     );
-
-#endif

@@ -21,13 +21,16 @@
 
 // Include local modules
 #include "../../cli_header_banner.hpp"
+#include "../../containers/initial_stability.hpp"
 #include "../../containers/mpi_config.hpp"
 #include "../../containers/mpi_timer.hpp"
 #include "../../interfaces/stab_interface_t.hpp"
+#include "../../math/integration.hpp"
 #include "../../mesh/stability_mesh.hpp"
 #include "../../mesh/mesh.hpp"
 #include "stab_input.hpp"
 #include "../../tools.hpp"
+#include "../../math/newmark.hpp"
 
 
 template<typename T, int NGP>
@@ -94,6 +97,31 @@ void        quadrature_panel_hydrostat(
 // }
 
 
+void calculate_hydrostatic_properties( 
+                                        StabInput*      input, 
+                                        StabilityMesh*  mesh
+                                    )
+{
+    for ( std::size_t i=0; i<input->draft_hs.size( ); i++ )
+    {
+        // Adjust mesh to the draft
+        mesh->move( 0.0, 0.0, -input->draft_hs[i], 0.0, 0.0, 0.0 );
+
+        // Cut along the free surface in order to properly 
+        // calculate initial stability parameters
+        mesh->check_underwater_panels( );
+
+        // Calcualte initial estability parameters
+    }
+}
+
+
+void test_newmark( void )
+{
+    
+}
+
+
 int main( int argc, char* argv[ ] )
 {
     // Read command line arguments
@@ -148,10 +176,14 @@ int main( int argc, char* argv[ ] )
     // std::string mesh_fipath = "d:/sergio/0050_OASIS_SM/SeaMotionsStabValidation_files/user_files/0_Box/box_stability_tri.poly";
     // std::string body_name   = "box";
     // cusfloat    cog[3]      = { 0.0, 0.0, 5.0 };
-    cusfloat    draft       = 4.1;
+    cusfloat    draft       = 5.0;
 
     Mesh mesh_ref( input.mesh_fipath, input.body_name, input.cog, false , 0 );
     StabilityMesh mesh_mov( input.mesh_fipath, input.body_name, input.cog, false , 0, draft );
+
+    mesh_mov.write( 
+                        case_fopath
+                );
 
     mesh_mov.move( 0.0, 0.0, -draft, 0.0, 0.0, 0.0 );
     mesh_mov.check_underwater_panels( );
@@ -160,6 +192,21 @@ int main( int argc, char* argv[ ] )
                                         case_fopath,
                                         input.mesh_finame + "_tri"
                                     );
+
+    InitialStability<NUM_GP, StabilityMesh> init_stab( 
+                                                            input.water_density,
+                                                            input.grav_acc,
+                                                            draft,
+                                                            input.cog,
+                                                            input.rad_gyr,
+                                                            &mesh_mov
+                                                        );
+    init_stab.print( );
+    
+    // calculate_hydrostatic_properties( &input, &mesh_mov );
+
+    // InitialStabilityParams isp;
+    // calculate_initial_stability_paraters( draft, &mesh_mov, &isp );
 
     // // Calculate hydrostatic forces
     // cusfloat force[3];
@@ -174,7 +221,7 @@ int main( int argc, char* argv[ ] )
     if ( mpi_config.is_root( ) )
     {
         std::cout << std::endl << std::endl;
-        std::cout << " -> Seamotions (Frequency) finished!" << std::endl;
+        std::cout << " -> Seamotions (Stability) finished!" << std::endl;
         std::cout << " ---> Elapsed wall time for calculation [s]: " << case_timer << std::endl;
     }
 
