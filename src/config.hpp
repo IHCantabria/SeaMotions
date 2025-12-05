@@ -1,6 +1,24 @@
 
-#ifndef __config_hpp
-#define __config_hpp
+/*
+ * Copyright (c) 2025 Sergio Fernández Ruano / IHCantabria
+ *
+ * This file is part of SeaMotions Software.
+ *
+ * SeaMotions is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeaMotions is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+#pragma once
 
 #include <complex>
 #include <vector>
@@ -84,5 +102,3 @@ constexpr int       MPI_ROOT_PROC_ID        = 0;                // ID for the ro
 constexpr int       STATIC_LOOP_ON          = 1;                // Flag used as template argument to SET that the bounds of the internal loops of the calling function are known at compile time
 constexpr int       STATIC_LOOP_OFF         = 0;                // Flag used as template argument to NOT SET that the bounds of the internal loops of the calling function are not known at compile time
 constexpr cusfloat  ZEROTH_EPS              = 1E-14;
-
-#endif
