@@ -326,66 +326,6 @@ void    read_case(
     // Skip header
     skip_header( infile, line_count, 3 );
 
-    // Read flag to block the quadrature adaptation algorithm
-    target_signal   = "BlockAdapt";
-    read_signal     = read_channel_value( infile, input->is_block_adaption );
-    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
-
-    // Read flag to use the fast solver configuration
-    target_signal   = "FastSolver";
-    read_signal     = read_channel_value( infile, input->is_fast_solver );
-    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
-
-    // Read gauss order for the numerical integration
-    target_signal   = "GaussOrder";
-    read_signal     = read_channel_value( infile, input->gauss_order );
-    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
-
-    // Read absolute error for green function normal derivative integration over panel
-    target_signal   = "GFDnAbsErr";
-    read_signal     = read_channel_value( infile, input->gfdn_abs_err );
-    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
-
-    // Read relative error for green function normal derivative integration over panel
-    target_signal   = "GFDnRelErr";
-    read_signal     = read_channel_value( infile, input->gfdn_rel_err );
-    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
-
-    // Read number of Kotchin expansion coefficients
-    target_signal   = "KochinNC";
-    read_signal     = read_channel_value( infile, input->kochin_np );
-    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
-
-    // Read method to solver the logarithmic singularity
-    target_signal   = "LogSingAna";
-    read_signal     = read_channel_value( infile, input->is_log_sin_ana );
-    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
-
-    // Read polynomial order to interpolate the solution
-    target_signal   = "PolyOrder";
-    read_signal     = read_channel_value( infile, input->poly_order );
-    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
-
-    // Read absolute error for potential integration over panel
-    target_signal   = "PotAbsErr";
-    read_signal     = read_channel_value( infile, input->pot_abs_err );
-    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
-
-    // Read relative error for potential integration over panel
-    target_signal   = "PotRelErr";
-    read_signal     = read_channel_value( infile, input->pot_rel_err );
-    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
-
-    // Read absolute error for pressure integration over panel
-    target_signal   = "PressAbsErr";
-    read_signal     = read_channel_value( infile, input->press_abs_err );
-    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
-
-    // Read relative error for pressure integration over panel
-    target_signal   = "PressRelErr";
-    read_signal     = read_channel_value( infile, input->press_rel_err );
-    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
-
     // Read QTF second order potential model
     target_signal   = "QTFSOModel";
     read_signal     = read_channel_value( infile, input->out_qtf_so_model );

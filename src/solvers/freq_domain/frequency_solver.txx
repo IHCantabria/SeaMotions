@@ -392,10 +392,7 @@ void FrequencySolver<N, mode_pf>::_initialize_mesh_groups( void )
                                                 );
     }
 
-    if ( this->input->is_log_sin_ana )
-    {
-        this->mesh_gp->define_mirror_panels( );
-    }
+    this->mesh_gp->define_mirror_panels( );
 
     // Delete allocated heap memory
     delete []   all_meshes;
