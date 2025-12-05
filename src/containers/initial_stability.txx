@@ -84,13 +84,6 @@ void InitialStability<NUM_GP, T>::_recalculate_geom_props(
 
     }
 
-    // Corrent signs due to normal influence. Not all the 
-    // the geometrical properties are corrected as z is negative
-    // so there are case where signs of z and normal cancel each other
-    this->_area_wl      *= -1;
-    this->_area_wl_mx   *= -1;
-    this->_area_wl_my   *= -1;
-    this->_volume       *= -1;
 }
 
 
@@ -110,7 +103,7 @@ void    InitialStability<NUM_GP, T>::_recalculate_hydro_props(
     // Calculate underwater volume COG position
     this->_cob[0]           = this->_volume_mx / this->_volume;
     this->_cob[1]           = this->_volume_my / this->_volume;
-    this->_cob[2]           = this->_draft - this->_volume_mz / this->_volume;
+    this->_cob[2]           = this->_draft + this->_volume_mz / this->_volume;
 
     // Calculate metacentric radius
     this->_bmx              = this->_area_wl_ixx / this->_volume;
@@ -121,8 +114,8 @@ void    InitialStability<NUM_GP, T>::_recalculate_hydro_props(
     this->_kmy              = this->_cob[2] + this->_bmy;
 
     // Calculate metacentric height
-    this->_gmx              = this->_kmx - this->_cob[2];
-    this->_gmy              = this->_kmy - this->_cob[2];
+    this->_gmx              = this->_kmx - this->_cog[2];
+    this->_gmy              = this->_kmy - this->_cog[2];
 
     // Calculate tons per cm of inmersion
     this->_tpc              = ( 
@@ -170,6 +163,8 @@ void    InitialStability<NUM_GP, T>::_recalculate_hydro_props(
 
     /* Calculate eigen periods */
     this->_eigen_period[0] = 2.0 * PI * std::sqrt( this->_mass / this->_hydstiffmat[14] );
+    this->_eigen_period[1] = 2.0 * PI * std::sqrt( ( this->_mass * pow2s( this->_rad_gyr[0] ) ) / this->_hydstiffmat[21] );
+    this->_eigen_period[2] = 2.0 * PI * std::sqrt( ( this->_mass * pow2s( this->_rad_gyr[1] ) ) / this->_hydstiffmat[28] );
 }
 
 
@@ -253,7 +248,7 @@ void InitialStability<NUM_GP, T>::_process_panel_data(
     auto    volume_fcn      =   [&](int i)
                                 { 
                                     return ( 
-                                                paneli->gauss_points_global_z[i] 
+                                                -paneli->gauss_points_global_z[i] 
                                                 * 
                                                 paneli->normal_vec[2] 
                                             );
@@ -269,7 +264,7 @@ void InitialStability<NUM_GP, T>::_process_panel_data(
     auto    volume_mx_fcn   =   [&](int i)
                                 { 
                                     return (
-                                                paneli->gauss_points_global_z[i] 
+                                                -paneli->gauss_points_global_z[i] 
                                                 *  
                                                 paneli->gauss_points_global_x[i]
                                                 * 
@@ -286,7 +281,7 @@ void InitialStability<NUM_GP, T>::_process_panel_data(
     auto    volume_my_fcn   =   [&](int i)
                                 { 
                                     return (
-                                                paneli->gauss_points_global_z[i] 
+                                                -paneli->gauss_points_global_z[i] 
                                                 *  
                                                 paneli->gauss_points_global_y[i]
                                                 * 
@@ -303,7 +298,7 @@ void InitialStability<NUM_GP, T>::_process_panel_data(
     auto    volume_mz_fcn   =   [&](int i)
                                 { 
                                     return (
-                                                paneli->gauss_points_global_z[i] 
+                                                -paneli->gauss_points_global_z[i] 
                                                 *  
                                                 paneli->gauss_points_global_z[i] / 2.0
                                                 * 
