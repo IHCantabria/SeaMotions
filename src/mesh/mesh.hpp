@@ -123,26 +123,26 @@ public:
     cusfloat        z_min           = 0.0;
 
     // Define class constructor and destructor
-    Mesh( ) = default;
+            Mesh( ) = default;
 
-    Mesh( 
-                                std::string         file_path,
-                                std::string         body_name,
-                                cusfloat*           cog,
-                                bool                is_fix,
-                                int                 panel_type
-        );
+            Mesh( 
+                                                std::string         file_path,
+                                                std::string         body_name,
+                                                cusfloat*           cog,
+                                                bool                is_fix,
+                                                int                 panel_type
+                );
 
-    Mesh(
-                                std::vector<Mesh*>  meshes,
-                                cusfloat*           cog,
-                                bool                is_fix
+            Mesh(
+                                                std::vector<Mesh*>  meshes,
+                                                cusfloat*           cog,
+                                                bool                is_fix
 
-        );
+                );
 
-    ~Mesh( 
-                                void 
-        );
+    virtual ~Mesh( 
+                                                void 
+                );
 
     // Define class methods
             void        calculate_fs_radius(
