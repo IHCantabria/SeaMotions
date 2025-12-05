@@ -42,5 +42,3 @@ void    calculate_froude_krylov_so(
                                     int             qtf_type,
                                     cuscomplex*     froude_krylov
                                 );
-
-#endif

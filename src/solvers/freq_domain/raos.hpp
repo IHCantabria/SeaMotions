@@ -36,5 +36,3 @@ void    calculate_raos(
                             cusfloat        ang_freq,
                             cuscomplex*     rao
                         );
-
-#endif
