@@ -78,7 +78,7 @@ void    NewmarkBeta<T>::_apply_restrictions(
                                                 cusfloat*   _vec
                                             )
 {
-    for ( int i=0; i<this->mass_mat.rows_np; i++ )
+    for ( int i=0; i<this->rows_np; i++ )
     {
         if ( this->_restrictions[i] > 0 )
         {
@@ -181,26 +181,26 @@ void    NewmarkBeta<T>::_check_init_kinematics_retrictions(
                                                             )
 {
     // Build warn message if any
-    for ( int i=0; i<this->mass_mat.rows_np; i++ )
+    for ( int i=0; i<this->rows_np; i++ )
     {
         if ( this->_restrictions[i] > 0 )
         {
             // Check position restrictions inconsistency
             if ( check_zero_eps( this->y0_pos[i], EPS_PRECISION ) )
             {
-                _print_inconsistency_msg( i, this->y_pos[i], "Position" )
+                _print_inconsistency_msg( i, this->y_pos[i], "Position" );
             }
 
             // Check velocity restrictions inconsistency
             if ( check_zero_eps( this->y0_vel[i], EPS_PRECISION ) )
             {
-                _print_inconsistency_msg( i, this->y_pos[i], "Velocity" )
+                _print_inconsistency_msg( i, this->y_pos[i], "Velocity" );
             }
 
             // Check acceleration restrictions inconsistency
             if ( check_zero_eps( this->y0_acc[i], EPS_PRECISION ) )
             {
-                _print_inconsistency_msg( i, this->y_pos[i], "Acceleration" )
+                _print_inconsistency_msg( i, this->y_pos[i], "Acceleration" );
             }
         }
     }
