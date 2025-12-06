@@ -27,5 +27,3 @@
 #include "sparse_containers.hpp"
 
 CSRMatrix*  convert_mkl_to_csrmatrix(sparse_matrix_t* mkl_mat);
-
-#endif
