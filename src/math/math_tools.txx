@@ -322,6 +322,16 @@ inline void svs_add(int n, T* u, T s, T* w)
 
 
 template<typename T>
+inline void sv_add(int n, T alpha, T* u, T beta, T* v, T* w)
+{
+    for (int i=0; i<n; i++)
+    {
+        w[i] = alpha*u[i] + beta*v[i];
+    }
+}
+
+
+template<typename T>
 inline void sv_cbrt(int n, T* u, T* w)
 {
     for (int i=0; i<n; i++)

@@ -259,6 +259,15 @@ template<typename T>                inline  void        sv_add(
                                                                                     T* v, 
                                                                                     T* w
                                                                 );
+
+template<typename T>        inline  void                sv_add(
+                                                                                    int n, 
+                                                                                    T alpha, 
+                                                                                    T* u, 
+                                                                                    T beta, 
+                                                                                    T* v, 
+                                                                                    T* w
+                                                                );
         
 template<typename T>                inline  void        svs_add(                                
                                                                                     int n, 
