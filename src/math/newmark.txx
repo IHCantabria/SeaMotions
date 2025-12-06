@@ -74,6 +74,140 @@ inline void get_components_matrix( sparse_matrix_t lhs_mkl )
 
 
 template<typename T>
+void    NewmarkBeta<T>::_apply_restrictions(
+                                                cusfloat*   _vec
+                                            )
+{
+    for ( int i=0; i<this->mass_mat.rows_np; i++ )
+    {
+        if ( this->_restrictions[i] > 0 )
+        {
+            _vec[i] = 0.0;
+        }
+    }
+}
+
+
+template<typename T>
+void    NewmarkBeta<T>::_build( 
+                                        T               fext_in,
+                                        CSRMatrix*      mass_mat_in,
+                                        CSRMatrix*      stiff_mat_in,
+                                        CSRMatrix*      damp_mat_in,
+                                        cusfloat        time_step_in,
+                                        cusfloat        t0_in,
+                                        cusfloat*       y0_pos_in,
+                                        cusfloat*       y0_vel_in,
+                                        cusfloat*       y0_acc_in,
+                                        int*            restrictions
+                                )
+{
+    // Save input variables
+    this->fext_fcn      =   fext_in;
+    this->rows_np       =   mass_mat_in->rows_np;
+    this->time_step     =   time_step_in;
+    this->time_init     =   t0_in;
+    this->y0_pos        =   y0_pos_in;
+    this->y0_vel        =   y0_vel_in;
+    this->y0_acc        =   y0_acc_in;
+    this->beta          =   0.25;
+    this->gamma         =   0.5;
+
+    // Convert sparse input arrays from CSRMatrix to sparse_matrix_t type
+    // and stores it into memory
+    this->damp_mat = new sparse_matrix_t;
+    CALL_AND_CHECK_STATUS(
+        mkl_sparse_d_create_csr ( 
+                                    this->damp_mat,
+                                    SPARSE_INDEX_BASE_ZERO,
+                                    damp_mat_in->rows_np,
+                                    damp_mat_in->rows_np,
+                                    damp_mat_in->row_index_cum,
+                                    damp_mat_in->row_index_cum+1,
+                                    damp_mat_in->col_index,
+                                    damp_mat_in->values
+                                ),
+        "Error after MKL_SPARSE_D_CREATE_CSR - damp_mat \n"
+    );
+    
+    
+    this->mass_mat = new sparse_matrix_t;
+    CALL_AND_CHECK_STATUS(
+        mkl_sparse_d_create_csr( 
+                                    this->mass_mat,
+                                    SPARSE_INDEX_BASE_ZERO,
+                                    mass_mat_in->rows_np,
+                                    mass_mat_in->rows_np,
+                                    mass_mat_in->row_index_cum,
+                                    mass_mat_in->row_index_cum+1,
+                                    mass_mat_in->col_index,
+                                    mass_mat_in->values
+                                ),
+        "Error after MKL_SPARSE_D_CREATE_CSR - mass_mat \n"
+    );
+
+    this->stiff_mat = new sparse_matrix_t;
+    CALL_AND_CHECK_STATUS(
+        mkl_sparse_d_create_csr ( 
+                                    this->stiff_mat,
+                                    SPARSE_INDEX_BASE_ZERO,
+                                    stiff_mat_in->rows_np,
+                                    stiff_mat_in->rows_np,
+                                    stiff_mat_in->row_index_cum,
+                                    stiff_mat_in->row_index_cum+1,
+                                    stiff_mat_in->col_index,
+                                    stiff_mat_in->values
+                                ),
+        "Error after MKL_SPARSE_D_CREATE_CSR - stiff_mat \n"
+    );
+
+    // Storage restrictions pointer if not done previously
+    if ( !this->_is_restrictions )
+    {
+        this->_restrictions = restrictions;
+    }
+
+    // Check for restrictions in input kinematics+
+    this->_check_init_kinematics_retrictions( );
+
+    // Initialize solver
+    this->initialize( );
+}
+
+
+template<typename T>
+void    NewmarkBeta<T>::_check_init_kinematics_retrictions(
+                                                                void
+                                                            )
+{
+    // Build warn message if any
+    for ( int i=0; i<this->mass_mat.rows_np; i++ )
+    {
+        if ( this->_restrictions[i] > 0 )
+        {
+            // Check position restrictions inconsistency
+            if ( check_zero_eps( this->y0_pos[i], EPS_PRECISION ) )
+            {
+                _print_inconsistency_msg( i, this->y_pos[i], "Position" )
+            }
+
+            // Check velocity restrictions inconsistency
+            if ( check_zero_eps( this->y0_vel[i], EPS_PRECISION ) )
+            {
+                _print_inconsistency_msg( i, this->y_pos[i], "Velocity" )
+            }
+
+            // Check acceleration restrictions inconsistency
+            if ( check_zero_eps( this->y0_acc[i], EPS_PRECISION ) )
+            {
+                _print_inconsistency_msg( i, this->y_pos[i], "Acceleration" )
+            }
+        }
+    }
+}
+
+
+template<typename T>
 void NewmarkBeta<T>::get_values_at(
                                         cusfloat  time_at,
                                         cusfloat* y_pos_at,
@@ -275,8 +409,8 @@ void NewmarkBeta<T>::initialize( void )
 
     // Start an instance of the SparseSolver with the mass matrix as a 
     // system matrix
-    CSRMatrix* mass_csr         = convert_mkl_to_csrmatrix(this->mass_mat);
-    SparseSolver acc_crr_sps    = SparseSolver(mass_csr, false);
+    CSRMatrix*      mass_csr    = convert_mkl_to_csrmatrix(this->mass_mat);
+    SparseSolver    acc_crr_sps = SparseSolver(mass_csr, false);
 
     // Create rhs vector to storage the result of the sum of the
     // damping, stiffness and external forces
@@ -444,80 +578,74 @@ NewmarkBeta<T>::NewmarkBeta(
                                     CSRMatrix*      mass_mat_in,
                                     CSRMatrix*      stiff_mat_in,
                                     CSRMatrix*      damp_mat_in,
-                                    cusfloat          time_step_in,
-                                    cusfloat          t0_in,
-                                    cusfloat*         y0_pos_in,
-                                    cusfloat*         y0_vel_in,
-                                    cusfloat*         y0_acc_in
+                                    cusfloat        time_step_in,
+                                    cusfloat        t0_in,
+                                    cusfloat*       y0_pos_in,
+                                    cusfloat*       y0_vel_in,
+                                    cusfloat*       y0_acc_in
                         )
 {
-    // Save input variables
-    this->fext_fcn      =   fext_in;
-    this->rows_np       =   mass_mat_in->rows_np;
-    this->time_step     =   time_step_in;
-    this->time_init     =   t0_in;
-    this->y0_pos        =   y0_pos_in;
-    this->y0_vel        =   y0_vel_in;
-    this->y0_acc        =   y0_acc_in;
-    this->beta          =   0.25;
-    this->gamma         =   0.5;
+    // Buid restrictions vector assuming no restrictions are imposed
+    this->_restrictions     = generate_empty_vector<int>( mass_mat_in.rows_np );
+    this->_is_restrictions  = true;
 
-    // Convert sparse input arrays from CSRMatrix to sparse_matrix_t type
-    // and stores it into memory
-    this->damp_mat = new sparse_matrix_t;
-    CALL_AND_CHECK_STATUS(
-        mkl_sparse_d_create_csr ( 
-                                    this->damp_mat,
-                                    SPARSE_INDEX_BASE_ZERO,
-                                    damp_mat_in->rows_np,
-                                    damp_mat_in->rows_np,
-                                    damp_mat_in->row_index_cum,
-                                    damp_mat_in->row_index_cum+1,
-                                    damp_mat_in->col_index,
-                                    damp_mat_in->values
-                                ),
-        "Error after MKL_SPARSE_D_CREATE_CSR - damp_mat \n"
-    );
+    // Call class builder
+    this->_build( 
+                    fext_in,
+                    mass_mat_in,
+                    stiff_mat_in,
+                    damp_mat_in,
+                    time_step_in,
+                    t0_in,
+                    y0_pos_in,
+                    y0_vel_in,
+                    y0_acc_in,
+                    this->_restrictions
+                );
     
+}
+
+
+template<typename T>
+NewmarkBeta<T>::NewmarkBeta(
+                                    T               fext_in,
+                                    CSRMatrix*      mass_mat_in,
+                                    CSRMatrix*      stiff_mat_in,
+                                    CSRMatrix*      damp_mat_in,
+                                    cusfloat        time_step_in,
+                                    cusfloat        t0_in,
+                                    cusfloat*       y0_pos_in,
+                                    cusfloat*       y0_vel_in,
+                                    cusfloat*       y0_acc_in,
+                                    int*            restrictions_in
+                        )
+{
+    // Call class builder
+    this->_build( 
+                    fext_in,
+                    mass_mat_in,
+                    stiff_mat_in,
+                    damp_mat_in,
+                    time_step_in,
+                    t0_in,
+                    y0_pos_in,
+                    y0_vel_in,
+                    y0_acc_in,
+                    restrictions_in
+                );
     
-    this->mass_mat = new sparse_matrix_t;
-    CALL_AND_CHECK_STATUS(
-        mkl_sparse_d_create_csr( 
-                                    this->mass_mat,
-                                    SPARSE_INDEX_BASE_ZERO,
-                                    mass_mat_in->rows_np,
-                                    mass_mat_in->rows_np,
-                                    mass_mat_in->row_index_cum,
-                                    mass_mat_in->row_index_cum+1,
-                                    mass_mat_in->col_index,
-                                    mass_mat_in->values
-                                ),
-        "Error after MKL_SPARSE_D_CREATE_CSR - mass_mat \n"
-    );
-
-    this->stiff_mat = new sparse_matrix_t;
-    CALL_AND_CHECK_STATUS(
-        mkl_sparse_d_create_csr ( 
-                                    this->stiff_mat,
-                                    SPARSE_INDEX_BASE_ZERO,
-                                    stiff_mat_in->rows_np,
-                                    stiff_mat_in->rows_np,
-                                    stiff_mat_in->row_index_cum,
-                                    stiff_mat_in->row_index_cum+1,
-                                    stiff_mat_in->col_index,
-                                    stiff_mat_in->values
-                                ),
-        "Error after MKL_SPARSE_D_CREATE_CSR - stiff_mat \n"
-    );
-
-    // Initialize solver
-    this->initialize( );
 }
 
 
 template<typename T>
 NewmarkBeta<T>::~NewmarkBeta( void )
 {
+    // Delete restrictions matrix if any
+    if ( this->_is_restrictions )
+    {
+        mkl_free( this->_restrictions );
+    }
+
     // Delete sparse solve
     delete this->linsolve;
 
@@ -579,6 +707,9 @@ void NewmarkBeta<T>::step( void )
                             this->y_acc_old,
                             this->rhs
                         );
+
+    // Apply restrictions to external forces
+    this->_apply_restrictions( this->rhs );
 
     // Add first summand with the stiffness contibution
     // OPEARTION -> RHS = -K*u_pos
@@ -695,6 +826,11 @@ void NewmarkBeta<T>::step( void )
                 this->_u_beta,
                 this->y_pos
             );
+
+    // Apply restrictions to predicted kinematics
+    this->_apply_restrictions( this->y_pos );
+    this->_apply_restrictions( this->y_vel );
+    this->_apply_restrictions( this->y_acc );
 
     //////////////////////////////////////////////////////////////////
     /////////////// UPDATE INTEGRATION VARIABLES /////////////////////
