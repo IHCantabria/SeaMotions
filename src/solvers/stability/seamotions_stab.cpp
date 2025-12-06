@@ -24,6 +24,7 @@
 #include "../../containers/initial_stability.hpp"
 #include "../../containers/mpi_config.hpp"
 #include "../../containers/mpi_timer.hpp"
+#include "../../interfaces/hydrostatic_force_interface.hpp"
 #include "../../interfaces/stab_interface_t.hpp"
 #include "../../math/integration.hpp"
 #include "../../mesh/stability_mesh.hpp"
@@ -96,6 +97,65 @@ void        quadrature_panel_hydrostat(
     // }
 // }
 
+constexpr int _NDOF = 6;
+template<typename T>
+class HydrostaticForces
+{
+private:
+    /* Define class private attributes */ 
+    StabilityMesh*  _mesh           = nullptr;  // Storage pointer of the mesh object used to represent the floater external surface
+    T               _force_interf   = nullptr;  // Storage pointer of the functor interface used to calculate the force over the panel
+    cusfloat        _weight         = 0.0;      // Weight of the floater to be accounted on external force vector
+
+public:
+    /* Define class constructor */
+    HydrostaticForces( 
+                            StabilityMesh*  mesh_in,
+                            T               force_interf_in,
+                            cusfloat        weight_in
+                        )
+    {
+        // Storage input arguments
+        this->_force_interf = force_interf_in;
+        this->_mesh         = mesh_in;
+        this->_weight       = weight_in;
+    }
+
+    /* Define class overloaded operators */
+
+    // Overload = operator to have a functor behaviour
+    // that matches the time solver interface
+    void    operator()   ( 
+                            cusfloat    time,
+                            cusfloat    time_step,
+                            cusfloat*   pos,
+                            cusfloat*   ,
+                            cusfloat*   ,
+                            cusfloat*   rhs
+                        ) const
+    {
+        /*  1.  Move and rotate mesh around centre of gravity to 
+                be the state predicted by the stepper */
+        this->_mesh->move( pos[0], pos[1], pos[2], pos[3], pos[4], pos[5] );
+
+        /*  2.  Calculate hydrostatic forces and moments around the centre of 
+                gravity*/
+        
+        //  2.1 Clean input RHS vector in order to acount for old spurious data
+        clear_vector( _NDOF, rhs );
+
+        //  2.2 Calculate hydrostatic forces
+        for ( int i=0; i<this->_mesh->get_elems_np( ); i++ )
+        {
+            ( *this->_force_interf )( this->_mesh->get_panel( i ), rhs );
+        }
+
+        /*  3.  Add body weight to vertical force */
+        rhs[2] -= this->_weight;
+
+    }
+};
+
 
 void calculate_hydrostatic_properties( 
                                         StabInput*      input, 
@@ -116,9 +176,122 @@ void calculate_hydrostatic_properties(
 }
 
 
-void test_newmark( void )
+void test_newmark( StabInput* input, StabilityMesh* mesh )
 {
+    // Use mesh bounding box to have an estimation of the
+    // dynamical properties of object to set up dynamical
+    // simulation to find the equilibrim
+    cusfloat    lx      = mesh->x_max - mesh->x_min;
+    cusfloat    ly      = mesh->y_max - mesh->y_min;
+    cusfloat    lz      = mesh->z_max - mesh->z_min;
+    cusfloat    area    = lx * ly;
+    cusfloat    volume  = area * lz;
+    cusfloat    mass    = volume * input->water_density;
+    cusfloat    ixx     = mass * ( pow2s( ly ) + pow2s( lz ) ) / 12.0;
+    cusfloat    iyy     = mass * ( pow2s( lx ) + pow2s( lz ) ) / 12.0;
+    cusfloat    izz     = std::sqrt( pow2s( ixx ) + pow2s( iyy ) );
+    cusfloat    k22     = input->water_density * input->grav_acc * area;
+    cusfloat    k33     = input->water_density * input->grav_acc * volume * 10.0;
+    cusfloat    k44     = input->water_density * input->grav_acc * volume * 10.0;
+    cusfloat    d22     = 2.0 * std::sqrt( mass * k22 );
+    cusfloat    d33     = 2.0 * std::sqrt( mass * k33 );
+    cusfloat    d44     = 2.0 * std::sqrt( mass * k44 );
+    cusfloat    t22     = 2.0 * PI * std::sqrt( mass / k22 );
+    cusfloat    t33     = 2.0 * PI * std::sqrt( ixx  / k33 );
+    cusfloat    t44     = 2.0 * PI * std::sqrt( iyy  / k44 );
+
+    // Create matrixes in dense form
+    cusfloat    mass_d[36]  = { 
+                                    mass, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                    0.0, mass, 0.0, 0.0, 0.0, 0.0,
+                                    0.0, 0.0, mass, 0.0, 0.0, 0.0,
+                                    0.0, 0.0, 0.0, ixx, 0.0, 0.0,
+                                    0.0, 0.0, 0.0, 0.0, iyy, 0.0,
+                                    0.0, 0.0, 0.0, 0.0, 0.0, izz
+                                };
     
+    cusfloat    stiff_d[36] = { 
+                                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+                                };
+
+    cusfloat    damp_d[36]  = { 
+                                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                    0.0, 0.0, d22, 0.0, 0.0, 0.0,
+                                    0.0, 0.0, 0.0, d33, 0.0, 0.0,
+                                    0.0, 0.0, 0.0, 0.0, d44, 0.0,
+                                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+                                };
+
+    // Create system matrixes in CSR format
+    CSRMatrix*  mass_mat        = new CSRMatrix( 36, mass_d     );
+    CSRMatrix*  damp_mat        = new CSRMatrix( 36, damp_d     );
+    CSRMatrix*  stiff_mat       = new CSRMatrix( 36, stiff_d    );
+
+    // Create restrictions vector
+    int         restrictions[6] = { 1, 1, 0, 1, 1, 1 };
+    cusfloat    y0_pos[6]       = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+    cusfloat    y0_vel[6]       = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+    cusfloat    y0_acc[6]       = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+
+    // Calculate maximum time of simulation based on natural periods
+    // estimated
+    cusfloat    c2          = restrictions[ 2 ];
+    cusfloat    c3          = restrictions[ 3 ];
+    cusfloat    c4          = restrictions[ 4 ];
+    cusfloat    max_time    = ( c2 * t22 + c3 * t33 + c4 * t44 ) / ( c2 + c3 + c4 );
+
+    // Create functor to calculate hydrostatic forces
+    HydrostaticForceInterface<NUM_GP>   hydrostat_force_interf( 
+                                                                    input->water_density, 
+                                                                    input->grav_acc 
+                                                                );
+
+    HydrostaticForces                   hydrostatic_force(          
+                                                                    mesh,
+                                                                    &hydrostat_force_interf, 
+                                                                    mass * input->grav_acc 
+                                                                );
+
+    // Create Newmark-Beta instance
+    NewmarkBeta nwk(
+                        &hydrostatic_force,
+                        mass_mat,
+                        stiff_mat,
+                        damp_mat,
+                        0.01,
+                        0.0,
+                        y0_pos,
+                        y0_vel,
+                        y0_acc,
+                        restrictions
+                    );
+
+    // Loop over time until reach equilibrium
+    while ( true )
+    {
+        // Advance one step in time
+        nwk.step();
+
+        std::cout << "Time: " << nwk.time << " - Z: " << nwk.y_pos[2] << std::endl;
+
+        // Check for time limit
+        if ( nwk.time >=  max_time )
+        {
+            break;
+        }
+    }
+
+    // Delete heap allocations
+    delete mass_mat;
+    delete stiff_mat;
+    delete damp_mat;
+
 }
 
 
@@ -202,6 +375,8 @@ int main( int argc, char* argv[ ] )
                                                             &mesh_mov
                                                         );
     init_stab.print( );
+
+    test_newmark( &input, &mesh_mov );
     
     // calculate_hydrostatic_properties( &input, &mesh_mov );
 
