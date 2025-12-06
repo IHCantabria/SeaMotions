@@ -144,6 +144,54 @@ void    euler_local_to_global_disp(
 }
 
 
+void    euler_rpy(
+                                                                cusfloat    r,
+                                                                cusfloat    p,
+                                                                cusfloat    y,
+                                                                cusfloat*   mat
+                                            )
+{
+    // First row
+    mat[0]  =   std::cos( p ) * std::cos( y );
+    mat[1]  =  -std::cos( p ) * std::sin( y );
+    mat[2]  =   std::sin( p );
+
+    // Second row
+    mat[3]  =   std::cos( r ) * std::sin( y ) + std::cos( y ) * std::sin( p ) * std::sin( r );
+    mat[4]  =   std::cos( r ) * std::cos( y ) - std::sin( p ) * std::sin( r ) * std::sin( y );
+    mat[5]  =  -std::cos( p ) * std::sin( r );
+
+    // Third row
+    mat[6]  =   std::sin( r ) * std::sin( y ) - std::cos( r ) * std::cos( y ) * std::sin( p );
+    mat[7]  =   std::cos( y ) * std::sin( r ) + std::cos( r ) * std::sin( p ) * std::sin( y );
+    mat[8]  =   std::cos( p ) * std::cos( r );
+}
+
+
+void    euler_ypr(
+                                                                cusfloat    r,
+                                                                cusfloat    p,
+                                                                cusfloat    y,
+                                                                cusfloat*   mat
+                                            )
+{
+    // First row
+    mat[0]  =   std::cos( p ) * std::cos( y );
+    mat[1]  =   std::cos( y ) * std::sin( p ) * std::sin( r ) - std::cos( r ) * std::sin( y );
+    mat[2]  =   std::sin( r ) * std::sin( y ) + std::cos( r ) * std::cos( y ) * std::sin( p );
+
+    // Second row
+    mat[3]  =   std::cos( p ) * std::sin( y );
+    mat[4]  =   std::cos( r ) * std::cos( y ) + std::sin( p ) * std::sin( r ) * std::sin( y );
+    mat[5]  =   std::cos( r ) * std::sin( p ) * std::sin( y ) - std::cos( y ) * std::sin(r);
+    
+    // Third row
+    mat[6]  =  -std::sin( p );
+    mat[7]  =   std::cos( p ) * std::sin( r );
+    mat[8]  =   std::cos( p ) * std::cos( r );
+}
+
+
 template<typename T>
 void    _rot_x(
                                         T*          mat,

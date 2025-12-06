@@ -40,6 +40,20 @@ template<typename T>    void    euler_local_to_global_disp(
                                                                 T*          displacement
                                                             );
 
+                        void    euler_rpy(
+                                                                cusfloat    r,
+                                                                cusfloat    p,
+                                                                cusfloat    y,
+                                                                cusfloat*   mat
+                                            );
+
+                        void    euler_ypr(
+                                                                cusfloat    r,
+                                                                cusfloat    p,
+                                                                cusfloat    y,
+                                                                cusfloat*   mat
+                                            );
+
 
 template<typename T>    void    _rot_x(
                                                                 T*          mat,
