@@ -24,6 +24,8 @@
 
 // Include local modules
 #include "../inout/vtu.hpp"
+#include "../math/euler_transforms.hpp"
+#include "mesh_operations.hpp"
 #include "mesh_refinement.hpp"
 #include "stability_mesh.hpp"
 
@@ -85,16 +87,16 @@ void StabilityMesh::_initialize(
                                 )
 {
     // Allocate space for backup nodes
-    this->x_backup  = generate_empty_vector<cusfloat>( this->nodes_np );
-    this->y_backup  = generate_empty_vector<cusfloat>( this->nodes_np );
-    this->z_backup  = generate_empty_vector<cusfloat>( this->nodes_np );
+    this->_x_backup  = generate_empty_vector<cusfloat>( this->nodes_np );
+    this->_y_backup  = generate_empty_vector<cusfloat>( this->nodes_np );
+    this->_z_backup  = generate_empty_vector<cusfloat>( this->nodes_np );
 
     // Copy data from nodes to dynamic nodes
     for ( int i=0; i<this->nodes_np; i++ )
     {
-        this->x_backup[i] = this->x[i];
-        this->y_backup[i] = this->y[i];
-        this->z_backup[i] = this->z[i];
+        this->_x_backup[i] = this->x[i];
+        this->_y_backup[i] = this->y[i];
+        this->_z_backup[i] = this->z[i];
     }
 
     // Resize fs_panels vector
@@ -123,10 +125,10 @@ StabilityMesh::StabilityMesh(
                                     )
 {
     // Storage input arguments
-    this->cog_backup[0] = cog_in[0];
-    this->cog_backup[1] = cog_in[1];
-    this->cog_backup[2] = cog_in[2];
-    this->draft         = draft_in;
+    this->_cog_backup[0]    = cog_in[0];
+    this->_cog_backup[1]    = cog_in[1];
+    this->_cog_backup[2]    = cog_in[2];
+    this->draft             = draft_in;
 
     // Initialize class
     this->_initialize( );
@@ -142,9 +144,9 @@ StabilityMesh::~StabilityMesh(
                             )
 {
     // Free memory for dynamic nodes
-    mkl_free( this->x_backup );
-    mkl_free( this->y_backup );
-    mkl_free( this->z_backup );
+    mkl_free( this->_x_backup );
+    mkl_free( this->_y_backup );
+    mkl_free( this->_z_backup );
 
     // Free memory for free surface panels
     for ( int i=0; i<this->elems_np; i++ )
@@ -163,21 +165,49 @@ void    StabilityMesh::move(
                                                     cusfloat            drz
                             )
 {
-    // Perform translations
-    for ( int i=0; i<this->nodes_np; i++ )
-    {
-        this->x[i] = this->x_backup[i] + dx;
-        this->y[i] = this->y_backup[i] + dy;
-        this->z[i] = this->z_backup[i] + dz;
-    }
+    /* 1. Move and rotate to the current position */
 
-    // Update mesh
-    this->cog[0] = this->cog_backup[0] + dx;
-    this->cog[1] = this->cog_backup[1] + dy;
-    this->cog[2] = this->cog_backup[2] + dz;
-    this->_update_panels_properties(
-                                        this->cog
-                                    );
+    // 1.1 Refresh information from back-up nodes
+    copy_vector( this->nodes_np, this->_x_backup, this->x );
+    copy_vector( this->nodes_np, this->_y_backup, this->y );
+    copy_vector( this->nodes_np, this->_z_backup, this->z );
+
+    // 1.2 Perform rotations about the C.O.G
+    mesh_points_rotation_refp( 
+                                    this->nodes_np,
+                                    this->x,
+                                    this->y,
+                                    this->z,
+                                    this->_cog_backup[0],
+                                    this->_cog_backup[1],
+                                    this->_cog_backup[2],
+                                    drx,
+                                    dry,
+                                    drz
+                                );
+
+    // 1.3 Translate to the current position
+    mesh_points_translation( 
+                                    nodes_np,
+                                    this->x,
+                                    this->y,
+                                    this->z,
+                                    dx,
+                                    dy,
+                                    dz
+                            );
+
+    // 1.4 Move the current C.O.G position
+    this->cog[0] = this->_cog_backup[0] + dx;
+    this->cog[1] = this->_cog_backup[1] + dy;
+    this->cog[2] = this->_cog_backup[2] + dz;
+
+    /* 2. Update mesh properties */
+    this->_update_panels_properties( this->cog );
+    
+    /* 3. Reset free surface panels intersections */
+    this->_reset_fs_intersect( );
+
 }
 
 
@@ -196,6 +226,15 @@ PanelGeom* StabilityMesh::get_panel(
     }
 
     return p;
+}
+
+
+void    StabilityMesh::_reset_fs_intersect(
+                                                    void
+                                            )
+{
+    this->fs_nodes_np   = 0;
+    this->fs_panels_np  = 0;
 }
 
 
