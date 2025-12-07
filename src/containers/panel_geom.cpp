@@ -115,6 +115,9 @@ void PanelGeom::calculate_properties(
                                     )
 {
     // Calculate ceter of the panel
+    this->center[0] = 0.0;
+    this->center[1] = 0.0;
+    this->center[2] = 0.0;
     for (int i=0; i<this->num_nodes; i++)
     {
         this->center[0] += this->x[i];
