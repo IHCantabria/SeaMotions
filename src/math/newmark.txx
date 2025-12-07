@@ -185,12 +185,6 @@ void    NewmarkBeta<T>::_check_init_kinematics_retrictions(
     {
         if ( this->_restrictions[i] > 0 )
         {
-            // Check position restrictions inconsistency
-            if ( check_zero_eps( this->y0_pos[i], EPS_PRECISION ) )
-            {
-                _print_inconsistency_msg( i, this->y0_pos[i], "Position" );
-            }
-
             // Check velocity restrictions inconsistency
             if ( check_zero_eps( this->y0_vel[i], EPS_PRECISION ) )
             {
@@ -828,7 +822,6 @@ void NewmarkBeta<T>::step( void )
             );
 
     // Apply restrictions to predicted kinematics
-    this->_apply_restrictions( this->y_pos );
     this->_apply_restrictions( this->y_vel );
     this->_apply_restrictions( this->y_acc );
 
