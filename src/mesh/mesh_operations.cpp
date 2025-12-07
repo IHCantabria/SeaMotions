@@ -48,8 +48,8 @@ void    mesh_points_rotation(
 
         // Rotate points using rotation matrix
         x[i] = rot_mat[0] * xa + rot_mat[1] * ya + rot_mat[2] * za;
-        x[i] = rot_mat[3] * xa + rot_mat[4] * ya + rot_mat[5] * za;
-        x[i] = rot_mat[6] * xa + rot_mat[7] * ya + rot_mat[8] * za;
+        y[i] = rot_mat[3] * xa + rot_mat[4] * ya + rot_mat[5] * za;
+        z[i] = rot_mat[6] * xa + rot_mat[7] * ya + rot_mat[8] * za;
 
     }
 
