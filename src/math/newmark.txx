@@ -188,19 +188,19 @@ void    NewmarkBeta<T>::_check_init_kinematics_retrictions(
             // Check position restrictions inconsistency
             if ( check_zero_eps( this->y0_pos[i], EPS_PRECISION ) )
             {
-                _print_inconsistency_msg( i, this->y_pos[i], "Position" );
+                _print_inconsistency_msg( i, this->y0_pos[i], "Position" );
             }
 
             // Check velocity restrictions inconsistency
             if ( check_zero_eps( this->y0_vel[i], EPS_PRECISION ) )
             {
-                _print_inconsistency_msg( i, this->y_pos[i], "Velocity" );
+                _print_inconsistency_msg( i, this->y0_vel[i], "Velocity" );
             }
 
             // Check acceleration restrictions inconsistency
             if ( check_zero_eps( this->y0_acc[i], EPS_PRECISION ) )
             {
-                _print_inconsistency_msg( i, this->y_pos[i], "Acceleration" );
+                _print_inconsistency_msg( i, this->y0_acc[i], "Acceleration" );
             }
         }
     }
