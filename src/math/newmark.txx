@@ -186,13 +186,13 @@ void    NewmarkBeta<T>::_check_init_kinematics_retrictions(
         if ( this->_restrictions[i] > 0 )
         {
             // Check velocity restrictions inconsistency
-            if ( check_zero_eps( this->y0_vel[i], EPS_PRECISION ) )
+            if ( std::abs( this->y0_vel[i] ) > EPS_PRECISION*1000 )
             {
                 _print_inconsistency_msg( i, this->y0_vel[i], "Velocity" );
             }
 
             // Check acceleration restrictions inconsistency
-            if ( check_zero_eps( this->y0_acc[i], EPS_PRECISION ) )
+            if ( std::abs( this->y0_acc[i] ) > EPS_PRECISION*1000 )
             {
                 _print_inconsistency_msg( i, this->y0_acc[i], "Acceleration" );
             }
