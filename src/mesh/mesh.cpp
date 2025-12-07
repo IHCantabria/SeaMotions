@@ -146,6 +146,7 @@ void        Mesh::calculate_fs_radius(
 
 void        Mesh::_create_panels(
                                                int          panel_type,
+                                               bool         auto_force_type,
                                                cusfloat*    cog
                                )
 {
@@ -173,7 +174,8 @@ void        Mesh::_create_panels(
                                             this->z,
                                             this->_is_move_f,
                                             panel_type,
-                                            cog
+                                            cog,
+                                            auto_force_type
                                         );
 
     }
@@ -1175,7 +1177,8 @@ Mesh::Mesh(
                                         std::string body_name,
                                         cusfloat*   cog,
                                         bool        is_fix,
-                                        int         panel_type
+                                        int         panel_type,
+                                        bool        auto_force_type
             )
 {
     // Storage the required input attributes
@@ -1213,7 +1216,7 @@ Mesh::Mesh(
     this->_calculate_bounding_box( );
 
     // Create panels for each element
-    this->_create_panels( panel_type, cog );
+    this->_create_panels( panel_type, auto_force_type, cog );
 
 }
 
@@ -1221,7 +1224,8 @@ Mesh::Mesh(
 Mesh::Mesh(
                                         std::vector<Mesh*>  meshes,
                                         cusfloat*           cog,
-                                        bool                is_fix
+                                        bool                is_fix,
+                                        bool                auto_force_type
             )
 {
     // Storage the required input attributes
@@ -1234,7 +1238,7 @@ Mesh::Mesh(
     this->_calculate_bounding_box( );
 
     // Create panels for each element
-    this->_create_panels( DIFFRAC_PANEL_CODE, cog );
+    this->_create_panels( DIFFRAC_PANEL_CODE, auto_force_type, cog );
 
 }
 

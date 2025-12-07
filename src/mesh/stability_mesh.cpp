@@ -121,7 +121,8 @@ StabilityMesh::StabilityMesh(
                                         body_name,
                                         cog_in,
                                         is_fix,
-                                        panel_type
+                                        panel_type,
+                                        false
                                     )
 {
     // Storage input arguments
@@ -188,7 +189,7 @@ void    StabilityMesh::move(
 
     // 1.3 Translate to the current position
     mesh_points_translation( 
-                                    nodes_np,
+                                    this->nodes_np,
                                     this->x,
                                     this->y,
                                     this->z,

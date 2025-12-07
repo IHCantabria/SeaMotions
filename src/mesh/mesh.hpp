@@ -66,6 +66,7 @@ protected:
     
     void    _create_panels(
                                         int                 panel_type,
+                                        bool                auto_force_type,
                                         cusfloat*           cog
                             );
     
@@ -130,13 +131,15 @@ public:
                                                 std::string         body_name,
                                                 cusfloat*           cog,
                                                 bool                is_fix,
-                                                int                 panel_type
+                                                int                 panel_type,
+                                                bool                auto_force_type=true
                 );
 
             Mesh(
                                                 std::vector<Mesh*>  meshes,
                                                 cusfloat*           cog,
-                                                bool                is_fix
+                                                bool                is_fix,
+                                                bool                auto_force_type=true
 
                 );
 
@@ -174,7 +177,7 @@ public:
                                                 cusfloat*           zn
                                     );
 
-    virtual int        get_elems_np(           
+    virtual int         get_elems_np(           
                                                 void
                                     ) const;
 
