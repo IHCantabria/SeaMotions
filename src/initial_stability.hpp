@@ -24,8 +24,8 @@
 #include <iostream>
 
 // Include local modules
-#include "../config.hpp"
-#include "../containers/panel_geom.hpp"
+#include "config.hpp"
+#include "containers/panel_geom.hpp"
 
 
 template<int NUM_GP, typename T>

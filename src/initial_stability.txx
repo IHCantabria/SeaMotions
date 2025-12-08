@@ -21,8 +21,8 @@
 
 // Include local modules
 #include "initial_stability.hpp"
-#include "../math/math_tools.hpp"
-#include "../math/integration.hpp"
+#include "math/math_tools.hpp"
+#include "math/integration.hpp"
 
 
 template<int NUM_GP, typename T>
