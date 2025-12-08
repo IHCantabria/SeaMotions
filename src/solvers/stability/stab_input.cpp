@@ -190,18 +190,6 @@ void StabInput::_read_input_file(
     // Skip header
     skip_header( infile, line_count, 3 );
 
-    // Read hydrostatics draft
-    target_signal   = "DRAFTGZ";
-    read_signal     = read_channel_name( infile );
-    CHECK_SIGNAL_NAME( read_signal, target_signal, this->_finame, line_count );
-
-    read_list_contraction(
-                                infile,
-                                line_count,
-                                this->_finame,
-                                this->draft_gz
-                            );
-
     // Read hydrostatics heels
     target_signal   = "HEELGZ";
     read_signal     = read_channel_name( infile );
