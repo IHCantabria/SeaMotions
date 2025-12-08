@@ -72,4 +72,11 @@ public:
     /* Define class constructors */
     StabInput( std::string fipath );
 
+    /* Define class public methods */
+
+    /**
+     * @brief   Getter for case folder path internal variable
+     */
+    std::string     get_case_fopath( void ) const;
+
 };

@@ -252,3 +252,9 @@ StabInput::StabInput(
     this->_initialize( );
 
 }
+
+
+std::string    StabInput::get_case_fopath( void ) const
+{
+    return this->_fopath;
+}
