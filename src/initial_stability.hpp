@@ -150,7 +150,7 @@ public:
      * @param   Radius of inertial for the floater. Optional for natural periods prediction
      * @param   Mesh instance pointer to calculate hydrostatic properties at the requested loading condition
      */
-    void    recalculate( 
+    void        recalculate( 
                                         cusfloat    rhow_in,
                                         cusfloat    grav_acc_in,
                                         cusfloat    draft_in,
@@ -158,6 +158,8 @@ public:
                                         cusfloat*   radii_inertia_in,
                                         T*          mesh_in
                             );
+
+    cusfloat    get_area_wl( void ) const;
 
 };
 

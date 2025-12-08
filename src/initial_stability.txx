@@ -26,14 +26,21 @@
 
 
 template<int NUM_GP, typename T>
-void    InitialStability<NUM_GP, T>::_recalculate( 
-                                                cusfloat    rhow_in,
-                                                cusfloat    grav_acc_in,
-                                                cusfloat    draft_in,
-                                                cusfloat*   cog_in,
-                                                cusfloat*   radii_inertia_in,
-                                                T*          mesh_in
-                                        )
+cusfloat    InitialStability<NUM_GP, T>::get_area_wl( void ) const
+{
+    return this->_area_wl;
+}
+
+
+template<int NUM_GP, typename T>
+void        InitialStability<NUM_GP, T>::_recalculate( 
+                                                        cusfloat    rhow_in,
+                                                        cusfloat    grav_acc_in,
+                                                        cusfloat    draft_in,
+                                                        cusfloat*   cog_in,
+                                                        cusfloat*   radii_inertia_in,
+                                                        T*          mesh_in
+                                                    )
 {
     // Reset class storage sytem in order to avoid spurious
     // data in case of reuse
