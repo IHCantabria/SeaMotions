@@ -27,10 +27,33 @@
 #include "../math/euler_transforms.hpp"
 #include "mesh_operations.hpp"
 #include "mesh_refinement.hpp"
-#include "stability_mesh.hpp"
+#include "rigid_body_mesh.hpp"
 
 
-void StabilityMesh::check_underwater_panels(
+void    RigidBodyMesh::_auto_flush( 
+                                        void
+                                    )
+{
+    // Define folder and file names
+    std::string fopath( "S:/seamotions_validation/0_seamotions/1_H50/12_Sphere/_track_mesh_changes" );
+    std::string finame( "auto_flush" );
+
+    // Add seed number to file name
+    std::stringstream ss;
+    ss << finame << "_iter_" << this->_auto_flush_seed;
+    finame = ss.str( );
+
+    // Write mesh
+    std::cout << "Flusing Panels: " << this->_auto_flush_seed << std::endl;
+    this->write_underwater_panels( fopath, finame );
+
+    // Advance seed number
+    this->_auto_flush_seed++;
+
+}
+
+
+void RigidBodyMesh::check_underwater_panels(
                                                 void
                                             )
 {
@@ -71,10 +94,13 @@ void StabilityMesh::check_underwater_panels(
 
     this->fs_nodes_np = last_node_index - this->nodes_np;
 
+    // Flush mesh
+    this->_auto_flush( );
+
 }
 
 
-int     StabilityMesh::get_elems_np(
+int     RigidBodyMesh::get_elems_np(
                                         void
                                     ) const
 {
@@ -82,7 +108,7 @@ int     StabilityMesh::get_elems_np(
 }                        
 
 
-void StabilityMesh::_initialize( 
+void RigidBodyMesh::_initialize( 
                                     void 
                                 )
 {
@@ -109,7 +135,7 @@ void StabilityMesh::_initialize(
 }
 
 
-StabilityMesh::StabilityMesh(  
+RigidBodyMesh::RigidBodyMesh(  
                                 std::string         file_path,
                                 std::string         body_name,
                                 cusfloat*           cog_in,
@@ -140,7 +166,7 @@ StabilityMesh::StabilityMesh(
 }
 
 
-StabilityMesh::~StabilityMesh(
+RigidBodyMesh::~RigidBodyMesh(
                                 void
                             )
 {
@@ -157,7 +183,7 @@ StabilityMesh::~StabilityMesh(
 }
 
 
-void    StabilityMesh::move(
+void    RigidBodyMesh::move(
                                                     cusfloat            dx,
                                                     cusfloat            dy,
                                                     cusfloat            dz,
@@ -212,7 +238,7 @@ void    StabilityMesh::move(
 }
 
 
-PanelGeom* StabilityMesh::get_panel( 
+PanelGeom* RigidBodyMesh::get_panel( 
                                                     const int   idx
                                     ) const
 {
@@ -230,7 +256,7 @@ PanelGeom* StabilityMesh::get_panel(
 }
 
 
-void    StabilityMesh::_reset_fs_intersect(
+void    RigidBodyMesh::_reset_fs_intersect(
                                                     void
                                             )
 {
@@ -239,7 +265,7 @@ void    StabilityMesh::_reset_fs_intersect(
 }
 
 
-void    StabilityMesh::write_underwater_panels(
+void    RigidBodyMesh::write_underwater_panels(
                                                     std::string fopath,
                                                     std::string finame
                                                 )
@@ -253,8 +279,6 @@ void    StabilityMesh::write_underwater_panels(
             past_uw_elems++;
         }
     }
-
-    std::cout << "past_uw_elems: " << past_uw_elems << std::endl;
 
     // Allocate resources to storage local variables
     int         total_nodes_np      = this->nodes_np + this->fs_nodes_np;
@@ -308,13 +332,6 @@ void    StabilityMesh::write_underwater_panels(
             }
             count++;
         }
-    }
-
-    std::cout << "Panel 2:" << std::endl;
-    int id = 2;
-    for ( int i=0; i<this->panels[id]->num_nodes; i++ )
-    {
-        std::cout << " -> " << this->panels[id]->x[i] << " " << this->panels[id]->y[i] << " " << this->panels[id]->z[i] << std::endl;
     }
 
     // Add extra elements coming from the free surface refinement

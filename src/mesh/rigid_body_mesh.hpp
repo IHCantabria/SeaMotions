@@ -25,19 +25,32 @@
 #include "mesh.hpp"
 
 
-class StabilityMesh: public Mesh
+class RigidBodyMesh: public Mesh
 {
 private:
     /* Define private attributes */
-    cusfloat                    _cog_backup[3];                 // Position of the cog w.r.t to the keel. Back-up value used to refresh cog value after a movement.
-    cusfloat*                   _x_backup       = nullptr;      // X node positions back-up. Used to recalculate data when performing affine transformations
-    cusfloat*                   _y_backup       = nullptr;      // Y node positions back-up. Used to recalculate data when performing affine transformations
-    cusfloat*                   _z_backup       = nullptr;      // Z node positions back-up. Used to recalculate data when performing affine transformations
+    int                         _auto_flush_seed    = 0;            // Seed number used to track the number of times that a mesh have been flushed automatically
+    cusfloat                    _cog_backup[3]      ;               // Position of the cog w.r.t to the keel. Back-up value used to refresh cog value after a movement.
+    cusfloat*                   _x_backup           = nullptr;      // X node positions back-up. Used to recalculate data when performing affine transformations
+    cusfloat*                   _y_backup           = nullptr;      // Y node positions back-up. Used to recalculate data when performing affine transformations
+    cusfloat*                   _z_backup           = nullptr;      // Z node positions back-up. Used to recalculate data when performing affine transformations
 
     /* Define private methods */
 
+
     /**
-     * @brief Initialization method to have back-up copies of the input mesh.
+     * @brief   This allows to flush current mesh in a .vtu
+     * 
+     * This method is used for debugging purposes to track how the mesh evolves during
+     * iterations or in time evolution.
+     * 
+     */
+    void    _auto_flush( 
+                            void
+                        );
+
+    /**
+     * @brief   Initialization method to have back-up copies of the input mesh.
      */
     void    _initialize( 
                                     void 
@@ -59,9 +72,9 @@ public:
     int                         fs_panels_np = 0;               // Number of panels aded by the free surface refinement process
 
     /* Define class constructor */
-    StabilityMesh( ) = default;
+    RigidBodyMesh( ) = default;
 
-    StabilityMesh( 
+    RigidBodyMesh( 
                                         std::string         file_path,
                                         std::string         body_name,
                                         cusfloat*           cog_in,
@@ -70,7 +83,7 @@ public:
                                         cusfloat            draft_in
                     );
 
-    ~StabilityMesh( );
+    ~RigidBodyMesh( );
 
     /* Declare class methods */
     void        check_underwater_panels( 
