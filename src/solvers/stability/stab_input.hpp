@@ -50,7 +50,6 @@ public:
     /* Define public attributes */
     std::string                 body_name       ;           // Name of the body to read from the mesh definition.
     cusfloat                    cog[3]          ;           // Storage of body COG
-    std::vector<cusfloat>       draft_gz        ;           // Storage draft points to be computed in GZ curves module
     std::vector<cusfloat>       draft_hs        ;           // Storage draft points to be computed in hydrostatics module
     cusfloat                    grav_acc        = 0.0;      // Gravitational acceleration
     std::vector<cusfloat>       heel_gz_deg     ;           // Storage heeling points to be computes in GZ curves module. Value storaged in degrees.
