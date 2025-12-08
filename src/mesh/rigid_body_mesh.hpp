@@ -30,6 +30,8 @@ class RigidBodyMesh: public Mesh
 private:
     /* Define private attributes */
     int                         _auto_flush_seed    = 0;            // Seed number used to track the number of times that a mesh have been flushed automatically
+    std::string                 _auto_flush_fopath  ;               // Folder path where to storage all the mesh seed outputed by the auto flush functionality
+    bool                        _is_auto_flush      = false;        // Switch to state if the auto_flush_mesh system is working for the current instance
     cusfloat                    _cog_backup[3]      ;               // Position of the cog w.r.t to the keel. Back-up value used to refresh cog value after a movement.
     cusfloat*                   _x_backup           = nullptr;      // X node positions back-up. Used to recalculate data when performing affine transformations
     cusfloat*                   _y_backup           = nullptr;      // Y node positions back-up. Used to recalculate data when performing affine transformations
@@ -48,6 +50,18 @@ private:
     void    _auto_flush( 
                             void
                         );
+
+
+    /**
+     * @brief   Delegate method for class construction
+     * 
+     * This method allows to have a single implementation for class construction 
+     * while having multiple constructor interfaces.
+     */
+    void    _build(
+                            cusfloat*   cog_in,
+                            cusfloat    draft
+                    );
 
     /**
      * @brief   Initialization method to have back-up copies of the input mesh.
@@ -81,6 +95,16 @@ public:
                                         bool                is_fix,
                                         int                 panel_type,
                                         cusfloat            draft_in
+                    );
+
+    RigidBodyMesh( 
+                                        std::string         file_path,
+                                        std::string         body_name,
+                                        cusfloat*           cog_in,
+                                        bool                is_fix,
+                                        int                 panel_type,
+                                        cusfloat            draft_in,
+                                        std::string         auto_flush_fopath
                     );
 
     ~RigidBodyMesh( );

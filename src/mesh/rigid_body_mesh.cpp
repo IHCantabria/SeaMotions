@@ -34,9 +34,8 @@ void    RigidBodyMesh::_auto_flush(
                                         void
                                     )
 {
-    // Define folder and file names
-    std::string fopath( "S:/seamotions_validation/0_seamotions/1_H50/12_Sphere/_track_mesh_changes" );
-    std::string finame( "auto_flush" );
+    // Define file names
+    std::string finame( "auto_flush_mesh" );
 
     // Add seed number to file name
     std::stringstream ss;
@@ -44,12 +43,27 @@ void    RigidBodyMesh::_auto_flush(
     finame = ss.str( );
 
     // Write mesh
-    std::cout << "Flusing Panels: " << this->_auto_flush_seed << std::endl;
-    this->write_underwater_panels( fopath, finame );
+    this->write_underwater_panels( this->_auto_flush_fopath, finame );
 
     // Advance seed number
     this->_auto_flush_seed++;
 
+}
+
+
+void    RigidBodyMesh::_build(
+                                                cusfloat*   cog_in,
+                                                cusfloat    draft_in
+                                )
+{
+    // Storage input arguments
+    this->_cog_backup[0]    = cog_in[0];
+    this->_cog_backup[1]    = cog_in[1];
+    this->_cog_backup[2]    = cog_in[2];
+    this->draft             = draft_in;
+
+    // Initialize class
+    this->_initialize( );
 }
 
 
@@ -151,17 +165,35 @@ RigidBodyMesh::RigidBodyMesh(
                                         false
                                     )
 {
-    // Storage input arguments
-    this->_cog_backup[0]    = cog_in[0];
-    this->_cog_backup[1]    = cog_in[1];
-    this->_cog_backup[2]    = cog_in[2];
-    this->draft             = draft_in;
+    // Call constructor delegate
+    this->_build( cog_in, draft_in );
 
-    // Initialize class
-    this->_initialize( );
+}
 
-    // // Check for underwater panels
-    // this->check_underwater_panels( );
+
+RigidBodyMesh::RigidBodyMesh(  
+                                std::string         file_path,
+                                std::string         body_name,
+                                cusfloat*           cog_in,
+                                bool                is_fix,
+                                int                 panel_type,
+                                cusfloat            draft_in,
+                                std::string         auto_flush_fopath
+                            ): Mesh(
+                                        file_path,
+                                        body_name,
+                                        cog_in,
+                                        is_fix,
+                                        panel_type,
+                                        false
+                                    )
+{
+    // Manage and storage constructor optional data
+    this->_auto_flush_fopath    = auto_flush_fopath;
+    this->_is_auto_flush        = true;
+
+    // Call constructor delegate
+    this->_build( cog_in, draft_in );
 
 }
 
