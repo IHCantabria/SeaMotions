@@ -1,4 +1,23 @@
 
+#
+# Copyright (c) 2025 Sergio Fernández Ruano / IHCantabria
+#
+# This file is part of SeaMotions Software.
+#
+# SeaMotions is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# SeaMotions is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+#
+
 # Import general usage libraries
 import os
 from typing import Callable
@@ -35,7 +54,7 @@ def create_reference_database( folder_path: str, mode: int )->None:
         # Create R11 reference data
         bnd_r11         = Bounds()
         bnd_r11.a_max   = 5.0
-        bnd_r11.a_min   = -5.0
+        bnd_r11.a_min   = -2.0
         bnd_r11.b_max   = 5.0
         bnd_r11.b_min   = -5.0
         bnd_r11.num_a   = 100
@@ -216,5 +235,5 @@ def write_reference_file_3d(
 
 if __name__ == "__main__":
     this_path = os.path.dirname( os.path.abspath(__file__) )
-    target_folder = os.path.join( os.path.dirname(this_path), "..", "tests", "tests_data", "green_depth_tables" )
-    create_reference_database(target_folder, 0)
+    target_folder = os.path.join( os.path.dirname(this_path), "tests", "tests_data", "green_depth_tables" )
+    create_reference_database(target_folder, 1)
