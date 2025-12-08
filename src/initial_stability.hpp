@@ -65,10 +65,24 @@ private:
     cusfloat    _volume_mz      = 0.0;      // Volume of water displaced by the hull at the required draft first order moment Z
 
     /* Declare private class methods */
+
+    /**
+     * @brief   Calculates geometrical properties over target panel
+     */
     void    _process_panel_data(
                                         PanelGeom* paneli
                                 );
 
+    /**
+     * @brief   Public interface to recalculate hydrostatic values for new inputs without destroying the instance.
+     * 
+     * @param   Water density
+     * @param   Gravitational acceleration
+     * @param   Floater draft
+     * @param   COG position of the floater relative to the center of coordiates
+     * @param   Radius of inertial for the floater. Optional for natural periods prediction
+     * @param   Mesh instance pointer to calculate hydrostatic properties at the requested loading condition
+     */
     void    _recalculate(
                                         cusfloat    rhow_in,
                                         cusfloat    grav_acc_in,
@@ -78,16 +92,24 @@ private:
                                         T*          mesh_in
                         );
 
-
+    /**
+     * @brief   Method to wrap up calculation of geometrical mesh properties
+     */
     void    _recalculate_geom_props(
                                         void
                                     );
 
 
+    /**
+     * @brief   Method to calculate hydrostatic properties. It should be executed after geometric properties recalculation
+     */
     void    _recalculate_hydro_props(
                                         void
                                     );
 
+    /**
+     * @brief   Reset state and values of the class.
+     */
     void    _reset( 
                                         void            
                     );
@@ -96,6 +118,16 @@ public:
     /* Define class constructors */
     InitialStability( ) = default;
 
+    /**
+     * @brief   Calculates hydrostatic properties for the input mesh and loading condition
+     * 
+     * @param   Water density
+     * @param   Gravitational acceleration
+     * @param   Floater draft
+     * @param   COG position of the floater relative to the center of coordiates
+     * @param   Radius of inertial for the floater. Optional for natural periods prediction
+     * @param   Mesh instance pointer to calculate hydrostatic properties at the requested loading condition
+     */
     InitialStability( 
                                         cusfloat    rhow_in,
                                         cusfloat    grav_acc_in,
@@ -108,6 +140,16 @@ public:
     /* Define class public methods */
     void    print( void );
 
+    /**
+     * @brief   Public interface to recalculate hydrostatic values for new inputs without destroying the instance.
+     * 
+     * @param   Water density
+     * @param   Gravitational acceleration
+     * @param   Floater draft
+     * @param   COG position of the floater relative to the center of coordiates
+     * @param   Radius of inertial for the floater. Optional for natural periods prediction
+     * @param   Mesh instance pointer to calculate hydrostatic properties at the requested loading condition
+     */
     void    recalculate( 
                                         cusfloat    rhow_in,
                                         cusfloat    grav_acc_in,
