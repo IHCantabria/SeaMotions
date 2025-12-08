@@ -59,6 +59,15 @@ public:
                             cusfloat*   global_force
                         )
     {
+        // Clear previous results to avoid 
+        // spurious data to step into the new step
+        clear_vector( NGP*NGP, this->fx );
+        clear_vector( NGP*NGP, this->fy );
+        clear_vector( NGP*NGP, this->fz );
+        clear_vector( NGP*NGP, this->mx );
+        clear_vector( NGP*NGP, this->my );
+        clear_vector( NGP*NGP, this->mz );
+        
         // Declare local variables to assist during
         // loop iteration
         cusfloat _fm = 0.0;
