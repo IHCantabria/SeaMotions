@@ -27,7 +27,8 @@
 #include "../../interfaces/hydrostatic_force_interface.hpp"
 #include "../../interfaces/stab_interface_t.hpp"
 #include "../../math/integration.hpp"
-#include "../../mesh/stability_mesh.hpp"
+#include "../../math/nonlinear_solvers_math.hpp"
+#include "../../mesh/rigid_body_mesh.hpp"
 #include "../../mesh/mesh.hpp"
 #include "stab_input.hpp"
 #include "../../tools.hpp"
@@ -75,7 +76,7 @@ void        quadrature_panel_hydrostat(
 
 // void calculate_hydrostatic_forces( 
 //                                         Input*          input, 
-//                                         StabilityMesh*  mesh, 
+//                                         RigidBodyMesh*  mesh, 
 //                                         cusfloat*       gforce, 
 //                                         cusfloat*       gmoment 
 //                                 )
@@ -103,14 +104,14 @@ class HydrostaticForces
 {
 private:
     /* Define class private attributes */ 
-    StabilityMesh*  _mesh           = nullptr;  // Storage pointer of the mesh object used to represent the floater external surface
+    RigidBodyMesh*  _mesh           = nullptr;  // Storage pointer of the mesh object used to represent the floater external surface
     T               _force_interf   = nullptr;  // Storage pointer of the functor interface used to calculate the force over the panel
     cusfloat        _weight         = 0.0;      // Weight of the floater to be accounted on external force vector
 
 public:
     /* Define class constructor */
     HydrostaticForces( 
-                            StabilityMesh*  mesh_in,
+                            RigidBodyMesh*  mesh_in,
                             T               force_interf_in,
                             cusfloat        weight_in
                         )
@@ -145,21 +146,120 @@ public:
         clear_vector( _NDOF, rhs );
 
         //  2.2 Calculate hydrostatic forces
+        int count_normal = 0;
+        cusfloat rprev = 0.0;
         for ( int i=0; i<this->_mesh->get_elems_np( ); i++ )
         {
             ( *this->_force_interf )( this->_mesh->get_panel( i ), rhs );
+            if ( this->_mesh->get_panel( i )->normal_vec[2] > 0.1 )
+            {
+                count_normal++;
+                // std::cout << " --> Normal pointing upwards" << std::endl;
+            }
+            // std::cout << "rhs[2]: " << rhs[2] << " - Prev: " << rprev << " - Diff: " << rhs[2] - rprev << " - Normal: " << this->_mesh->get_panel( i )->normal_vec[0] << ", " << this->_mesh->get_panel( i )->normal_vec[1] << ", " << this->_mesh->get_panel( i )->normal_vec[2] << std::endl;
+            rprev = rhs[2];
         }
 
+        // std::cout << "Num Normals: " << count_normal << std::endl;
+        // std::cout << "Hydro Force: " << rhs[2];
         /*  3.  Add body weight to vertical force */
         rhs[2] -= this->_weight;
+        // std::cout << " - Weight: " << this->_weight << " - Diff:" << rhs[2] << std::endl;
 
+    }
+};
+
+
+template<typename T>
+class HydrostaticForcesNLin
+{
+private:
+    /* Define class private attributes */ 
+    RigidBodyMesh*  _mesh           = nullptr;  // Storage pointer of the mesh object used to represent the floater external surface
+    T               _force_interf   = nullptr;  // Storage pointer of the functor interface used to calculate the force over the panel
+    cusfloat        _pos_init[6]    ;           // Storage initial position of the mesh. It will be used to refresh mesh state during execution except for heave
+    cusfloat        _weight         = 0.0;      // Weight of the floater to be accounted on external force vector
+
+public:
+    /* Define class constructor */
+    HydrostaticForcesNLin( 
+                            RigidBodyMesh*  mesh_in,
+                            cusfloat*       pos_in,
+                            T               force_interf_in,
+                            cusfloat        weight_in
+                        )
+    {
+        // Storage input arguments
+        this->_force_interf = force_interf_in;
+        this->_mesh         = mesh_in;
+        this->_weight       = weight_in;
+
+        copy_vector( 6, pos_in, this->_pos_init );
+    }
+
+    /* Define class overloaded operators */
+
+    // Overload = operator to have a functor behaviour
+    // that matches the time solver interface
+    cusfloat operator()   ( 
+                            cusfloat heave
+                        ) const
+    {
+        /*  1.  Move and rotate mesh around centre of gravity to 
+                be the state predicted by the stepper */
+        this->_mesh->move( 
+                            this->_pos_init[0], 
+                            this->_pos_init[1], 
+                            heave, 
+                            this->_pos_init[3], 
+                            this->_pos_init[4], 
+                            this->_pos_init[5] 
+                        );
+
+        /*  2.  Cut mesh along the free surface */
+        this->_mesh->check_underwater_panels( );
+
+        /*  3.  Calculate hydrostatic forces and moments around the centre of 
+                gravity*/
+        
+        //  3.1 Clean input RHS vector in order to acount for old spurious data
+        // clear_vector( _NDOF, rhs );
+        cusfloat rhs[6] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+
+        //  3.2 Calculate hydrostatic forces
+        PanelGeom* paneli = nullptr;
+        int count_normal = 0;
+        cusfloat rprev = 0.0;
+        for ( int i=0; i<this->_mesh->get_elems_np( ); i++ )
+        {
+            paneli = this->_mesh->get_panel( i );
+            if ( paneli->location_zone == -1 )
+            {
+                ( *this->_force_interf )( this->_mesh->get_panel( i ), rhs );
+            }
+            // if ( this->_mesh->get_panel( i )->normal_vec[2] > 0.1 )
+            // {
+                // count_normal++;
+                // std::cout << " --> Normal pointing upwards" << std::endl;
+            // }
+            // std::cout << "rhs[2]: " << rhs[2] << " - Prev: " << rprev << " - Diff: " << rhs[2] - rprev << " - Normal: " << this->_mesh->get_panel( i )->normal_vec[0] << ", " << this->_mesh->get_panel( i )->normal_vec[1] << ", " << this->_mesh->get_panel( i )->normal_vec[2] << std::endl;
+            // rprev = rhs[2];
+        }
+
+        // std::cout << "Num Normals: " << count_normal << std::endl;
+        // std::cout << "Hydro Force: " << rhs[2];
+        /*  3.  Add body weight to vertical force */
+        rhs[2] -= this->_weight;
+        // std::cout << " - Weight: " << this->_weight << " - Diff:" << rhs[2] << std::endl;
+
+        return rhs[2];
     }
 };
 
 
 void calculate_hydrostatic_properties( 
                                         StabInput*      input, 
-                                        StabilityMesh*  mesh
+                                        RigidBodyMesh*  mesh
                                     )
 {
     for ( std::size_t i=0; i<input->draft_hs.size( ); i++ )
@@ -176,7 +276,7 @@ void calculate_hydrostatic_properties(
 }
 
 
-void test_newmark( StabInput* input, StabilityMesh* mesh )
+void test_newmark( StabInput* input, RigidBodyMesh* mesh )
 {
     // Use mesh bounding box to have an estimation of the
     // dynamical properties of object to set up dynamical
@@ -229,13 +329,13 @@ void test_newmark( StabInput* input, StabilityMesh* mesh )
                                 };
 
     // Create system matrixes in CSR format
-    CSRMatrix*  mass_mat        = new CSRMatrix( 36, mass_d     );
-    CSRMatrix*  damp_mat        = new CSRMatrix( 36, damp_d     );
-    CSRMatrix*  stiff_mat       = new CSRMatrix( 36, stiff_d    );
+    CSRMatrix*  mass_mat        = new CSRMatrix( 6, mass_d     );
+    CSRMatrix*  damp_mat        = new CSRMatrix( 6, damp_d     );
+    CSRMatrix*  stiff_mat       = new CSRMatrix( 6, stiff_d    );
 
     // Create restrictions vector
     int         restrictions[6] = { 1, 1, 0, 1, 1, 1 };
-    cusfloat    y0_pos[6]       = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+    cusfloat    y0_pos[6]       = { 0.0, 0.0, -1.72, 0.0, 0.0, 0.0 };
     cusfloat    y0_vel[6]       = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
     cusfloat    y0_acc[6]       = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
 
@@ -255,7 +355,7 @@ void test_newmark( StabInput* input, StabilityMesh* mesh )
     HydrostaticForces                   hydrostatic_force(          
                                                                     mesh,
                                                                     &hydrostat_force_interf, 
-                                                                    mass * input->grav_acc 
+                                                                    input->mass * input->grav_acc 
                                                                 );
 
     // Create Newmark-Beta instance
@@ -278,19 +378,82 @@ void test_newmark( StabInput* input, StabilityMesh* mesh )
         // Advance one step in time
         nwk.step();
 
-        std::cout << "Time: " << nwk.time << " - Z: " << nwk.y_pos[2] << std::endl;
+        // std::cout << "Time: " << nwk.time << " - rhs: " << nwk.rhs[2] << std::endl;
+        if ( std::abs( nwk.rhs[2] ) < 0.1 )
+        {
+            break;
+        }
+        // std::cout << " - X: " << nwk.y_pos[0];
+        // std::cout << " - Y: " << nwk.y_pos[1];
+        // std::cout << " - Z: " << nwk.y_pos[2];
+        // std::cout << " - RX: " << nwk.y_pos[3];
+        // std::cout << " - RY: " << nwk.y_pos[4];
+        // std::cout << " - RZ: " << nwk.y_pos[5] << std::endl;
+        // std::cout << " - VX: " << nwk.y_vel[0];
+        // std::cout << " - VY: " << nwk.y_vel[1];
+        // std::cout << " - VZ: " << nwk.y_vel[2];
+        // std::cout << " - VRX: " << nwk.y_vel[3];
+        // std::cout << " - VRY: " << nwk.y_vel[4];
+        // std::cout << " - VRZ: " << nwk.y_vel[5] << std::endl;
+        // std::cout << " - AX: " << nwk.y_acc[0];
+        // std::cout << " - AY: " << nwk.y_acc[1];
+        // std::cout << " - AZ: " << nwk.y_acc[2];
+        // std::cout << " - ARX: " << nwk.y_acc[3];
+        // std::cout << " - ARY: " << nwk.y_acc[4];
+        // std::cout << " - ARZ: " << nwk.y_acc[5] << std::endl;
+        // std::cout << std::endl;
 
         // Check for time limit
-        if ( nwk.time >=  max_time )
+        if ( nwk.time >=  max_time*10 )
         {
             break;
         }
     }
 
+    std::cout << "Time: " << nwk.time << " - Z: " << nwk.y_pos[2] << " - rhs: " << nwk.rhs[2] << std::endl;
+
     // Delete heap allocations
     delete mass_mat;
     delete stiff_mat;
     delete damp_mat;
+
+}
+
+
+void test_bisection( StabInput* input, RigidBodyMesh* mesh )
+{
+    // Create restrictions vector
+    cusfloat    y0_pos[6]       = { 0.0, 0.0, 0.0, 0.0, 5.0/57.3, 0.0 };
+
+    // Create functor to calculate hydrostatic forces
+    HydrostaticForceInterface<NUM_GP>   hydrostat_force_interf( 
+                                                                    input->water_density, 
+                                                                    input->grav_acc 
+                                                                );
+
+    HydrostaticForcesNLin               hydrostatic_force(          
+                                                                    mesh,
+                                                                    y0_pos,
+                                                                    &hydrostat_force_interf, 
+                                                                    input->mass * input->grav_acc 
+                                                                );
+
+    // Use bisection method to find equilibrium position
+    cusfloat    lz  = mesh->z_max - mesh->z_min;
+    cusfloat    sol = 0.0;
+    int         info = 0;
+    bisection( hydrostatic_force, -lz, lz, 0.01, 1e-6, 100, true, sol, info );
+
+    InitialStability<NUM_GP, RigidBodyMesh> init_stab( 
+                                                            input->water_density,
+                                                            input->grav_acc,
+                                                            sol,
+                                                            input->cog,
+                                                            input->rad_gyr,
+                                                            mesh
+                                                        );
+
+    init_stab.print( );
 
 }
 
@@ -349,16 +512,18 @@ int main( int argc, char* argv[ ] )
     // std::string mesh_fipath = "d:/sergio/0050_OASIS_SM/SeaMotionsStabValidation_files/user_files/0_Box/box_stability_tri.poly";
     // std::string body_name   = "box";
     // cusfloat    cog[3]      = { 0.0, 0.0, 5.0 };
+    std::string auto_flush_fopath( "S:/seamotions_validation/0_seamotions/1_H50/0_Box/1_results/_track_mesh_changes" );
     cusfloat    draft       = 5.0;
 
-    Mesh mesh_ref( input.mesh_fipath, input.body_name, input.cog, false , 0 );
-    StabilityMesh mesh_mov( input.mesh_fipath, input.body_name, input.cog, false , 0, draft );
+    Mesh mesh_ref( input.mesh_fipath, input.body_name, input.cog, false , 0, false );
+    RigidBodyMesh mesh_mov( input.mesh_fipath, input.body_name, input.cog, false , 0, draft, auto_flush_fopath );
 
+    
     mesh_mov.write( 
                         case_fopath
                 );
 
-    mesh_mov.move( 0.0, 0.0, -draft, 0.0, 0.0, 0.0 );
+    mesh_mov.move( 0.0, 0.0, -draft, 30.0/57.3, 0.0, 0.0 );
     mesh_mov.check_underwater_panels( );
 
     mesh_mov.write_underwater_panels( 
@@ -366,7 +531,7 @@ int main( int argc, char* argv[ ] )
                                         input.mesh_finame + "_tri"
                                     );
 
-    InitialStability<NUM_GP, StabilityMesh> init_stab( 
+    InitialStability<NUM_GP, RigidBodyMesh> init_stab( 
                                                             input.water_density,
                                                             input.grav_acc,
                                                             draft,
@@ -376,7 +541,8 @@ int main( int argc, char* argv[ ] )
                                                         );
     init_stab.print( );
 
-    test_newmark( &input, &mesh_mov );
+    // test_newmark( &input, &mesh_mov );
+    test_bisection( &input, &mesh_mov );
     
     // calculate_hydrostatic_properties( &input, &mesh_mov );
 
