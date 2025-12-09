@@ -136,8 +136,8 @@ void    InitialStability<NUM_GP, T>::_recalculate_hydro_props(
                                 );
 
     // Calculate moment to heel / trim 1 deg
-    this->_mch              = this->_mass * this->_grav_acc * this->_gmx * std::sin( PI / 180.0 );
-    this->_mct              = this->_mass * this->_grav_acc * this->_gmy * std::sin( PI / 180.0 );
+    this->_mch              = this->_mass * this->_grav_acc * this->_gmx * std::sin( PI / 180.0 ) / 1000.0;
+    this->_mct              = this->_mass * this->_grav_acc * this->_gmy * std::sin( PI / 180.0 ) / 1000.0;
 
     /* Calculate hydrostatic stiffness */
     // Clean hydrostatic stiffness matrix
