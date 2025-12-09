@@ -30,6 +30,67 @@
 #include "../../version.hpp"
 
 
+void    StabOutput::_save_1D_input_data(
+                                            H5::Group&              hs_gp,
+                                            const char*             field_name,
+                                            hsize_t*                dset_dims,
+                                            std::vector<cusfloat>&  vec
+                                        )
+{
+    CREATE_DATASET( 
+                            hs_gp,
+                            field_name,
+                            _DS_1D_NP,
+                            dset_dims,
+                            cusfloat_h5
+                    );
+
+    hsize_t offset[_DS_1D_NP] = { 0 };
+    SAVE_DATASET_CHUNK(
+                            hs_gp,
+                            field_name,
+                            _DS_1D_NP,
+                            dset_dims,
+                            dset_dims,
+                            offset,
+                            vec.data( ),
+                            cusfloat_h5
+                        );
+}
+
+
+void    StabOutput::_create_hs_scalar_field( 
+                                                H5::Group&          hs_gp,
+                                                const char*         field_name
+                                            )
+{
+    // Create dataset for waterplane area
+    CREATE_DATASET( 
+                        hs_gp,
+                        field_name,
+                        _DS_HS_S_NP,
+                        this->_ds_hs_s,
+                        cusfloat_h5
+                    );
+}
+
+
+void    StabOutput::_create_hs_vector_field( 
+                                                H5::Group&          hs_gp,
+                                                const char*         field_name
+                                            )
+{
+    // Create dataset for waterplane area
+    CREATE_DATASET( 
+                        hs_gp,
+                        field_name,
+                        _DS_HS_V_NP,
+                        this->_ds_hs_v,
+                        cusfloat_h5
+                    );
+}
+
+
 StabOutput::StabOutput( 
                                             StabInput*      input
                 )
@@ -88,138 +149,42 @@ StabOutput::StabOutput(
         // Create group for hydrostatics
         H5::Group hs_gp( fid.createGroup( _GN_HYDROSTATS ) );
 
-        // Create dataset for hydrostatics drafts and storage the data
-        CREATE_DATASET( 
-                            hs_gp,
-                            _DN_DRAFT,
-                            _DS_1D_NP,
-                            this->_ds_hs_d,
-                            cusfloat_h5
-                        );
+        // Create and storage input vector fields
+        this->_save_1D_input_data( 
+                                        hs_gp,
+                                        _DN_DRAFT,
+                                        this->_ds_hs_d,
+                                        this->_input->draft_hs
+                                    );
 
-        hsize_t offset_hs_drafts[_DS_1D_NP] = { 0 };
-        SAVE_DATASET_CHUNK(
-                            hs_gp,
-                            _DN_DRAFT,
-                            _DS_1D_NP,
-                            this->_ds_hs_d,
-                            this->_ds_hs_d,
-                            offset_hs_drafts,
-                            this->_input->draft_hs.data( ),
-                            cusfloat_h5
-                        );
-
-        // Create dataset for hydrostatics heels and storage the data
-        CREATE_DATASET( 
-                            hs_gp,
-                            _DN_HEEL,
-                            _DS_1D_NP,
-                            this->_ds_hs_h,
-                            cusfloat_h5
-                        );
-
-        hsize_t offset_hs_heels[_DS_1D_NP] = { 0 };
-        SAVE_DATASET_CHUNK(
-                            hs_gp,
-                            _DN_HEEL,
-                            _DS_1D_NP,
-                            this->_ds_hs_h,
-                            this->_ds_hs_h,
-                            offset_hs_heels,
-                            this->_input->heel_hs_rad.data( ),
-                            cusfloat_h5
-                        );
-
-        // Create dataset for waterplane area
-        CREATE_DATASET( 
-                            hs_gp,
-                            _DN_AREA_WL,
-                            _DS_HS_S_NP,
-                            this->_ds_hs_s,
-                            cusfloat_h5
-                        );
-
-        // Create dataset for waterplane area first order moment w.r.t X axis
-        CREATE_DATASET( 
-                            hs_gp,
-                            _DN_AREA_MX_WL,
-                            _DS_HS_S_NP,
-                            this->_ds_hs_s,
-                            cusfloat_h5
-                        );
+        this->_save_1D_input_data( 
+                                        hs_gp,
+                                        _DN_HEEL,
+                                        this->_ds_hs_h,
+                                        this->_input->heel_hs_deg
+                                    );
         
-        // Create dataset for waterplane area first order moment w.r.t Y axis
-        CREATE_DATASET( 
-                            hs_gp,
-                            _DN_AREA_MY_WL,
-                            _DS_HS_S_NP,
-                            this->_ds_hs_s,
-                            cusfloat_h5
-                        );
-
-        // Create dataset for waterplane area second order moment w.r.t X axis
-        CREATE_DATASET( 
-                            hs_gp,
-                            _DN_AREA_IXX_WL,
-                            _DS_HS_S_NP,
-                            this->_ds_hs_s,
-                            cusfloat_h5
-                        );
-
-        // Create dataset for waterplane area second order moment w.r.t Y axis
-        CREATE_DATASET( 
-                            hs_gp,
-                            _DN_AREA_IYY_WL,
-                            _DS_HS_S_NP,
-                            this->_ds_hs_s,
-                            cusfloat_h5
-                        );
-
-        // Create dataset for position of the center of buoyancy
-        CREATE_DATASET( 
-                            hs_gp,
-                            _DN_COB,
-                            _DS_HS_V_NP,
-                            this->_ds_hs_v,
-                            cusfloat_h5
-                        );
-
-        // Create dataset for hull displacement
-        CREATE_DATASET( 
-                            hs_gp,
-                            _DN_DISPLACEMENT,
-                            _DS_HS_S_NP,
-                            this->_ds_hs_s,
-                            cusfloat_h5
-                        );
-
-        // Create dataset for hull underwater volume
-        CREATE_DATASET( 
-                            hs_gp,
-                            _DN_VOLUME,
-                            _DS_HS_S_NP,
-                            this->_ds_hs_s,
-                            cusfloat_h5
-                        );
-
-        // Create dataset for hull underwater volume first order moment w.r.t X axis
-        CREATE_DATASET( 
-                            hs_gp,
-                            _DN_VOLUME_MX,
-                            _DS_HS_S_NP,
-                            this->_ds_hs_s,
-                            cusfloat_h5
-                        );
-
-        // Create dataset for hull underwater volume first order moment w.r.t Y axis
-        CREATE_DATASET( 
-                            hs_gp,
-                            _DN_VOLUME_MY,
-                            _DS_HS_S_NP,
-                            this->_ds_hs_s,
-                            cusfloat_h5
-                        );
+        // Create scalar datasets for hydrostatics in the output file
+        this->_create_hs_scalar_field(  hs_gp, _DN_AREA_WL          );
+        this->_create_hs_scalar_field(  hs_gp, _DN_AREA_IXX_WL      );
+        this->_create_hs_scalar_field(  hs_gp, _DN_AREA_IYY_WL      );
+        this->_create_hs_scalar_field(  hs_gp, _DN_AREA_MX_WL       );
+        this->_create_hs_scalar_field(  hs_gp, _DN_AREA_MY_WL       );
+        this->_create_hs_scalar_field(  hs_gp, _DN_BMX              );
+        this->_create_hs_scalar_field(  hs_gp, _DN_BMY              );
+        this->_create_hs_scalar_field(  hs_gp, _DN_DISPLACEMENT     );
+        this->_create_hs_scalar_field(  hs_gp, _DN_GMX              );
+        this->_create_hs_scalar_field(  hs_gp, _DN_GMY              );
+        this->_create_hs_scalar_field(  hs_gp, _DN_KMX              );
+        this->_create_hs_scalar_field(  hs_gp, _DN_KMY              );
+        this->_create_hs_scalar_field(  hs_gp, _DN_VOLUME           );
+        this->_create_hs_scalar_field(  hs_gp, _DN_VOLUME_MX        );
+        this->_create_hs_scalar_field(  hs_gp, _DN_VOLUME_MY        );
+        this->_create_hs_scalar_field(  hs_gp, _DN_VOLUME_MZ        );
         
+        // Create scalar datasets for hydrostatics in the output file
+        this->_create_hs_vector_field(  hs_gp, _DN_COB              );
+
     }
 
     if ( input->out_gz )
