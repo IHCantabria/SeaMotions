@@ -45,7 +45,7 @@ void    StabInput::_initialize(
     // Convert hydrostatic and gz curves heelings to 
     // radians
     this->heel_gz_rad.resize( this->heel_gz_deg.size( ) );
-    for ( std::size_t i=0; i<this->heel_hs_deg.size( ); i++ )
+    for ( std::size_t i=0; i<this->heel_gz_deg.size( ); i++ )
     {
         this->heel_gz_rad[i] = deg_to_rad( this->heel_gz_deg[i] );
     }
