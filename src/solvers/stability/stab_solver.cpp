@@ -44,6 +44,9 @@ void    StabSolver::calculate_hydrostatics(
                 // Loop over drafts
                 for ( std::size_t k=0; k<draft_np; k++ )
                 {
+                    // Clear last state to avoid spurious results
+                    clear_vector<cusfloat, 6>( _pos );
+                    
                     // Update postiion vector
                     _pos[2]     = -this->_input->draft_hs[k];
                     _pos[3+i]   = this->_input->heel_hs_rad[j];
@@ -51,8 +54,11 @@ void    StabSolver::calculate_hydrostatics(
                     // Move mesh to the prescribed postion
                     this->_mesh->move( _pos[0], _pos[1], _pos[2], _pos[3], _pos[4], _pos[5] );
 
+                    // Recalculate mesh intersection
+                    this->_mesh->check_underwater_panels( );
+
                     // Calculate hydrostatic values
-                    this->_hydrostatics[j*heel_np+k].recalculate(
+                    this->_hydrostatics[j*draft_np+k].recalculate(
                                                                     this->_input->water_density,
                                                                     this->_input->grav_acc,
                                                                     this->_input->draft_hs[k],
