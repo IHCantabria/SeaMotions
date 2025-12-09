@@ -26,7 +26,7 @@
 
 // Include local modules
 #include "../../config.hpp"
-#include "../../containers/body_def.hpp"
+#include "../../containers/load_condition.hpp"
 
 
 class StabInput
@@ -48,24 +48,26 @@ private:
     
 public:
     /* Define public attributes */
-    std::string                 body_name       ;           // Name of the body to read from the mesh definition.
-    cusfloat                    cog[3]          ;           // Storage of body COG
-    std::vector<cusfloat>       draft_hs        ;           // Storage draft points to be computed in hydrostatics module
-    cusfloat                    grav_acc        = 0.0;      // Gravitational acceleration
-    std::vector<cusfloat>       heel_gz_deg     ;           // Storage heeling points to be computes in GZ curves module. Value storaged in degrees.
-    std::vector<cusfloat>       heel_gz_rad     ;           // Storage heeling points to be computes in GZ curves module. Value storaged in radians.
-    std::vector<cusfloat>       heel_hs_deg     ;           // Storage heeling points to be computes in hydrostatics module. Value storaged in degrees.
-    std::vector<cusfloat>       heel_hs_rad     ;           // Storage heeling points to be computes in hydrostatics module. Value storaged in radians.
-    bool                        is_bodies       = false;    // Flag to check that the body definitions where read correctly
-    cusfloat                    mass            ;           // Storage of body masses for the equilibrium problem
-    std::string                 mesh_finame     ;           // Mesh file name containing the geometrical description of the body to analyze
-    std::string                 mesh_fipath     ;           // Mesh file path containing the geometrical description of the body to analyze
-    bool                        out_eq          ;           // Flag to switch the output of the equilibrium algorithm
-    bool                        out_gz          ;           // Flag to switch the output of GZ curves
-    bool                        out_hs          ;           // Flag to switch the output of hydrostatic values
-    cusfloat                    rad_gyr[3]      ;           // Radius of gyration from the cog
-    std::vector<std::string>    tag_eq          ;           // Storage of equilibrium tag cases names
-    cusfloat                    water_density   = 0.0;      // Water density of the stability test location
+    std::string                 body_name           ;           // Name of the body to read from the mesh definition.
+    cusfloat                    cog[3]              ;           // Storage of body COG
+    std::vector<cusfloat>       draft_hs            ;           // Storage draft points to be computed in hydrostatics module
+    cusfloat                    grav_acc            = 0.0;      // Gravitational acceleration
+    std::vector<cusfloat>       heel_gz_deg         ;           // Storage heeling points to be computes in GZ curves module. Value storaged in degrees.
+    std::vector<cusfloat>       heel_gz_rad         ;           // Storage heeling points to be computes in GZ curves module. Value storaged in radians.
+    std::vector<cusfloat>       heel_hs_deg         ;           // Storage heeling points to be computes in hydrostatics module. Value storaged in degrees.
+    std::vector<cusfloat>       heel_hs_rad         ;           // Storage heeling points to be computes in hydrostatics module. Value storaged in radians.
+    bool                        is_bodies           = false;    // Flag to check that the body definitions where read correctly
+    std::vector<LoadCondition>  load_conds          ;           // Storage input loading conditions description
+    std::vector<std::string>    load_conds_finame   ;           // Storage input loading conditions file names
+    cusfloat                    mass                ;           // Storage of body masses for the equilibrium problem
+    std::string                 mesh_finame         ;           // Mesh file name containing the geometrical description of the body to analyze
+    std::string                 mesh_fipath         ;           // Mesh file path containing the geometrical description of the body to analyze
+    bool                        out_eq              ;           // Flag to switch the output of the equilibrium algorithm
+    bool                        out_gz              ;           // Flag to switch the output of GZ curves
+    bool                        out_hs              ;           // Flag to switch the output of hydrostatic values
+    cusfloat                    rad_gyr[3]          ;           // Radius of gyration from the cog
+    std::vector<std::string>    tag_eq              ;           // Storage of equilibrium tag cases names
+    cusfloat                    water_density       = 0.0;      // Water density of the stability test location
 
 
     /* Define class constructors */

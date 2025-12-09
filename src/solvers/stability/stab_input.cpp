@@ -110,46 +110,11 @@ void StabInput::_read_input_file(
     CHECK_SIGNAL_NAME( read_signal, target_signal, this->_finame, line_count );
 
     //////////////////////////////////////////////
-    /************** Body Definition *************/
+    /************** Mesh Definition *************/
     //////////////////////////////////////////////
 
     // Skip header
     skip_header( infile, line_count, 3 );
-
-    // Read mass
-    target_signal   = "BodyMass";
-    read_signal     = read_channel_value( infile, this->mass );
-    CHECK_SIGNAL_NAME( read_signal, target_signal, this->_finame, line_count );
-
-    // Read COGX
-    target_signal   = "COGX";
-    read_signal     = read_channel_value( infile, this->cog[0] );
-    CHECK_SIGNAL_NAME( read_signal, target_signal, this->_finame, line_count );
-
-    // Read COGY
-    target_signal   = "COGY";
-    read_signal     = read_channel_value( infile, this->cog[1] );
-    CHECK_SIGNAL_NAME( read_signal, target_signal, this->_finame, line_count );
-
-    // Read COGZ
-    target_signal   = "COGZ";
-    read_signal     = read_channel_value( infile, this->cog[2] );
-    CHECK_SIGNAL_NAME( read_signal, target_signal, this->_finame, line_count );
-
-    // Read RX
-    target_signal   = "RX";
-    read_signal     = read_channel_value( infile, this->rad_gyr[0] );
-    CHECK_SIGNAL_NAME( read_signal, target_signal, this->_finame, line_count );
-
-    // Read RY
-    target_signal   = "RY";
-    read_signal     = read_channel_value( infile, this->rad_gyr[1] );
-    CHECK_SIGNAL_NAME( read_signal, target_signal, this->_finame, line_count );
-
-    // Read RZ
-    target_signal   = "RZ";
-    read_signal     = read_channel_value( infile, this->rad_gyr[2] );
-    CHECK_SIGNAL_NAME( read_signal, target_signal, this->_finame, line_count );
 
     // Read Mesh file nanme
     target_signal   = "BodyName";
@@ -160,6 +125,33 @@ void StabInput::_read_input_file(
     target_signal   = "MeshFile";
     read_signal     = read_channel_value( infile, this->mesh_finame );
     CHECK_SIGNAL_NAME( read_signal, target_signal, this->_finame, line_count );
+
+    //////////////////////////////////////////////
+    /************** Body Definition *************/
+    //////////////////////////////////////////////
+
+    // Skip header
+    skip_header( infile, line_count, 3 );
+
+    // Read bodies name definition
+    target_signal = "LCFN";
+    read_channel_list(
+                            infile,
+                            this->_finame,
+                            target_signal,
+                            line_count,
+                            this->load_conds_finame
+                        );
+    
+    // Read load conditions
+    for ( std::size_t i=0; i<this->load_conds_finame.size( ); i++ )
+    {
+        // Store load condition instance
+        this->load_conds.emplace_back(
+                                        this->_fopath,
+                                        this->load_conds_finame[i]
+                                    );
+    }
 
     //////////////////////////////////////////////
     /************ Output Channels ***************/
