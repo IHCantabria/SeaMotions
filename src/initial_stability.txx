@@ -26,152 +26,200 @@
 
 
 template<int NUM_GP, typename T>
-cusfloat    InitialStability<NUM_GP, T>::get_area_wl( void ) const
+cusfloat            InitialStability<NUM_GP, T>::get_area_wl( void ) const
 {
     return this->_area_wl;
 }
 
 
 template<int NUM_GP, typename T>
-void        InitialStability<NUM_GP, T>::_recalculate( 
-                                                        cusfloat    rhow_in,
-                                                        cusfloat    grav_acc_in,
-                                                        cusfloat    draft_in,
-                                                        cusfloat*   cog_in,
-                                                        cusfloat*   radii_inertia_in,
-                                                        T*          mesh_in
-                                                    )
+const cusfloat*     InitialStability<NUM_GP, T>::get_area_wl_cog( void ) const
 {
-    // Reset class storage sytem in order to avoid spurious
-    // data in case of reuse
-    this->_reset( );
-
-    // Storage scalar input arguments
-    this->_rhow             = rhow_in;
-    this->_grav_acc         = grav_acc_in;
-    this->_draft            = draft_in;
-    this->_mesh             = mesh_in;
-
-    // Storage vector input arguments
-    copy_vector( 3, cog_in, this->_cog );
-    copy_vector( 3, radii_inertia_in, this->_rad_gyr );
-
-    // Recalculate geomertrical properties of the 
-    // mesh to feed hydrostatics values calculation
-    this->_recalculate_geom_props( );
-
-    // Re-calculate hydrostatic properties based
-    // on the inputs and the geometrical properties
-    // of the mesh
-    this->_recalculate_hydro_props( );
-
+    return this->_area_wl_cog;
 }
 
 
 template<int NUM_GP, typename T>
-void InitialStability<NUM_GP, T>::_recalculate_geom_props(
-                                                                void
-                                                            )
+cusfloat            InitialStability<NUM_GP, T>::get_area_wl_mx( void ) const
 {
-    // Loop over fully underwater panels to get their properties
-    PanelGeom* paneli   = nullptr;
-    for ( int i=0; i<this->_mesh->get_elems_np( ); i++ )
-    {
-        paneli = this->_mesh->get_panel( i );
-        if ( 
-                paneli->type == 0
-                &&
-                paneli->location_zone == PANEL_LOC_UW 
-            )
-        {
-            // Process panel data
-            this->_process_panel_data( paneli );
-
-        }
-
-    }
-
+    return this->_area_wl_mx;
 }
 
 
 template<int NUM_GP, typename T>
-void    InitialStability<NUM_GP, T>::_recalculate_hydro_props(
-                                                                void
-                                                            )
+cusfloat            InitialStability<NUM_GP, T>::get_area_wl_my( void ) const
 {
-    // Calcualte mass
-    this->_mass             = this->_volume * this->_rhow;
+    return this->_area_wl_my;
+}
 
-    // Calculate water plane area COG position
-    this->_area_wl_cog[0]   = this->_area_wl_my / this->_area_wl;
-    this->_area_wl_cog[1]   = this->_area_wl_mx / this->_area_wl;
-    this->_area_wl_cog[2]   = 0.0;
 
-    // Calculate underwater volume COG position
-    this->_cob[0]           = this->_volume_mx / this->_volume;
-    this->_cob[1]           = this->_volume_my / this->_volume;
-    this->_cob[2]           = this->_draft + this->_volume_mz / this->_volume;
+template<int NUM_GP, typename T>
+cusfloat            InitialStability<NUM_GP, T>::get_area_wl_ixx( void ) const
+{
+    return this->_area_wl_ixx;
+}
 
-    // Calculate metacentric radius
-    this->_bmx              = this->_area_wl_ixx / this->_volume;
-    this->_bmy              = this->_area_wl_iyy / this->_volume;
 
-    // Calculate metacentric height w.r.t the keel
-    this->_kmx              = this->_cob[2] + this->_bmx;
-    this->_kmy              = this->_cob[2] + this->_bmy;
+template<int NUM_GP, typename T>
+cusfloat            InitialStability<NUM_GP, T>::get_area_wl_ixy( void ) const
+{
+    return this->_area_wl_ixy;
+}
 
-    // Calculate metacentric height
-    this->_gmx              = this->_kmx - this->_cog[2];
-    this->_gmy              = this->_kmy - this->_cog[2];
 
-    // Calculate tons per cm of inmersion
-    this->_tpc              = ( 
-                                    this->_rhow 
-                                    * 
-                                    this->_area_wl 
-                                    /
-                                    1000            // To tonnes
-                                    / 
-                                    100             // Per centimiter
-                                );
+template<int NUM_GP, typename T>
+cusfloat            InitialStability<NUM_GP, T>::get_area_wl_iyy( void ) const
+{
+    return this->_area_wl_iyy;
+}
 
-    // Calculate moment to heel / trim 1 deg
-    this->_mch              = this->_mass * this->_grav_acc * this->_gmx * std::sin( PI / 180.0 ) / 1000.0;
-    this->_mct              = this->_mass * this->_grav_acc * this->_gmy * std::sin( PI / 180.0 ) / 1000.0;
 
-    /* Calculate hydrostatic stiffness */
-    // Clean hydrostatic stiffness matrix
-    clear_vector( 36, this->_hydstiffmat );
+template<int NUM_GP, typename T>
+cusfloat            InitialStability<NUM_GP, T>::get_bmx( void ) const
+{
+    return this->_bmx;
+}
 
-    // K33 - Heave
-    this->_hydstiffmat[14] = this->_grav_acc * this->_rhow * this->_area_wl;
 
-    // K34 - K43 - Heave/Roll
-    this->_hydstiffmat[15] = this->_grav_acc * this->_rhow * this->_area_wl_my;
-    this->_hydstiffmat[20] = this->_grav_acc * this->_rhow * this->_area_wl_my;
+template<int NUM_GP, typename T>
+cusfloat            InitialStability<NUM_GP, T>::get_bmy( void ) const
+{
+    return this->_bmy;
+}
 
-    // K35 - K53 - Heave/Pitch
-    this->_hydstiffmat[16] = - this->_grav_acc * this->_rhow * this->_area_wl_mx;
-    this->_hydstiffmat[26] = - this->_grav_acc * this->_rhow * this->_area_wl_mx;
 
-    // K44 - Roll
-    this->_hydstiffmat[21] = this->_grav_acc * this->_rhow * ( this->_area_wl_ixx + this->_volume * ( this->_cob[2] - this->_cog[2] ) );
+template<int NUM_GP, typename T>
+const cusfloat*     InitialStability<NUM_GP, T>::get_cob( void ) const
+{
+    return this->_cob;
+}
 
-    // K45 - K54 - Roll/Pitch
-    this->_hydstiffmat[22] = this->_grav_acc * this->_rhow * this->_area_wl_ixy;
-    this->_hydstiffmat[27] = this->_grav_acc * this->_rhow * this->_area_wl_ixy;
 
-    // K55 - Pitch
-    this->_hydstiffmat[28] = this->_grav_acc * this->_rhow * ( this->_area_wl_iyy + this->_volume * ( this->_cob[2] - this->_cog[2] ) );
+template<int NUM_GP, typename T>
+cusfloat            InitialStability<NUM_GP, T>::get_draft( void ) const
+{
+    return this->_draft;
+}
 
-    // K46 - K56 - Yaw
-    this->_hydstiffmat[23] = - this->_grav_acc * this->_rhow * ( this->_cob[0] - this->_cog[0] ) * this->_volume;
-    this->_hydstiffmat[29] = - this->_grav_acc * this->_rhow * ( this->_cob[1] - this->_cog[1] ) * this->_volume;
 
-    /* Calculate eigen periods */
-    this->_eigen_period[0] = 2.0 * PI * std::sqrt( this->_mass / this->_hydstiffmat[14] );
-    this->_eigen_period[1] = 2.0 * PI * std::sqrt( ( this->_mass * pow2s( this->_rad_gyr[0] ) ) / this->_hydstiffmat[21] );
-    this->_eigen_period[2] = 2.0 * PI * std::sqrt( ( this->_mass * pow2s( this->_rad_gyr[1] ) ) / this->_hydstiffmat[28] );
+template<int NUM_GP, typename T>
+const cusfloat*     InitialStability<NUM_GP, T>::get_eigen_period( void ) const
+{
+    return this->_eigen_period;
+}
+
+
+template<int NUM_GP, typename T>
+cusfloat            InitialStability<NUM_GP, T>::get_gmx( void ) const
+{
+    return this->_gmx;
+}
+
+
+template<int NUM_GP, typename T>
+cusfloat            InitialStability<NUM_GP, T>::get_gmy( void ) const
+{
+    return this->_gmy;
+}
+
+
+template<int NUM_GP, typename T>
+const cusfloat*     InitialStability<NUM_GP, T>::get_hydrostiffmat( void ) const
+{
+    return this->_hydstiffmat;
+}
+
+
+template<int NUM_GP, typename T>
+cusfloat            InitialStability<NUM_GP, T>::get_kmx( void ) const
+{
+    return this->_kmx;
+}
+
+
+template<int NUM_GP, typename T>
+cusfloat            InitialStability<NUM_GP, T>::get_kmy( void ) const
+{
+    return this->_kmy;
+}
+
+
+template<int NUM_GP, typename T>
+cusfloat            InitialStability<NUM_GP, T>::get_mass( void ) const
+{
+    return this->_mass;
+}
+
+
+template<int NUM_GP, typename T>
+cusfloat            InitialStability<NUM_GP, T>::get_mch( void ) const
+{
+    return this->_mch;
+}
+
+
+template<int NUM_GP, typename T>
+cusfloat            InitialStability<NUM_GP, T>::get_mct( void ) const
+{
+    return this->_mct;
+}
+
+
+template<int NUM_GP, typename T>
+cusfloat            InitialStability<NUM_GP, T>::get_tpc( void ) const
+{
+    return this->_tpc;
+}
+
+
+template<int NUM_GP, typename T>
+cusfloat            InitialStability<NUM_GP, T>::get_volume( void ) const
+{
+    return this->_volume;
+}
+
+
+template<int NUM_GP, typename T>
+cusfloat            InitialStability<NUM_GP, T>::get_volume_mx( void ) const
+{
+    return this->_volume_mx;
+}
+
+
+template<int NUM_GP, typename T>
+cusfloat            InitialStability<NUM_GP, T>::get_volume_my( void ) const
+{
+    return this->_volume_my;
+}
+
+
+template<int NUM_GP, typename T>
+cusfloat            InitialStability<NUM_GP, T>::get_volume_mz( void ) const
+{
+    return this->_volume_mz;
+}
+
+
+template<int NUM_GP, typename T>
+InitialStability<NUM_GP, T>::InitialStability(
+                                                    cusfloat    rhow_in,
+                                                    cusfloat    grav_acc_in,
+                                                    cusfloat    draft_in,
+                                                    cusfloat*   cog_in,
+                                                    cusfloat*   radii_inertia_in,
+                                                    T*          mesh
+                                                )
+{
+    // Call private class implementation for the recalculation
+    // of the hydrostatic values
+    this->_recalculate(
+                            rhow_in,
+                            grav_acc_in,
+                            draft_in,
+                            cog_in,
+                            radii_inertia_in,
+                            mesh
+                        );
 }
 
 
@@ -322,29 +370,6 @@ void InitialStability<NUM_GP, T>::_process_panel_data(
 }
 
 
-template<int NUM_GP, typename T>
-InitialStability<NUM_GP, T>::InitialStability(
-                                                    cusfloat    rhow_in,
-                                                    cusfloat    grav_acc_in,
-                                                    cusfloat    draft_in,
-                                                    cusfloat*   cog_in,
-                                                    cusfloat*   radii_inertia_in,
-                                                    T*          mesh
-                                                )
-{
-    // Call private class implementation for the recalculation
-    // of the hydrostatic values
-    this->_recalculate(
-                            rhow_in,
-                            grav_acc_in,
-                            draft_in,
-                            cog_in,
-                            radii_inertia_in,
-                            mesh
-                        );
-}
-
-
 /**
  * @brief Print initial stabilty properties on the CLI.
  *
@@ -398,6 +423,173 @@ void    InitialStability<NUM_GP, T>::print(
 }
 
 
+template<int NUM_GP, typename T>
+void        InitialStability<NUM_GP, T>::_recalculate( 
+                                                        cusfloat    rhow_in,
+                                                        cusfloat    grav_acc_in,
+                                                        cusfloat    draft_in,
+                                                        cusfloat*   cog_in,
+                                                        cusfloat*   radii_inertia_in,
+                                                        T*          mesh_in
+                                                    )
+{
+    // Reset class storage sytem in order to avoid spurious
+    // data in case of reuse
+    this->_reset( );
+
+    // Storage scalar input arguments
+    this->_rhow             = rhow_in;
+    this->_grav_acc         = grav_acc_in;
+    this->_draft            = draft_in;
+    this->_mesh             = mesh_in;
+
+    // Storage vector input arguments
+    copy_vector( 3, cog_in, this->_cog );
+    copy_vector( 3, radii_inertia_in, this->_rad_gyr );
+
+    // Recalculate geomertrical properties of the 
+    // mesh to feed hydrostatics values calculation
+    this->_recalculate_geom_props( );
+
+    // Re-calculate hydrostatic properties based
+    // on the inputs and the geometrical properties
+    // of the mesh
+    this->_recalculate_hydro_props( );
+
+}
+
+
+template<int NUM_GP, typename T>
+void    InitialStability<NUM_GP, T>::recalculate( 
+                                                    cusfloat    rhow_in,
+                                                    cusfloat    grav_acc_in,
+                                                    cusfloat    draft_in,
+                                                    cusfloat*   cog_in,
+                                                    cusfloat*   radii_inertia_in,
+                                                    T*          mesh
+                                        )
+{
+    // Call private class implementation for the recalculation
+    // of the hydrostatic values
+    this->_recalculate(
+                            rhow_in,
+                            grav_acc_in,
+                            draft_in,
+                            cog_in,
+                            radii_inertia_in,
+                            mesh
+                        );
+    
+}
+
+
+template<int NUM_GP, typename T>
+void InitialStability<NUM_GP, T>::_recalculate_geom_props(
+                                                                void
+                                                            )
+{
+    // Loop over fully underwater panels to get their properties
+    PanelGeom* paneli   = nullptr;
+    for ( int i=0; i<this->_mesh->get_elems_np( ); i++ )
+    {
+        paneli = this->_mesh->get_panel( i );
+        if ( 
+                paneli->type == 0
+                &&
+                paneli->location_zone == PANEL_LOC_UW 
+            )
+        {
+            // Process panel data
+            this->_process_panel_data( paneli );
+
+        }
+
+    }
+
+}
+
+
+template<int NUM_GP, typename T>
+void    InitialStability<NUM_GP, T>::_recalculate_hydro_props(
+                                                                void
+                                                            )
+{
+    // Calcualte mass
+    this->_mass             = this->_volume * this->_rhow;
+
+    // Calculate water plane area COG position
+    this->_area_wl_cog[0]   = this->_area_wl_my / this->_area_wl;
+    this->_area_wl_cog[1]   = this->_area_wl_mx / this->_area_wl;
+    this->_area_wl_cog[2]   = 0.0;
+
+    // Calculate underwater volume COG position
+    this->_cob[0]           = this->_volume_mx / this->_volume;
+    this->_cob[1]           = this->_volume_my / this->_volume;
+    this->_cob[2]           = this->_draft + this->_volume_mz / this->_volume;
+
+    // Calculate metacentric radius
+    this->_bmx              = this->_area_wl_ixx / this->_volume;
+    this->_bmy              = this->_area_wl_iyy / this->_volume;
+
+    // Calculate metacentric height w.r.t the keel
+    this->_kmx              = this->_cob[2] + this->_bmx;
+    this->_kmy              = this->_cob[2] + this->_bmy;
+
+    // Calculate metacentric height
+    this->_gmx              = this->_kmx - this->_cog[2];
+    this->_gmy              = this->_kmy - this->_cog[2];
+
+    // Calculate tons per cm of inmersion
+    this->_tpc              = ( 
+                                    this->_rhow 
+                                    * 
+                                    this->_area_wl 
+                                    /
+                                    1000            // To tonnes
+                                    / 
+                                    100             // Per centimiter
+                                );
+
+    // Calculate moment to heel / trim 1 deg
+    this->_mch              = this->_mass * this->_grav_acc * this->_gmx * std::sin( PI / 180.0 ) / 1000.0;
+    this->_mct              = this->_mass * this->_grav_acc * this->_gmy * std::sin( PI / 180.0 ) / 1000.0;
+
+    /* Calculate hydrostatic stiffness */
+    // Clean hydrostatic stiffness matrix
+    clear_vector( 36, this->_hydstiffmat );
+
+    // K33 - Heave
+    this->_hydstiffmat[14] = this->_grav_acc * this->_rhow * this->_area_wl;
+
+    // K34 - K43 - Heave/Roll
+    this->_hydstiffmat[15] = this->_grav_acc * this->_rhow * this->_area_wl_my;
+    this->_hydstiffmat[20] = this->_grav_acc * this->_rhow * this->_area_wl_my;
+
+    // K35 - K53 - Heave/Pitch
+    this->_hydstiffmat[16] = - this->_grav_acc * this->_rhow * this->_area_wl_mx;
+    this->_hydstiffmat[26] = - this->_grav_acc * this->_rhow * this->_area_wl_mx;
+
+    // K44 - Roll
+    this->_hydstiffmat[21] = this->_grav_acc * this->_rhow * ( this->_area_wl_ixx + this->_volume * ( this->_cob[2] - this->_cog[2] ) );
+
+    // K45 - K54 - Roll/Pitch
+    this->_hydstiffmat[22] = this->_grav_acc * this->_rhow * this->_area_wl_ixy;
+    this->_hydstiffmat[27] = this->_grav_acc * this->_rhow * this->_area_wl_ixy;
+
+    // K55 - Pitch
+    this->_hydstiffmat[28] = this->_grav_acc * this->_rhow * ( this->_area_wl_iyy + this->_volume * ( this->_cob[2] - this->_cog[2] ) );
+
+    // K46 - K56 - Yaw
+    this->_hydstiffmat[23] = - this->_grav_acc * this->_rhow * ( this->_cob[0] - this->_cog[0] ) * this->_volume;
+    this->_hydstiffmat[29] = - this->_grav_acc * this->_rhow * ( this->_cob[1] - this->_cog[1] ) * this->_volume;
+
+    /* Calculate eigen periods */
+    this->_eigen_period[0] = 2.0 * PI * std::sqrt( this->_mass / this->_hydstiffmat[14] );
+    this->_eigen_period[1] = 2.0 * PI * std::sqrt( ( this->_mass * pow2s( this->_rad_gyr[0] ) ) / this->_hydstiffmat[21] );
+    this->_eigen_period[2] = 2.0 * PI * std::sqrt( ( this->_mass * pow2s( this->_rad_gyr[1] ) ) / this->_hydstiffmat[28] );
+}
+
+
 /**
  * @brief Resets the internal state of the InitialStability object.
  *
@@ -441,28 +633,4 @@ void    InitialStability<NUM_GP, T>::_reset(
     clear_vector( 3,  this->_eigen_period   );
     clear_vector( 36, this->_hydstiffmat    );
 
-}
-
-
-template<int NUM_GP, typename T>
-void    InitialStability<NUM_GP, T>::recalculate( 
-                                                    cusfloat    rhow_in,
-                                                    cusfloat    grav_acc_in,
-                                                    cusfloat    draft_in,
-                                                    cusfloat*   cog_in,
-                                                    cusfloat*   radii_inertia_in,
-                                                    T*          mesh
-                                        )
-{
-    // Call private class implementation for the recalculation
-    // of the hydrostatic values
-    this->_recalculate(
-                            rhow_in,
-                            grav_acc_in,
-                            draft_in,
-                            cog_in,
-                            radii_inertia_in,
-                            mesh
-                        );
-    
 }

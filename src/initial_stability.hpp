@@ -129,16 +129,20 @@ public:
      * @param   Mesh instance pointer to calculate hydrostatic properties at the requested loading condition
      */
     InitialStability( 
-                                        cusfloat    rhow_in,
-                                        cusfloat    grav_acc_in,
-                                        cusfloat    draft_in,
-                                        cusfloat*   cog_in,
-                                        cusfloat*   radii_inertia_in,
-                                        T*          mesh_in
+                        cusfloat    rhow_in,
+                        cusfloat    grav_acc_in,
+                        cusfloat    draft_in,
+                        cusfloat*   cog_in,
+                        cusfloat*   radii_inertia_in,
+                        T*          mesh_in
                     );
 
     /* Define class public methods */
-    void    print( void );
+
+    /**
+     * @brief   Print out on CLI the main hydrostatic properties calculated during the analysis.
+     */
+    void                print( void );
 
     /**
      * @brief   Public interface to recalculate hydrostatic values for new inputs without destroying the instance.
@@ -150,16 +154,189 @@ public:
      * @param   Radius of inertial for the floater. Optional for natural periods prediction
      * @param   Mesh instance pointer to calculate hydrostatic properties at the requested loading condition
      */
-    void        recalculate( 
+    void                recalculate( 
                                         cusfloat    rhow_in,
                                         cusfloat    grav_acc_in,
                                         cusfloat    draft_in,
                                         cusfloat*   cog_in,
                                         cusfloat*   radii_inertia_in,
                                         T*          mesh_in
-                            );
+                                    );
 
-    cusfloat    get_area_wl( void ) const;
+    /**
+     * @brief   Getter method for water plane area
+     * 
+     * @return  Area in m²
+     */
+    cusfloat            get_area_wl( void ) const;
+
+    /**
+     * @brief   Getter method for water plane area C.O.G
+     * 
+     * @return  Vector of size 3 containing X, Y, Z coordinates of the water plane area C.O.G
+     */
+    const cusfloat*     get_area_wl_cog( void ) const;
+
+    /**
+     * @brief   Getter method for water plane area first order moment around X axis
+     * 
+     * @return  Moment of area in m³.
+     */
+    cusfloat            get_area_wl_mx( void ) const;
+
+    /**
+     * @brief   Getter method for water plane area first order moment around Y axis
+     * 
+     * @return  Moment of area in m³.
+     */
+    cusfloat            get_area_wl_my( void ) const;
+
+    /**
+     * @brief   Getter method for water plane area second order moment around X axis
+     * 
+     * @return  Inertia of area in m4.
+     */
+    cusfloat            get_area_wl_ixx( void ) const;
+
+    /**
+     * @brief   Getter method for water plane area second order moment combined X and Y axis
+     * 
+     * @return  Inertia of area in m4.
+     */
+    cusfloat            get_area_wl_ixy( void ) const;
+
+    /**
+     * @brief   Getter method for water plane area second order moment around Y axis
+     * 
+     * @return  Inertia of area in m4.
+     */
+    cusfloat            get_area_wl_iyy( void ) const;
+
+    /**
+     * @brief   Getter method for metacentric radius around X axis
+     * 
+     * @return  Floating point value representing the metacentric radius around X axis.
+     */
+    cusfloat            get_bmx( void ) const;
+
+    /**
+     * @brief   Getter method for metacentric radius around Y axis
+     * 
+     * @return  Floating point value representing the metacentric radius around Y axis.
+     */
+    cusfloat            get_bmy( void ) const;
+
+    /**
+     * @brief   Getter method for centre of buoyancy
+     * 
+     * @return  Vector of size 3 containing X, Y, Z coordinates of the underwater volume C.O.G
+     */
+    const cusfloat*     get_cob( void ) const;
+
+    /**
+     * @brief   Getter method for the eigen periods
+     * 
+     * @return  Floater draft of the current load condition
+     */
+    cusfloat            get_draft( void ) const;
+
+    /**
+     * @brief   Getter method for the floater eigen periods for the current loading condition
+     * 
+     * @return  Vector of size 3 containing: Heave, Roll, Pitch eigen periods measured in seconds
+     */
+    const cusfloat*     get_eigen_period( void ) const;
+
+    /**
+     * @brief   Getter method for metacentric height around X axis
+     * 
+     * @return  Floating point value representing the metacentric height around X axis.
+     */
+    cusfloat            get_gmx( void ) const;
+
+    /**
+     * @brief   Getter method for metacentric height around Y axis
+     * 
+     * @return  Floating point value representing the metacentric height around Y axis.
+     */
+    cusfloat            get_gmy( void ) const;
+
+    /**
+     * @brief   Getter method for the hydrostatic stiffness matrix.
+     * 
+     * @return  Vector of size 36 (6x6 row major) containing each coefficient of the matrix: c00, c01, c02, ..., cn0, cn1, ..., cnn.
+     */
+    const cusfloat*     get_hydrostiffmat( void ) const;
+
+    /**
+     * @brief   Getter method for the total metacentric height (Vertical position of Metacentre above the keel) around X axis
+     * 
+     * @return  Floating point value representing the total metacentric height around X axis.
+     */
+    cusfloat            get_kmx( void ) const;
+
+    /**
+     * @brief   Getter method for the total metacentric height (Vertical position of Metacentre above the keel) around X axis
+     * 
+     * @return  Floating point value representing the total metacentric height around Y axis.
+     */
+    cusfloat            get_kmy( void ) const;
+
+    /**
+     * @brief   Getter method for the mass of the underwater volume
+     * 
+     * @return  Floating point value representing the mass of the underwater volume in kilograms
+     */
+    cusfloat            get_mass( void ) const;
+
+    /**
+     * @brief   Getter method for the moment to change heel 1 degree
+     * 
+     * @return  Floating point value representing the mch in tonnes·meters
+     */
+    cusfloat            get_mch( void ) const;
+
+    /**
+     * @brief   Getter method for the moment to change trim 1 degree
+     * 
+     * @return  Floating point value representing the mct in tonnes·meters
+     */
+    cusfloat            get_mct( void ) const;
+
+    /**
+     * @brief   Getter method for the tonnes per 1 cm of inmersion
+     * 
+     * @return  Floating point value representing the tpc in tonnes
+     */
+    cusfloat            get_tpc( void ) const;
+
+    /**
+     * @brief   Getter method for the underwater volume
+     * 
+     * @return  Floating point value representing the underwater volume in m³
+     */
+    cusfloat            get_volume( void ) const;
+
+    /**
+     * @brief   Getter method for the underwater volume first order moment around X axis
+     * 
+     * @return  Floating point value representing the underwater volume in m4.
+     */
+    cusfloat            get_volume_mx( void ) const;
+
+    /**
+     * @brief   Getter method for the underwater volume first order moment around Y axis
+     * 
+     * @return  Floating point value representing the underwater volume in m4.
+     */
+    cusfloat            get_volume_my( void ) const;
+
+    /**
+     * @brief   Getter method for the underwater volume first order moment around Z axis
+     * 
+     * @return  Floating point value representing the underwater volume in m4.
+     */
+    cusfloat            get_volume_mz( void ) const;
 
 };
 
