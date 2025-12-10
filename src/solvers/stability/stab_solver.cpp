@@ -23,6 +23,52 @@
 #include "stab_solver.hpp"
 
 
+void    StabSolver::calcualte_gz(
+                                            void
+                                        )
+{
+    // Define local variables
+    std::size_t heel_np = this->_input->heel_gz_rad.size( );
+
+    // Check if output is enabled
+    if ( this->_input->out_gz )
+    {
+        std::size_t index = 0;
+
+        // Loop over axis ( Roll and Pitch )
+        for ( std::size_t i=0; i<this->_input->load_conds.size( ); i++ )
+        {
+            // Loop over loading conditions
+            for ( std::size_t j=0; j<2; j++ )
+            {
+                // Loop over heelings
+                for ( std::size_t k=0; k<heel_np; k++ )
+                {
+                    // Calculate GZ value for the current heeling angle
+                    index   = j * heel_np + k;
+                    this->_gz[index].update(
+                                                &(this->_input->load_conds[i]),
+                                                this->_mesh,
+                                                this->_input->heel_gz_rad[k],
+                                                j,
+                                                this->_input->water_density,
+                                                this->_input->grav_acc
+                                            );
+                }
+            }
+    
+            // Storage GZ data
+            this->_output->save_gz( 
+                                        this->_input->load_conds_name[i],
+                                        this->_gz 
+                                    );
+
+        }
+    }
+
+}
+
+
 void    StabSolver::calculate_hydrostatics(
                                             void
                                         )
@@ -85,7 +131,7 @@ void    StabSolver::_initialize(
     this->_hydrostatics.resize( this->_input->draft_hs.size( ) * this->_input->heel_hs_rad.size( ) );
 
     // Alloate space for gz results
-    this->_gz.resize( this->_input->heel_gz_rad.size( ) );
+    this->_gz.resize( 2 * this->_input->heel_gz_rad.size( ) );
 
 }
 

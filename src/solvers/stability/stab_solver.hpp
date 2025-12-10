@@ -21,6 +21,7 @@
 #pragma once
 
 // Include local modules
+#include "gz_point.hpp"
 #include "../../initial_stability.hpp"
 #include "stab_input.hpp"
 #include "stab_output.hpp"
@@ -33,7 +34,7 @@ class StabSolver
 
 private:
     /* Define private attributes */
-    std::vector<cusfloat>   _gz             ;           // Vector storaging GZ results for an axis
+    std::vector<GZPoint>    _gz             ;           // Vector storaging GZ results for an axis
     std::vector<IS>         _hydrostatics   ;           // Vector storaging hydrostatic results for an axis
     StabInput*              _input          = nullptr;  // Pointer to Stability simulations input system
     RigidBodyMesh*          _mesh           = nullptr;  // Pointer to rigid body dynamic mesh
@@ -65,5 +66,10 @@ public:
      * submerged volume and its centre of gravity; metacentric radius, tons per inmmersion centimiter.
      */
     void    calculate_hydrostatics( void );
+
+    /**
+     * @brief   Calulate GZ curves for the target loading condition.
+     */
+    void    calcualte_gz( void );
 
 };
