@@ -36,8 +36,8 @@
 {
     // Read load condition file
     this->_read_load_condition_file( 
-                                        this->_fopath,
-                                        this->_finame
+                                        fopath_in,
+                                        finame_in
                                     );
 }
 
