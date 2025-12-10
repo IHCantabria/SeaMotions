@@ -37,7 +37,6 @@ private:
     int                     _axis_id        = 0;        // Axis identifier to set if GZ is calculated about X or Y axis
     HSInitStab              _hs_final_state ;           // Hydrostatics final equilibrium state for the imposed heeling angle
     cusfloat                _grav_acc       = 0.0;      // Gravitational acceleration [m/s^2]
-    cusfloat                _gz             = 0.0;      // GZ value [m]
     cusfloat                _heel           = 0.0;      // Heeling angle [rad]
     const LoadCondition*    _load_cond      = nullptr;  // Pointer to load condition definition
     cusfloat                _mass           = 0.0;      // Mass at the current loading condition [kg]
