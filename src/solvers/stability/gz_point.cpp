@@ -145,7 +145,7 @@ void    GZPoint::_update(
     cusfloat    sol     = 0.0;
     int         info    = 0;
     
-    bisection( hydrostatic_force, -lz, lz, 0.01, 1e-6, 100, true, sol, info );
+    bisection( hydrostatic_force, -lz, lz, 0.01, 1e-6, 100, false, sol, info );
 
     this->_hs_final_state   = HSInitStab( 
                                             this->_water_density,
