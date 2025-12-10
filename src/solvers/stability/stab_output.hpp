@@ -24,7 +24,9 @@
 #include <string>
 
 // Include local modules
+#include "gz_point.hpp"
 #include "../../initial_stability.hpp"
+#include "../../mesh/rigid_body_mesh.hpp"
 #include "stab_input.hpp"
 
 
