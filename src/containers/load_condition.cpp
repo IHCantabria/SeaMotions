@@ -23,7 +23,7 @@
 #include <fstream>
 
 // Include local modules
-#include "../../inout/reader.hpp"
+#include "../inout/reader.hpp"
 #include "load_condition.hpp"
 #include "../tools.hpp"
 #include "../version.hpp"
