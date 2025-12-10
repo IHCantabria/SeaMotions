@@ -30,12 +30,26 @@
 #include "../../version.hpp"
 
 
+void    StabOutput::_create_gz_field(
+                                        H5::Group&          gz_gp,
+                                        const char*         field_name
+                                    )
+{
+    CREATE_DATASET( 
+                        gz_gp,
+                        field_name,
+                        _DS_GZ_NP,
+                        this->_ds_gz,
+                        cusfloat_h5
+                    );
+}
+
+
 void    StabOutput::_create_hs_scalar_field( 
                                                 H5::Group&          hs_gp,
                                                 const char*         field_name
                                             )
 {
-    // Create dataset for waterplane area
     CREATE_DATASET( 
                         hs_gp,
                         field_name,
@@ -88,6 +102,52 @@ void    StabOutput::_save_1D_input_data(
                             vec.data( ),
                             cusfloat_h5
                         );
+}
+
+
+void    StabOutput::save_gz(
+                                            std::string&    lc_name,
+                                            GZPVec&         gz_points
+                                )
+{
+    // Open file unit
+    H5::H5File  fid( this->_results_fipath.c_str( ), H5F_ACC_RDWR );
+
+    // Take the mesh group
+    H5::Group   gz_gp   = fid.openGroup( _GN_GZ );
+
+    // Extact gz points to a buffer
+    cusfloat*   buffer  = generate_empty_vector<cusfloat>( 2 * this->_input->heel_gz_rad.size( ) );
+
+    for ( std::size_t i=0; i<2; i++ )
+    {
+        for ( std::size_t j=0; j<this->_input->heel_gz_rad.size( ); j++ )
+        {
+            std::size_t index   = i * this->_input->heel_gz_rad.size( ) + j;
+            buffer[index]       = gz_points[index].get_gz( );
+        }
+    }
+
+    // Save data into disk
+    hsize_t _ds_gz_d[_DS_GZ_NP] = { 2, static_cast<hsize_t>( this->_input->heel_gz_rad.size( ) ) };
+    hsize_t offset[_DS_GZ_NP]   = { 0, 0 };
+
+    SAVE_DATASET_CHUNK(
+                            gz_gp,
+                            lc_name.c_str( ),
+                            _DS_GZ_NP,
+                            this->_ds_gz,
+                            _ds_gz_d,
+                            offset,
+                            buffer,
+                            cusfloat_h5
+                        );
+
+    // Delete local buffer
+    mkl_free( buffer );
+
+    // Close file unit
+    fid.close( );
 }
 
 
@@ -277,34 +337,22 @@ StabOutput::StabOutput(
         H5::Group gz_gp( fid.createGroup( _GN_GZ ) );
 
         // Create dataset for GZ curves heelings and storage the data
-        CREATE_DATASET( 
-                            gz_gp,
-                            _DN_HEEL,
-                            _DS_1D_NP,
-                            this->_ds_gz_h,
-                            cusfloat_h5
-                        );
-
-        hsize_t offset_gz_heels[_DS_1D_NP] = { 0 };
-        SAVE_DATASET_CHUNK(
-                            gz_gp,
-                            _DN_HEEL,
-                            _DS_1D_NP,
-                            this->_ds_gz_h,
-                            this->_ds_gz_h,
-                            offset_gz_heels,
-                            this->_input->heel_gz_rad.data( ),
-                            cusfloat_h5
-                        );
+        this->_save_1D_input_data( 
+                                        gz_gp,
+                                        _DN_HEEL,
+                                        this->_ds_gz_h,
+                                        this->_input->heel_gz_rad
+                                    );
 
         // Create dataset for GZ curves
-        CREATE_DATASET( 
-                            gz_gp,
-                            _DN_GZ,
-                            _DS_GZ_NP,
-                            this->_ds_gz,
-                            cusfloat_h5
-                        );
+        for ( std::size_t i=0; i<this->_input->load_conds.size( ); i++ )
+        {
+            this->_create_gz_field(
+                                        gz_gp,
+                                        this->_input->load_conds_name[i].c_str( )
+                                    );
+        }
+
     }
 
     // Close file unit

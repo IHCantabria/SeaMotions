@@ -149,6 +149,14 @@ private:
     /* Define class private methods */
 
     /**
+     * @brief   Create GZ field in the output file
+     */
+    void    _create_gz_field(
+                                        H5::Group&          gz_gp,
+                                        const char*         field_name
+                            );
+
+    /**
      * @brief   Create hydrostatics scalar field in the output file
      */
     void    _create_hs_scalar_field(
@@ -216,6 +224,18 @@ public:
     void    save_hydrostatics(
                                         int             axis_id,
                                         InitStabVec&    hydrostats
+                                );
+
+    /**
+     * @brief   Save GZ curves into the output file
+     * 
+     * @param    lc_name     Loading condition name
+     * @param    gz_points   Vector of GZPoint objects containing GZ curve points
+     * 
+     */
+    void    save_gz(
+                                        std::string&    lc_name,
+                                        GZPVec&         gz_points
                                 );
     
 };
