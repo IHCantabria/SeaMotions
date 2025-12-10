@@ -124,6 +124,13 @@ cusfloat            InitialStability<NUM_GP, T>::get_gmy( void ) const
 
 
 template<int NUM_GP, typename T>
+const cusfloat*     InitialStability<NUM_GP, T>::get_gz( void ) const
+{
+    return this->_gz;
+}
+
+
+template<int NUM_GP, typename T>
 const cusfloat*     InitialStability<NUM_GP, T>::get_hydrostiffmat( void ) const
 {
     return this->_hydstiffmat;
@@ -202,12 +209,12 @@ cusfloat            InitialStability<NUM_GP, T>::get_volume_mz( void ) const
 
 template<int NUM_GP, typename T>
 InitialStability<NUM_GP, T>::InitialStability(
-                                                    cusfloat    rhow_in,
-                                                    cusfloat    grav_acc_in,
-                                                    cusfloat    draft_in,
-                                                    cusfloat*   cog_in,
-                                                    cusfloat*   radii_inertia_in,
-                                                    T*          mesh
+                                                    const cusfloat      rhow_in,
+                                                    const cusfloat      grav_acc_in,
+                                                    const cusfloat      draft_in,
+                                                    const cusfloat*     cog_in,
+                                                    const cusfloat*     radii_inertia_in,
+                                                    T*                  mesh
                                                 )
 {
     // Call private class implementation for the recalculation
@@ -425,12 +432,12 @@ void    InitialStability<NUM_GP, T>::print(
 
 template<int NUM_GP, typename T>
 void        InitialStability<NUM_GP, T>::_recalculate( 
-                                                        cusfloat    rhow_in,
-                                                        cusfloat    grav_acc_in,
-                                                        cusfloat    draft_in,
-                                                        cusfloat*   cog_in,
-                                                        cusfloat*   radii_inertia_in,
-                                                        T*          mesh_in
+                                                        const cusfloat      rhow_in,
+                                                        const cusfloat      grav_acc_in,
+                                                        const cusfloat      draft_in,
+                                                        const cusfloat*     cog_in,
+                                                        const cusfloat*     radii_inertia_in,
+                                                        T*                  mesh_in
                                                     )
 {
     // Reset class storage sytem in order to avoid spurious
@@ -461,12 +468,12 @@ void        InitialStability<NUM_GP, T>::_recalculate(
 
 template<int NUM_GP, typename T>
 void    InitialStability<NUM_GP, T>::recalculate( 
-                                                    cusfloat    rhow_in,
-                                                    cusfloat    grav_acc_in,
-                                                    cusfloat    draft_in,
-                                                    cusfloat*   cog_in,
-                                                    cusfloat*   radii_inertia_in,
-                                                    T*          mesh
+                                                    const cusfloat      rhow_in,
+                                                    const cusfloat      grav_acc_in,
+                                                    const cusfloat      draft_in,
+                                                    const cusfloat*     cog_in,
+                                                    const cusfloat*     radii_inertia_in,
+                                                    T*                  mesh
                                         )
 {
     // Call private class implementation for the recalculation
@@ -538,6 +545,10 @@ void    InitialStability<NUM_GP, T>::_recalculate_hydro_props(
     // Calculate metacentric height
     this->_gmx              = this->_kmx - this->_cog[2];
     this->_gmy              = this->_kmy - this->_cog[2];
+
+    // Calculate gz arms
+    this->_gz[0]            = this->_cob[1] - this->_cog[1];   // Roll
+    this->_gz[1]            = this->_cob[0] - this->_cog[0];   // Pitch
 
     // Calculate tons per cm of inmersion
     this->_tpc              = ( 

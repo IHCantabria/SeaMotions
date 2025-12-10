@@ -48,7 +48,8 @@ private:
     cusfloat    _eigen_period[3];           // Eigen periods: Heave, Roll and Pitch
     cusfloat    _gmx            = 0.0;      // Metacentric height aroun X axis
     cusfloat    _gmy            = 0.0;      // Metacentric height aroun Y axis
-    cusfloat    _grav_acc       = 0.0;      // Gravitational acceleration 
+    cusfloat    _grav_acc       = 0.0;      // Gravitational acceleration
+    cusfloat    _gz[2]          ;           // Restoring lever arms for current loading condition. GZ[0] -> Roll, GZ[1] -> Pitch
     cusfloat    _hydstiffmat[36];           // Hydrostatic stiffness matrix 
     cusfloat    _kmx            = 0.0;      // Height of the metacentre over the keel for X axis
     cusfloat    _kmy            = 0.0;      // Height of the metacentre over the keel for Y axis
@@ -84,12 +85,12 @@ private:
      * @param   Mesh instance pointer to calculate hydrostatic properties at the requested loading condition
      */
     void    _recalculate(
-                                        cusfloat    rhow_in,
-                                        cusfloat    grav_acc_in,
-                                        cusfloat    draft_in,
-                                        cusfloat*   cog_in,
-                                        cusfloat*   radii_inertia_in,
-                                        T*          mesh_in
+                                        const cusfloat      rhow_in,
+                                        const cusfloat      grav_acc_in,
+                                        const cusfloat      draft_in,
+                                        const cusfloat*     cog_in,
+                                        const cusfloat*     radii_inertia_in,
+                                        T*                  mesh_in
                         );
 
     /**
@@ -129,12 +130,12 @@ public:
      * @param   Mesh instance pointer to calculate hydrostatic properties at the requested loading condition
      */
     InitialStability( 
-                        cusfloat    rhow_in,
-                        cusfloat    grav_acc_in,
-                        cusfloat    draft_in,
-                        cusfloat*   cog_in,
-                        cusfloat*   radii_inertia_in,
-                        T*          mesh_in
+                        const cusfloat      rhow_in,
+                        const cusfloat      grav_acc_in,
+                        const cusfloat      draft_in,
+                        const cusfloat*     cog_in,
+                        const cusfloat*     radii_inertia_in,
+                        T*                  mesh_in
                     );
 
     /* Define class public methods */
@@ -155,12 +156,12 @@ public:
      * @param   Mesh instance pointer to calculate hydrostatic properties at the requested loading condition
      */
     void                recalculate( 
-                                        cusfloat    rhow_in,
-                                        cusfloat    grav_acc_in,
-                                        cusfloat    draft_in,
-                                        cusfloat*   cog_in,
-                                        cusfloat*   radii_inertia_in,
-                                        T*          mesh_in
+                                        const cusfloat      rhow_in,
+                                        const cusfloat      grav_acc_in,
+                                        const cusfloat      draft_in,
+                                        const cusfloat*     cog_in,
+                                        const cusfloat*     radii_inertia_in,
+                                        T*                  mesh_in
                                     );
 
     /**
@@ -260,6 +261,13 @@ public:
      * @return  Floating point value representing the metacentric height around Y axis.
      */
     cusfloat            get_gmy( void ) const;
+
+    /**
+     * @brief   Getter method GZ arms for the current loading condition
+     * 
+     * @return  Vector of size 3 containing the level arms. GZ[0] -> Roll, GZ[1] -> Pitch
+     */
+    const cusfloat*     get_gz( void ) const;
 
     /**
      * @brief   Getter method for the hydrostatic stiffness matrix.
