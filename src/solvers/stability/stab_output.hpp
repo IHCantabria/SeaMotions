@@ -132,6 +132,10 @@ const hsize_t _DS_HS_V_NP   = 4;    // Hydrostatics vector fields
 struct StabOutput
 {
 private:
+    /* Defince class local type aliases  */
+    using   GZPVec      = std::vector< GZPoint >;
+    using   InitStabVec = std::vector< InitialStability<NUM_GP, RigidBodyMesh> >;
+
     /* Define class private attributes */
     hsize_t         _ds_gz_h[_DS_1D_NP]     = { 0 };            // Dataset shape vector for GZ heeling points
     hsize_t         _ds_gz[_DS_GZ_NP]       = { 0, 0 };         // Dataset shape vector for GZ curves: Axis | Heelings
@@ -195,18 +199,23 @@ private:
                                 );
     
 public:
-    // Define class attributes
-
     // Define class constructors and destructor
     StabOutput(
                     StabInput* input
                 );
 
     // Define class methods
-    template<typename T>
+
+    /**
+    * @brief   Save hydrostatics results into the output file
+    * 
+    * @param    axis_id     Axis identifier ( 0: Roll, 1: Pitch )
+    * @param    hydrostats  Vector of InitialStability objects containing hydrostatics results      
+    * 
+    **/
     void    save_hydrostatics(
-                                        int         axis_id,
-                                        T&          hydrostats
+                                        int             axis_id,
+                                        InitStabVec&    hydrostats
                                 );
     
 };

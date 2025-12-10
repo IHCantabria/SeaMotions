@@ -30,35 +30,6 @@
 #include "../../version.hpp"
 
 
-void    StabOutput::_save_1D_input_data(
-                                            H5::Group&              hs_gp,
-                                            const char*             field_name,
-                                            hsize_t*                dset_dims,
-                                            std::vector<cusfloat>&  vec
-                                        )
-{
-    CREATE_DATASET( 
-                            hs_gp,
-                            field_name,
-                            _DS_1D_NP,
-                            dset_dims,
-                            cusfloat_h5
-                    );
-
-    hsize_t offset[_DS_1D_NP] = { 0 };
-    SAVE_DATASET_CHUNK(
-                            hs_gp,
-                            field_name,
-                            _DS_1D_NP,
-                            dset_dims,
-                            dset_dims,
-                            offset,
-                            vec.data( ),
-                            cusfloat_h5
-                        );
-}
-
-
 void    StabOutput::_create_hs_scalar_field( 
                                                 H5::Group&          hs_gp,
                                                 const char*         field_name
@@ -88,6 +59,119 @@ void    StabOutput::_create_hs_vector_field(
                         this->_ds_hs_v,
                         cusfloat_h5
                     );
+}
+
+
+void    StabOutput::_save_1D_input_data(
+                                            H5::Group&              hs_gp,
+                                            const char*             field_name,
+                                            hsize_t*                dset_dims,
+                                            std::vector<cusfloat>&  vec
+                                        )
+{
+    CREATE_DATASET( 
+                            hs_gp,
+                            field_name,
+                            _DS_1D_NP,
+                            dset_dims,
+                            cusfloat_h5
+                    );
+
+    hsize_t offset[_DS_1D_NP] = { 0 };
+    SAVE_DATASET_CHUNK(
+                            hs_gp,
+                            field_name,
+                            _DS_1D_NP,
+                            dset_dims,
+                            dset_dims,
+                            offset,
+                            vec.data( ),
+                            cusfloat_h5
+                        );
+}
+
+
+void    StabOutput::save_hydrostatics(
+                                            int             axis_id,
+                                            InitStabVec&    hydrostats
+                                        )
+{
+    // Open file unit
+    H5::H5File  fid( this->_results_fipath.c_str( ), H5F_ACC_RDWR );
+
+    // Take the mesh group
+    H5::Group   hs_gp   = fid.openGroup( _GN_HYDROSTATS );
+
+    // Allocate space for body data chunks
+    cusfloat*   amb_s   = generate_empty_vector<cusfloat>(
+                                                            this->_input->heel_hs_rad.size( )
+                                                            *
+                                                            this->_input->draft_hs.size( )
+                                                        );
+    
+    cusfloat*   amb_v   = generate_empty_vector<cusfloat>(
+                                                            this->_input->heel_hs_rad.size( )
+                                                            *
+                                                            this->_input->draft_hs.size( )
+                                                            *
+                                                            3
+                                                        );
+
+    // Define list of scalar fields to be stored
+    ScalarField scalar_fields[] =   {
+                                        { _DN_AREA_WL,          [&]( std::size_t i ){ return hydrostats[i].get_area_wl( );      } },
+                                        { _DN_AREA_IXX_WL,      [&]( std::size_t i ){ return hydrostats[i].get_area_wl_ixx( );  } },
+                                        { _DN_AREA_IYY_WL,      [&]( std::size_t i ){ return hydrostats[i].get_area_wl_iyy( );  } },
+                                        { _DN_AREA_MX_WL,       [&]( std::size_t i ){ return hydrostats[i].get_area_wl_mx( );   } },
+                                        { _DN_AREA_MY_WL,       [&]( std::size_t i ){ return hydrostats[i].get_area_wl_my( );   } },
+                                        { _DN_BMX,              [&]( std::size_t i ){ return hydrostats[i].get_bmx( );          } },
+                                        { _DN_BMY,              [&]( std::size_t i ){ return hydrostats[i].get_bmy( );          } },
+                                        { _DN_DISPLACEMENT,     [&]( std::size_t i ){ return hydrostats[i].get_mass( );         } },
+                                        { _DN_GMX,              [&]( std::size_t i ){ return hydrostats[i].get_gmx( );          } },
+                                        { _DN_GMY,              [&]( std::size_t i ){ return hydrostats[i].get_gmy( );          } },
+                                        { _DN_KMX,              [&]( std::size_t i ){ return hydrostats[i].get_kmx( );          } },
+                                        { _DN_KMY,              [&]( std::size_t i ){ return hydrostats[i].get_kmy( );          } },
+                                        { _DN_VOLUME,           [&]( std::size_t i ){ return hydrostats[i].get_volume( );       } },
+                                        { _DN_VOLUME_MX,        [&]( std::size_t i ){ return hydrostats[i].get_volume_mx( );    } },
+                                        { _DN_VOLUME_MY,        [&]( std::size_t i ){ return hydrostats[i].get_volume_my( );    } }
+                                    };
+
+    // Loop over scalar fields to be stored
+    for ( const auto& field : scalar_fields )
+    {
+        this->_save_hs_scalar_field(
+                                        hs_gp,
+                                        axis_id,
+                                        field.name,
+                                        amb_s,
+                                        field.getter
+                                    );
+    }
+
+    // Define list of scalar fields to be stored
+    VectorField vector_fields[] =   {
+                                        { _DN_COB,          [&]( std::size_t i ){ return hydrostats[i].get_cob( );      } },
+                                    };
+
+    // Loop over vector fields to be stored
+    for ( const auto& field : vector_fields )
+    {
+        this->_save_hs_vector_field(
+                                        hs_gp,
+                                        axis_id,
+                                        field.name,
+                                        amb_v,
+                                        field.getter
+                                    );
+    }
+
+    // Close file unit
+    fid.close( );
+
+    // Deallocate heap memory
+    mkl_free( amb_s );
+    mkl_free( amb_v );
+
 }
 
 
