@@ -451,9 +451,12 @@ void        InitialStability<NUM_GP, T>::_recalculate(
     this->_mesh             = mesh_in;
 
     // Storage vector input arguments
-    copy_vector( 3, cog_in, this->_cog );
-    copy_vector( 3, radii_inertia_in, this->_rad_gyr );
-
+    for ( std::size_t i=0; i<3; i++ )
+    {
+        this->_cog[i]       = cog_in[i];
+        this->_rad_gyr[i]   = radii_inertia_in[i];
+    }
+    
     // Recalculate geomertrical properties of the 
     // mesh to feed hydrostatics values calculation
     this->_recalculate_geom_props( );
