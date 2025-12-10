@@ -142,6 +142,18 @@ void StabInput::_read_input_file(
                             line_count,
                             this->load_conds_finame
                         );
+
+    // Get load conditions name
+    for ( std::size_t i=0; i<this->load_conds_finame.size( ); i++ )
+    {
+        // Extract load condition name from file name
+        std::filesystem::path lc_fipath( this->load_conds_finame[i] );
+        std::string lc_name     = lc_fipath.stem( ).stem( ).string( );
+
+        // Store load condition name
+        this->load_conds_name.push_back( lc_name );
+        
+    }
     
     // Read load conditions
     for ( std::size_t i=0; i<this->load_conds_finame.size( ); i++ )

@@ -59,6 +59,7 @@ public:
     bool                        is_bodies           = false;    // Flag to check that the body definitions where read correctly
     std::vector<LoadCondition>  load_conds          ;           // Storage input loading conditions description
     std::vector<std::string>    load_conds_finame   ;           // Storage input loading conditions file names
+    std::vector<std::string>    load_conds_name     ;           // Storage input loading conditions names
     cusfloat                    mass                ;           // Storage of body masses for the equilibrium problem
     std::string                 mesh_finame         ;           // Mesh file name containing the geometrical description of the body to analyze
     std::string                 mesh_fipath         ;           // Mesh file path containing the geometrical description of the body to analyze
