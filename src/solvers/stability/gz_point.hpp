@@ -34,16 +34,46 @@ private:
     using HSInitStab = InitialStability<NUM_GP, RigidBodyMesh>;
 
     /* Declare class private attributes */
-    int                     _axis_id        = 0;        // Axis identifier to set if GZ is calculated about X or Y axis
-    HSInitStab              _hs_final_state ;           // Hydrostatics final equilibrium state for the imposed heeling angle
-    cusfloat                _grav_acc       = 0.0;      // Gravitational acceleration [m/s^2]
-    cusfloat                _heel           = 0.0;      // Heeling angle [rad]
-    const LoadCondition*    _load_cond      = nullptr;  // Pointer to load condition definition
-    cusfloat                _mass           = 0.0;      // Mass at the current loading condition [kg]
-    RigidBodyMesh*          _mesh           = nullptr;  // Pointer to rigid body mesh
-    cusfloat                _water_density  = 0.0;      // Water density [kg/m^3]
+    int                     _axis_id        = 0;            // Axis identifier to set if GZ is calculated about X or Y axis
+    cusfloat                _draft          = 0.0;          // Draft at the current loading condition [m]
+    cusfloat                _grav_acc       = 0.0;          // Gravitational acceleration [m/s^2]
+    cusfloat                _gz[2]          = { 0.0, 0.0 }; // GZ arm value [m]
+    cusfloat                _heel           = 0.0;          // Heeling angle [rad]
+    HSInitStab              _hs_final_state ;               // Hydrostatics final equilibrium state for the imposed heeling angle
+    const LoadCondition*    _load_cond      = nullptr;      // Pointer to load condition definition
+    cusfloat                _mass           = 0.0;          // Mass at the current loading condition [kg]
+    RigidBodyMesh*          _mesh           = nullptr;      // Pointer to rigid body mesh
+    cusfloat                _water_density  = 0.0;          // Water density [kg/m^3]
 
     /* Declare class private methods */
+
+    /**
+     * @brief   Method to find equilibrium position for the current heeling angle
+     * 
+     * @param   mass_eq     Equilibrium mass at the current loading condition [kg]
+     * @param   y0_pos      Initial position defining the heel and trim for the state to calculate [m]
+     * 
+     */
+    cusfloat    _find_vertical_equilibrium( 
+                                                cusfloat    mass_eq,
+                                                cusfloat*   y0_pos
+                                            );
+
+    /**
+     * @brief   Method to find equilibrium position for the current heeling angle
+     * 
+     * @param   mass_eq     Equilibrium mass at the current loading condition [kg]
+     * @param   y0_pos      Initial position defining the heel and trim for the state to calculate [m]
+     * @param   min_z       Minimum search limit for the vertical equilibrium position [m]
+     * @param   max_z       Maximum search limit for the vertical equilibrium position [m]
+     */
+    cusfloat    _find_vertical_equilibrium( 
+                                                cusfloat    mass_eq,
+                                                cusfloat*   y0_pos,
+                                                cusfloat    min_z,
+                                                cusfloat    max_z
+                                            );
+
     /**
      * @brief   Method to update GZ value for the input load condition and heeling angle
      */
