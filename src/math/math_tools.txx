@@ -105,6 +105,111 @@ inline int assert_vector_equality(int N, int* u, int* v, int epsilon)
 }
 
 
+template <typename T>
+void bisection_false(
+                        T&          f_def,
+                        cusfloat    a, 
+                        cusfloat    b, 
+                        cusfloat    fabs_tol, 
+                        cusfloat    xrel_tol, 
+                        int         max_iter, 
+                        bool        verbose,
+                        cusfloat    &sol,
+                        int         &info
+                    )
+{
+    /**
+     * @brief Hybrid Bisection-False Position method to solve non-linear monoparametric equations.
+     * 
+     * The bisection and false position method are combined to solve non-linear equations. In this case 
+     * bisection is applied in even iterations and false position in odd iterations. This approach is intended to
+     * improve convergence speed while mantaining the robustness of the bisection method.
+     * 
+     * \param f_def Target function
+     * \param a Lower bound of the interval in which is assumed to have the zero.
+     * \param b Upper bound of the interval in which is assumed to have the zero.
+     * \param fabs_tol Absolute value tolerance of target function value to stop iterations: f_def(x) < fabs_tol
+     * \param xrel_tol Relative tolerance of the independent variable to stop the iterations: dx < x*xrel_tol
+     * \param max_iter Maximum iterations allowed to find the zero of the target function.
+     * \param verbose Bool flag to print out to screen the iterative path to find the solution.
+     * \param sol Scalar parameter in which store the solution of the iterative process.
+     * \param info This parameter describes the finish status of the iterative process.
+     *              - info == 0 -> Solution found.
+     *              - info == 1 -> Solution not found or convergence problems.
+     */
+
+    // Start the iterative method
+    cusfloat fa = f_def(a);
+    cusfloat c, cb=(a+b)/2.0+2*xrel_tol+1.0;
+    cusfloat fc;
+
+    // Start iterative loop
+    cusfloat abs_err = 0.0;
+    int count_iter = 0;
+    info = 0;
+    cusfloat rel_err = 0.0;
+    while (true)
+    {
+        // Calculate new value. Combined bisection and false position method
+        if ( count_iter % 2 == 0 )
+        {
+            c = ( a + b ) / 2.0;
+        }
+        else
+        {
+            c = a - fa * ( b - a ) / ( f_def(b) - fa );
+        }
+        
+        fc = f_def(c);
+        
+        // Calculate errors
+        abs_err = abs(fc);
+        rel_err = abs(c-cb);
+
+        // Print iterative process
+        if (verbose)
+        {
+            std::cout << "Iter: " << count_iter << " - x: " << c << " - f(x): " << fc << std::endl;
+            std::cout << "  -> a: " << a << " - f(a): " << f_def(a) << std::endl;
+            std::cout << "  -> b: " << b << " - f(b): " << f_def(b) << std::endl;
+            std::cout << "      - Abs.Error: " << abs_err << " - Rel.Error: " << rel_err << std::endl;
+        }
+
+        // Check for convergence
+        if ((abs(fc)<=fabs_tol) || (abs(c-cb)<abs(c*xrel_tol+1e-14)))
+        {
+            break;
+        }
+
+        // Check for maximum iterations limit
+        if (count_iter > max_iter)
+        {
+            std::cerr << "WARNING: Bisection method could not find the solution ";
+            std::cerr << "with the accurancy requested. Residual Value: " << fc << std::endl;
+            info = 1;
+            break;
+        }
+        count_iter++;
+
+        // Update interval values for the next iteration
+        cb = c;
+        if (fa*fc>0)
+        {
+            a = c;
+            fa = fc;
+        }
+        else
+        {
+            b = c;
+        }
+    }
+
+    // Store solution in the output variable
+    sol = c;
+
+}
+
+
 template<typename T>
 void clear_vector( int n, T* vec )
 {

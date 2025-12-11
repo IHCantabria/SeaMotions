@@ -108,6 +108,18 @@ template<typename T>                inline  int         assert_vector_equality(
                                                                                     int &info
                                                                     );
 
+template <typename T>               inline  void        bisection_false(
+                                                                                    T&          f_def, 
+                                                                                    cusfloat    a, 
+                                                                                    cusfloat    b, 
+                                                                                    cusfloat    fabs_tol, 
+                                                                                    cusfloat    xrel_tol, 
+                                                                                    int         max_iter, 
+                                                                                    bool        verbose,
+                                                                                    cusfloat    &sol,
+                                                                                    int         &info
+                                                                        );
+
                                             cusfloat    check_zero_eps( 
                                                                                     cusfloat value,
                                                                                     cusfloat eps
