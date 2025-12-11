@@ -29,8 +29,9 @@ class HydrostaticForcesNLin
 {
 private:
     /* Define class private attributes */ 
-    RigidBodyMesh*  _mesh           = nullptr;  // Storage pointer of the mesh object used to represent the floater external surface
+    cusfloat        _hyd_forces[6]  ;           // Storage array for hydrostatic forces calculation      
     T               _force_interf   = nullptr;  // Storage pointer of the functor interface used to calculate the force over the panel
+    RigidBodyMesh*  _mesh           = nullptr;  // Storage pointer of the mesh object used to represent the floater external surface
     cusfloat        _pos_init[6]    ;           // Storage initial position of the mesh. It will be used to refresh mesh state during execution except for heave
     cusfloat        _weight         = 0.0;      // Weight of the floater to be accounted on external force vector
 
@@ -41,17 +42,18 @@ public:
                             cusfloat*       pos_in,
                             T               force_interf_in,
                             cusfloat        weight_in
-                        )
-    {
-        // Storage input arguments
-        this->_force_interf = force_interf_in;
-        this->_mesh         = mesh_in;
-        this->_weight       = weight_in;
-
-        copy_vector( 6, pos_in, this->_pos_init );
-    }
+                        );
 
     /* Define class overloaded operators */
+
+    /**
+     * @brief   Getter method to retrieve the last calculated hydrostatic forces
+     * 
+     * @return  const cusfloat*  Pointer to array containing the last calculated hydrostatic forces
+     */
+    const cusfloat* get_last_hydrostatic_forces( 
+                                                        void
+                                                );
 
     /**
      * @brief   Method to calculate hydrostatic forces for a given heave displacement
@@ -60,6 +62,8 @@ public:
      */
     cusfloat operator()   ( 
                             cusfloat heave
-                        ) const;
+                        );
     
 };
+
+#include "hydrostatic_force_nlin.txx"
