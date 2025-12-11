@@ -109,7 +109,7 @@ void    StabSolver::calculate_hydrostatics(
                                                                     this->_input->grav_acc,
                                                                     this->_input->draft_hs[k],
                                                                     this->_mesh->cog,
-                                                                    this->_input->rad_gyr,
+                                                                    this->_input->load_conds[0].rad_inertia,
                                                                     this->_mesh
                                                                 );
                 }
@@ -146,7 +146,7 @@ void    StabSolver::_initialize(
     this->_mesh     = new RigidBodyMesh( 
                                             this->_input->mesh_fipath, 
                                             this->_input->body_name, 
-                                            this->_input->cog, 
+                                            this->_input->load_conds[0].cog, 
                                             false, 
                                             0, 
                                             0.0
