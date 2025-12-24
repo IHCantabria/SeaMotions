@@ -21,7 +21,7 @@
 
 // Include local modules
 #include "../../cli_header_banner.hpp"
-#include "../../containers/initial_stability.hpp"
+#include "../../initial_stability.hpp"
 #include "../../containers/mpi_config.hpp"
 #include "../../containers/mpi_timer.hpp"
 #include "../../interfaces/hydrostatic_force_interface.hpp"
@@ -31,6 +31,7 @@
 #include "../../mesh/rigid_body_mesh.hpp"
 #include "../../mesh/mesh.hpp"
 #include "stab_input.hpp"
+#include "stab_solver.hpp"
 #include "../../tools.hpp"
 #include "../../math/newmark.hpp"
 
@@ -276,186 +277,186 @@ void calculate_hydrostatic_properties(
 }
 
 
-void test_newmark( StabInput* input, RigidBodyMesh* mesh )
-{
-    // Use mesh bounding box to have an estimation of the
-    // dynamical properties of object to set up dynamical
-    // simulation to find the equilibrim
-    cusfloat    lx      = mesh->x_max - mesh->x_min;
-    cusfloat    ly      = mesh->y_max - mesh->y_min;
-    cusfloat    lz      = mesh->z_max - mesh->z_min;
-    cusfloat    area    = lx * ly;
-    cusfloat    volume  = area * lz;
-    cusfloat    mass    = volume * input->water_density;
-    cusfloat    ixx     = mass * ( pow2s( ly ) + pow2s( lz ) ) / 12.0;
-    cusfloat    iyy     = mass * ( pow2s( lx ) + pow2s( lz ) ) / 12.0;
-    cusfloat    izz     = std::sqrt( pow2s( ixx ) + pow2s( iyy ) );
-    cusfloat    k22     = input->water_density * input->grav_acc * area;
-    cusfloat    k33     = input->water_density * input->grav_acc * volume * 10.0;
-    cusfloat    k44     = input->water_density * input->grav_acc * volume * 10.0;
-    cusfloat    d22     = 2.0 * std::sqrt( mass * k22 );
-    cusfloat    d33     = 2.0 * std::sqrt( mass * k33 );
-    cusfloat    d44     = 2.0 * std::sqrt( mass * k44 );
-    cusfloat    t22     = 2.0 * PI * std::sqrt( mass / k22 );
-    cusfloat    t33     = 2.0 * PI * std::sqrt( ixx  / k33 );
-    cusfloat    t44     = 2.0 * PI * std::sqrt( iyy  / k44 );
+// void test_newmark( StabInput* input, RigidBodyMesh* mesh )
+// {
+//     // Use mesh bounding box to have an estimation of the
+//     // dynamical properties of object to set up dynamical
+//     // simulation to find the equilibrim
+//     cusfloat    lx      = mesh->x_max - mesh->x_min;
+//     cusfloat    ly      = mesh->y_max - mesh->y_min;
+//     cusfloat    lz      = mesh->z_max - mesh->z_min;
+//     cusfloat    area    = lx * ly;
+//     cusfloat    volume  = area * lz;
+//     cusfloat    mass    = volume * input->water_density;
+//     cusfloat    ixx     = mass * ( pow2s( ly ) + pow2s( lz ) ) / 12.0;
+//     cusfloat    iyy     = mass * ( pow2s( lx ) + pow2s( lz ) ) / 12.0;
+//     cusfloat    izz     = std::sqrt( pow2s( ixx ) + pow2s( iyy ) );
+//     cusfloat    k22     = input->water_density * input->grav_acc * area;
+//     cusfloat    k33     = input->water_density * input->grav_acc * volume * 10.0;
+//     cusfloat    k44     = input->water_density * input->grav_acc * volume * 10.0;
+//     cusfloat    d22     = 2.0 * std::sqrt( mass * k22 );
+//     cusfloat    d33     = 2.0 * std::sqrt( mass * k33 );
+//     cusfloat    d44     = 2.0 * std::sqrt( mass * k44 );
+//     cusfloat    t22     = 2.0 * PI * std::sqrt( mass / k22 );
+//     cusfloat    t33     = 2.0 * PI * std::sqrt( ixx  / k33 );
+//     cusfloat    t44     = 2.0 * PI * std::sqrt( iyy  / k44 );
 
-    // Create matrixes in dense form
-    cusfloat    mass_d[36]  = { 
-                                    mass, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                    0.0, mass, 0.0, 0.0, 0.0, 0.0,
-                                    0.0, 0.0, mass, 0.0, 0.0, 0.0,
-                                    0.0, 0.0, 0.0, ixx, 0.0, 0.0,
-                                    0.0, 0.0, 0.0, 0.0, iyy, 0.0,
-                                    0.0, 0.0, 0.0, 0.0, 0.0, izz
-                                };
+//     // Create matrixes in dense form
+//     cusfloat    mass_d[36]  = { 
+//                                     mass, 0.0, 0.0, 0.0, 0.0, 0.0,
+//                                     0.0, mass, 0.0, 0.0, 0.0, 0.0,
+//                                     0.0, 0.0, mass, 0.0, 0.0, 0.0,
+//                                     0.0, 0.0, 0.0, ixx, 0.0, 0.0,
+//                                     0.0, 0.0, 0.0, 0.0, iyy, 0.0,
+//                                     0.0, 0.0, 0.0, 0.0, 0.0, izz
+//                                 };
     
-    cusfloat    stiff_d[36] = { 
-                                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0
-                                };
+//     cusfloat    stiff_d[36] = { 
+//                                     0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+//                                     0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+//                                     0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+//                                     0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+//                                     0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+//                                     0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+//                                 };
 
-    cusfloat    damp_d[36]  = { 
-                                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                    0.0, 0.0, d22, 0.0, 0.0, 0.0,
-                                    0.0, 0.0, 0.0, d33, 0.0, 0.0,
-                                    0.0, 0.0, 0.0, 0.0, d44, 0.0,
-                                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0
-                                };
+//     cusfloat    damp_d[36]  = { 
+//                                     0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+//                                     0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+//                                     0.0, 0.0, d22, 0.0, 0.0, 0.0,
+//                                     0.0, 0.0, 0.0, d33, 0.0, 0.0,
+//                                     0.0, 0.0, 0.0, 0.0, d44, 0.0,
+//                                     0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+//                                 };
 
-    // Create system matrixes in CSR format
-    CSRMatrix*  mass_mat        = new CSRMatrix( 6, mass_d     );
-    CSRMatrix*  damp_mat        = new CSRMatrix( 6, damp_d     );
-    CSRMatrix*  stiff_mat       = new CSRMatrix( 6, stiff_d    );
+//     // Create system matrixes in CSR format
+//     CSRMatrix*  mass_mat        = new CSRMatrix( 6, mass_d     );
+//     CSRMatrix*  damp_mat        = new CSRMatrix( 6, damp_d     );
+//     CSRMatrix*  stiff_mat       = new CSRMatrix( 6, stiff_d    );
 
-    // Create restrictions vector
-    int         restrictions[6] = { 1, 1, 0, 1, 1, 1 };
-    cusfloat    y0_pos[6]       = { 0.0, 0.0, -1.72, 0.0, 0.0, 0.0 };
-    cusfloat    y0_vel[6]       = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
-    cusfloat    y0_acc[6]       = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+//     // Create restrictions vector
+//     int         restrictions[6] = { 1, 1, 0, 1, 1, 1 };
+//     cusfloat    y0_pos[6]       = { 0.0, 0.0, -1.72, 0.0, 0.0, 0.0 };
+//     cusfloat    y0_vel[6]       = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+//     cusfloat    y0_acc[6]       = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
 
-    // Calculate maximum time of simulation based on natural periods
-    // estimated
-    cusfloat    c2          = restrictions[ 2 ];
-    cusfloat    c3          = restrictions[ 3 ];
-    cusfloat    c4          = restrictions[ 4 ];
-    cusfloat    max_time    = ( c2 * t22 + c3 * t33 + c4 * t44 ) / ( c2 + c3 + c4 );
+//     // Calculate maximum time of simulation based on natural periods
+//     // estimated
+//     cusfloat    c2          = restrictions[ 2 ];
+//     cusfloat    c3          = restrictions[ 3 ];
+//     cusfloat    c4          = restrictions[ 4 ];
+//     cusfloat    max_time    = ( c2 * t22 + c3 * t33 + c4 * t44 ) / ( c2 + c3 + c4 );
 
-    // Create functor to calculate hydrostatic forces
-    HydrostaticForceInterface<NUM_GP>   hydrostat_force_interf( 
-                                                                    input->water_density, 
-                                                                    input->grav_acc 
-                                                                );
+//     // Create functor to calculate hydrostatic forces
+//     HydrostaticForceInterface<NUM_GP>   hydrostat_force_interf( 
+//                                                                     input->water_density, 
+//                                                                     input->grav_acc 
+//                                                                 );
 
-    HydrostaticForces                   hydrostatic_force(          
-                                                                    mesh,
-                                                                    &hydrostat_force_interf, 
-                                                                    input->mass * input->grav_acc 
-                                                                );
+//     HydrostaticForces                   hydrostatic_force(          
+//                                                                     mesh,
+//                                                                     &hydrostat_force_interf, 
+//                                                                     input->mass * input->grav_acc 
+//                                                                 );
 
-    // Create Newmark-Beta instance
-    NewmarkBeta nwk(
-                        &hydrostatic_force,
-                        mass_mat,
-                        stiff_mat,
-                        damp_mat,
-                        0.01,
-                        0.0,
-                        y0_pos,
-                        y0_vel,
-                        y0_acc,
-                        restrictions
-                    );
+//     // Create Newmark-Beta instance
+//     NewmarkBeta nwk(
+//                         &hydrostatic_force,
+//                         mass_mat,
+//                         stiff_mat,
+//                         damp_mat,
+//                         0.01,
+//                         0.0,
+//                         y0_pos,
+//                         y0_vel,
+//                         y0_acc,
+//                         restrictions
+//                     );
 
-    // Loop over time until reach equilibrium
-    while ( true )
-    {
-        // Advance one step in time
-        nwk.step();
+//     // Loop over time until reach equilibrium
+//     while ( true )
+//     {
+//         // Advance one step in time
+//         nwk.step();
 
-        // std::cout << "Time: " << nwk.time << " - rhs: " << nwk.rhs[2] << std::endl;
-        if ( std::abs( nwk.rhs[2] ) < 0.1 )
-        {
-            break;
-        }
-        // std::cout << " - X: " << nwk.y_pos[0];
-        // std::cout << " - Y: " << nwk.y_pos[1];
-        // std::cout << " - Z: " << nwk.y_pos[2];
-        // std::cout << " - RX: " << nwk.y_pos[3];
-        // std::cout << " - RY: " << nwk.y_pos[4];
-        // std::cout << " - RZ: " << nwk.y_pos[5] << std::endl;
-        // std::cout << " - VX: " << nwk.y_vel[0];
-        // std::cout << " - VY: " << nwk.y_vel[1];
-        // std::cout << " - VZ: " << nwk.y_vel[2];
-        // std::cout << " - VRX: " << nwk.y_vel[3];
-        // std::cout << " - VRY: " << nwk.y_vel[4];
-        // std::cout << " - VRZ: " << nwk.y_vel[5] << std::endl;
-        // std::cout << " - AX: " << nwk.y_acc[0];
-        // std::cout << " - AY: " << nwk.y_acc[1];
-        // std::cout << " - AZ: " << nwk.y_acc[2];
-        // std::cout << " - ARX: " << nwk.y_acc[3];
-        // std::cout << " - ARY: " << nwk.y_acc[4];
-        // std::cout << " - ARZ: " << nwk.y_acc[5] << std::endl;
-        // std::cout << std::endl;
+//         // std::cout << "Time: " << nwk.time << " - rhs: " << nwk.rhs[2] << std::endl;
+//         if ( std::abs( nwk.rhs[2] ) < 0.1 )
+//         {
+//             break;
+//         }
+//         // std::cout << " - X: " << nwk.y_pos[0];
+//         // std::cout << " - Y: " << nwk.y_pos[1];
+//         // std::cout << " - Z: " << nwk.y_pos[2];
+//         // std::cout << " - RX: " << nwk.y_pos[3];
+//         // std::cout << " - RY: " << nwk.y_pos[4];
+//         // std::cout << " - RZ: " << nwk.y_pos[5] << std::endl;
+//         // std::cout << " - VX: " << nwk.y_vel[0];
+//         // std::cout << " - VY: " << nwk.y_vel[1];
+//         // std::cout << " - VZ: " << nwk.y_vel[2];
+//         // std::cout << " - VRX: " << nwk.y_vel[3];
+//         // std::cout << " - VRY: " << nwk.y_vel[4];
+//         // std::cout << " - VRZ: " << nwk.y_vel[5] << std::endl;
+//         // std::cout << " - AX: " << nwk.y_acc[0];
+//         // std::cout << " - AY: " << nwk.y_acc[1];
+//         // std::cout << " - AZ: " << nwk.y_acc[2];
+//         // std::cout << " - ARX: " << nwk.y_acc[3];
+//         // std::cout << " - ARY: " << nwk.y_acc[4];
+//         // std::cout << " - ARZ: " << nwk.y_acc[5] << std::endl;
+//         // std::cout << std::endl;
 
-        // Check for time limit
-        if ( nwk.time >=  max_time*10 )
-        {
-            break;
-        }
-    }
+//         // Check for time limit
+//         if ( nwk.time >=  max_time*10 )
+//         {
+//             break;
+//         }
+//     }
 
-    std::cout << "Time: " << nwk.time << " - Z: " << nwk.y_pos[2] << " - rhs: " << nwk.rhs[2] << std::endl;
+//     std::cout << "Time: " << nwk.time << " - Z: " << nwk.y_pos[2] << " - rhs: " << nwk.rhs[2] << std::endl;
 
-    // Delete heap allocations
-    delete mass_mat;
-    delete stiff_mat;
-    delete damp_mat;
+//     // Delete heap allocations
+//     delete mass_mat;
+//     delete stiff_mat;
+//     delete damp_mat;
 
-}
+// }
 
 
-void test_bisection( StabInput* input, RigidBodyMesh* mesh )
-{
-    // Create restrictions vector
-    cusfloat    y0_pos[6]       = { 0.0, 0.0, 0.0, 0.0, 5.0/57.3, 0.0 };
+// void test_bisection( StabInput* input, RigidBodyMesh* mesh )
+// {
+//     // Create restrictions vector
+//     cusfloat    y0_pos[6]       = { 0.0, 0.0, 0.0, 0.0, 5.0/57.3, 0.0 };
 
-    // Create functor to calculate hydrostatic forces
-    HydrostaticForceInterface<NUM_GP>   hydrostat_force_interf( 
-                                                                    input->water_density, 
-                                                                    input->grav_acc 
-                                                                );
+//     // Create functor to calculate hydrostatic forces
+//     HydrostaticForceInterface<NUM_GP>   hydrostat_force_interf( 
+//                                                                     input->water_density, 
+//                                                                     input->grav_acc 
+//                                                                 );
 
-    HydrostaticForcesNLin               hydrostatic_force(          
-                                                                    mesh,
-                                                                    y0_pos,
-                                                                    &hydrostat_force_interf, 
-                                                                    input->mass * input->grav_acc 
-                                                                );
+//     HydrostaticForcesNLin               hydrostatic_force(          
+//                                                                     mesh,
+//                                                                     y0_pos,
+//                                                                     &hydrostat_force_interf, 
+//                                                                     input->mass * input->grav_acc 
+//                                                                 );
 
-    // Use bisection method to find equilibrium position
-    cusfloat    lz  = mesh->z_max - mesh->z_min;
-    cusfloat    sol = 0.0;
-    int         info = 0;
-    bisection( hydrostatic_force, -lz, lz, 0.01, 1e-6, 100, true, sol, info );
+//     // Use bisection method to find equilibrium position
+//     cusfloat    lz  = mesh->z_max - mesh->z_min;
+//     cusfloat    sol = 0.0;
+//     int         info = 0;
+//     bisection( hydrostatic_force, -lz, lz, 0.01, 1e-6, 100, true, sol, info );
 
-    InitialStability<NUM_GP, RigidBodyMesh> init_stab( 
-                                                            input->water_density,
-                                                            input->grav_acc,
-                                                            sol,
-                                                            input->cog,
-                                                            input->rad_gyr,
-                                                            mesh
-                                                        );
+//     InitialStability<NUM_GP, RigidBodyMesh> init_stab( 
+//                                                             input->water_density,
+//                                                             input->grav_acc,
+//                                                             sol,
+//                                                             input->cog,
+//                                                             input->rad_gyr,
+//                                                             mesh
+//                                                         );
 
-    init_stab.print( );
+//     init_stab.print( );
 
-}
+// }
 
 
 int main( int argc, char* argv[ ] )
@@ -508,41 +509,45 @@ int main( int argc, char* argv[ ] )
     /*****************************************/
     MpiTimer case_timer;
 
+    StabSolver stab_solver( &input );
+    stab_solver.calculate_hydrostatics( );
+    stab_solver.calcualte_gz( );
+
     // // Read input mesh
     // std::string mesh_fipath = "d:/sergio/0050_OASIS_SM/SeaMotionsStabValidation_files/user_files/0_Box/box_stability_tri.poly";
     // std::string body_name   = "box";
     // cusfloat    cog[3]      = { 0.0, 0.0, 5.0 };
-    std::string auto_flush_fopath( "S:/seamotions_validation/0_seamotions/1_H50/0_Box/1_results/_track_mesh_changes" );
-    cusfloat    draft       = 5.0;
+    // std::string auto_flush_fopath( "S:/seamotions_validation/0_seamotions/1_H50/0_Box/1_results/_track_mesh_changes" );
+    // cusfloat    draft       = 5.0;
 
-    Mesh mesh_ref( input.mesh_fipath, input.body_name, input.cog, false , 0, false );
-    RigidBodyMesh mesh_mov( input.mesh_fipath, input.body_name, input.cog, false , 0, draft, auto_flush_fopath );
+    // Mesh mesh_ref( input.mesh_fipath, input.body_name, input.cog, false , 0, false );
+    // RigidBodyMesh mesh_mov( input.mesh_fipath, input.body_name, input.cog, false , 0, draft, auto_flush_fopath );
 
     
-    mesh_mov.write( 
-                        case_fopath
-                );
+    // mesh_mov.write( 
+    //                     case_fopath
+    //             );
 
-    mesh_mov.move( 0.0, 0.0, -draft, 30.0/57.3, 0.0, 0.0 );
-    mesh_mov.check_underwater_panels( );
+    // mesh_mov.move( 0.0, 0.0, -draft, 30.0/57.3, 0.0, 0.0 );
+    // mesh_mov.check_underwater_panels( );
 
-    mesh_mov.write_underwater_panels( 
-                                        case_fopath,
-                                        input.mesh_finame + "_tri"
-                                    );
+    // mesh_mov.write_underwater_panels( 
+    //                                     case_fopath,
+    //                                     input.mesh_finame + "_tri"
+    //                                 );
 
-    InitialStability<NUM_GP, RigidBodyMesh> init_stab( 
-                                                            input.water_density,
-                                                            input.grav_acc,
-                                                            draft,
-                                                            input.cog,
-                                                            input.rad_gyr,
-                                                            &mesh_mov
-                                                        );
-    init_stab.print( );
+    // InitialStability<NUM_GP, RigidBodyMesh> init_stab( 
+    //                                                         input.water_density,
+    //                                                         input.grav_acc,
+    //                                                         draft,
+    //                                                         input.cog,
+    //                                                         input.rad_gyr,
+    //                                                         &mesh_mov
+    //                                                     );
+    // init_stab.print( );
 
-    // test_newmark( &input, &mesh_mov );
-    test_bisection( &input, &mesh_mov );
+    // // test_newmark( &input, &mesh_mov );
+    // test_bisection( &input, &mesh_mov );
     
     // calculate_hydrostatic_properties( &input, &mesh_mov );
 
