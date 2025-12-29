@@ -29,9 +29,9 @@ from numpy import abs as np_abs
 import numpy as np
 
 # Import local modules
-from base_integrals import L1, L1_dA, L1_dB, L2, L3, L3_dA, L3_dB, M1, M1_dA, M1_dB, M2, M3, M3_dA, M3_dB
-from fit_cheby_v2 import fit_integral_1d, fit_integral_2d, fit_integral_3d, FitProperties, FitStats, fit_residual_1D_adaptive_interface, fit_residual_3D_adaptive_interface
-from fit_tools import RefLevel, write_coeffs_module_adaptive_1d_only_header, write_coeffs_module_adaptive_3d_only_header
+from base_integrals import L0, L0_dA, L0_dB, L1, L1_dA, L1_dB, L2, L3, L3_dA, L3_dB, Linf, Linf_dA, Linf_dB, M1, M1_dA, M1_dB, M2, M3, M3_dA, M3_dB
+from fit_cheby import fit_integral_1d, fit_integral_2d, fit_integral_3d, FitProperties, FitStats, fit_residual_1D_adaptive_interface, fit_residual_2D_adaptive_interface, fit_residual_3D_adaptive_interface
+from fit_tools import RefLevel, write_coeffs_module_adaptive_1d_only_header, write_coeffs_module_adaptive_2d_only_header, write_coeffs_module_adaptive_3d_only_header
 
 
 FIT_TOL = 1E-5
@@ -54,6 +54,24 @@ def data_to_dict(
             }
     
     return data
+
+
+def fit_L0( fopath: str ) -> None:
+    ref_level = fit_residual_region_L0_adaptive( )
+
+    write_coeffs_module_adaptive_2d_only_header( ref_level, fopath, "L0" )
+
+
+def fit_L0_dA( fopath: str ) -> None:
+    ref_level = fit_residual_region_L0_dA_adaptive( )
+
+    write_coeffs_module_adaptive_2d_only_header( ref_level, fopath, "L0_dA" )
+
+
+def fit_L0_dB( fopath: str ) -> None:
+    ref_level = fit_residual_region_L0_dB_adaptive( )
+
+    write_coeffs_module_adaptive_2d_only_header( ref_level, fopath, "L0_dB" )
 
 
 def fit_L1( fopath: str ) -> None:
@@ -98,6 +116,22 @@ def fit_L3_dB( fopath: str ) -> None:
     write_coeffs_module_adaptive_3d_only_header( ref_level, fopath, "L3_dB" )
 
 
+def fit_Linf( fopath: str ) -> None:
+    ref_level = fit_residual_region_Linf_adaptive( )
+
+    write_coeffs_module_adaptive_2d_only_header( ref_level, fopath, "Linf" )
+
+
+def fit_Linf_dA( fopath: str ) -> None:
+    ref_level = fit_residual_region_Linf_dA_adaptive( )
+    write_coeffs_module_adaptive_2d_only_header( ref_level, fopath, "Linf_dA" )
+
+
+def fit_Linf_dB( fopath: str ) -> None:
+    ref_level = fit_residual_region_Linf_dB_adaptive( )
+    write_coeffs_module_adaptive_2d_only_header( ref_level, fopath, "Linf_dB" )
+
+
 def fit_M1( fopath: str ) -> None:
     ref_level = fit_residual_region_M1_adaptive( )
 
@@ -138,6 +172,162 @@ def fit_M3_dB( fopath: str ) -> None:
     ref_level = fit_residual_region_M3_dB_adaptive( )
 
     write_coeffs_module_adaptive_3d_only_header( ref_level, fopath, "M3_dB" )
+
+
+def fit_residual_region_L0_adaptive( ) -> None:
+    fit_props               = FitProperties( )
+    fit_props.dims          = 2
+    fit_props.region_name   = "L0"
+    fit_props.cheby_order_x = 10
+    fit_props.cheby_order_y = 10
+    fit_props.cheby_order_z = 50
+    fit_props.fcn_log_scale = False
+    fit_props.x_log_scale   = False
+    fit_props.x_max         = 1.0
+    fit_props.x_min         = 0.0
+    fit_props.y_log_scale   = False
+    fit_props.y_max         = 1.0
+    fit_props.y_min         = 0.0
+    fit_props.z_log_scale   = True
+    fit_props.z_max         = 0.0
+    fit_props.z_min         = -5.0
+    fit_props.cheby_abs_tol = 5E-7
+    fit_props.cheby_rel_tol = 1E-14
+    fit_props.x_map_fcn     = lambda x: x
+    fit_props.y_map_fcn     = lambda y: y
+    fit_props.z_map_fcn     = lambda z: z
+    fit_props.max_ref_level = 10
+
+    fit_props.num_x         = fit_props.cheby_order_x + 1
+    fit_props.num_x_fit     = fit_props.cheby_order_x + 1
+    fit_props.num_y         = fit_props.cheby_order_y + 1
+    fit_props.num_y_fit     = fit_props.cheby_order_y + 1
+    fit_props.num_z         = fit_props.cheby_order_z + 1
+    fit_props.num_z_fit     = fit_props.cheby_order_z + 1
+
+    fit_props.generate_fitting_matrix( )
+
+    fit_function            = lambda x, y: L0(x, y)[0].real
+
+    # Create root FitRegion
+    ref_level               = RefLevel( copy.copy( fit_props ) )
+
+    # Create first fit to feed root refinement level
+    ref_level.add_data( *fit_integral_2d( fit_function, fit_props ) )
+
+    # Start adaptive refinement loop
+    fit_residual_2D_adaptive_interface( fit_function, ref_level )
+
+    # Set starting position
+    ref_level.set_start_index( 0 )
+    ref_level.set_start_index_folded( 0 )
+
+
+    return ref_level
+
+
+def fit_residual_region_L0_dA_adaptive( ) -> None:
+    fit_props               = FitProperties( )
+    fit_props.dims          = 2
+    fit_props.region_name   = "L0_dA"
+    fit_props.cheby_order_x = 10
+    fit_props.cheby_order_y = 10
+    fit_props.cheby_order_z = 50
+    fit_props.fcn_log_scale = False
+    fit_props.x_log_scale   = False
+    fit_props.x_max         = 1.0
+    fit_props.x_min         = 0.0
+    fit_props.y_log_scale   = False
+    fit_props.y_max         = 1.0
+    fit_props.y_min         = 0.0
+    fit_props.z_log_scale   = True
+    fit_props.z_max         = 0.0
+    fit_props.z_min         = -5.0
+    fit_props.cheby_abs_tol = 5E-7
+    fit_props.cheby_rel_tol = 1E-14
+    fit_props.x_map_fcn     = lambda x: x
+    fit_props.y_map_fcn     = lambda y: y
+    fit_props.z_map_fcn     = lambda z: z
+    fit_props.max_ref_level = 10
+
+    fit_props.num_x         = fit_props.cheby_order_x + 1
+    fit_props.num_x_fit     = fit_props.cheby_order_x + 1
+    fit_props.num_y         = fit_props.cheby_order_y + 1
+    fit_props.num_y_fit     = fit_props.cheby_order_y + 1
+    fit_props.num_z         = fit_props.cheby_order_z + 1
+    fit_props.num_z_fit     = fit_props.cheby_order_z + 1
+
+    fit_props.generate_fitting_matrix( )
+
+    fit_function            = lambda x, y: L0_dA(x, y)[0].real
+
+    # Create root FitRegion
+    ref_level               = RefLevel( copy.copy( fit_props ) )
+
+    # Create first fit to feed root refinement level
+    ref_level.add_data( *fit_integral_2d( fit_function, fit_props ) )
+
+    # Start adaptive refinement loop
+    fit_residual_2D_adaptive_interface( fit_function, ref_level )
+
+    # Set starting position
+    ref_level.set_start_index( 0 )
+    ref_level.set_start_index_folded( 0 )
+
+
+    return ref_level
+
+
+def fit_residual_region_L0_dB_adaptive( ) -> None:
+    fit_props               = FitProperties( )
+    fit_props.dims          = 2
+    fit_props.region_name   = "L0_dB"
+    fit_props.cheby_order_x = 10
+    fit_props.cheby_order_y = 10
+    fit_props.cheby_order_z = 50
+    fit_props.fcn_log_scale = False
+    fit_props.x_log_scale   = False
+    fit_props.x_max         = 1.0
+    fit_props.x_min         = 0.0
+    fit_props.y_log_scale   = False
+    fit_props.y_max         = 1.0
+    fit_props.y_min         = 0.0
+    fit_props.z_log_scale   = True
+    fit_props.z_max         = 0.0
+    fit_props.z_min         = -5.0
+    fit_props.cheby_abs_tol = 5E-7
+    fit_props.cheby_rel_tol = 1E-14
+    fit_props.x_map_fcn     = lambda x: x
+    fit_props.y_map_fcn     = lambda y: y
+    fit_props.z_map_fcn     = lambda z: z
+    fit_props.max_ref_level = 10
+
+    fit_props.num_x         = fit_props.cheby_order_x + 1
+    fit_props.num_x_fit     = fit_props.cheby_order_x + 1
+    fit_props.num_y         = fit_props.cheby_order_y + 1
+    fit_props.num_y_fit     = fit_props.cheby_order_y + 1
+    fit_props.num_z         = fit_props.cheby_order_z + 1
+    fit_props.num_z_fit     = fit_props.cheby_order_z + 1
+
+    fit_props.generate_fitting_matrix( )
+
+    fit_function            = lambda x, y: L0_dB(x, y)[0].real
+
+    # Create root FitRegion
+    ref_level               = RefLevel( copy.copy( fit_props ) )
+
+    # Create first fit to feed root refinement level
+    ref_level.add_data( *fit_integral_2d( fit_function, fit_props ) )
+
+    # Start adaptive refinement loop
+    fit_residual_2D_adaptive_interface( fit_function, ref_level )
+
+    # Set starting position
+    ref_level.set_start_index( 0 )
+    ref_level.set_start_index_folded( 0 )
+
+
+    return ref_level
 
 
 def fit_residual_region_L1_adaptive( ) -> None:
@@ -541,6 +731,162 @@ def fit_residual_region_L3_dB_adaptive( ) -> None:
     return ref_level
 
 
+def fit_residual_region_Linf_adaptive( ) -> None:
+    fit_props               = FitProperties( )
+    fit_props.dims          = 2
+    fit_props.region_name   = "Linf"
+    fit_props.cheby_order_x = 10
+    fit_props.cheby_order_y = 10
+    fit_props.cheby_order_z = 50
+    fit_props.fcn_log_scale = False
+    fit_props.x_log_scale   = False
+    fit_props.x_max         = 1.0
+    fit_props.x_min         = 0.0
+    fit_props.y_log_scale   = False
+    fit_props.y_max         = 1.0
+    fit_props.y_min         = 0.0
+    fit_props.z_log_scale   = True
+    fit_props.z_max         = 0.0
+    fit_props.z_min         = -5.0
+    fit_props.cheby_abs_tol = 5E-7
+    fit_props.cheby_rel_tol = 1E-14
+    fit_props.x_map_fcn     = lambda x: x
+    fit_props.y_map_fcn     = lambda y: y
+    fit_props.z_map_fcn     = lambda z: z
+    fit_props.max_ref_level = 10
+
+    fit_props.num_x         = fit_props.cheby_order_x + 1
+    fit_props.num_x_fit     = fit_props.cheby_order_x + 1
+    fit_props.num_y         = fit_props.cheby_order_y + 1
+    fit_props.num_y_fit     = fit_props.cheby_order_y + 1
+    fit_props.num_z         = fit_props.cheby_order_z + 1
+    fit_props.num_z_fit     = fit_props.cheby_order_z + 1
+
+    fit_props.generate_fitting_matrix( )
+
+    fit_function            = lambda x, y: Linf(x, y)[0].real
+
+    # Create root FitRegion
+    ref_level               = RefLevel( copy.copy( fit_props ) )
+
+    # Create first fit to feed root refinement level
+    ref_level.add_data( *fit_integral_2d( fit_function, fit_props ) )
+
+    # Start adaptive refinement loop
+    fit_residual_2D_adaptive_interface( fit_function, ref_level )
+
+    # Set starting position
+    ref_level.set_start_index( 0 )
+    ref_level.set_start_index_folded( 0 )
+
+
+    return ref_level
+
+
+def fit_residual_region_Linf_dA_adaptive( ) -> None:
+    fit_props               = FitProperties( )
+    fit_props.dims          = 2
+    fit_props.region_name   = "Linf_dA"
+    fit_props.cheby_order_x = 10
+    fit_props.cheby_order_y = 10
+    fit_props.cheby_order_z = 50
+    fit_props.fcn_log_scale = False
+    fit_props.x_log_scale   = False
+    fit_props.x_max         = 1.0
+    fit_props.x_min         = 0.0
+    fit_props.y_log_scale   = False
+    fit_props.y_max         = 1.0
+    fit_props.y_min         = 0.0
+    fit_props.z_log_scale   = True
+    fit_props.z_max         = 0.0
+    fit_props.z_min         = -5.0
+    fit_props.cheby_abs_tol = 5E-7
+    fit_props.cheby_rel_tol = 1E-14
+    fit_props.x_map_fcn     = lambda x: x
+    fit_props.y_map_fcn     = lambda y: y
+    fit_props.z_map_fcn     = lambda z: z
+    fit_props.max_ref_level = 10
+
+    fit_props.num_x         = fit_props.cheby_order_x + 1
+    fit_props.num_x_fit     = fit_props.cheby_order_x + 1
+    fit_props.num_y         = fit_props.cheby_order_y + 1
+    fit_props.num_y_fit     = fit_props.cheby_order_y + 1
+    fit_props.num_z         = fit_props.cheby_order_z + 1
+    fit_props.num_z_fit     = fit_props.cheby_order_z + 1
+
+    fit_props.generate_fitting_matrix( )
+
+    fit_function            = lambda x, y: Linf_dA(x, y)[0].real
+
+    # Create root FitRegion
+    ref_level               = RefLevel( copy.copy( fit_props ) )
+
+    # Create first fit to feed root refinement level
+    ref_level.add_data( *fit_integral_2d( fit_function, fit_props ) )
+
+    # Start adaptive refinement loop
+    fit_residual_2D_adaptive_interface( fit_function, ref_level )
+
+    # Set starting position
+    ref_level.set_start_index( 0 )
+    ref_level.set_start_index_folded( 0 )
+
+
+    return ref_level
+
+
+def fit_residual_region_Linf_dB_adaptive( ) -> None:
+    fit_props               = FitProperties( )
+    fit_props.dims          = 2
+    fit_props.region_name   = "Linf_dB"
+    fit_props.cheby_order_x = 10
+    fit_props.cheby_order_y = 10
+    fit_props.cheby_order_z = 50
+    fit_props.fcn_log_scale = False
+    fit_props.x_log_scale   = False
+    fit_props.x_max         = 1.0
+    fit_props.x_min         = 0.0
+    fit_props.y_log_scale   = False
+    fit_props.y_max         = 1.0
+    fit_props.y_min         = 0.0
+    fit_props.z_log_scale   = True
+    fit_props.z_max         = 0.0
+    fit_props.z_min         = -5.0
+    fit_props.cheby_abs_tol = 5E-7
+    fit_props.cheby_rel_tol = 1E-14
+    fit_props.x_map_fcn     = lambda x: x
+    fit_props.y_map_fcn     = lambda y: y
+    fit_props.z_map_fcn     = lambda z: z
+    fit_props.max_ref_level = 10
+
+    fit_props.num_x         = fit_props.cheby_order_x + 1
+    fit_props.num_x_fit     = fit_props.cheby_order_x + 1
+    fit_props.num_y         = fit_props.cheby_order_y + 1
+    fit_props.num_y_fit     = fit_props.cheby_order_y + 1
+    fit_props.num_z         = fit_props.cheby_order_z + 1
+    fit_props.num_z_fit     = fit_props.cheby_order_z + 1
+
+    fit_props.generate_fitting_matrix( )
+
+    fit_function            = lambda x, y: Linf_dB(x, y)[0].real
+
+    # Create root FitRegion
+    ref_level               = RefLevel( copy.copy( fit_props ) )
+
+    # Create first fit to feed root refinement level
+    ref_level.add_data( *fit_integral_2d( fit_function, fit_props ) )
+
+    # Start adaptive refinement loop
+    fit_residual_2D_adaptive_interface( fit_function, ref_level )
+
+    # Set starting position
+    ref_level.set_start_index( 0 )
+    ref_level.set_start_index_folded( 0 )
+
+
+    return ref_level
+
+
 def fit_residual_region_M1_adaptive( ) -> None:
     fit_props               = FitProperties( )
     fit_props.dims          = 3
@@ -893,8 +1239,10 @@ def fit_residual_region_M3_dB_adaptive( ) -> None:
 if __name__ == "__main__":
     import sys
 
-    folder_path = sys.argv[1]
-    option      = sys.argv[2]
+    # folder_path = sys.argv[1]
+    # option      = sys.argv[2]
+    folder_path = r"D:\sergio\developments\SeaMotions\aux_data"
+    option      = "L0"
     # fit_L1_Hfix()
     # fit_M1_Hfix()
     # fit_L1_Afix_Bfix()
@@ -933,7 +1281,16 @@ if __name__ == "__main__":
     # fit_M3_dA( folder_path )
     # fit_M3_dB( folder_path )
 
-    if option == "L1":
+    if option == "L0":
+        fit_L0( folder_path )
+
+    elif option == "L0_dA":
+        fit_L0_dA( folder_path )
+
+    elif option == "L0_dB":
+        fit_L0_dB( folder_path )
+
+    elif option == "L1":
         fit_L1( folder_path )
 
     elif option == "L1_dA":
@@ -953,6 +1310,15 @@ if __name__ == "__main__":
 
     elif option == "L3_dB":
         fit_L3_dB( folder_path )
+
+    elif option == "Linf":
+        fit_Linf( folder_path )
+
+    elif option == "Linf_dA":
+        fit_Linf_dA( folder_path )
+
+    elif option == "Linf_dB":
+        fit_Linf_dB( folder_path )
 
     elif option == "M1":
         fit_M1( folder_path )

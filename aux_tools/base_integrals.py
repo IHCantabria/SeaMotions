@@ -494,6 +494,72 @@ def guh(u: ndarray, H: float) -> ndarray:
     return (u+H)**2.0/((u-H)**2.0-(u**2.0-H**2.0)*exp(-2*u))
 
 
+def L0(A: float, B: float) -> float:
+    # Define way point for the integration
+    way_points = array([
+                            1e-16+0j,
+                            1e1+0j,
+                            1e2+0j,
+                            1e3+0j,
+                            1e4+0j,
+                            1e5+0j
+                        ])
+
+    # Integrate function
+    l0_def_dummy = lambda u: L0_def(A, B, u)
+    int_value = complex_quadrature_line(l0_def_dummy, way_points)
+
+    return int_value
+
+
+def L0_dA(A: float, B: float) -> float:
+    # Define way point for the integration
+    way_points = array([
+                            1e-16+0j,
+                            1e1+0j,
+                            1e2+0j,
+                            1e3+0j,
+                            1e4+0j,
+                            1e5+0j
+                        ])
+
+    # Integrate function
+    l0_da_def_dummy = lambda u: L0_dA_def(A, B, u)
+    int_value = complex_quadrature_line(l0_da_def_dummy, way_points)
+
+    return int_value
+
+
+def L0_dB(A: float, B: float) -> float:
+    # Define way point for the integration
+    way_points = array([
+                            1e-16+0j,
+                            1e1+0j,
+                            1e2+0j,
+                            1e3+0j,
+                            1e4+0j,
+                            1e5+0j
+                        ])
+
+    # Integrate function
+    l0_db_def_dummy = lambda u: L0_dB_def(A, B, u)
+    int_value = complex_quadrature_line(l0_db_def_dummy, way_points)
+
+    return int_value
+
+
+def L0_def(A: float, B: float, u: ndarray) -> ndarray:
+    return (1/(1-exp(-2*u)))*((exp(-u*(4+B))+exp(-u*(4-B)))*jv(0, u*A)-2*exp(-2*u)) - log( 2.0 )
+
+
+def L0_dA_def(A: float, B: float, u: ndarray) -> ndarray:
+    return (-u/(1-exp(-2*u)))*(exp(-u*(4+B))+exp(-u*(4-B)))*jv(1, u*A)
+
+
+def L0_dB_def(A: float, B: float, u: ndarray) -> ndarray:
+    return (u/(1-exp(-2*u)))*(-exp(-u*(4+B))+exp(-u*(4-B)))*jv(0, u*A)
+
+
 def L1(A: float, B: float, H: float) -> float:
     # Define way point for the integration
     H1 = H+1
@@ -757,6 +823,72 @@ def L3_pole(A: float, B: float, H: float, u0: float) -> float:
     a = (u0+H)*(exp(-u0*(2+B))+exp(-u0*(2-B)))*jv(0, u0*A)
     b = 1+(2.0*(u0+H)-1.0)*exp(-2*u0)
     return a/b*pi
+
+
+def Linf(A: float, B: float) -> float:
+    # Define way point for the integration
+    way_points = array([
+                            0.0+0j,
+                            1e1+0j,
+                            1e2+0j,
+                            1e3+0j,
+                            1e4+0j,
+                            1e5+0j
+                        ])
+
+    # Integrate function
+    linf_def_dummy = lambda u: Linf_def(A, B, u)
+    int_value = complex_quadrature_line(linf_def_dummy, way_points)
+
+    return int_value
+
+
+def Linf_dA(A: float, B: float) -> float:
+    # Define way point for the integration
+    way_points = array([
+                            0.0+0j,
+                            1e1+0j,
+                            1e2+0j,
+                            1e3+0j,
+                            1e4+0j,
+                            1e5+0j
+                        ])
+
+    # Integrate function
+    linf_da_def_dummy = lambda u: Linf_dA_def(A, B, u)
+    int_value = complex_quadrature_line(linf_da_def_dummy, way_points)
+
+    return int_value
+
+
+def Linf_dB(A: float, B: float) -> float:
+    # Define way point for the integration
+    way_points = array([
+                            0.0+0j,
+                            1e1+0j,
+                            1e2+0j,
+                            1e3+0j,
+                            1e4+0j,
+                            1e5+0j
+                        ])
+
+    # Integrate function
+    linf_db_def_dummy = lambda u: Linf_dB_def(A, B, u)
+    int_value = complex_quadrature_line(linf_db_def_dummy, way_points)
+
+    return int_value
+
+
+def Linf_def(A: float, B: float, u: ndarray) -> ndarray:
+    return (1/(1+exp(-2*u)))*(exp(-u*(4+B))+exp(-u*(4-B)))*jv(0, u*A)
+
+
+def Linf_dA_def(A: float, B: float, u: ndarray) -> ndarray:
+    return (-u/(1+exp(-2*u)))*(exp(-u*(4+B))+exp(-u*(4-B)))*jv(1, u*A)
+
+
+def Linf_dB_def(A: float, B: float, u: ndarray) -> ndarray:
+    return (u/(1+exp(-2*u)))*(-exp(-u*(4+B))+exp(-u*(4-B)))*jv(0, u*A)
 
 
 def L_minus(A: float, B: float) -> float:
