@@ -1,7 +1,7 @@
 #ifndef __R11_coeffs_hpp
 #define __R11_coeffs_hpp
 
-#include "../../config.hpp"
+#include "../../../config.hpp"
 
 struct R11C
 {

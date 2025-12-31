@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "../../config.hpp"
+#include "../../../config.hpp"
 
 struct L1C
 {

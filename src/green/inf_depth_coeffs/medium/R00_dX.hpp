@@ -1,7 +1,7 @@
 #ifndef __R00_dX_coeffs_hpp
 #define __R00_dX_coeffs_hpp
 
-#include "../../config.hpp"
+#include "../../../config.hpp"
 
 struct R00_dXC
 {

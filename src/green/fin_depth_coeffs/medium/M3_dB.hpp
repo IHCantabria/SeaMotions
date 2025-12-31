@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include "../../config.hpp"
+#include "../../../config.hpp"
 
 struct M3_dBC
 {
