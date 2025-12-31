@@ -33,6 +33,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules ${CMAKE_MODULE_P
 include( AuxTools )
 include( GetGitRevisionDescription )
 include( ModuleFiles )
+include( GenerateCoeffsHeader )
 
 
 ###########################################################
@@ -128,6 +129,25 @@ function( set_hdf5_target target )
     target_include_directories( ${target} PRIVATE ${HDF5_INCLUDE_DIRS} )
     target_link_libraries( ${target} PRIVATE ${HDF5_CXX_LIBRARIES} ${HDF5_HL_LIBRARIES} )
 endfunction( )
+
+###########################################################
+############# Configure Database Precision ################
+###########################################################
+set( DB_PRECISION "HIGH" CACHE STRING "Database precision (e.g. LOW, MEDIUM, HIGH)" )
+
+if ( "${DB_PRECISION}" STREQUAL "LOW" )
+    generate_coeffs_header( low )
+
+elseif ( "${DB_PRECISION}" STREQUAL "MEDIUM" )
+    generate_coeffs_header( medium )
+
+elseif ( "${DB_PRECISION}" STREQUAL "HIGH" )
+    generate_coeffs_header( high )
+
+else()
+    message( FATAL_ERROR "DB_PRECISION VALUE: ${DB_PRECISION} not valid. Accepted values: LOW | MEDIUM | HIGH" )
+
+endif()
 
 ###########################################################
 ################### Configure Tests #######################

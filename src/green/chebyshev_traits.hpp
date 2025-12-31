@@ -22,24 +22,7 @@
 
 // Include local modules
 #include "chebyshev_traits_macros.hpp"
-#include "./fin_depth_coeffs/L1.hpp"
-#include "./fin_depth_coeffs/L1_dA.hpp"
-#include "./fin_depth_coeffs/L1_dB.hpp"
-#include "./fin_depth_coeffs/L2.hpp"
-#include "./fin_depth_coeffs/L3.hpp"
-#include "./fin_depth_coeffs/L3_dA.hpp"
-#include "./fin_depth_coeffs/L3_dB.hpp"
-#include "./fin_depth_coeffs/M1.hpp"
-#include "./fin_depth_coeffs/M1_dA.hpp"
-#include "./fin_depth_coeffs/M1_dB.hpp"
-#include "./fin_depth_coeffs/M2.hpp"
-#include "./fin_depth_coeffs/M3.hpp"
-#include "./fin_depth_coeffs/M3_dA.hpp"
-#include "./fin_depth_coeffs/M3_dB.hpp"
-#include "./inf_depth_coeffs/R11.hpp"
-#include "./inf_depth_coeffs/R00_dX.hpp"
-#include "./inf_depth_coeffs/R11_dX.hpp"
-
+#include "fd_coeffs_files.hpp"
 
 // Generic trait declaration
 template<typename NS>
