@@ -537,11 +537,11 @@ def write_coeffs_module_adaptive_1d_only_header( ref_level: RefLevel, folder_pat
     fid = open(header_file_path, "w")
 
     # Add header guard
-    fid.writelines(f"#ifndef __{module_name}_coeffs_hpp\n")
-    fid.writelines(f"#define __{module_name}_coeffs_hpp\n\n")
+    write_file_license_banner( fid )
+    fid.writelines(f"#pragma once\n\n")
 
     # Add includes
-    fid.writelines('#include "../../config.hpp"\n')
+    fid.writelines('#include "../../../config.hpp"\n')
     fid.writelines("\n")
 
     # Open namespace field
@@ -672,11 +672,11 @@ def write_coeffs_module_adaptive_2d_only_header( ref_level: RefLevel, folder_pat
     fid = open(header_file_path, "w")
 
     # Add header guard
-    fid.writelines(f"#ifndef __{module_name}_coeffs_hpp\n")
-    fid.writelines(f"#define __{module_name}_coeffs_hpp\n\n")
+    write_file_license_banner( fid )
+    fid.writelines(f"#pragma once\n\n")
 
     # Add includes
-    fid.writelines('#include "../../config.hpp"\n')
+    fid.writelines('#include "../../../config.hpp"\n')
     fid.writelines("\n")
 
     # Open namespace field
@@ -861,11 +861,11 @@ def write_coeffs_module_adaptive_3d_only_header( ref_level: RefLevel, folder_pat
     fid = open(header_file_path, "w")
 
     # Add header guard
-    fid.writelines(f"#ifndef __{module_name}_coeffs_hpp\n")
-    fid.writelines(f"#define __{module_name}_coeffs_hpp\n\n")
+    write_file_license_banner( fid )
+    fid.writelines(f"#pragma once\n\n")
 
     # Add includes
-    fid.writelines('#include "../../config.hpp"\n')
+    fid.writelines('#include "../../../config.hpp"\n')
     fid.writelines("\n")
 
     # Open namespace field
@@ -985,6 +985,27 @@ def write_coeffs_module_adaptive_3d_only_header( ref_level: RefLevel, folder_pat
 
     # Close file unit for header file
     fid.close()
+
+
+def write_file_license_banner( fid ) ->None:
+    fid.writelines( "/*\n" )
+    fid.writelines( " * Copyright (c) 2025 Sergio Fernández Ruano / IHCantabria\n" )
+    fid.writelines( " *\n" )
+    fid.writelines( " * This file is part of SeaMotions Software.\n" )
+    fid.writelines( " *\n" )
+    fid.writelines( " * SeaMotions is free software: you can redistribute it and/or modify\n" )
+    fid.writelines( " * it under the terms of the GNU General Public License as published by\n" )
+    fid.writelines( " * the Free Software Foundation, either version 3 of the License, or\n" )
+    fid.writelines( " * (at your option) any later version.\n" )
+    fid.writelines( " *\n" )
+    fid.writelines( " * SeaMotions is distributed in the hope that it will be useful,\n" )
+    fid.writelines( " * but WITHOUT ANY WARRANTY; without even the implied warranty of\n" )
+    fid.writelines( " * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n" )
+    fid.writelines( " * GNU General Public License for more details.\n" )
+    fid.writelines( " *\n" )
+    fid.writelines( " * You should have received a copy of the GNU General Public License\n" )
+    fid.writelines( " * along with this program. If not, see <https://www.gnu.org/licenses/>.\n" )
+    fid.writelines( " */\n" )
 
 
 def write_vector(fid, field: np.ndarray, field_tag: str, var_type: str, int_name: str)->None:
