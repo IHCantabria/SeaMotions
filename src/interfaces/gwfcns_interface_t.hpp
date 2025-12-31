@@ -22,7 +22,6 @@
 
 // Include local modules
 #include "../containers/source_node.hpp"
-#include "../green/integrals_db.hpp"
 #include "../green/pulsating_fin_depth.hpp"
 #include "../waves/wave_dispersion_fo.hpp"
 
