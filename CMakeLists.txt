@@ -205,7 +205,7 @@ if ( WIN32 )
     #         DESTINATION ${INSTALL_BIN_PATH}
     #         )
     install(
-        TARGETS seamotions_freq
+        TARGETS seamotions_freq seamotions_stab
         CONFIGURATIONS Release
         RUNTIME DESTINATION ${INSTALL_BIN_PATH}
     )
