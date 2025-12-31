@@ -35,6 +35,15 @@ using R11_dXCE      = ChebyshevEvaluatorBase<ChebyshevTraits<R11_dXC>>;
 /******* Alias Vector Classes ********/
 /*************************************/
 template<std::size_t N, int mode_loop>
+using L0CEV         = ChebyshevEvaluatorBaseVector<ChebyshevTraits<L0C>, N, mode_loop>;
+
+template<std::size_t N, int mode_loop>
+using L0_dACEV      = ChebyshevEvaluatorBaseVector<ChebyshevTraits<L0_dAC>, N, mode_loop>;
+
+template<std::size_t N, int mode_loop>
+using L0_dBCEV      = ChebyshevEvaluatorBaseVector<ChebyshevTraits<L0_dBC>, N, mode_loop>;
+
+template<std::size_t N, int mode_loop>
 using L1CEV         = ChebyshevEvaluatorBaseVector<ChebyshevTraits<L1C>, N, mode_loop>;
 
 template<std::size_t N, int mode_loop>
@@ -54,6 +63,15 @@ using L3_dACEV      = ChebyshevEvaluatorBaseVector<ChebyshevTraits<L3_dAC>, N, m
 
 template<std::size_t N, int mode_loop>
 using L3_dBCEV      = ChebyshevEvaluatorBaseVector<ChebyshevTraits<L3_dBC>, N, mode_loop>;
+
+template<std::size_t N, int mode_loop>
+using LinfCEV       = ChebyshevEvaluatorBaseVector<ChebyshevTraits<LinfC>, N, mode_loop>;
+
+template<std::size_t N, int mode_loop>
+using Linf_dACEV    = ChebyshevEvaluatorBaseVector<ChebyshevTraits<Linf_dAC>, N, mode_loop>;
+
+template<std::size_t N, int mode_loop>
+using Linf_dBCEV    = ChebyshevEvaluatorBaseVector<ChebyshevTraits<Linf_dBC>, N, mode_loop>;
 
 template<std::size_t N, int mode_loop>
 using M1CEV         = ChebyshevEvaluatorBaseVector<ChebyshevTraits<M1C>, N, mode_loop>;
@@ -78,7 +96,6 @@ using M3_dBCEV      = ChebyshevEvaluatorBaseVector<ChebyshevTraits<M3_dBC>, N, m
 
 template<std::size_t N, int mode_loop>
 using R11CEV        = ChebyshevEvaluatorBaseVector<ChebyshevTraits<R11C>, N, mode_loop>;
-
 
 template<std::size_t N, int mode_loop>
 using R00_dXCEV     = ChebyshevEvaluatorBaseVector<ChebyshevTraits<R00_dXC>, N, mode_loop>;
