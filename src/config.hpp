@@ -102,3 +102,17 @@ constexpr int       MPI_ROOT_PROC_ID        = 0;                // ID for the ro
 constexpr int       STATIC_LOOP_ON          = 1;                // Flag used as template argument to SET that the bounds of the internal loops of the calling function are known at compile time
 constexpr int       STATIC_LOOP_OFF         = 0;                // Flag used as template argument to NOT SET that the bounds of the internal loops of the calling function are not known at compile time
 constexpr cusfloat  ZEROTH_EPS              = 1E-14;
+
+
+/************************************************************/
+/****** Define class enums to be used along the code  *******/
+/************************************************************/
+
+// Free regime enum. Used to classify the frequency regime
+// in frequency solver.
+enum class freq_regime_t: int
+{
+    REGULAR,        // Regular frequency regime
+    ASYMPT_LOW,     // Low frequency asymptotic regime
+    ASYMPT_HIGH     // High frequency asymptotic regime
+};
