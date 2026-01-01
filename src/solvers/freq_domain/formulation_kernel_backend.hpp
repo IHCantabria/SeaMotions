@@ -55,6 +55,7 @@ private:
     MLGCmpx*                _sf_gp                  = nullptr;  // Group of matrix data to storage Source formulation data (Colum-Major arranged data)
 
     // Declare private methods
+    template<freq_regime_t freq_regime>
     void _build_steady_matrixes( 
                                     void 
                                 );
@@ -63,6 +64,7 @@ private:
                                     cusfloat w
                     );
 
+    template<freq_regime_t freq_regime>
     void _build_wave_matrixes( 
                                     cusfloat w
                             );
@@ -92,6 +94,7 @@ public:
                             void
                 );
     
+    template<freq_regime_t freq_regime>
     void    solve(             
                             cusfloat w 
                 );

@@ -24,7 +24,61 @@
 #include "panel_fields.hpp"
 
 
+/********************************************************/
+/************** Define module macros ********************/
+/********************************************************/
+#define QUADRATURE_PANEL_T( TA0, TA1, TA2, TA3, TA4 )                                   \
+{                                                                                       \
+    if constexpr( freq_regime == freq_regime_t::REGULAR )                               \
+    {                                                                                   \
+        quadrature_panel_t<                                                             \
+                                PanelGeom,                                              \
+                                GWFcnsInterfaceT<NUM_GP2>,                              \
+                                wave_term_integral<TA0, TA1, TA2, TA3, TA4>,            \
+                                NUM_GP                                                  \
+                            >(                                                          \
+                                source_i->panel,                                        \
+                                this->_gwfcns_interf,                                   \
+                                wave_fcn_value,                                         \
+                                wave_fcn_dn_sf_value,                                   \
+                                wave_fcn_dn_pf_value                                    \
+                            );                                                          \
+    }                                                                                   \
+    else if constexpr( freq_regime == freq_regime_t::ASYMPT_LOW )                       \
+    {                                                                                   \
+        quadrature_panel_t<                                                             \
+                                PanelGeom,                                              \
+                                GWFcnsInterfaceT<NUM_GP2>,                              \
+                                wave_term_integral_zero_freq<TA0, TA1, TA2, TA3, TA4>,  \
+                                NUM_GP                                                  \
+                            >(                                                          \
+                                source_i->panel,                                        \
+                                this->_gwfcns_interf,                                   \
+                                wave_fcn_value,                                         \
+                                wave_fcn_dn_sf_value,                                   \
+                                wave_fcn_dn_pf_value                                    \
+                            );                                                          \
+    }                                                                                   \
+    else                                                                                \
+    {                                                                                   \
+        quadrature_panel_t<                                                             \
+                                PanelGeom,                                              \
+                                GWFcnsInterfaceT<NUM_GP2>,                              \
+                                wave_term_integral_inf_freq<TA0, TA1, TA2, TA3, TA4>,   \
+                                NUM_GP                                                  \
+                            >(                                                          \
+                                source_i->panel,                                        \
+                                this->_gwfcns_interf,                                   \
+                                wave_fcn_value,                                         \
+                                wave_fcn_dn_sf_value,                                   \
+                                wave_fcn_dn_pf_value                                    \
+                            );                                                          \
+    }                                                                                   \
+}                                                                                       \
+
+
 template<std::size_t N, int mode_pf>
+template<freq_regime_t freq_regime>
 void FormulationKernelBackend<N, mode_pf>::_build_steady_matrixes( void )
 {
     /***************************************/
@@ -176,13 +230,30 @@ void FormulationKernelBackend<N, mode_pf>::_build_steady_matrixes( void )
                                     );
 
             // Compose total velocity vector
-            vel_total_sf[0] = - ( vel_0[0] + vel_1[0] + vel_2[0] + vel_3[0] + vel_4[0] + vel_5[0] );
-            vel_total_sf[1] = - ( vel_0[1] + vel_1[1] + vel_2[1] + vel_3[1] + vel_4[1] + vel_5[1] );
-            vel_total_sf[2] = - ( vel_0[2] + vel_1[2] + vel_2[2] + vel_3[2] - vel_4[2] + vel_5[2] );
+            if constexpr( freq_regime == freq_regime_t::REGULAR || freq_regime == freq_regime_t::ASYMPT_LOW )
+            {
+                vel_total_sf[0] = - ( vel_0[0] + vel_1[0] + vel_2[0] + vel_3[0] + vel_4[0] + vel_5[0] );
+                vel_total_sf[1] = - ( vel_0[1] + vel_1[1] + vel_2[1] + vel_3[1] + vel_4[1] + vel_5[1] );
+                vel_total_sf[2] = - ( vel_0[2] + vel_1[2] + vel_2[2] + vel_3[2] - vel_4[2] + vel_5[2] );
+
+                STATIC_COND( ONLY_PF, vel_total_pf[2] = - ( - vel_0[2] + vel_1[2] + vel_2[2] - vel_3[2] + vel_4[2] + vel_5[2] );    )
+
+                pot_term        = ( pot_0 + pot_1 + pot_2 + pot_3 + pot_4 + pot_5 ) / 4.0 / PI;
+            }
+            else // freq_regime == FREQ_REGIME_INF_FREQ
+            {
+                vel_total_sf[0] = - ( vel_0[0] + vel_1[0] - vel_2[0] - vel_3[0] - vel_4[0] - vel_5[0] );
+                vel_total_sf[1] = - ( vel_0[1] + vel_1[1] - vel_2[1] - vel_3[1] - vel_4[1] - vel_5[1] );
+                vel_total_sf[2] = - ( vel_0[2] + vel_1[2] - vel_2[2] - vel_3[2] + vel_4[2] - vel_5[2] );
+
+                STATIC_COND( ONLY_PF, vel_total_pf[2] = - ( - vel_0[2] + vel_1[2] - vel_2[2] + vel_3[2] - vel_4[2] - vel_5[2] );    )
+
+                pot_term        = ( pot_0 + pot_1 - pot_2 - pot_3 - pot_4 - pot_5 ) / 4.0 / PI;
+            }
 
             STATIC_COND( ONLY_PF, vel_total_pf[0] = - vel_total_sf[0];                                                          )
             STATIC_COND( ONLY_PF, vel_total_pf[1] = - vel_total_sf[1];                                                          )
-            STATIC_COND( ONLY_PF, vel_total_pf[2] = - ( - vel_0[2] + vel_1[2] + vel_2[2] - vel_3[2] + vel_4[2] + vel_5[2] );    )
+            
                                     
             int_value_sf    = (
                                     this->_mesh_gp->source_nodes[j]->normal_vec[0] * vel_total_sf[0]
@@ -192,7 +263,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_steady_matrixes( void )
                                     this->_mesh_gp->source_nodes[j]->normal_vec[2] * vel_total_sf[2]
                                 ) / 4.0 / PI;
                             
-            pot_term        = ( pot_0 + pot_1 + pot_2 + pot_3 + pot_4 + pot_5 ) / 4.0 / PI;
+            
 
             STATIC_COND(
                             ONLY_PF,
@@ -447,6 +518,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_rhs(
 
 
 template<std::size_t N, int mode_pf>
+template<freq_regime_t freq_regime>
 void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes( 
                                                                     cusfloat w
                                                                 )
@@ -513,18 +585,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
                     int_dn_sf_value     = cuscomplex( 0.5, 0.0 );
                     int_dn_pf_value     = cuscomplex( 0.5, 0.0 );
 
-                    quadrature_panel_t<
-                                            PanelGeom, 
-                                            GWFcnsInterfaceT<NUM_GP2>, 
-                                            wave_term_integral<NUM_GP2, G_ON, DGDR_OFF, DGDZ_OFF, FSLID_OFF>, 
-                                            NUM_GP
-                                        >( 
-                                            source_i->panel, 
-                                            this->_gwfcns_interf, 
-                                            wave_fcn_value,
-                                            wave_fcn_dn_sf_value,
-                                            wave_fcn_dn_pf_value
-                                        );
+                    QUADRATURE_PANEL_T( NUM_GP2, G_ON, DGDR_OFF, DGDZ_OFF, FSLID_OFF )
                     
                     int_value   =   wave_fcn_value / 4.0 / PI;
                 }
@@ -533,21 +594,13 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
                     int_dn_sf_value     = -cuscomplex( 1.0, 0.0 );
                     int_dn_pf_value     = -cuscomplex( 1.0, 0.0 );
                     
-                    quadrature_panel_t<
-                                            PanelGeom, 
-                                            GWFcnsInterfaceT<NUM_GP2>, 
-                                            wave_term_integral<NUM_GP2, G_ON, DGDR_OFF, DGDZ_OFF, FSLID_ON>, 
-                                            NUM_GP
-                                        >( 
-                                            source_i->panel, 
-                                            this->_gwfcns_interf, 
-                                            wave_fcn_value,
-                                            wave_fcn_dn_sf_value,
-                                            wave_fcn_dn_pf_value
-                                        );
+                    QUADRATURE_PANEL_T( NUM_GP2, G_ON, DGDR_OFF, DGDZ_OFF, FSLID_ON )
                     
-                    log_sing_val        = 2.0 * ( LOG2_GAMMA - std::log( nu ) - source_i->panel->free_surface_log_int ) * source_i->panel->area;
-                    wave_fcn_value      += cuscomplex( nu * log_sing_val, 0.0 );
+                    if constexpr( freq_regime == freq_regime_t::REGULAR )
+                    {
+                        log_sing_val        = 2.0 * ( LOG2_GAMMA - std::log( nu ) - source_i->panel->free_surface_log_int ) * source_i->panel->area;
+                        wave_fcn_value      += cuscomplex( nu * log_sing_val, 0.0 );
+                    }
                     int_value           = wave_fcn_value / 4.0 / PI;
                     
                 }
@@ -559,7 +612,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
                 wave_fcn_dn_sf_value    = 0.0;
                 wave_fcn_dn_pf_value    = 0.0;
 
-                if ( is_john )
+                if ( is_john && freq_regime == freq_regime_t::REGULAR )
                 {
                     quadrature_panel_t<
                                             PanelGeom, 
@@ -576,18 +629,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
                 }
                 else
                 {
-                    quadrature_panel_t<
-                                            PanelGeom, 
-                                            GWFcnsInterfaceT<NUM_GP2>, 
-                                            wave_term_integral<NUM_GP2, G_ON, DGDR_ON, DGDZ_ON, FSLID_OFF>, 
-                                            NUM_GP
-                                        >( 
-                                            source_i->panel, 
-                                            this->_gwfcns_interf, 
-                                            wave_fcn_value,
-                                            wave_fcn_dn_sf_value,
-                                            wave_fcn_dn_pf_value
-                                        );
+                    QUADRATURE_PANEL_T( NUM_GP2, G_ON, DGDR_ON, DGDZ_ON, FSLID_OFF )
                 }
 
                 int_value       =   wave_fcn_value / 4.0 / PI;
@@ -600,7 +642,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
             COL_MAJOR_INDEX( index_cm, row_count, col_count, this->_solver->num_rows_local )
             ROW_MAJOR_INDEX( index_rm, row_count, col_count, this->_solver->num_cols_local )
 
-            if ( is_john )
+            if ( is_john && freq_regime == freq_regime_t::REGULAR )
             {
                 this->_pot_gp->sysmat[index_rm] = int_value;
                 this->_sf_gp->sysmat[index_cm]  = int_dn_sf_value;
@@ -739,18 +781,23 @@ int FormulationKernelBackend<N, mode_pf>::size( void )
 
 
 template<std::size_t N, int mode_pf>
+template<freq_regime_t freq_regime>
 void FormulationKernelBackend<N, mode_pf>::solve( cusfloat w )
 {
-    // Fold database for current frequency and water depth
-    cusfloat H = pow2s( w ) * this->_input->water_depth / this->_input->grav_acc;
+    // Fold integrals database if required
+    if constexpr( freq_regime == freq_regime_t::REGULAR )
+    {
+        // Fold database for current frequency and water depth
+        cusfloat H = pow2s( w ) * this->_input->water_depth / this->_input->grav_acc;
 
-    fold_database( H );
+        fold_database( H );
 
-    // Update integration functor to ne new frequency
-    this->_gwfcns_interf.set_ang_freq( w );
-
+        // Update integration functor to ne new frequency
+        this->_gwfcns_interf.set_ang_freq( w );
+    }
+    
     // Re-calculate wave dependent system matrix term
-    MPI_TIME_EXEC(  this->_build_wave_matrixes( w );, this->exec_time_build_wave )
+    MPI_TIME_EXEC(  this->_build_wave_matrixes<freq_regime>( w );, this->exec_time_build_wave )
                     this->_build_rhs( w );
 
     // Calculate system matrixes condition number if required
