@@ -198,5 +198,46 @@ template<
                                                                     );
 
 
+template<
+            std::size_t N, 
+            int         mode_f, 
+            int         mode_dfdr, 
+            int         mode_dfdz, 
+            int         mode_fslid
+        >                           void        wave_term_integral_inf_freq(
+                                                                                    cusfloat*                   Ri,
+                                                                                    cusfloat*                   zi,
+                                                                                    cusfloat*                   zeta,
+                                                                                    cusfloat                    h,
+                                                                                    BesselFactoryVecUpTo<N>     ,
+                                                                                    WaveDispersionFONK          ,
+                                                                                    cuscomplex*                 G,
+                                                                                    cuscomplex*                 G_dr,
+                                                                                    cuscomplex*                 G_dz,
+                                                                                    cuscomplex*                 G_dzeta
+                                                                            );
+
+                                        
+template<
+            std::size_t N, 
+            int         mode_f, 
+            int         mode_dfdr, 
+            int         mode_dfdz, 
+            int         mode_fslid
+        >
+                                    void        wave_term_integral_zero_freq(
+                                                                                            cusfloat*                   Ri,
+                                                                                            cusfloat*                   zi,
+                                                                                            cusfloat*                   zeta,
+                                                                                            cusfloat                    h,
+                                                                                            BesselFactoryVecUpTo<N>     ,
+                                                                                            WaveDispersionFONK          ,
+                                                                                            cuscomplex*                 G,
+                                                                                            cuscomplex*                 G_dr,
+                                                                                            cuscomplex*                 G_dz,
+                                                                                            cuscomplex*                 G_dzeta
+                                                                            );
+
+
 // Include definition module
 #include "pulsating_fin_depth.txx"

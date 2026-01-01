@@ -1445,3 +1445,129 @@ void        wave_term_integral(
     }
 
 }
+
+
+template<std::size_t N, int mode_f, int mode_dfdr, int mode_dfdz, int mode_fslid>
+void        wave_term_integral_inf_freq(
+                                                cusfloat*                   Ri,
+                                                cusfloat*                   zi,
+                                                cusfloat*                   zeta,
+                                                cusfloat                    h,
+                                                BesselFactoryVecUpTo<N>     ,
+                                                WaveDispersionFONK          ,
+                                                cuscomplex*                 G,
+                                                cuscomplex*                 G_dr,
+                                                cuscomplex*                 G_dz,
+                                                cuscomplex*                 G_dzeta
+                                        )
+{
+    /**
+     * @brief Wave term for the finite water depth function (Integral representation) at infinite frequency.
+     * 
+     * \param R                 Eucleadian distance in between field and source points in the horizontal plane
+     * \param z                 Z Coordinate of the field point
+     * \param zeta              Z Coordinate of the source point
+     * \param h                 Water depth
+     * \param bessel_factory    Bessel function factory ( Not used but ketp for interface consistency )
+     * \param wave_data         Wave dispersion data object initialized with John's constants ( Not used but ketp for interface consistency )
+     * \param G                 Green function values
+     * \param G_dr              Derivative of Green function respect to r
+     * \param G_dz              Derivative of Green function respect to z
+     * \param G_dzeta           Derivative of Green function respect to zeta
+     */
+
+    // Calculate sign( z - zeta ) for dB case
+    cusfloat sg_z_m_zeta[N];
+
+    for ( std::size_t i=0; i<N; i++ )
+    {
+        sg_z_m_zeta[i]  = sign( z[i] - zeta[i] );
+    }
+
+    // Clear vector to avoid spurious remaining data
+    cusfloat results[N];
+    cusfloat results_da[N];
+    cusfloat results_db[N];
+
+    STATIC_COND( ONLY_FCN,      STATIC_CLEAR( n, N, results     ) )
+    STATIC_COND( ONLY_FCNDR,    STATIC_CLEAR( n, N, results_da  ) )
+    STATIC_COND( ONLY_FCNDZ,    STATIC_CLEAR( n, N, results_db  ) )
+
+    // Calculate L0 integral
+    STATIC_COND( ONLY_FCN,      (LinfCEV<N, mode_loop>::evaluate( N, A, B, results ));         )
+    STATIC_COND( ONLY_FCNDR,    (Linf_dACEV<N, mode_loop>::evaluate( N, A, B, results_da ));   )
+    STATIC_COND( ONLY_FCNDZ,    (Linf_dBCEV<N, mode_loop>::evaluate( N, A, B, results_db ));   )
+
+    cusfloat h2  = h * h;
+    for ( std::size_t i=0; i<N; i++ )
+    {
+        STATIC_COND( ONLY_FCN,      G[i]        = results[i] / h;                           )
+        STATIC_COND( ONLY_FCNDR,    G_dr[i]     = results_da[i] / h2;                       )
+        STATIC_COND( ONLY_FCNDZ,    G_dz[i]     = results_db[i] * sg_z_m_zeta[i] / h2;      )
+        STATIC_COND( ONLY_FCNDZ,    G_dzeta[i]  = - results_db[i] * sg_z_m_zeta[i] / h2;    )
+    }
+
+}
+
+
+template<std::size_t N, int mode_f, int mode_dfdr, int mode_dfdz, int mode_fslid>
+void        wave_term_integral_zero_freq(
+                                                cusfloat*                   Ri,
+                                                cusfloat*                   zi,
+                                                cusfloat*                   zeta,
+                                                cusfloat                    h,
+                                                BesselFactoryVecUpTo<N>     ,
+                                                WaveDispersionFONK          ,
+                                                cuscomplex*                 G,
+                                                cuscomplex*                 G_dr,
+                                                cuscomplex*                 G_dz,
+                                                cuscomplex*                 G_dzeta
+                                )
+{
+    /**
+     * @brief Wave term for the finite water depth function (Integral representation) at zero frequency.
+     * 
+     * \param R                 Eucleadian distance in between field and source points in the horizontal plane
+     * \param z                 Z Coordinate of the field point
+     * \param zeta              Z Coordinate of the source point
+     * \param h                 Water depth
+     * \param bessel_factory    Bessel function factory ( Not used but ketp for interface consistency )
+     * \param wave_data         Wave dispersion data object initialized with John's constants ( Not used but ketp for interface consistency )
+     * \param G                 Green function values
+     * \param G_dr              Derivative of Green function respect to r
+     * \param G_dz              Derivative of Green function respect to z
+     * \param G_dzeta           Derivative of Green function respect to zeta
+     */
+
+    // Calculate sign( z - zeta ) for dB case
+    cusfloat sg_z_m_zeta[N];
+
+    for ( std::size_t i=0; i<N; i++ )
+    {
+        sg_z_m_zeta[i]  = sign( z[i] - zeta[i] );
+    }
+
+    // Clear vector to avoid spurious remaining data
+    cusfloat results[N];
+    cusfloat results_da[N];
+    cusfloat results_db[N];
+
+    STATIC_COND( ONLY_FCN,      STATIC_CLEAR( n, N, results     ) )
+    STATIC_COND( ONLY_FCNDR,    STATIC_CLEAR( n, N, results_da  ) )
+    STATIC_COND( ONLY_FCNDZ,    STATIC_CLEAR( n, N, results_db  ) )
+
+    // Calculate L0 integral
+    STATIC_COND( ONLY_FCN,      (L0CEV<N, mode_loop>::evaluate( N, A, B, results ));         )
+    STATIC_COND( ONLY_FCNDR,    (L0_dACEV<N, mode_loop>::evaluate( N, A, B, results_da ));   )
+    STATIC_COND( ONLY_FCNDZ,    (L0_dBCEV<N, mode_loop>::evaluate( N, A, B, results_db ));   )
+
+    cusfloat h2  = h * h;
+    for ( std::size_t i=0; i<N; i++ )
+    {
+        STATIC_COND( ONLY_FCN,      G[i]        = results[i] / h;                           )
+        STATIC_COND( ONLY_FCNDR,    G_dr[i]     = results_da[i] / h2;                       )
+        STATIC_COND( ONLY_FCNDZ,    G_dz[i]     = results_db[i] * sg_z_m_zeta[i] / h2;      )
+        STATIC_COND( ONLY_FCNDZ,    G_dzeta[i]  = - results_db[i] * sg_z_m_zeta[i] / h2;    )
+    }
+
+}
