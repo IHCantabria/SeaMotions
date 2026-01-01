@@ -40,6 +40,26 @@
 // Declare module functions
 template<
             std::size_t N, 
+            int         mode_f, 
+            int         mode_dfdr, 
+            int         mode_dfdz, 
+            int         mode_fslid
+        >                           void        fd_green_rad_asymptotic(
+                                                                                cusfloat*                   Ri,
+                                                                                cusfloat*                   zi,
+                                                                                cusfloat*                   zeta,
+                                                                                cusfloat                    h,
+                                                                                BesselFactoryVecUpTo<N>     &bessel_factory,
+                                                                                WaveDispersionFONK          &wave_data,
+                                                                                cuscomplex*                 G,
+                                                                                cuscomplex*                 G_dr,
+                                                                                cuscomplex*                 G_dz,
+                                                                                cuscomplex*                 G_dzeta
+                                                                        );
+
+
+template<
+            std::size_t N, 
             int         mode_loop, 
             int         mode_f, 
             int         mode_dfdr, 

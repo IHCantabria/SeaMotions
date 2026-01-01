@@ -39,6 +39,92 @@
 using namespace std::literals::complex_literals;
 
 
+template<std::size_t N, int mode_f, int mode_dfdr, int mode_dfdz, int mode_fslid>
+void        fd_green_rad_asymptotic(
+                                                cusfloat*                   Ri,
+                                                cusfloat*                   zi,
+                                                cusfloat*                   zeta,
+                                                cusfloat                    h,
+                                                BesselFactoryVecUpTo<N>     &bessel_factory,
+                                                WaveDispersionFONK          &wave_data,
+                                                cuscomplex*                 G,
+                                                cuscomplex*                 G_dr,
+                                                cuscomplex*                 G_dz,
+                                                cuscomplex*                 G_dzeta
+                                        )
+{
+    /**
+     * @brief Green function radius asymptotic expression for finite depth
+     * 
+     * Expression is taken from section 5.5 at:
+     * "Consistent expressions for the free surface function in
+     *  finite water depth - Ed Mackay".
+     * 
+     * \param R                 Eucleadian distance in between field and source points in the horizontal plane
+     * \param z                 Z Coordinate of the field point
+     * \param zeta              Z Coordinate of the source point
+     * \param h                 Water depth
+     * \param bessel_factory    Bessel function factory ( Not used but ketp for interface consistency )
+     * \param wave_data         Wave dispersion data object initialized with John's constants ( Not used but ketp for interface consistency )
+     * \param G                 Green function values
+     * \param G_dr              Derivative of Green function respect to r
+     * \param G_dz              Derivative of Green function respect to z
+     * \param G_dzeta           Derivative of Green function respect to zeta
+     */
+
+    // Check minimum distances from Source to field point
+    cusfloat R[N];
+    cusfloat z[N];
+    for ( std::size_t i=0; i<N; i++ )
+    {
+        R[i] = ( Ri[i] < 1e-5 ) ? 1e-5: Ri[i];
+        z[i] = ( std::abs( zi[i]-zeta[i] ) < 1e-5 ) ? zi[i]-1e-5: zi[i];
+    }
+
+    // Get variables as local constants for convient naming
+    cusfloat k0 = this->k0;
+
+    // Calculate C0 constant
+    cusfloat c0 = wave_data.k0nu * std::sqrt( 2.0 / PI / k0 );
+    
+    // Calculate exponential terms expansion parameters
+    cusfloat v2[N];
+    cusfloat v3[N];
+    cusfloat v4[N];
+    cusfloat v5[N];
+
+    for ( std::size_t i=0; i<N; i++ )
+    {
+        // Calculate dependent parameters
+        v2[i] = std::exp( - k0 * ( abs( z[i] + zeta[i] ) ) );
+        v3[i] = std::exp( - k0 * ( z[i] - zeta[i] + 2*h  ) );
+        v4[i] = std::exp( - k0 * ( zeta[i] - z[i] + 2*h  ) );
+        v5[i] = std::exp( - k0 * ( z[i] + zeta[i] + 4*h  ) );
+    }
+
+    // Calculate complex exponential term
+    cuscomplex exp_term[N];
+    for ( std::size_t i=0; i<N; i++ )
+    {
+        exp_term[i] = cuscomplex( 0.0, -( k0 * R[i] + PI / 4.0 ) );
+    }
+
+    // Calculate inverse square root of R
+    cusfloat r_inv_sqrt[N];
+    for ( std::size_t i=0; i<N; i++ )
+    {
+        r_inv_sqrt[i] = 1.0 / std::sqrt( R[i] );
+    }
+
+    // Calculate Green function values
+    STATIC_COND( ONLY_FCN,      STATIC_LOOP( n, N, G[i]       = c0 * r_inv_sqrt[i] * ( v2[i] + v3[i] + v4[i] + v5[i] ) * exp_term[i];   ) )
+    STATIC_COND( ONLY_FCNDR,    STATIC_LOOP( n, N, G_dr[i]    = G[i] * ( -1/2.0/R[i] + cuscomplex( 0.0, -k0 ) );                        ) )
+    STATIC_COND( ONLY_FCNDZ,    STATIC_LOOP( n, N, G_dz[i]    = c0 * r_inv_sqrt[i] * ( - v2[i] + v3[i] - v4[i] + v5[i] ) * exp_term[i]; ) )
+    STATIC_COND( ONLY_FCNDZ,    STATIC_LOOP( n, N, G_dzeta[i] = c0 * r_inv_sqrt[i] * ( - v2[i] - v3[i] + v4[i] + v5[i] ) * exp_term[i]; ) )
+
+}
+
+
 template<std::size_t N, int mode_loop, int mode_f, int mode_dfdr, int mode_dfdz, int mode_fslid>
 void         Fxy(
                                                 const std::size_t           n,
@@ -1464,6 +1550,10 @@ void        wave_term_integral_inf_freq(
     /**
      * @brief Wave term for the finite water depth function (Integral representation) at infinite frequency.
      * 
+     * Expression is taken from section 5.4 at:
+     * "Consistent expressions for the free surface function in
+     *  finite water depth - Ed Mackay".
+     * 
      * \param R                 Eucleadian distance in between field and source points in the horizontal plane
      * \param z                 Z Coordinate of the field point
      * \param zeta              Z Coordinate of the source point
@@ -1526,6 +1616,10 @@ void        wave_term_integral_zero_freq(
 {
     /**
      * @brief Wave term for the finite water depth function (Integral representation) at zero frequency.
+     * 
+     * Expression is taken from section 5.3 at:
+     * "Consistent expressions for the free surface function in
+     *  finite water depth - Ed Mackay". 
      * 
      * \param R                 Eucleadian distance in between field and source points in the horizontal plane
      * \param z                 Z Coordinate of the field point
