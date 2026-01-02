@@ -62,6 +62,12 @@ private:
     /**** Declare class private methods ****/
     void _calculate_global_static_matrixes( );
 
+    template<freq_regime_t freq_regime>
+    void _calculate_first_order_coeffs( 
+                                            int      freq_index,
+                                            cusfloat ang_freq
+                                        );
+
     void _calculate_hydrostatics( );
 
     void _generate_formulation_kernel( );
