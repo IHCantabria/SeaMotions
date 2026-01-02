@@ -677,6 +677,7 @@ void FormulationKernelBackend<N, mode_pf>::_initialize(
 {
     // Calculate steady part integral over the panels
     MPI_TIME_EXEC( this->_build_steady_matrixes<freq_regime_t::REGULAR>( ); , this->exec_time_build_steady )
+    this->_steady_mat_type  = 0;
 }
 
 
@@ -784,6 +785,30 @@ template<std::size_t N, int mode_pf>
 template<freq_regime_t freq_regime>
 void FormulationKernelBackend<N, mode_pf>::solve( cusfloat w )
 {
+    // Recalculate steady part of the system matrixes if required
+    if ( 
+            this->_steady_mat_type != 0 
+            &&
+            (   
+                freq_regime == freq_regime_t::REGULAR 
+                || 
+                freq_regime == freq_regime_t::ASYMPT_LOW 
+            )
+        )
+    {
+        MPI_TIME_EXEC( this->_build_steady_matrixes<freq_regime>( ); , this->exec_time_build_steady )
+        this->_steady_mat_type  = 0;
+    }
+    else if ( 
+                this->_steady_mat_type != 1 
+                &&
+                freq_regime == freq_regime_t::ASYMPT_HIGH 
+            )
+    {
+        MPI_TIME_EXEC( this->_build_steady_matrixes<freq_regime>( ); , this->exec_time_build_steady )
+        this->_steady_mat_type  = 1;
+    }
+    
     // Fold integrals database if required
     if constexpr( freq_regime == freq_regime_t::REGULAR )
     {

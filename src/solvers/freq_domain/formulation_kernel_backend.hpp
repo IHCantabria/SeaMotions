@@ -52,6 +52,7 @@ private:
     MLGCmpx*                _pot_gp                 = nullptr;  // Group of matrix data to storage Potential matrix data (This is required for Source and Potential formulations) (Row-Major arranged data)
     cuscomplex*             _ppf_rhs                = nullptr;  // Partial potential formulation RHS. It storage the information at each vertical chunk of the potential matrix (see PF-RHS) depending of the processor
     SclCmpx*                _solver                 = nullptr;  // ScaLapack solver for complex numbers
+    int                     _steady_mat_type        = 0;        // Steady matrix type to be used in the formulation ( 0: REGULAR+Lf, 1: HF )
     MLGCmpx*                _sf_gp                  = nullptr;  // Group of matrix data to storage Source formulation data (Colum-Major arranged data)
 
     // Declare private methods
