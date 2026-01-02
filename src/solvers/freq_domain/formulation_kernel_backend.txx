@@ -676,7 +676,7 @@ void FormulationKernelBackend<N, mode_pf>::_initialize(
                                                         )
 {
     // Calculate steady part integral over the panels
-    MPI_TIME_EXEC( this->_build_steady_matrixes( ); , this->exec_time_build_steady )
+    MPI_TIME_EXEC( this->_build_steady_matrixes<freq_regime_t::REGULAR>( ); , this->exec_time_build_steady )
 }
 
 
