@@ -30,15 +30,31 @@
 
 // Define output channels name
 #define  _DN_ADDED_MASS         "added_mass"
+#define  _DN_ADDED_MASS_HF      "added_mass_hf"
+#define  _DN_ADDED_MASS_LF      "added_mass_lf"
 #define  _DN_DAMPING_RAD        "damping_rad"
+#define  _DN_DAMPING_RAD_HF     "damping_rad_hf"
+#define  _DN_DAMPING_RAD_LF     "damping_rad_lf"
 #define  _DN_DIFFRAC            "diffraction_force"
+#define  _DN_DIFFRAC_HF         "diffraction_force_hf"
+#define  _DN_DIFFRAC_LF         "diffraction_force_lf"
 #define  _DN_DIFFRAC_MAG        "diffraction_force_mag"
+#define  _DN_DIFFRAC_HF_MAG     "diffraction_force_hf_mag"
+#define  _DN_DIFFRAC_LF_MAG     "diffraction_force_lf_mag"
 #define  _DN_DIFFRAC_PHA        "diffraction_force_pha"
+#define  _DN_DIFFRAC_HF_PHA     "diffraction_force_hf_pha"
+#define  _DN_DIFFRAC_LF_PHA     "diffraction_force_lf_pha"
 #define  _DN_ELEMS              "elements"
 #define  _DN_FREQS              "frequencies"
 #define  _DN_FK                 "froude_krylov_force"
+#define  _DN_FK_HF              "froude_krylov_force_hf"
+#define  _DN_FK_LF              "froude_krylov_force_lf"
 #define  _DN_FK_MAG             "froude_krylov_force_mag"
+#define  _DN_FK_HF_MAG          "froude_krylov_force_hf_mag"
+#define  _DN_FK_LF_MAG          "froude_krylov_force_lf_mag"
 #define  _DN_FK_PHA             "froude_krylov_force_pha"
+#define  _DN_FK_HF_PHA          "froude_krylov_force_hf_pha"
+#define  _DN_FK_LF_PHA          "froude_krylov_force_lf_pha"
 #define  _DN_HEADS              "headings"
 #define  _DN_HYDSTIFF           "hydstiffness"
 #define  _DN_MDRIFT             "mean_drift"
@@ -97,32 +113,42 @@
 #define  _DN_SRC_INT_PHA        "source_intensity_pha"
 #define  _DN_STRUCT_MASS        "mass"
 #define  _DN_WEX                "wave_exciting"
+#define  _DN_WEX_HF             "wave_exciting_hf"
+#define  _DN_WEX_LF             "wave_exciting_lf"
 #define  _DN_WEX_MAG            "wave_exciting_mag"
+#define  _DN_WEX_HF_MAG         "wave_exciting_hf_mag"
+#define  _DN_WEX_LF_MAG         "wave_exciting_lf_mag"
 #define  _DN_WEX_PHA            "wave_exciting_pha"
+#define  _DN_WEX_HF_PHA         "wave_exciting_hf_pha"
+#define  _DN_WEX_LF_PHA         "wave_exciting_lf_pha"
 #define  _GN_MESH               "/mesh"
 
 // Define datasets shape length
-const hsize_t _DS_EL_NP = 2;
-const hsize_t _DS_FD_NP = 3;
-const hsize_t _DS_HF_NP = 1;
-const hsize_t _DS_HM_NP = 5;
-const hsize_t _DS_MH_NP = 3;
-const hsize_t _DS_ND_NP = 1;
-const hsize_t _DS_QF_NP = 6;
-const hsize_t _DS_WX_NP = 4;
+const hsize_t _DS_EL_NP     = 2;
+const hsize_t _DS_FD_NP     = 3;
+const hsize_t _DS_HF_NP     = 1;
+const hsize_t _DS_HM_NP     = 5;
+const hsize_t _DS_HMA_NP    = 4;
+const hsize_t _DS_MH_NP     = 3;
+const hsize_t _DS_ND_NP     = 1;
+const hsize_t _DS_QF_NP     = 6;
+const hsize_t _DS_WX_NP     = 4;
+const hsize_t _DS_WXA_NP    = 3;
 
 
 struct Output
 {
 private:
     // Define class attributes
-    hsize_t         _ds_f[_DS_HF_NP]    = { 0 };
-    hsize_t         _ds_fd[_DS_FD_NP]   = { 0, 0, 0 };
-    hsize_t         _ds_h[_DS_HF_NP]    = { 0 };
-    hsize_t         _ds_hm[_DS_HM_NP]   = { 0, 0, 0, 0, 0 };
-    hsize_t         _ds_mh[_DS_MH_NP]   = { 0, 0, 0 };
-    hsize_t         _ds_qf[_DS_QF_NP]   = { 0, 0, 0, 0, 0, 0 };
-    hsize_t         _ds_wx[_DS_WX_NP]   = { 0, 0, 0, 0 };
+    hsize_t         _ds_f[_DS_HF_NP]    = { 0 };                    // Dataset shape for frequencies
+    hsize_t         _ds_fd[_DS_FD_NP]   = { 0, 0, 0 };              // Dataset shape for field data (sources, potential, pressure)
+    hsize_t         _ds_h[_DS_HF_NP]    = { 0 };                    // Dataset shape for headings
+    hsize_t         _ds_hm[_DS_HM_NP]   = { 0, 0, 0, 0, 0 };        // Dataset shape for hydromechanics values
+    hsize_t         _ds_hma[_DS_HMA_NP] = { 0, 0, 0, 0 };           // Dataset shape for hydromechanic asymptotic values
+    hsize_t         _ds_mh[_DS_MH_NP]   = { 0, 0, 0 };              // Dataset shape for mass and hydrostatic stiffness matrixes
+    hsize_t         _ds_qf[_DS_QF_NP]   = { 0, 0, 0, 0, 0, 0 };     // Dataset shape for QTF values
+    hsize_t         _ds_wx[_DS_WX_NP]   = { 0, 0, 0, 0 };           // Dataset shape for wave exciting forces ( diffraction, Froude-Krylov, total )
+    hsize_t         _ds_wxa[_DS_WXA_NP] = { 0, 0, 0 };              // Dataset shape for wave exciting forces asymptotic values
     Input*          _input              = nullptr;
     std::string     _results_fipath     = "";
     int             _total_panels_np    = 0;
@@ -137,45 +163,56 @@ public:
 
     // Define class methods
     void    save_frequencies(
-                                            cusfloat*   freqs
+                                                cusfloat*   freqs
                             );
     
     void    save_headings(
-                                            cusfloat*   heads
+                                                cusfloat*   heads
                             );
 
     void    save_hydstiffness(
-                                            Hydrostatics** hydrostatics
+                                                Hydrostatics** hydrostatics
                                 );
 
     void    save_hydromechanics_format(
-                                            int         freq_index,
-                                            std::string channel_name,
-                                            cusfloat*   added_mass
+                                                int         freq_index,
+                                                std::string channel_name,
+                                                cusfloat*   added_mass
                                         );
 
+    void    save_hydromechanics_asympt_format(
+                                                std::string channel_name,
+                                                cusfloat*   added_mass
+                                            );
+
     void    save_mesh(
-                                            void
+                                                void
                         );
 
     void    save_fields_data(
-                                            int         freq_index,
-                                            std::string channel_name,
-                                            cuscomplex* source_intensity
+                                                int         freq_index,
+                                                std::string channel_name,
+                                                cuscomplex* source_intensity
                                         );
 
     void    save_structural_mass( 
-                                            void 
+                                                void 
                                 );
 
     void    save_qtf_format(
-                                            std::string channel_name,
-                                            cuscomplex* forces
+                                                std::string channel_name,
+                                                cuscomplex* forces
                         );
 
     void    save_wave_exciting_format(
-                                            int         freq_index,
-                                            std::string channel_name,
-                                            cuscomplex* forces
+                                                int         freq_index,
+                                                std::string channel_name,
+                                                cuscomplex* forces
                                         );
+
+    void    save_wave_exciting_asympt_format(
+                                                std::string channel_name,
+                                                cuscomplex* forces
+                                        );
+
 };

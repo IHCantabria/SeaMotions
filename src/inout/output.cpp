@@ -66,30 +66,41 @@ Output::Output(
     this->_ds_mh[2]     = input->dofs_np;
 
     // Storage hydromechanics coefficients datasets dimensions
-    this->_ds_hm[0]    = input->bodies_np;
-    this->_ds_hm[1]    = input->bodies_np;
-    this->_ds_hm[2]    = input->angfreqs_np;
-    this->_ds_hm[3]    = input->dofs_np;
-    this->_ds_hm[4]    = input->dofs_np;
+    this->_ds_hm[0]     = input->bodies_np;
+    this->_ds_hm[1]     = input->bodies_np;
+    this->_ds_hm[2]     = input->angfreqs_np;
+    this->_ds_hm[3]     = input->dofs_np;
+    this->_ds_hm[4]     = input->dofs_np;
+
+    // Storage hydromechanics coefficients datasets dimensions for asymptotic values
+    this->_ds_hma[0]    = input->bodies_np;
+    this->_ds_hma[1]    = input->bodies_np;
+    this->_ds_hma[2]    = input->dofs_np;
+    this->_ds_hma[3]    = input->dofs_np;
 
     // Storage QTF datasets dimensions for the ith body
-    this->_ds_qf[0]   = input->bodies_np;
-    this->_ds_qf[1]   = input->heads_np;
-    this->_ds_qf[2]   = input->heads_np;
-    this->_ds_qf[3]   = input->angfreqs_np;
-    this->_ds_qf[4]   = input->angfreqs_np;
-    this->_ds_qf[5]   = input->dofs_np;
+    this->_ds_qf[0]     = input->bodies_np;
+    this->_ds_qf[1]     = input->heads_np;
+    this->_ds_qf[2]     = input->heads_np;
+    this->_ds_qf[3]     = input->angfreqs_np;
+    this->_ds_qf[4]     = input->angfreqs_np;
+    this->_ds_qf[5]     = input->dofs_np;
 
-    // Storage source intensity dataset dimensions
-    this->_ds_fd[0]   = input->angfreqs_np;
-    this->_ds_fd[1]   = input->dofs_np + input->heads_np;
-    this->_ds_fd[2]   = this->_total_panels_np;
+    // Storage field data dataset dimensions
+    this->_ds_fd[0]     = input->angfreqs_np;
+    this->_ds_fd[1]     = input->dofs_np + input->heads_np;
+    this->_ds_fd[2]     = this->_total_panels_np;
 
-    // Storage mean drift dataset dimensions for the ith body
-    this->_ds_wx[0]    = input->heads_np;
-    this->_ds_wx[1]    = input->bodies_np;
-    this->_ds_wx[2]    = input->angfreqs_np;
-    this->_ds_wx[3]    = input->dofs_np;
+    // Storage wave exciting dataset dimensions for the ith body
+    this->_ds_wx[0]     = input->heads_np;
+    this->_ds_wx[1]     = input->bodies_np;
+    this->_ds_wx[2]     = input->angfreqs_np;
+    this->_ds_wx[3]     = input->dofs_np;
+
+    // Storage wave exciting asymptotic dataset dimensions for the ith body
+    this->_ds_wxa[0]    = input->heads_np;
+    this->_ds_wxa[1]    = input->bodies_np;
+    this->_ds_wxa[2]    = input->dofs_np;
 
     /******************************************************/
     /**** Create datasets for the required output data ****/
@@ -114,11 +125,44 @@ Output::Output(
 
         CREATE_DATASET( 
                             fid,
+                            _DN_DIFFRAC_HF_MAG,
+                            _DS_WXA_NP,
+                            this->_ds_wxa,
+                            cusfloat_h5
+                        );
+
+        CREATE_DATASET( 
+                            fid,
+                            _DN_DIFFRAC_LF_MAG,
+                            _DS_WXA_NP,
+                            this->_ds_wxa,
+                            cusfloat_h5
+                        );
+
+        CREATE_DATASET( 
+                            fid,
                             _DN_DIFFRAC_PHA,
                             _DS_WX_NP,
                             this->_ds_wx,
                             cusfloat_h5
                         );
+
+        CREATE_DATASET( 
+                            fid,
+                            _DN_DIFFRAC_HF_PHA,
+                            _DS_WXA_NP,
+                            this->_ds_wxa,
+                            cusfloat_h5
+                        );
+
+        CREATE_DATASET( 
+                            fid,
+                            _DN_DIFFRAC_LF_PHA,
+                            _DS_WXA_NP,
+                            this->_ds_wxa,
+                            cusfloat_h5
+                        );
+        
     }
 
     if ( input->out_fk )
@@ -133,11 +177,44 @@ Output::Output(
 
         CREATE_DATASET( 
                             fid,
+                            _DN_FK_HF_MAG,
+                            _DS_WXA_NP,
+                            this->_ds_wxa,
+                            cusfloat_h5
+                        );
+
+        CREATE_DATASET( 
+                            fid,
+                            _DN_FK_LF_MAG,
+                            _DS_WXA_NP,
+                            this->_ds_wxa,
+                            cusfloat_h5
+                        );
+
+        CREATE_DATASET( 
+                            fid,
                             _DN_FK_PHA,
                             _DS_WX_NP,
                             this->_ds_wx,
                             cusfloat_h5
                         );
+
+        CREATE_DATASET( 
+                            fid,
+                            _DN_FK_HF_PHA,
+                            _DS_WXA_NP,
+                            this->_ds_wxa,
+                            cusfloat_h5
+                        );
+
+        CREATE_DATASET( 
+                            fid,
+                            _DN_FK_LF_PHA,
+                            _DS_WXA_NP,
+                            this->_ds_wxa,
+                            cusfloat_h5
+                        );
+        
     }
 
     if ( input->out_hydmech )
@@ -151,12 +228,44 @@ Output::Output(
                             cusfloat_h5
                         );
 
+        CREATE_DATASET( 
+                            fid,
+                            _DN_ADDED_MASS_HF,
+                            _DS_HMA_NP,
+                            this->_ds_hma,
+                            cusfloat_h5
+                        );
+
+        CREATE_DATASET( 
+                            fid,
+                            _DN_ADDED_MASS_LF,
+                            _DS_HMA_NP,
+                            this->_ds_hma,
+                            cusfloat_h5
+                        );
+
         // Create dataset for radiation damping
         CREATE_DATASET( 
                             fid,
                             _DN_DAMPING_RAD,
                             _DS_HM_NP,
                             this->_ds_hm,
+                            cusfloat_h5
+                        );
+
+        CREATE_DATASET( 
+                            fid,
+                            _DN_DAMPING_RAD_HF,
+                            _DS_HMA_NP,
+                            this->_ds_hma,
+                            cusfloat_h5
+                        );
+
+        CREATE_DATASET( 
+                            fid,
+                            _DN_DAMPING_RAD_LF,
+                            _DS_HMA_NP,
+                            this->_ds_hma,
                             cusfloat_h5
                         );
 
@@ -606,9 +715,41 @@ Output::Output(
 
         CREATE_DATASET( 
                             fid,
+                            _DN_WEX_HF_MAG,
+                            _DS_WXA_NP,
+                            this->_ds_wxa,
+                            cusfloat_h5
+                        );
+
+        CREATE_DATASET( 
+                            fid,
+                            _DN_WEX_LF_MAG,
+                            _DS_WXA_NP,
+                            this->_ds_wxa,
+                            cusfloat_h5
+                        );
+
+        CREATE_DATASET( 
+                            fid,
                             _DN_WEX_PHA,
                             _DS_WX_NP,
                             this->_ds_wx,
+                            cusfloat_h5
+                        );
+
+        CREATE_DATASET( 
+                            fid,
+                            _DN_WEX_HF_PHA,
+                            _DS_WXA_NP,
+                            this->_ds_wxa,
+                            cusfloat_h5
+                        );
+
+        CREATE_DATASET( 
+                            fid,
+                            _DN_WEX_LF_PHA,
+                            _DS_WXA_NP,
+                            this->_ds_wxa,
                             cusfloat_h5
                         );
 
@@ -727,6 +868,77 @@ void    Output::save_hydromechanics_format(
                                     _DS_HM_NP,
                                     this->_ds_hm,
                                     _ds_hm_ch,
+                                    offset,
+                                    amb,
+                                    cusfloat_h5
+                                );
+        }
+    }
+
+    // Close file unit
+    fid.close( );
+
+    // Deallocate heap memory
+    mkl_free( amb );
+}
+
+
+void    Output::save_hydromechanics_asympt_format( 
+                                                    std::string channel_name,
+                                                    cusfloat*   channel_data
+                                                )
+{
+    // Open file unit
+    H5::H5File fid( this->_results_fipath.c_str( ), H5F_ACC_RDWR );
+
+    // Allocate space for body data chunks
+    cusfloat*   amb = generate_empty_vector<cusfloat>( pow2s( this->_input->dofs_np ) );
+
+    // Storage data into disk
+    hsize_t _ds_hma_ch[_DS_HM_NP]   = { 1, 1, static_cast<hsize_t>( this->_input->dofs_np ), static_cast<hsize_t>( this->_input->dofs_np ) };
+    hsize_t offset[_DS_HM_NP]       = { 0, 0, 0, 0 };
+
+    int index_global                = 0;
+    int index_local                 = 0;
+
+    for ( int i=0; i<this->_input->bodies_np; i++ )
+    {
+        for ( int j=0; j<this->_input->bodies_np; j++ )
+        {
+            // Define body data chunk
+            for ( int k=0; k<this->_input->dofs_np; k++ )
+            {
+                for ( int m=0; m<this->_input->dofs_np; m++ )
+                {
+                    // Define indexes to access to the required
+                    // memory allocation
+                    index_global    = (
+                                            i * this->_input->bodies_np * pow2s( this->_input->dofs_np )
+                                            +
+                                            j * this->_input->dofs_np
+                                            +
+                                            k * this->_input->bodies_np * this->_input->dofs_np
+                                            +
+                                            m
+                                        );
+                    index_local     = k * this->_input->dofs_np+m;
+
+                    // Copy data from global matrixes to local body matrixes
+                    amb[index_local] = channel_data[index_global];
+                }
+            }
+
+            // Set dataset chunk offset
+            offset[0] = i;
+            offset[1] = j;
+
+            // Storage data
+            SAVE_DATASET_CHUNK(
+                                    fid,
+                                    channel_name.c_str( ),
+                                    _DS_HMA_NP,
+                                    this->_ds_hma,
+                                    _ds_hma_ch,
                                     offset,
                                     amb,
                                     cusfloat_h5
@@ -933,7 +1145,7 @@ void    Output::save_fields_data(
         // Storage data
         SAVE_DATASET_CHUNK(
                                 fid,
-                                _dn_mag,
+                                _dn_mag.c_str( ),
                                 _DS_FD_NP,
                                 this->_ds_fd,
                                 _ds_fd_ch,
@@ -944,7 +1156,7 @@ void    Output::save_fields_data(
 
         SAVE_DATASET_CHUNK(
                                 fid,
-                                _dn_pha,
+                                _dn_pha.c_str( ),
                                 _DS_FD_NP,
                                 this->_ds_fd,
                                 _ds_fd_ch,
@@ -1220,6 +1432,83 @@ void    Output::save_wave_exciting_format(
                                     _DS_WX_NP,
                                     this->_ds_wx,
                                     _ds_wx_ch,
+                                    offset,
+                                    data_pha,
+                                    cusfloat_h5
+                                );
+
+        }
+    }
+
+    // Close file unit
+    fid.close( );
+
+    // Deallocate heap memory used for the current function
+    mkl_free( data_mag );
+    mkl_free( data_pha );
+}
+
+
+void    Output::save_wave_exciting_asympt_format(
+                                                    std::string channel_name,
+                                                    cuscomplex* forces
+                                                )
+{
+    // Define datasets name
+    std::string _dn_mag = channel_name + std::string( "_mag" );
+    std::string _dn_pha = channel_name + std::string( "_pha" );
+
+    // Open file unit
+    H5::H5File fid( this->_results_fipath.c_str( ), H5F_ACC_RDWR );
+
+    // Allocate space for ith body data
+    cusfloat* data_mag = generate_empty_vector<cusfloat>( this->_input->dofs_np );
+    cusfloat* data_pha = generate_empty_vector<cusfloat>( this->_input->dofs_np );
+
+    // Storage input data into disk
+    hsize_t _ds_wxa_ch[_DS_WX_NP]   = { 1, 1, static_cast<hsize_t>( this->_input->dofs_np ) };
+    int     index                   = 0;
+    hsize_t offset[_DS_WX_NP]       = { 0, 0, 0 };
+
+    for ( int i=0; i<this->_input->heads_np; i++ )
+    {
+        for ( int j=0; j<this->_input->bodies_np; j++ )
+        {
+            // Process data to have the format of magnitude and phase
+            for ( int k=0; k<this->_input->dofs_np; k++ )
+            {
+                index       = (
+                                    i * this->_input->bodies_np * this->_input->dofs_np
+                                    +
+                                    j * this->_input->dofs_np
+                                    +
+                                    k
+                                );
+                data_mag[k] = std::abs( forces[index] );
+                data_pha[k] = std::atan2( forces[index].imag( ), forces[index].real( ) );
+            }
+
+            // Storage data
+            offset[0] = i;
+            offset[1] = j;
+
+            SAVE_DATASET_CHUNK(
+                                    fid,
+                                    _dn_mag.c_str( ),
+                                    _DS_WXA_NP,
+                                    this->_ds_wxa,
+                                    _ds_wxa_ch,
+                                    offset,
+                                    data_mag,
+                                    cusfloat_h5
+                                );
+
+            SAVE_DATASET_CHUNK(
+                                    fid,
+                                    _dn_pha.c_str( ),
+                                    _DS_WXA_NP,
+                                    this->_ds_wxa,
+                                    _ds_wxa_ch,
                                     offset,
                                     data_pha,
                                     cusfloat_h5
