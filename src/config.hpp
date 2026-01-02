@@ -101,6 +101,8 @@ constexpr int       PF_OFF                  = 0;                // Flag used as 
 constexpr int       MPI_ROOT_PROC_ID        = 0;                // ID for the root process when using the MPI environment
 constexpr int       STATIC_LOOP_ON          = 1;                // Flag used as template argument to SET that the bounds of the internal loops of the calling function are known at compile time
 constexpr int       STATIC_LOOP_OFF         = 0;                // Flag used as template argument to NOT SET that the bounds of the internal loops of the calling function are not known at compile time
+constexpr cusfloat  W_ASYMPT_HIGH           = 100.0;            // High frequency asymptotic regime threshold
+constexpr cusfloat  W_ASYMPT_LOW            = 0.01;             // Low frequency asymptotic regime threshold
 constexpr cusfloat  ZEROTH_EPS              = 1E-14;
 
 
