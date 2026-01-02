@@ -1565,6 +1565,18 @@ void        wave_term_integral_inf_freq(
      * \param G_dz              Derivative of Green function respect to z
      * \param G_dzeta           Derivative of Green function respect to zeta
      */
+    // Define loops mode
+    constexpr int n         = N;
+    constexpr int mode_loop = STATIC_LOOP_ON;
+
+    // Check minimum distances from Source to field point
+    cusfloat R[N];
+    cusfloat z[N];
+    for ( std::size_t i=0; i<N; i++ )
+    {
+        R[i] = ( Ri[i] < 1e-5 ) ? 1e-5: Ri[i];
+        z[i] = ( std::abs( zi[i]-zeta[i] ) < 1e-5 ) ? zi[i]-1e-5: zi[i];
+    }
 
     // Calculate sign( z - zeta ) for dB case
     cusfloat sg_z_m_zeta[N];
@@ -1574,27 +1586,59 @@ void        wave_term_integral_inf_freq(
         sg_z_m_zeta[i]  = sign( z[i] - zeta[i] );
     }
 
-    // Clear vector to avoid spurious remaining data
-    cusfloat results[N];
-    cusfloat results_da[N];
-    cusfloat results_db[N];
+    // Calculate exponential terms expansion parameters
+    cusfloat v0[N];
+    cusfloat v1[N];
+    for ( std::size_t i=0; i<N; i++ )
+    {
+        v0[i] = abs( z[i] - zeta[i] );
+        v1[i] = z[i] + zeta[i] + 2*h;
+    }
 
-    STATIC_COND( ONLY_FCN,      STATIC_CLEAR( n, N, results     ) )
-    STATIC_COND( ONLY_FCNDR,    STATIC_CLEAR( n, N, results_da  ) )
-    STATIC_COND( ONLY_FCNDZ,    STATIC_CLEAR( n, N, results_db  ) )
+    // Calculate integrals expansion hyperparameters
+    cusfloat A[N];
+    cusfloat B0[N];
+    cusfloat B1[N];
+
+    for ( std::size_t i=0; i<N; i++ )
+    {
+        A[i]    = R[i] / h;
+        B0[i]   = v0[i] / h;
+        B1[i]   = v1[i] / h;
+    }
+
+    // Clear vector to avoid spurious remaining data
+    cusfloat results0[N];
+    cusfloat results0_da[N];
+    cusfloat results0_db[N];
+    cusfloat results1[N];
+    cusfloat results1_da[N];
+    cusfloat results1_db[N];
+
+    STATIC_COND( ONLY_FCN,      STATIC_CLEAR( n, N, results0     ) )
+    STATIC_COND( ONLY_FCNDR,    STATIC_CLEAR( n, N, results0_da  ) )
+    STATIC_COND( ONLY_FCNDZ,    STATIC_CLEAR( n, N, results0_db  ) )
+
+    STATIC_COND( ONLY_FCN,      STATIC_CLEAR( n, N, results1     ) )
+    STATIC_COND( ONLY_FCNDR,    STATIC_CLEAR( n, N, results1_da  ) )
+    STATIC_COND( ONLY_FCNDZ,    STATIC_CLEAR( n, N, results1_db  ) )
 
     // Calculate L0 integral
-    STATIC_COND( ONLY_FCN,      (LinfCEV<N, mode_loop>::evaluate( N, A, B, results ));         )
-    STATIC_COND( ONLY_FCNDR,    (Linf_dACEV<N, mode_loop>::evaluate( N, A, B, results_da ));   )
-    STATIC_COND( ONLY_FCNDZ,    (Linf_dBCEV<N, mode_loop>::evaluate( N, A, B, results_db ));   )
+    STATIC_COND( ONLY_FCN,      (LinfCEV<N, mode_loop>::evaluate( N, A, B0, results0 ));         )
+    STATIC_COND( ONLY_FCNDR,    (Linf_dACEV<N, mode_loop>::evaluate( N, A, B0, results0_da ));   )
+    STATIC_COND( ONLY_FCNDZ,    (Linf_dBCEV<N, mode_loop>::evaluate( N, A, B0, results0_db ));   )
+
+    STATIC_COND( ONLY_FCN,      (LinfCEV<N, mode_loop>::evaluate( N, A, B1, results1 ));         )
+    STATIC_COND( ONLY_FCNDR,    (Linf_dACEV<N, mode_loop>::evaluate( N, A, B1, results1_da ));   )
+    STATIC_COND( ONLY_FCNDZ,    (Linf_dBCEV<N, mode_loop>::evaluate( N, A, B1, results1_db ));   )
 
     cusfloat h2  = h * h;
     for ( std::size_t i=0; i<N; i++ )
     {
-        STATIC_COND( ONLY_FCN,      G[i]        = results[i] / h;                           )
-        STATIC_COND( ONLY_FCNDR,    G_dr[i]     = results_da[i] / h2;                       )
-        STATIC_COND( ONLY_FCNDZ,    G_dz[i]     = results_db[i] * sg_z_m_zeta[i] / h2;      )
-        STATIC_COND( ONLY_FCNDZ,    G_dzeta[i]  = - results_db[i] * sg_z_m_zeta[i] / h2;    )
+        STATIC_COND( ONLY_FCN,      G[i]        = ( results0[i] + results1[i] ) / h;                                )
+        STATIC_COND( ONLY_FCNDR,    G_dr[i]     = ( results0_da[i] + results1_da[i] ) / h2;                         )
+        STATIC_COND( ONLY_FCNDZ,    G_dz[i]     = ( results0_db[i] * sg_z_m_zeta[i] + results1_db[i] ) / h2;        )
+        STATIC_COND( ONLY_FCNDZ,    G_dzeta[i]  = ( - results0_db[i] * sg_z_m_zeta[i] + results1_db[i] ) / h2;      )
     }
 
 }
@@ -1633,6 +1677,19 @@ void        wave_term_integral_zero_freq(
      * \param G_dzeta           Derivative of Green function respect to zeta
      */
 
+    // Define loops mode
+    constexpr int n         = N;
+    constexpr int mode_loop = STATIC_LOOP_ON;
+
+    // Check minimum distances from Source to field point
+    cusfloat R[N];
+    cusfloat z[N];
+    for ( std::size_t i=0; i<N; i++ )
+    {
+        R[i] = ( Ri[i] < 1e-5 ) ? 1e-5: Ri[i];
+        z[i] = ( std::abs( zi[i]-zeta[i] ) < 1e-5 ) ? zi[i]-1e-5: zi[i];
+    }
+
     // Calculate sign( z - zeta ) for dB case
     cusfloat sg_z_m_zeta[N];
 
@@ -1641,27 +1698,59 @@ void        wave_term_integral_zero_freq(
         sg_z_m_zeta[i]  = sign( z[i] - zeta[i] );
     }
 
-    // Clear vector to avoid spurious remaining data
-    cusfloat results[N];
-    cusfloat results_da[N];
-    cusfloat results_db[N];
+    // Calculate exponential terms expansion parameters
+    cusfloat v0[N];
+    cusfloat v1[N];
+    for ( std::size_t i=0; i<N; i++ )
+    {
+        v0[i] = abs( z[i] - zeta[i] );
+        v1[i] = z[i] + zeta[i] + 2*h;
+    }
 
-    STATIC_COND( ONLY_FCN,      STATIC_CLEAR( n, N, results     ) )
-    STATIC_COND( ONLY_FCNDR,    STATIC_CLEAR( n, N, results_da  ) )
-    STATIC_COND( ONLY_FCNDZ,    STATIC_CLEAR( n, N, results_db  ) )
+    // Calculate integrals expansion hyperparameters
+    cusfloat A[N];
+    cusfloat B0[N];
+    cusfloat B1[N];
+
+    for ( std::size_t i=0; i<N; i++ )
+    {
+        A[i]    = R[i] / h;
+        B0[i]   = v0[i] / h;
+        B1[i]   = v1[i] / h;
+    }
+
+    // Clear vector to avoid spurious remaining data
+    cusfloat results0[N];
+    cusfloat results0_da[N];
+    cusfloat results0_db[N];
+    cusfloat results1[N];
+    cusfloat results1_da[N];
+    cusfloat results1_db[N];
+
+    STATIC_COND( ONLY_FCN,      STATIC_CLEAR( n, N, results0     ) )
+    STATIC_COND( ONLY_FCNDR,    STATIC_CLEAR( n, N, results0_da  ) )
+    STATIC_COND( ONLY_FCNDZ,    STATIC_CLEAR( n, N, results0_db  ) )
+
+    STATIC_COND( ONLY_FCN,      STATIC_CLEAR( n, N, results1     ) )
+    STATIC_COND( ONLY_FCNDR,    STATIC_CLEAR( n, N, results1_da  ) )
+    STATIC_COND( ONLY_FCNDZ,    STATIC_CLEAR( n, N, results1_db  ) )
 
     // Calculate L0 integral
-    STATIC_COND( ONLY_FCN,      (L0CEV<N, mode_loop>::evaluate( N, A, B, results ));         )
-    STATIC_COND( ONLY_FCNDR,    (L0_dACEV<N, mode_loop>::evaluate( N, A, B, results_da ));   )
-    STATIC_COND( ONLY_FCNDZ,    (L0_dBCEV<N, mode_loop>::evaluate( N, A, B, results_db ));   )
+    STATIC_COND( ONLY_FCN,      (L0CEV<N, mode_loop>::evaluate( N, A, B0, results0 ));         )
+    STATIC_COND( ONLY_FCNDR,    (L0_dACEV<N, mode_loop>::evaluate( N, A, B0, results0_da ));   )
+    STATIC_COND( ONLY_FCNDZ,    (L0_dBCEV<N, mode_loop>::evaluate( N, A, B0, results0_db ));   )
+
+    STATIC_COND( ONLY_FCN,      (L0CEV<N, mode_loop>::evaluate( N, A, B1, results1 ));         )
+    STATIC_COND( ONLY_FCNDR,    (L0_dACEV<N, mode_loop>::evaluate( N, A, B1, results1_da ));   )
+    STATIC_COND( ONLY_FCNDZ,    (L0_dBCEV<N, mode_loop>::evaluate( N, A, B1, results1_db ));   )
 
     cusfloat h2  = h * h;
     for ( std::size_t i=0; i<N; i++ )
     {
-        STATIC_COND( ONLY_FCN,      G[i]        = results[i] / h;                           )
-        STATIC_COND( ONLY_FCNDR,    G_dr[i]     = results_da[i] / h2;                       )
-        STATIC_COND( ONLY_FCNDZ,    G_dz[i]     = results_db[i] * sg_z_m_zeta[i] / h2;      )
-        STATIC_COND( ONLY_FCNDZ,    G_dzeta[i]  = - results_db[i] * sg_z_m_zeta[i] / h2;    )
+        STATIC_COND( ONLY_FCN,      G[i]        = ( results0[i] + results1[i] ) / h;                                )
+        STATIC_COND( ONLY_FCNDR,    G_dr[i]     = ( results0_da[i] + results1_da[i] ) / h2;                         )
+        STATIC_COND( ONLY_FCNDZ,    G_dz[i]     = ( results0_db[i] * sg_z_m_zeta[i] + results1_db[i] ) / h2;        )
+        STATIC_COND( ONLY_FCNDZ,    G_dzeta[i]  = ( - results0_db[i] * sg_z_m_zeta[i] + results1_db[i] ) / h2;      )
     }
 
 }
