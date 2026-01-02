@@ -42,15 +42,17 @@
     logger.task( msg );                         \
 
 
-#define LOG_TASK_SS( msg )                      \
-    std::stringstream ss;                       \
-    ss << msg;                                  \
-    Logger logger( mpi_config->is_root( ) );    \
-    logger.task( ss.str( ) );                   \
+#define LOG_TASK_SS( loglabel, msg )                        \
+    Logger loglabel##_logger( mpi_config->is_root( ) );     \
+    {                                                       \
+        std::stringstream ss;                               \
+        ss << msg;                                          \
+        loglabel##_logger.task( ss.str( ) );                \
+    }                                                       \
 
 
-#define LOG_TASK_TIME( timer )                  \
-logger.task_time( timer );                      \
+#define LOG_TASK_TIME( loglabel, timer )        \
+loglabel##_logger.task_time( timer );           \
 
 
 /*******************************************************************************/
