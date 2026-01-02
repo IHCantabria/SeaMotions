@@ -120,8 +120,11 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
                                             this->sim_data->panels_pressure
                                         );
 
-    // Calculate diffraction forces
-    calculate_diffraction_forces_lin(
+    // Calculate wave excitation forces
+    if ( freq_regime == freq_regime_t::REGULAR || freq_regime == freq_regime_t::ASYMPT_LOW )
+    {
+        // Calculate diffraction forces
+        calculate_diffraction_forces_lin(
                                             this->input,
                                             this->mpi_config,
                                             this->mesh_gp,
@@ -130,15 +133,21 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
                                             this->sim_data->wave_diffrac,
                                             this->sim_data->panels_pressure
                                     );
-    
-    // Calculate Froude-Krylov first order forces
-    calculate_froude_krylov_fo(
-                                            this->input,
-                                            this->mpi_config,
-                                            this->mesh_gp,
-                                            ang_freq,
-                                            this->sim_data->froude_krylov
-                                );
+        
+        // Calculate Froude-Krylov first order forces
+        calculate_froude_krylov_fo(
+                                                this->input,
+                                                this->mpi_config,
+                                                this->mesh_gp,
+                                                ang_freq,
+                                                this->sim_data->froude_krylov
+                                    );
+    }
+    else
+    {
+        clear_vector( this->sim_data->wave_exc_np, this->sim_data->wave_diffrac );
+        clear_vector( this->sim_data->wave_exc_np, this->sim_data->froude_krylov );
+    }
     
     // Reduce data into the root processor variablesç
     REDUCE_FO_ROOT( added_mass,    hydmech,  cusfloat   )
@@ -238,10 +247,10 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
                 // Select dataset names depending on the frequency regime
                 std::string added_mass_dn   = _DN_ADDED_MASS_LF;
                 std::string damping_dn      = _DN_DAMPING_RAD_LF;
-                if constexpr( freq_regime == freq_regime_t::ASYMPT_HIGH )
+                if ( freq_regime == freq_regime_t::ASYMPT_HIGH )
                 {
-                    std::string added_mass_dn   = _DN_ADDED_MASS_HF;
-                    std::string damping_dn      = _DN_DAMPING_RAD_HF;
+                    added_mass_dn   = _DN_ADDED_MASS_HF;
+                    damping_dn      = _DN_DAMPING_RAD_HF;
                 }
 
                 // Storage asymptotic added mass and damping
@@ -271,9 +280,9 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
             else
             {
                 std::string diffrac_dn   = _DN_DIFFRAC_HF;
-                if constexpr( freq_regime == freq_regime_t::ASYMPT_LOW )
+                if ( freq_regime == freq_regime_t::ASYMPT_LOW )
                 {
-                    std::string diffrac_dn   = _DN_DIFFRAC_LF;
+                    diffrac_dn   = _DN_DIFFRAC_LF;
                 }
 
                 this->output->save_wave_exciting_asympt_format(
@@ -296,9 +305,9 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
             else
             {
                 std::string fk_dn   = _DN_FK_HF;
-                if constexpr( freq_regime == freq_regime_t::ASYMPT_LOW )
+                if ( freq_regime == freq_regime_t::ASYMPT_LOW )
                 {
-                    std::string fk_dn   = _DN_FK_LF;
+                    fk_dn   = _DN_FK_LF;
                 }
 
                 this->output->save_wave_exciting_asympt_format(
@@ -321,9 +330,9 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
             else
             {
                 std::string wex_dn   = _DN_WEX_HF;
-                if constexpr( freq_regime == freq_regime_t::ASYMPT_LOW )
+                if ( freq_regime == freq_regime_t::ASYMPT_LOW )
                 {
-                    std::string wex_dn   = _DN_WEX_LF;
+                    wex_dn   = _DN_WEX_LF;
                 }
 
                 this->output->save_wave_exciting_asympt_format(
