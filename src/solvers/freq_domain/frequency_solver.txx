@@ -386,6 +386,31 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
 
 
 template<std::size_t N, int mode_pf>
+void FrequencySolver<N, mode_pf>::_calculate_global_static_matrixes( void )
+{
+    // Calculate global structural mass
+    if ( this->mpi_config->is_root( ) )
+    {
+        calculate_global_structural_mass(
+                                            input,
+                                            sim_data->structural_mass_p0
+                                        );
+    }
+
+
+    // Calculate global stiffness matrix
+    if ( this->mpi_config->is_root( ) )
+    {
+        calculate_global_hydstiffness(
+                                            input,
+                                            hydrostatics,
+                                            sim_data->hydrostiff_p0
+                                        );
+    }
+}
+
+
+template<std::size_t N, int mode_pf>
 void FrequencySolver<N, mode_pf>::_calculate_hydrostatics( void )
 {
     LOG_TASK_SS( hydro, "Calculating hydrostatics..." )
@@ -409,30 +434,6 @@ void FrequencySolver<N, mode_pf>::_calculate_hydrostatics( void )
 
 }
 
-
-template<std::size_t N, int mode_pf>
-void FrequencySolver<N, mode_pf>::_calculate_global_static_matrixes( void )
-{
-    // Calculate global structural mass
-    if ( this->mpi_config->is_root( ) )
-    {
-        calculate_global_structural_mass(
-                                            input,
-                                            sim_data->structural_mass_p0
-                                        );
-    }
-
-
-    // Calculate global stiffness matrix
-    if ( this->mpi_config->is_root( ) )
-    {
-        calculate_global_hydstiffness(
-                                            input,
-                                            hydrostatics,
-                                            sim_data->hydrostiff_p0
-                                        );
-    }
-}
 
 
 template<std::size_t N, int mode_pf>
