@@ -20,6 +20,7 @@
 
 // Include general usage libraries
 #include <functional>
+#include <optional>
 
 // Include external scientific libraries
 #include <cmath>
@@ -463,4 +464,113 @@ cusfloat    sin3_int_0_2PI(
     cusfloat    t3      = cos_alpha( alpha_3, th_1 ) - cos_alpha( alpha_3, th_0 );
 
     return 0.25 * ( t0 - t1 - t2 + t3 );
+}
+
+
+void triangle_geom_properties( 
+                                    const   cusfloat*   x,
+                                    const   cusfloat*   y,
+                                    const   cusfloat*   z,
+                                            cusfloat&   area,
+                                            cusfloat*   centroid,
+                                            cusfloat*   moments_fo,
+                                            cusfloat*   moments_so,
+                                    const   std::optional<cusfloat*>& ref_sys = std::nullopt
+                                )
+{
+    // Calculate area using the cross product of two sides
+    cusfloat v0[3] = { x[1]-x[0], y[1]-y[0], z[1]-z[0] };
+    cusfloat v1[3] = { x[2]-x[0], y[2]-y[0], z[2]-z[0] };
+    cusfloat v2[3] = { 0.0, 0.0, 0.0 };
+
+    // Calculate cross product
+    cross( v0, v1, v2 );
+
+    // Calculate area of the triangle
+    cusfloat v2_mod = std::sqrt( pow2s( v2[0] ) + pow2s( v2[1] ) + pow2s( v2[2] ) );
+    area            = v2_mod / 2.0;
+
+    // Calculate centroid of the triangle
+    centroid[0] = ( x[0] + x[1] + x[2] ) / 3.0;
+    centroid[1] = ( y[0] + y[1] + y[2] ) / 3.0;
+    centroid[2] = ( z[0] + z[1] + z[2] ) / 3.0;
+
+    // Choose reference system
+    cusfloat ref_sys_local[3] = { 0.0, 0.0, 0.0 };
+    if ( ref_sys.has_value() )
+    {
+        ref_sys_local[0] = ref_sys.value()[0];
+        ref_sys_local[1] = ref_sys.value()[1];
+        ref_sys_local[2] = ref_sys.value()[2];
+    }
+    else
+    {
+        ref_sys_local[0] = centroid[0];
+        ref_sys_local[1] = centroid[1];
+        ref_sys_local[2] = centroid[2];
+    }
+
+    // Shift vertices to reference system
+    cusfloat vertex_cent[3][3];
+    for ( int i=0; i<3; i++ )
+    {
+        vertex_cent[i][0] = x[i] - ref_sys_local[0];
+        vertex_cent[i][1] = y[i] - ref_sys_local[1];
+        vertex_cent[i][2] = z[i] - ref_sys_local[2];
+    }
+
+    // Calculate vertex summation
+    cusfloat vertex_sum[3]  = { 0.0, 0.0, 0.0 };
+    cusfloat vertex_sum2[3] = { 0.0, 0.0, 0.0 };
+    for ( int i=0; i<3; i++ ) 
+    {
+        vertex_sum[0] += vertex_cent[i][0];
+        vertex_sum[1] += vertex_cent[i][1];
+        vertex_sum[2] += vertex_cent[i][2];
+
+        vertex_sum2[0] += pow2s( vertex_cent[i][0] );
+        vertex_sum2[1] += pow2s( vertex_cent[i][1] );
+        vertex_sum2[2] += pow2s( vertex_cent[i][2] );
+    }
+
+    // Calculate first order moments
+    for ( int i=0; i<3; i++ )
+    {
+        moments_fo[i] = area / 3.0 * vertex_sum[i];
+    }
+
+    // Calculate second order moments
+    for ( int i=0; i<2; i++ )
+    {
+        int j = ( i + 1 ) % 2;
+        moments_so[j]   = ( 
+                                vertex_sum2[i]
+                                +
+                                vertex_cent[0][i] * vertex_cent[1][i]
+                                +
+                                vertex_cent[0][i] * vertex_cent[2][i]
+                                +
+                                vertex_cent[1][i] * vertex_cent[2][i]
+                            ) * area / 6.0;
+    }
+
+    moments_so[2]   =   ( 
+                            2.0 * vertex_cent[0][0] * vertex_cent[0][1]
+                            +
+                            vertex_cent[1][0] * vertex_cent[0][1]
+                            +
+                            vertex_cent[2][0] * vertex_cent[0][1]
+                            +
+                            vertex_cent[0][0] * vertex_cent[1][1]
+                            +
+                            2.0 * vertex_cent[1][0] * vertex_cent[1][1]
+                            +
+                            vertex_cent[2][0] * vertex_cent[1][1]
+                            +
+                            vertex_cent[0][0] * vertex_cent[2][1]
+                            +
+                            vertex_cent[1][0] * vertex_cent[2][1]
+                            +
+                            2.0 * vertex_cent[2][0] * vertex_cent[2][1]
+                        ) * area / 12.0;
 }

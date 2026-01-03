@@ -401,4 +401,34 @@ template<typename T>                inline  void        svs_sub(
                                                                 );
 
 
+
+/**
+ * @brief Calculate geometric properties of a triangle.
+ * 
+ * Computes the area, centroid, first-order moments, and second-order moments
+ * of a triangle defined by three vertices. Optionally, moments can be computed
+ * in a custom reference system.
+ * 
+ * @param[in]  x          Array of 3 x-coordinates of triangle vertices
+ * @param[in]  y          Array of 3 y-coordinates of triangle vertices
+ * @param[in]  z          Array of 3 z-coordinates of triangle vertices
+ * @param[out] area       Triangle area
+ * @param[out] centroid   Array[3] containing the centroid coordinates (x, y, z)
+ * @param[out] moments_fo Array[3] containing first-order moments about the centroid
+ * @param[out] moments_so Array[3] containing second-order moments (Ixx, Iyy, Ixy) about the centroid
+ * @param[in]  ref_sys    Optional reference system origin for moment calculation.
+ *                        If not provided, moments are computed about the centroid.
+ */
+                                            void        triangle_geom_properties( 
+                                                                                    const   cusfloat*   x,
+                                                                                    const   cusfloat*   y,
+                                                                                    const   cusfloat*   z,
+                                                                                            cusfloat&   area,
+                                                                                            cusfloat*   centroid,
+                                                                                            cusfloat*   moments_fo,
+                                                                                            cusfloat*   moments_so,
+                                                                                    const   std::optional<cusfloat*>& ref_sys = std::nullopt
+                                                                                );
+
+
 #include "math_tools.txx"
