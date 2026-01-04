@@ -219,6 +219,7 @@ int main( void )
     test_passed = test_panel_properties( define_triangle_0, triangle_geom_properties );
     if ( !test_passed )
     {
+        std::cerr << "test_panel_properties: Triangle 0 test failed." << std::endl;
         return 1;
     }
 
@@ -226,6 +227,7 @@ int main( void )
     test_passed = test_panel_properties( define_triangle_1, triangle_geom_properties );
     if ( !test_passed )
     {
+        std::cerr << "test_panel_properties: Triangle 1 test failed." << std::endl;
         return 1;
     }
 
@@ -234,6 +236,7 @@ int main( void )
     test_passed = test_panel_properties( define_triangle_2, triangle_geom_properties, ref_sys );
     if ( !test_passed )
     {
+        std::cerr << "test_panel_properties: Triangle 2 test failed." << std::endl;
         return 1;
     }
 
@@ -241,6 +244,7 @@ int main( void )
     test_passed = test_panel_properties( define_quadrilateral_0, quad_geom_properties );
     if ( !test_passed )
     {
+        std::cerr << "test_panel_properties: Quadrilateral 0 test failed." << std::endl;
         return 1;
     }
 
@@ -248,6 +252,7 @@ int main( void )
     test_passed = test_panel_properties( define_quadrilateral_1, quad_geom_properties );
     if ( !test_passed )
     {
+        std::cerr << "test_panel_properties: Quadrilateral 1 test failed." << std::endl;
         return 1;
     }
 
@@ -255,6 +260,7 @@ int main( void )
     test_passed = test_panel_properties( define_quadrilateral_2, quad_geom_properties );
     if ( !test_passed )
     {
+        std::cerr << "test_panel_properties: Quadrilateral 2 test failed." << std::endl;
         return 1;
     }
 
