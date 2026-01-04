@@ -69,6 +69,8 @@ public:
     cusfloat                local_to_global_mat[9];
     int                     location_zone           = -999;
     static constexpr int    MAX_PANEL_NODES         = 4;
+    cusfloat                moments_fo[3]           = { 0.0, 0.0, 0.0 };
+    cusfloat                moments_so[3]           = { 0.0, 0.0, 0.0 };
     int                     nodes_pos[MAX_PANEL_NODES];
     cusfloat                normal_vec[6]           = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
     cusfloat                normal_vec_wl[6]        = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };

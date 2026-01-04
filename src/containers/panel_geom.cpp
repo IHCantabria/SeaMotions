@@ -315,6 +315,43 @@ void PanelGeom::calculate_properties(
                                 cog_to_panel[1]*this->normal_vec[0]
                             );
 
+    // Calculate geometric properties of the panel
+    cusfloat _area          = 0.0;
+    cusfloat _centroid[3]   = { 0.0, 0.0, 0.0 };
+
+    if ( this->num_nodes == 3 )
+    {
+        // Calculate panel geometrical properties
+        triangle_geom_properties( 
+                                    this->xlc,
+                                    this->ylc,
+                                    this->zlc,
+                                    _area,
+                                    _centroid,
+                                    this->moments_fo,
+                                    this->moments_so
+                                );
+        
+    }
+    else if ( this->num_nodes == 4 )
+    {
+        // Calculate panel geometrical properties
+        quad_geom_properties( 
+                                this->xlc,
+                                this->ylc,
+                                this->zlc,
+                                _area,
+                                _centroid,
+                                this->moments_fo,
+                                this->moments_so
+                            );
+
+    }
+    else
+    {
+        throw std::runtime_error("Number of vertexes specified is not correct.");
+    }
+
 }
 
 
