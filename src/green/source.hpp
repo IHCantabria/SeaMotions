@@ -25,6 +25,28 @@
 #include "../containers/containers.hpp"
 
 
+/**
+ * @brief Calculate the monopole contribution to velocity and potential
+ *
+ * @tparam      mode_f          Switch to for the function calculation.
+ * @tparam      mode_dfdr       Switch to for the radial derivative calculation.
+ * @tparam      mode_dfdz       Switch to for the vertical derivative calculation.
+ * @param[in]   panel           Pointer to the panel geometry structure.
+ * @param[in]   r0              Distance from the panel center to the field point.
+ * @param[in]   field_point     Field point coordinates in local panel system.
+ * @param[out]  velocity        Velocity vector induced at the field point.
+ * @param[out]  phi             Potential induced at the field point.
+ */
+template<int mode_f, int mode_dfdr, int mode_dfdz>
+void    calculate_source_monopole(
+                                            PanelGeom*      panel, 
+                                            cusfloat        r0, 
+                                            cusfloat*       field_point,
+                                            cusfloat*       velocity,
+                                            cusfloat&       phi
+                                        );
+
+
 void    calculate_source_monopole_potential(
                                             PanelGeom*      panel, 
                                             cusfloat        r0, 
@@ -37,6 +59,28 @@ void    calculate_source_monopole_velocity(
                                             cusfloat        r0, 
                                             cusfloat*       field_point,
                                             cusfloat*       velocity
+                                        );
+
+
+/**
+ * @brief Calculate the multipole contribution to velocity and potential.
+ * 
+ * @tparam      mode_f          Switch to for the function calculation.
+ * @tparam      mode_dfdr       Switch to for the radial derivative calculation.
+ * @tparam      mode_dfdz       Switch to for the vertical derivative calculation.
+ * @param[in]   panel           Pointer to the panel geometry structure.
+ * @param[in]   r0              Distance from the panel center to the field point.
+ * @param[in]   field_point     Field point coordinates in local panel system.
+ * @param[out]  velocity        Velocity vector induced at the field point.
+ * @param[out]  phi             Potential induced at the field point.
+ */
+template<int mode_f, int mode_dfdr, int mode_dfdz>
+void    calculate_source_multipole(
+                                            PanelGeom*      panel, 
+                                            cusfloat        r0, 
+                                            cusfloat*       field_point,
+                                            cusfloat*       velocity,
+                                            cusfloat&       phi
                                         );
 
 
@@ -84,3 +128,33 @@ void    calculate_source_velocity_hess(
                                             int             multipole_flag,
                                             cusfloat        *velocity
                                         );
+
+
+/**
+ * @brief Calculate the velocity and potential induced by a source panel using
+ *        Newman's formulation with templated modes for function and derivatives.
+ * 
+ * @tparam      mode_f          Switch to for the function calculation.
+ * @tparam      mode_dfdr       Switch to for the radial derivative calculation.
+ * @tparam      mode_dfdz       Switch to for the vertical derivative calculation.
+ * @param[in]   panel           Pointer to the panel geometry structure.
+ * @param[in]   field_point     Field point coordinates.
+ * @param[in]   fp_local_flag   Flag to indicate if the field point is given in
+ *                              global (0) or local (1) coordinates.
+ * @param[in]   multipole_flag  Flag to indicate if multipole expansion is allowed.
+ * @param[out]  velocity        Velocity vector induced at the field point.
+ * @param[out]  phi             Potential induced at the field point.
+ */
+template<int mode_f, int mode_dfdr, int mode_dfdz>
+void    calculate_source_newman_t(
+                                            PanelGeom*      panel, 
+                                            cusfloat*       field_point, 
+                                            int             fp_local_flag,
+                                            int             multipole_flag, 
+                                            cusfloat*       velocity,
+                                            cusfloat&       phi
+                                        );
+
+
+// Include template definitions
+#include "source.txx"
