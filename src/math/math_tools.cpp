@@ -20,7 +20,6 @@
 
 // Include general usage libraries
 #include <functional>
-#include <optional>
 
 // Include external scientific libraries
 #include <cmath>
@@ -412,6 +411,92 @@ cusfloat    period_to_angfreq( cusfloat period )
 }
 
 
+void quad_geom_properties( 
+                                    const   cusfloat*   x,
+                                    const   cusfloat*   y,
+                                    const   cusfloat*   z,
+                                            cusfloat&   area,
+                                            cusfloat*   centroid,
+                                            cusfloat*   moments_fo,
+                                            cusfloat*   moments_so,
+                                    const   std::optional<cusfloat*>& ref_sys
+                                )
+{
+    // Check if a reference system is provided
+    cusfloat _ref_sys[3] = { 0.0, 0.0, 0.0 };
+    if ( ref_sys.has_value() )
+    {
+        _ref_sys[0] = ref_sys.value()[0];
+        _ref_sys[1] = ref_sys.value()[1];
+        _ref_sys[2] = ref_sys.value()[2];
+    }
+    else
+    {
+        // Set reference system to the origin of coordinate system
+        _ref_sys[0] = 0.0;
+        _ref_sys[1] = 0.0;
+        _ref_sys[2] = 0.0;
+    }
+
+    // Define local auxiliary variables
+    cusfloat _area_0            = 0.0;
+    cusfloat _area_1            = 0.0;
+    cusfloat _centroid_0[3]     = { 0.0, 0.0, 0.0 };
+    cusfloat _centroid_1[3]     = { 0.0, 0.0, 0.0 };
+    cusfloat _moments_fo_0[3]   = { 0.0, 0.0, 0.0 };
+    cusfloat _moments_fo_1[3]   = { 0.0, 0.0, 0.0 };
+    cusfloat _moments_so_0[3]   = { 0.0, 0.0, 0.0 };
+    cusfloat _moments_so_1[3]   = { 0.0, 0.0, 0.0 };
+
+    // Define sub-triangles vertexes
+    cusfloat x0[3] = { x[0], x[1], x[2] };
+    cusfloat y0[3] = { y[0], y[1], y[2] };
+    cusfloat z0[3] = { z[0], z[1], z[2] };
+
+    cusfloat x1[3] = { x[0], x[2], x[3] };
+    cusfloat y1[3] = { y[0], y[2], y[3] };
+    cusfloat z1[3] = { z[0], z[2], z[3] };
+
+    // Calculate panel geometrical properties by splitting
+    // the quadrilateral into two triangles
+    triangle_geom_properties( 
+                                x0,
+                                y0,
+                                z0,
+                                _area_0,
+                                _centroid_0,
+                                _moments_fo_0,
+                                _moments_so_0,
+                                _ref_sys
+                            );
+
+    triangle_geom_properties( 
+                                x1,
+                                y1,
+                                z1,
+                                _area_1,
+                                _centroid_1,
+                                _moments_fo_1,
+                                _moments_so_1,
+                                _ref_sys
+                            );
+
+    // Copy moments to the output variables
+    area    = _area_0 + _area_1;
+
+    for ( int i=0; i<3; i++ )
+    {
+        centroid[i] = ( _area_0 * _centroid_0[i] + _area_1 * _centroid_1[i] ) / area;
+    }
+    
+    copy_vector( 3, _moments_fo_0, moments_fo );
+    sv_add( 3, moments_fo, _moments_fo_1, moments_fo );
+
+    copy_vector( 3, _moments_so_0, moments_so );
+    sv_add( 3, moments_so, _moments_so_1, moments_so );
+}
+
+
 cusfloat    sin_alpha( 
                         int         alpha,
                         cusfloat    theta
@@ -475,7 +560,7 @@ void triangle_geom_properties(
                                             cusfloat*   centroid,
                                             cusfloat*   moments_fo,
                                             cusfloat*   moments_so,
-                                    const   std::optional<cusfloat*>& ref_sys = std::nullopt
+                                    const   std::optional<cusfloat*>& ref_sys
                                 )
 {
     // Calculate area using the cross product of two sides

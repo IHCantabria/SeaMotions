@@ -23,6 +23,7 @@
 // Include general usage libraries
 #include <functional>
 #include <string>
+#include <optional>
 
 // Include local modules
 #include "../config.hpp"
@@ -242,6 +243,34 @@ template<typename T>                inline  void        print_vector(
                                                                                     int mode, 
                                                                                     int precision
                                                                     );
+
+/**
+ * @brief Calculate geometric properties of a quadrilateral.
+ * 
+ * Computes the area, centroid, first-order moments, and second-order moments
+ * of a quadrilateral defined by four vertices. Optionally, moments can be computed
+ * in a custom reference system.
+ * 
+ * @param[in]  x          Array of 4 x-coordinates of quadrilateral vertices
+ * @param[in]  y          Array of 4 y-coordinates of quadrilateral vertices
+ * @param[in]  z          Array of 4 z-coordinates of quadrilateral vertices
+ * @param[out] area       Quadrilateral area
+ * @param[out] centroid   Array[3] containing the centroid coordinates (x, y, z)
+ * @param[out] moments_fo Array[3] containing first-order moments about the centroid
+ * @param[out] moments_so Array[3] containing second-order moments (Ixx, Iyy, Ixy) about the centroid
+ * @param[in]  ref_sys    Optional reference system origin for moment calculation.
+ *                        If not provided, moments are computed about the centroid.
+ */
+                                            void        quad_geom_properties( 
+                                                                                    const   cusfloat*   x,
+                                                                                    const   cusfloat*   y,
+                                                                                    const   cusfloat*   z,
+                                                                                            cusfloat&   area,
+                                                                                            cusfloat*   centroid,
+                                                                                            cusfloat*   moments_fo,
+                                                                                            cusfloat*   moments_so,
+                                                                                    const   std::optional<cusfloat*>& ref_sys = std::nullopt
+                                                                                );
         
 template <typename T>               inline  int         sign(
                                                                                     T val
