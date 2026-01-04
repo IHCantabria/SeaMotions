@@ -7,6 +7,8 @@ set(
         ../../src/math/math_tools.hpp
         ../../src/math/math_tools.cpp
         ../../src/math/math_tools.txx
+        ../../src/mesh/mesh.hpp
+        ../../src/mesh/mesh.cpp
     )
     
 add_executable( test_cross_product_cmd ${test_cross_product_src} )
@@ -121,6 +123,7 @@ set(
         ../containers.hpp
         ${containers_module_files}
         ${math_module_files}
+        ${mesh_module_files}
         ${tools_module_files}
     )
 
@@ -396,6 +399,24 @@ set_mpi_target( test_scalapack_cmd )
 set_mkl_lib_target( test_scalapack_cmd )
 
 
+# Add test for the vector arithmetics
+set(
+        test_panel_properties_src
+        test_panel_properties.cpp
+        ../../src/config.hpp
+        ../../src/math/math_tools.hpp
+        ../../src/math/math_tools.cpp
+    )
+
+add_executable( test_panel_properties_cmd ${test_panel_properties_src} )
+set_mkl_lib_target( test_panel_properties_cmd )
+
+add_test(
+            NAME test_panel_properties 
+            COMMAND test_panel_properties_cmd
+        )
+
+
 # Add test to check MklVector class
 set(
         test_cusvector_src
@@ -409,3 +430,20 @@ add_executable(
                     ${test_cusvector_src}
                 )
 set_mkl_lib_target( test_cusvector_cmd )
+
+
+add_executable( test_cusvector2_cmd "test_cusvector2.cpp" )
+add_executable( test_cusvector3_cmd "test_cusvector3.cpp" )
+add_executable( test_cusvector4_cmd "test_cusvector4.cpp" )
+add_executable( test_cusvector5_cmd "test_cusvector5.cpp" )
+set_mkl_lib_target( test_cusvector5_cmd )
+add_executable( test_cusvector6_cmd "test_cusvector6.cpp" )
+set_mkl_lib_target( test_cusvector6_cmd )
+add_executable( test_cusvector7_cmd "test_cusvector7.cpp" )
+set_mkl_lib_target( test_cusvector7_cmd )
+add_executable( test_cusvector8_cmd "test_cusvector8.cpp" ${math_module_files} )
+set_mkl_lib_target( test_cusvector8_cmd )
+add_executable( test_cusvector_speed_cmd "test_cusvector_speed.cpp" )
+set_mkl_lib_target( test_cusvector_speed_cmd )
+
+add_executable( test_read_gmsh_cmd test_read_gmsh.cpp )
