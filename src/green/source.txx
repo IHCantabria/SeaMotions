@@ -20,6 +20,8 @@
 
 
 // Include local modules
+#include "common.hpp"
+#include "dipole.hpp"
 #include "../math/math_interface.hpp"
 #include "source.hpp"
 #include "../static_tools.hpp"
@@ -60,8 +62,8 @@ void    calculate_source_newman_t(
                                                                         panel, 
                                                                         r0, 
                                                                         field_point_local_aux,
-                                                                        phi,
-                                                                        velocity
+                                                                        velocity,
+                                                                        phi
                                                                     );
             return;
         }
@@ -71,8 +73,8 @@ void    calculate_source_newman_t(
                                                                         panel, 
                                                                         r0, 
                                                                         field_point_local_aux,
-                                                                        phi,
-                                                                        velocity
+                                                                        velocity,
+                                                                        phi
                                                                     );
             return;
         }
@@ -98,8 +100,8 @@ void    calculate_source_newman_t(
                                                                         panel, 
                                                                         r0, 
                                                                         field_point_local, 
-                                                                        phi,
-                                                                        velocity
+                                                                        velocity,
+                                                                        phi
                                                                     );
             return;
         }
@@ -109,8 +111,8 @@ void    calculate_source_newman_t(
                                                                         panel, 
                                                                         r0, 
                                                                         field_point_local, 
-                                                                        phi,
-                                                                        velocity
+                                                                        velocity,
+                                                                        phi
                                                                     );
             return;
         }
@@ -243,28 +245,37 @@ void    calculate_source_multipole(
     cusfloat w2     = w * w;
     cusfloat w3     = w2 * w;
     cusfloat w4     = w3 * w;
+    cusfloat w5     = w4 * w;
     cusfloat w7     = w4 * w3;
 
+    // Declare auxiliar variables por powers and inverse radius combinations
+    cusfloat p, q;
+    cusfloat x2, y2, z2;
+    cusfloat wx, wy, wz, wxx, wxy, wyy;
+    cusfloat wxxx, wxxy, wxyy, wyyy, wxxz, wxyz, wyyz;
+
     // Calculate auxiliar powers of field point coordinates
-    STATIC_COND( ONLY_FCNDRZ,   (cusfloat x2     = pow2s( x )); )
-    STATIC_COND( ONLY_FCNDRZ,   (cusfloat y2     = pow2s( y )); )
-    STATIC_COND( ONLY_FCNDRZ,   (cusfloat z2     = pow2s( z )); )
+    STATIC_COND( ONLY_FCNDRZ,   (x2     = pow2s( x )); )
+    STATIC_COND( ONLY_FCNDRZ,   (y2     = pow2s( y )); )
+    STATIC_COND( ONLY_FCNDRZ,   (z2     = pow2s( z )); )
+    STATIC_COND( ONLY_FCNDRZ,   (p      = y2 + z2 - 4.0 * x2); )
+    STATIC_COND( ONLY_FCNDRZ,   (q      = x2 + z2 - 4.0 * y2); )
 
     // Calculate inverse radius convinations
-    STATIC_COND( ONLY_FCN,      (cusfloat wx     = - x * w3); )
-    STATIC_COND( ONLY_FCN,      (cusfloat wy     = - y * w3); )
-    STATIC_COND( ONLY_FCN,      (cusfloat wz     = - z * w3); )
-    STATIC_COND( ONLY_FCN,      (cusfloat wxx    = - w3 + 3.0 * x2 * w5); )
-    STATIC_COND( ONLY_FCN,      (cusfloat wxy    = + 3.0 * x * y * w5); )
-    STATIC_COND( ONLY_FCN,      (cusfloat wyy    = - w3 + 3.0 * y2 * w5); )
+    STATIC_COND( ONLY_FCN,      (wx     = - x * w3); )
+    STATIC_COND( ONLY_FCN,      (wy     = - y * w3); )
+    STATIC_COND( ONLY_FCN,      (wz     = - z * w3); )
+    STATIC_COND( ONLY_FCN,      (wxx    = - w3 + 3.0 * x2 * w5); )
+    STATIC_COND( ONLY_FCN,      (wxy    = + 3.0 * x * y * w5); )
+    STATIC_COND( ONLY_FCN,      (wyy    = - w3 + 3.0 * y2 * w5); )
 
-    STATIC_COND( ONLY_FCNDRZ,   (cusfloat wxxx   = 3.0 * x * ( 3.0 * p + 10.0 * x2 ) * w7);     )
-    STATIC_COND( ONLY_FCNDRZ,   (cusfloat wxxy   = 3.0 * y * p * w7);                           )
-    STATIC_COND( ONLY_FCNDRZ,   (cusfloat wxyy   = 3.0 * x * q * w7);                           )
-    STATIC_COND( ONLY_FCNDRZ,   (cusfloat wyyy   = 3.0 * y * ( 3.0 * q + 10.0 * y2 ) * w7);     )
-    STATIC_COND( ONLY_FCNDRZ,   (cusfloat wxxz   = 3.0 * z * p * w7);                           )
-    STATIC_COND( ONLY_FCNDRZ,   (cusfloat wxyz   = -15.0 * x * y * z * w7);                     )
-    STATIC_COND( ONLY_FCNDRZ,   (cusfloat wyyz   = 3.0 * z * q * w7);                           )
+    STATIC_COND( ONLY_FCNDRZ,   (wxxx   = 3.0 * x * ( 3.0 * p + 10.0 * x2 ) * w7);     )
+    STATIC_COND( ONLY_FCNDRZ,   (wxxy   = 3.0 * y * p * w7);                           )
+    STATIC_COND( ONLY_FCNDRZ,   (wxyy   = 3.0 * x * q * w7);                           )
+    STATIC_COND( ONLY_FCNDRZ,   (wyyy   = 3.0 * y * ( 3.0 * q + 10.0 * y2 ) * w7);     )
+    STATIC_COND( ONLY_FCNDRZ,   (wxxz   = 3.0 * z * p * w7);                           )
+    STATIC_COND( ONLY_FCNDRZ,   (wxyz   = -15.0 * x * y * z * w7);                     )
+    STATIC_COND( ONLY_FCNDRZ,   (wyyz   = 3.0 * z * q * w7);                           )
 
     // Calculate potential and velocity based on the requested modes
     STATIC_COND( ONLY_FCN,      (phi             = A * w - ( Mx * wx + My * wy ) + 0.5 * ( Ixx * wxx + 2.0 * Ixy * wxy + Iyy * wyy ) ); )
