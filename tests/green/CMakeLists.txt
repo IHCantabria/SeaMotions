@@ -172,6 +172,7 @@ set(
         ${containers_module_files}
         ${panel_geometry_src}
         ${green_module_files}
+        ${interfaces_module_files}
         ${math_module_files}
         ${mesh_module_files}
         ${tools_module_files}
@@ -186,18 +187,85 @@ set_mkl_lib_target( test_wave_term_fin_depth_cmd )
 
 set(
         test_wave_term_fin_depth_files
-        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/john_series.dat"
-        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/john_series_dr.dat"
-        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/john_series_dz.dat"
-        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/fin_depth_integral.dat"
-        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/fin_depth_integral_dr.dat"
-        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/fin_depth_integral_dz.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_depth_tables/G_Agt1.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_depth_tables/G_Agt1_dR.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_depth_tables/G_Agt1_dz.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_depth_tables/G_Agt1_dzeta.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_depth_tables/G_Alt1.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_depth_tables/G_Alt1_dR.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_depth_tables/G_Alt1_dz.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_depth_tables/G_Alt1_dzeta.dat"
     )
+
 add_test(
             NAME test_wave_term_fin_depth
             COMMAND test_wave_term_fin_depth_cmd
             ${test_wave_term_fin_depth_files}
         )
+
+
+# Add test to check the finite water depth 
+# wave term
+set(
+        test_wave_term_fin_depth_consistency_src
+        test_wave_term_fin_depth_consistency.cpp
+        ${containers_module_files}
+        ${panel_geometry_src}
+        ${green_module_files}
+        ${interfaces_module_files}
+        ${math_module_files}
+        ${mesh_module_files}
+        ${tools_module_files}
+        ${waves_module_files}
+    )
+
+add_executable(
+                    test_wave_term_fin_depth_consistency_cmd 
+                    ${test_wave_term_fin_depth_consistency_src}
+                )
+set_mkl_lib_target( test_wave_term_fin_depth_consistency_cmd )
+
+# Add test to check the finite water depth 
+# wave term
+set(
+        test_wave_term_fin_depth_consistency_panels_src
+        test_wave_term_fin_depth_consistency_panels.cpp
+        ${containers_module_files}
+        ${panel_geometry_src}
+        ${green_module_files}
+        ${interfaces_module_files}
+        ${math_module_files}
+        ${mesh_module_files}
+        ${tools_module_files}
+        ${waves_module_files}
+    )
+
+add_executable(
+                    test_wave_term_fin_depth_consistency_panels_cmd 
+                    ${test_wave_term_fin_depth_consistency_panels_src}
+                )
+set_mkl_lib_target( test_wave_term_fin_depth_consistency_panels_cmd )
+
+# Add test to check the finite water depth 
+# wave term
+set(
+        test_check_john_integration_src
+        test_check_john_integration.cpp
+        ${containers_module_files}
+        ${panel_geometry_src}
+        ${green_module_files}
+        ${interfaces_module_files}
+        ${math_module_files}
+        ${mesh_module_files}
+        ${tools_module_files}
+        ${waves_module_files}
+    )
+
+add_executable(
+                    test_check_john_integration_cmd 
+                    ${test_check_john_integration_src}
+                )
+set_mkl_lib_target( test_check_john_integration_cmd )
 
 # Add test to check the finite water depth 
 # wave term (John series) integration using
@@ -227,11 +295,13 @@ set(
         test_wave_term_fin_depth_integrals_src
         test_wave_term_fin_depth_integrals.cpp
         ${containers_module_files}
+        ${interfaces_module_files}
         ${panel_geometry_src}
         ${green_module_files}
         ${math_module_files}
         ${mesh_module_files}
         ${tools_module_files}
+        ${waves_module_files}
     )
 
 add_executable(
@@ -242,24 +312,16 @@ set_mkl_lib_target( test_wave_term_fin_depth_integrals_cmd )
 
 set(
         test_wave_term_fin_depth_integrals_args
-        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/L1.dat"
-        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/L1_dA.dat"
-        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/L1_dB.dat"
-        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/L2.dat"
-        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/L3.dat"
-        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/L3_dA.dat"
-        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/L3_dB.dat"
-        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/M1.dat"
-        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/M1_dA.dat"
-        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/M1_dB.dat"
-        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/M2.dat"
-        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/M3.dat"
-        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/M3_dA.dat"
-        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_fin_depth_tables/M3_dB.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_depth_tables/L1.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_depth_tables/L2.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_depth_tables/L3.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_depth_tables/M1.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_depth_tables/M2.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/green_depth_tables/M3.dat"
     )
 
 add_test(
-            NAME test_wave_term_fin_depth_integrals
+            NAME    test_wave_term_fin_depth_integrals
             COMMAND test_wave_term_fin_depth_integrals_cmd
             ${test_wave_term_fin_depth_integrals_args}
         )
@@ -385,3 +447,32 @@ add_executable(
                     ${test_green_r_zero_src}
                 )
 set_mkl_lib_target( test_green_r_zero_cmd )
+
+
+# Add test for source potential function
+set(
+        test_multipole_expansions_src
+        test_multipole_expansions.cpp
+        ${containers_module_files}
+        ${inout_module_files}
+        ${interfaces_module_files}
+        ${panel_geometry_src}
+        ${green_module_files}
+        ${math_module_files}
+        ${mesh_module_files}
+        ${tools_module_files}
+        ${version_module_files}
+        ${waves_module_files}
+    )
+
+add_executable(
+                    test_multipole_expansions_cmd 
+                    ${test_multipole_expansions_src}
+                )
+set_mkl_lib_target( test_multipole_expansions_cmd )
+set_mpi_target( test_multipole_expansions_cmd )
+set_hdf5_target( test_multipole_expansions_cmd )
+add_test(
+            NAME test_multipole_expansions 
+            COMMAND test_multipole_expansions_cmd
+        )
