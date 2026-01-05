@@ -118,6 +118,9 @@ template<
                                                                                         cuscomplex&         result_G,
                                                                                         cuscomplex&         result_G_dn_sf,
                                                                                         cuscomplex&         result_G_dn_pf,
+                                                                                        cuscomplex&         result_G_dx,
+                                                                                        cuscomplex&         result_G_dy,
+                                                                                        cuscomplex&         result_G_dz,
                                                                                         bool                verbose=false
                                                                         );
 

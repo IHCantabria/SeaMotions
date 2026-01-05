@@ -322,6 +322,9 @@ void        quadrature_panel_t(
                                         cuscomplex&         result_G,
                                         cuscomplex&         result_G_dn_sf,
                                         cuscomplex&         result_G_dn_pf,
+                                        cuscomplex&         result_G_dx,
+                                        cuscomplex&         result_G_dy,
+                                        cuscomplex&         result_G_dz,
                                         bool                verbose
                                     )
 {
@@ -357,6 +360,24 @@ void        quadrature_panel_t(
                             panel
                         );
 
+    gauss2d_loop<NGP>(
+                            result_G_dx,
+                            [&](int i){ return target_fcn.dG_dx[i]; },
+                            panel
+                        );
+    
+    gauss2d_loop<NGP>(
+                            result_G_dy,
+                            [&](int i){ return target_fcn.dG_dy[i]; },
+                            panel
+                        );
+
+    gauss2d_loop<NGP>(
+                            result_G_dz,
+                            [&](int i){ return target_fcn.dG_dz[i]; },
+                            panel
+                        );
+    
 }
 
 
