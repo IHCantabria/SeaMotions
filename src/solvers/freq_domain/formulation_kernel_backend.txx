@@ -27,7 +27,7 @@
 /********************************************************/
 /************** Define module macros ********************/
 /********************************************************/
-#define QUADRATURE_PANEL_T( TA0, TA1, TA2, TA3, TA4 )                                   \
+#define _QUADRATURE_PANEL_T( TA0, TA1, TA2, TA3, TA4 )                                  \
 {                                                                                       \
     if constexpr( freq_regime == freq_regime_t::REGULAR )                               \
     {                                                                                   \
@@ -41,7 +41,10 @@
                                 this->_gwfcns_interf,                                   \
                                 wave_fcn_value,                                         \
                                 wave_fcn_dn_sf_value,                                   \
-                                wave_fcn_dn_pf_value                                    \
+                                wave_fcn_dn_pf_value,                                   \
+                                wave_fcn_dx_value,                                      \
+                                wave_fcn_dy_value,                                      \
+                                wave_fcn_dz_value                                       \
                             );                                                          \
     }                                                                                   \
     else if constexpr( freq_regime == freq_regime_t::ASYMPT_LOW )                       \
@@ -56,7 +59,10 @@
                                 this->_gwfcns_interf,                                   \
                                 wave_fcn_value,                                         \
                                 wave_fcn_dn_sf_value,                                   \
-                                wave_fcn_dn_pf_value                                    \
+                                wave_fcn_dn_pf_value,                                   \
+                                wave_fcn_dx_value,                                      \
+                                wave_fcn_dy_value,                                      \
+                                wave_fcn_dz_value                                       \
                             );                                                          \
     }                                                                                   \
     else                                                                                \
@@ -71,10 +77,299 @@
                                 this->_gwfcns_interf,                                   \
                                 wave_fcn_value,                                         \
                                 wave_fcn_dn_sf_value,                                   \
-                                wave_fcn_dn_pf_value                                    \
+                                wave_fcn_dn_pf_value,                                   \
+                                wave_fcn_dx_value,                                      \
+                                wave_fcn_dy_value,                                      \
+                                wave_fcn_dz_value                                       \
                             );                                                          \
     }                                                                                   \
 }                                                                                       \
+
+
+/*************************************************************************/
+/****************** Define auxiliar module functions *********************/
+/*************************************************************************/
+template<int mode_pf, freq_regime_t freq_regime>
+void _formulation_kernel_steady(
+                                    bool        is_diag,
+                                    PanelGeom*  panel_i,
+                                    cusfloat*   field_point,
+                                    cusfloat    water_depth,
+                                    cusfloat&   pot_term,
+                                    cusfloat*   int_dn_pf_value,
+                                    cusfloat*   int_dn_sf_value,
+                                    cusfloat*   vel_total
+                                )
+{
+    // Define local variables to work with the fast solver
+    const int   ndim                    = 3;
+    cusfloat    field_point_i[ndim]     = { 0.0, 0.0, 0.0 };
+    PanelGeom*  panel_i                 = nullptr;
+    PanelGeom*  panel_mirror_i          = nullptr;
+    cusfloat    vel_0[ndim]             = { 0.0, 0.0, 0.0 };
+    cusfloat    vel_1[ndim]             = { 0.0, 0.0, 0.0 };
+    cusfloat    vel_2[ndim]             = { 0.0, 0.0, 0.0 };
+    cusfloat    vel_3[ndim]             = { 0.0, 0.0, 0.0 };
+    cusfloat    vel_4[ndim]             = { 0.0, 0.0, 0.0 };
+    cusfloat    vel_5[ndim]             = { 0.0, 0.0, 0.0 };
+
+    cusfloat    pot_0                   = 0.0;
+    cusfloat    pot_1                   = 0.0;
+    cusfloat    pot_2                   = 0.0;
+    cusfloat    pot_3                   = 0.0;
+    cusfloat    pot_4                   = 0.0;
+    cusfloat    pot_5                   = 0.0;
+    cuscomplex  pot_term                = 0.0;
+    
+    // Calcualte velocity corresponding to the r0 source
+    calculate_source_newman(
+                                panel_i,
+                                field_point,
+                                0,
+                                0, 
+                                vel_0,
+                                pot_0
+                            );
+
+    // Calculate velocity corresponding to the r1 source
+    field_point_i[0]    =   field_point[0];
+    field_point_i[1]    =   field_point[1];
+    field_point_i[2]    =   field_point[2] + 2 * water_depth;
+    calculate_source_newman(
+                                panel_mirror_i,
+                                field_point_i, 
+                                0,
+                                0, 
+                                vel_1,
+                                pot_1
+                            );
+    
+    // Calculate velocity corresponding to the r2 source
+    field_point_i[0]    =   field_point[0];
+    field_point_i[1]    =   field_point[1];
+    field_point_i[2]    =   field_point[2];
+    calculate_source_newman(
+                                panel_mirror_i,
+                                field_point_i, 
+                                0,
+                                0, 
+                                vel_2,
+                                pot_2
+                            );
+
+    // Calculate velocity corresponding to the r3 source
+    field_point_i[0]    =   field_point[0];
+    field_point_i[1]    =   field_point[1];
+    field_point_i[2]    =   field_point[2] + 2.0 * water_depth;
+    calculate_source_newman(
+                                panel_i,
+                                field_point_i, 
+                                0,
+                                0, 
+                                vel_3,
+                                pot_3
+                            );
+
+    // Calculate velocity corresponding to the r4 source
+    field_point_i[0]    =   field_point[0];
+    field_point_i[1]    =   field_point[1];
+    field_point_i[2]    =   -field_point[2] + 2.0 * water_depth;
+    calculate_source_newman(
+                                panel_mirror_i,
+                                field_point_i, 
+                                0,
+                                0, 
+                                vel_4,
+                                pot_4
+                            );
+
+    // Calculate velocity corresponding to the r5 source
+    field_point_i[0]    =   field_point[0];
+    field_point_i[1]    =   field_point[1];
+    field_point_i[2]    =   field_point[2] + 4.0 * water_depth;
+    calculate_source_newman(
+                                panel_mirror_i,
+                                field_point_i, 
+                                0,
+                                0, 
+                                vel_5,
+                                pot_5
+                            );
+
+    // Compose total velocity vector
+    if constexpr( freq_regime == freq_regime_t::REGULAR || freq_regime == freq_regime_t::ASYMPT_LOW )
+    {
+        vel_total_sf[0] = - ( vel_0[0] + vel_1[0] + vel_2[0] + vel_3[0] + vel_4[0] + vel_5[0] );
+        vel_total_sf[1] = - ( vel_0[1] + vel_1[1] + vel_2[1] + vel_3[1] + vel_4[1] + vel_5[1] );
+        vel_total_sf[2] = - ( vel_0[2] + vel_1[2] + vel_2[2] + vel_3[2] - vel_4[2] + vel_5[2] );
+
+        STATIC_COND( ONLY_PF, vel_total_pf[2] = - ( - vel_0[2] + vel_1[2] + vel_2[2] - vel_3[2] + vel_4[2] + vel_5[2] );    )
+
+        pot_term        = ( pot_0 + pot_1 + pot_2 + pot_3 + pot_4 + pot_5 ) / 4.0 / PI;
+    }
+    else // freq_regime == FREQ_REGIME_INF_FREQ
+    {
+        vel_total_sf[0] = - ( vel_0[0] + vel_1[0] - vel_2[0] - vel_3[0] - vel_4[0] - vel_5[0] );
+        vel_total_sf[1] = - ( vel_0[1] + vel_1[1] - vel_2[1] - vel_3[1] - vel_4[1] - vel_5[1] );
+        vel_total_sf[2] = - ( vel_0[2] + vel_1[2] - vel_2[2] - vel_3[2] + vel_4[2] - vel_5[2] );
+
+        STATIC_COND( ONLY_PF, vel_total_pf[2] = - ( - vel_0[2] + vel_1[2] - vel_2[2] + vel_3[2] - vel_4[2] - vel_5[2] );    )
+
+        pot_term        = ( pot_0 + pot_1 - pot_2 - pot_3 - pot_4 - pot_5 ) / 4.0 / PI;
+    }
+
+    STATIC_COND( ONLY_PF, vel_total_pf[0] = - vel_total_sf[0];                                                          )
+    STATIC_COND( ONLY_PF, vel_total_pf[1] = - vel_total_sf[1];                                                          )
+    
+                            
+    int_dn_sf_value    = (
+                            this->_mesh_gp->source_nodes[j]->normal_vec[0] * vel_total_sf[0]
+                            +
+                            this->_mesh_gp->source_nodes[j]->normal_vec[1] * vel_total_sf[1]
+                            +
+                            this->_mesh_gp->source_nodes[j]->normal_vec[2] * vel_total_sf[2]
+                        ) / 4.0 / PI;
+                    
+    
+
+    STATIC_COND(
+                    ONLY_PF,
+                    int_dn_pf_value    = (
+                                            this->_mesh_gp->source_nodes[i]->normal_vec[0] * vel_total_pf[0]
+                                            +
+                                            this->_mesh_gp->source_nodes[i]->normal_vec[1] * vel_total_pf[1]
+                                            +
+                                            this->_mesh_gp->source_nodes[i]->normal_vec[2] * vel_total_pf[2]
+                                        ) / 4.0 / PI;
+                )
+
+    // Discard spurious values for normal derivatives
+    if ( is_diag )
+    {
+                                int_dn_sf_value = cuscomplex( 0.0, 0.0 );
+        STATIC_COND( ONLY_PF,   int_dn_pf_value = cuscomplex( 0.0, 0.0 ); )
+                                vel_total[0]    = cuscomplex( 0.5, 0.0 ) * panel_i->normal_vec[0]; // Used 0.5 but need to be verified because of term: exp( -k * V3 )
+                                vel_total[1]    = cuscomplex( 0.5, 0.0 ) * panel_i->normal_vec[1]; // Used 0.5 but need to be verified because of term: exp( -k * V3 )
+                                vel_total[2]    = cuscomplex( 0.5, 0.0 ) * panel_i->normal_vec[2]; // Used 0.5 but need to be verified because of term: exp( -k * V3 )
+    }
+    else
+    {
+        vel_total[0] = vel_total_sf[0] / 4.0 / PI;
+        vel_total[1] = vel_total_sf[1] / 4.0 / PI;
+        vel_total[2] = vel_total_sf[2] / 4.0 / PI;
+    }
+
+    
+}
+
+
+template<typename T>
+void _formulation_kernel_wave( 
+                                int         is_diag,
+                                SourceNode* source_i,
+                                SourceNode* source_j,
+                                T*          gwf_interf,
+                                cuscomplex& pot_term,
+                                cuscomplex& int_dn_pf_value,
+                                cuscomplex& int_dn_sf_value,
+                                cusfloat*   vel_total
+                            )
+{
+    // Get memory address of the panel jth
+    PanelGeom*      panel_j = source_j->panel;
+    gwf_interf->set_source_j( source_j );
+    
+    // Calculate distance in between field point and source
+    cusfloat    distn   =  std::sqrt( 
+                                        pow2s( source_j->position[0] - source_i->panel->center[0] )
+                                        +
+                                        pow2s( source_j->position[1] - source_i->panel->center[1] )
+                                    );
+    cusfloat    dist    =  distn / this->_input->water_depth;
+    bool        is_john = dist > 1.0;
+    
+
+    // Declare local auxiliar variables
+    cusfloat    log_sing_val            = 0.0;
+    cuscomplex  wave_fcn_value          = cuscomplex( 0.0, 0.0 );
+    cuscomplex  wave_fcn_dn_sf_value    = cuscomplex( 0.0, 0.0 );
+    cuscomplex  wave_fcn_dn_pf_value    = cuscomplex( 0.0, 0.0 );
+    cuscomplex  wave_fcn_dx_value       = cuscomplex( 0.0, 0.0 );
+    cuscomplex  wave_fcn_dy_value       = cuscomplex( 0.0, 0.0 );
+    cuscomplex  wave_fcn_dz_value       = cuscomplex( 0.0, 0.0 );
+
+    // Reset to cero variables in other to avoid spurious data
+    pot_term           = 0.0;
+    int_dn_sf_value     = 0.0;
+    int_dn_pf_value     = 0.0;
+
+    // Integrate green function normal derivative along the current panel
+    if ( is_diag )
+    {
+        if ( panel_j->type == DIFFRAC_PANEL_CODE )
+        {
+            int_dn_sf_value     = cuscomplex( 0.5, 0.0 );
+            int_dn_pf_value     = cuscomplex( 0.5, 0.0 );
+
+            _QUADRATURE_PANEL_T( NUM_GP2, G_ON, DGDR_OFF, DGDZ_OFF, FSLID_OFF )
+            
+            pot_term   =   wave_fcn_value / 4.0 / PI;
+        }
+        else if ( panel_j->type == LID_PANEL_CODE )
+        {
+            int_dn_sf_value     = -cuscomplex( 1.0, 0.0 );
+            int_dn_pf_value     = -cuscomplex( 1.0, 0.0 );
+            
+            _QUADRATURE_PANEL_T( NUM_GP2, G_ON, DGDR_OFF, DGDZ_OFF, FSLID_ON )
+            
+            if constexpr( freq_regime == freq_regime_t::REGULAR )
+            {
+                log_sing_val        = 2.0 * ( LOG2_GAMMA - std::log( nu ) - source_i->panel->free_surface_log_int ) * source_i->panel->area;
+                wave_fcn_value      += cuscomplex( nu * log_sing_val, 0.0 );
+            }
+            pot_term           = wave_fcn_value / 4.0 / PI;
+            
+        }
+        
+    }
+    else
+    {
+        wave_fcn_value          = 0.0;
+        wave_fcn_dn_sf_value    = 0.0;
+        wave_fcn_dn_pf_value    = 0.0;
+
+        if ( is_john && freq_regime == freq_regime_t::REGULAR )
+        {
+            quadrature_panel_t<
+                                    PanelGeom, 
+                                    GWFcnsInterfaceT<NUM_GP2>, 
+                                    john_series<NUM_GP2, G_ON, DGDR_ON, DGDZ_ON>, 
+                                    NUM_GP
+                                >( 
+                                    source_i->panel, 
+                                    this->_gwfcns_interf, 
+                                    wave_fcn_value,
+                                    wave_fcn_dn_sf_value,
+                                    wave_fcn_dn_pf_value,
+                                    wave_fcn_dx_value,
+                                    wave_fcn_dy_value,
+                                    wave_fcn_dz_value
+                                );
+        }
+        else
+        {
+            _QUADRATURE_PANEL_T( NUM_GP2, G_ON, DGDR_ON, DGDZ_ON, FSLID_OFF )
+        }
+
+        pot_term        =   wave_fcn_value / 4.0 / PI;
+        int_dn_sf_value =   wave_fcn_dn_sf_value / 4.0 / PI;
+        int_dn_pf_value =   wave_fcn_dn_pf_value / 4.0 / PI;
+        vel_total[0]    =   wave_fcn_dx_value / 4.0 / PI;
+        vel_total[1]    =   wave_fcn_dy_value / 4.0 / PI;
+        vel_total[2]    =   wave_fcn_dz_value / 4.0 / PI;
+
+    }
+}
 
 
 template<std::size_t N, int mode_pf>
@@ -585,7 +880,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
                     int_dn_sf_value     = cuscomplex( 0.5, 0.0 );
                     int_dn_pf_value     = cuscomplex( 0.5, 0.0 );
 
-                    QUADRATURE_PANEL_T( NUM_GP2, G_ON, DGDR_OFF, DGDZ_OFF, FSLID_OFF )
+                    _QUADRATURE_PANEL_T( NUM_GP2, G_ON, DGDR_OFF, DGDZ_OFF, FSLID_OFF )
                     
                     int_value   =   wave_fcn_value / 4.0 / PI;
                 }
@@ -594,7 +889,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
                     int_dn_sf_value     = -cuscomplex( 1.0, 0.0 );
                     int_dn_pf_value     = -cuscomplex( 1.0, 0.0 );
                     
-                    QUADRATURE_PANEL_T( NUM_GP2, G_ON, DGDR_OFF, DGDZ_OFF, FSLID_ON )
+                    _QUADRATURE_PANEL_T( NUM_GP2, G_ON, DGDR_OFF, DGDZ_OFF, FSLID_ON )
                     
                     if constexpr( freq_regime == freq_regime_t::REGULAR )
                     {
@@ -629,7 +924,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
                 }
                 else
                 {
-                    QUADRATURE_PANEL_T( NUM_GP2, G_ON, DGDR_ON, DGDZ_ON, FSLID_OFF )
+                    _QUADRATURE_PANEL_T( NUM_GP2, G_ON, DGDR_ON, DGDZ_ON, FSLID_OFF )
                 }
 
                 int_value       =   wave_fcn_value / 4.0 / PI;
