@@ -24,6 +24,7 @@
 #include "../math/custensor/custensor.hpp"
 
 
+template<int mode_f, int mode_dfdn, int mode_dfdc>
 struct RadDiffData
 {
 private:
@@ -34,9 +35,21 @@ public:
     // Declare public variables
     cut::CusTensor<cusfloat>*       field_points    = nullptr; // Store field points coordinates
     std::size_t                     field_points_np = 0;       // Number of field points
-    cut::CusTensor<cuscomplex>*     incident        = nullptr; // Store wave incident field value [field_points, headings_np]
-    cut::CusTensor<cuscomplex>*     raddiff         = nullptr; // Store radiated diffracted field values [field_points, dofs_np · headings_np]
-    cut::CusTensor<cuscomplex>*     total           = nullptr; // Store total field value [field_points, headings_np]. Total field is composed of: incident + sum( epsi · radiation ) + diffraction.
+    cut::CusTensor<cuscomplex>*     pot_incident    = nullptr; // Store wave incident potential value                           [field_points, headings_np]
+    cut::CusTensor<cuscomplex>*     pot_raddiff     = nullptr; // Store wave radiated diffracted potential value                [field_points, headings_np]
+    cut::CusTensor<cuscomplex>*     pot_total       = nullptr; // Store wave total potential value                              [field_points, headings_np]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
+    cut::CusTensor<cuscomplex>*     vel_dn_incident = nullptr; // Store wave incident normal velocity derivative value          [field_points, headings_np]
+    cut::CusTensor<cuscomplex>*     vel_dn_raddiff  = nullptr;  // Store radiated diffracted normal velocity derivative values  [field_points, dofs_np · headings_np]
+    cut::CusTensor<cuscomplex>*     vel_dn_total    = nullptr; // Store total normal velocity derivative value                  [field_points, headings_np]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
+    cut::CusTensor<cuscomplex>*     vel_x_incident  = nullptr; // Store wave incident velocity_x value                          [field_points, headings_np]
+    cut::CusTensor<cuscomplex>*     vel_y_incident  = nullptr; // Store wave incident velocity_y value                          [field_points, headings_np]
+    cut::CusTensor<cuscomplex>*     vel_z_incident  = nullptr; // Store wave incident velocity_z value                          [field_points, headings_np]
+    cut::CusTensor<cuscomplex>*     vel_x_raddiff   = nullptr; // Store radiated diffracted velocity_x values                   [field_points, dofs_np · headings_np]
+    cut::CusTensor<cuscomplex>*     vel_y_raddiff   = nullptr; // Store radiated diffracted velocity_y values                   [field_points, dofs_np · headings_np]
+    cut::CusTensor<cuscomplex>*     vel_z_raddiff   = nullptr; // Store radiated diffracted velocity_z values                   [field_points, dofs_np · headings_np]
+    cut::CusTensor<cuscomplex>*     vel_x_total     = nullptr; // Store total velocity_x value                                  [field_points, headings_np]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
+    cut::CusTensor<cuscomplex>*     vel_y_total     = nullptr; // Store total velocity_y value                                  [field_points, headings_np]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
+    cut::CusTensor<cuscomplex>*     vel_z_total     = nullptr; // Store total velocity_z value                                  [field_points, headings_np]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
 
     /* Declare class constructors and destructor */
     RadDiffData( ) = default;
@@ -50,3 +63,7 @@ public:
     ~RadDiffData( );
     
 };
+
+
+// Include template implementation file
+#include "rad_diff_data.txx"
