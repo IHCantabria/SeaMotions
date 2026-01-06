@@ -32,8 +32,10 @@
 #define STATIC_COND( cond, code_block )                     if constexpr( cond ) { code_block }
 #define STATIC_COND_2( cond, code_block_1, code_block_2 )   if constexpr( cond ) { code_block_1 } else { code_block_2 }
 #define STATIC_LOOP( n, N, code_block )                     if constexpr( IS_STATIC_LOOP ) { LOOP_DEF( N, code_block ) } else { LOOP_DEF( n, code_block ) }
-#define ONLY_FCN                                            mode_f == 1
+#define ONLY_FCN                                            mode_f    == 1
+#define ONLY_FCNDC                                          mode_dfdc == 1
+#define ONLY_FCNDN                                          mode_dfdn == 1
 #define ONLY_FCNDR                                          mode_dfdr == 1
 #define ONLY_FCNDRZ                                         mode_dfdr == 1 || mode_dfdz == 0
 #define ONLY_FCNDZ                                          mode_dfdz == 1
-#define ONLY_PF                                             mode_pf == 1
+#define ONLY_PF                                             mode_pf   == 1
