@@ -65,6 +65,15 @@ namespace cut
             this->_is_heap  = true;
         }
 
+        void _check_index_bounds( size_t i ) const
+        {
+            if ( i > ( this->_size - 1 ) ) 
+            {
+                std::cerr << "Index " << i << " out of bounds for tensor of size " << this->_size << std::endl;
+                throw std::out_of_range("Index out of bounds");
+            }
+        }
+
         void _compute_strides( void )
         {
             // Resize strides vector to allocate tensor dimensions
@@ -224,17 +233,28 @@ namespace cut
         // Define class operators
         T& operator [ ] ( size_t i )
         {
+            // Debug mode: check for out of bounds access
+            #ifndef NDEBUG
+                this->_check_index_bounds( i );
+            #endif
+
             return this->_data[i];
         }
 
         const T operator [ ] ( size_t i ) const 
         {
+            // Debug mode: check for out of bounds access
+            #ifndef NDEBUG
+                this->_check_index_bounds( i );
+            #endif
+
             return this->_data[i];
         }
 
         template<typename... Args>
         T& operator( )( Args... args )
         {
+            // Compute offset in the linear data array
             std::array<size_t, sizeof...( Args )> idx{ static_cast<size_t>( args )... };
             assert( idx.size( ) == _shape.size( ) );
             size_t offset = 0; 
@@ -243,12 +263,18 @@ namespace cut
                 offset += idx[i] * _strides[i];
             }
 
+            // Debug mode: check for out of bounds access
+            #ifndef NDEBUG
+                this->_check_index_bounds( offset );
+            #endif
+
             return _data[offset];
         }
 
         template<typename... Args>
         const T operator( )(Args... args) const 
         {
+            // Compute index offset to get the correct item in the vector
             std::array<size_t, sizeof...( Args )> idx{ static_cast<size_t>( args )... };
             assert( idx.size( ) == this->_shape.size( ) );
             size_t offset = 0;
@@ -256,6 +282,11 @@ namespace cut
             {
                 offset += idx[i] * this->_strides[i];
             }
+
+            // Debug mode: check for out of bounds access
+            #ifndef NDEBUG
+                this->_check_index_bounds( offset );
+            #endif
 
             return this->_data[offset];
         }
