@@ -19,6 +19,8 @@ set(
         ${CMAKE_SOURCE_DIR}/src/containers/panel_geom_list.hpp
         ${CMAKE_SOURCE_DIR}/src/containers/performance_stats.hpp
         ${CMAKE_SOURCE_DIR}/src/containers/performance_stats.cpp
+        ${CMAKE_SOURCE_DIR}/src/containers/rad_diff_data.hpp
+        ${CMAKE_SOURCE_DIR}/src/containers/rad_diff_data.cpp
         ${CMAKE_SOURCE_DIR}/src/containers/simulation_data.hpp
         ${CMAKE_SOURCE_DIR}/src/containers/simulation_data.cpp
         ${CMAKE_SOURCE_DIR}/src/containers/source_node.hpp
@@ -133,6 +135,7 @@ set(
         # ${CMAKE_SOURCE_DIR}/src/green/pulsating_inf_depth_v2.cpp
         ${CMAKE_SOURCE_DIR}/src/green/source.hpp
         ${CMAKE_SOURCE_DIR}/src/green/source.cpp
+        ${CMAKE_SOURCE_DIR}/src/green/source.txx
         ${green_findepth_coeffs_src}
         ${green_infdepth_coeffs_src}
     )
