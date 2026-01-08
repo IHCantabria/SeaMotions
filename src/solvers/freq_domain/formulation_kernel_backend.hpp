@@ -23,6 +23,7 @@
 // Include local modules
 #include "../../containers/matlin_group.hpp"
 #include "../../containers/mpi_config.hpp"
+#include "../../containers/rad_diff_data.hpp"
 #include "../../containers/simulation_data.hpp"
 #include "../../green/source.hpp"
 #include "../../inout/input.hpp"
@@ -42,7 +43,7 @@ template<std::size_t N, int mode_pf>
 struct FormulationKernelBackend
 {
 private:
-    // Declare private variables
+    /* Declare private variables */
     GWFcnsInterfaceT<N*N>   _gwfcns_interf;                     // Wave part functor interface used for the integration over the panel by using Gauss Points
     Input*                  _input                  = nullptr;  // Input system to have access to the case configuration
     int                     _is_condition_number    = false;    // Switch to enable or disable the computation of the Condition number of the system matrixes for all the available formulations
@@ -55,7 +56,7 @@ private:
     int                     _steady_mat_type        = 0;        // Steady matrix type to be used in the formulation ( 0: REGULAR+Lf, 1: HF )
     MLGCmpx*                _sf_gp                  = nullptr;  // Group of matrix data to storage Source formulation data (Colum-Major arranged data)
 
-    // Declare private methods
+    /* Declare private methods */
     template<freq_regime_t freq_regime>
     void _build_steady_matrixes( 
                                     void 
@@ -76,7 +77,7 @@ private:
     
 
 public:
-    // Declare public attributes
+    /* Declare public attributes */
     cusfloat    exec_time_build_steady  = 0.0;
     cusfloat    exec_time_build_wave    = 0.0;
     cusfloat    exec_time_solve_pf      = 0.0;
@@ -85,12 +86,18 @@ public:
     int         ipm_sc                  = 0;
     int         ipm_ed                  = 0;
 
-    // Define class constructors
+    /* Define class constructors */
     FormulationKernelBackend( Input* input, MpiConfig* mpi_config, MeshGroup* mesh_gp );
 
     ~FormulationKernelBackend( );
 
-    // Define class public methods
+    /* Declare class public methods */
+    template<int mode_f, int mode_dfdn, int mode_dfdc>
+    void    compute_fields(
+                                    cusfloat                                    ang_freq,
+                                    cuscomplex*                                 raos,
+                                    RadDiffData<mode_f, mode_dfdn, mode_dfdc>*  rad_diff_data
+                            );
     int     size(
                             void
                 );
