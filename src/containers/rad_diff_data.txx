@@ -22,89 +22,68 @@
 #include "rad_diff_data.hpp"
 
 
-/***********************************************************/
-/**************** Module Auxiliar Macros *******************/
-/***********************************************************/
-#define _DELETE_TENSOR_FIELD( tensor_ptr )              \
-    if ( tensor_ptr != nullptr )                        \
-    {                                                   \
-        delete tensor_ptr;                              \
-        tensor_ptr = nullptr;                           \
-    }                                                   \
-
-
-/***********************************************************/
-/**************** Define RadDiffData class *****************/
-/***********************************************************/
 template<int mode_f, int mode_dfdn, int mode_dfdc>
-RadDiffData<mode_f, mode_dfdn, mode_dfdc>::RadDiffData( 
-                                                            std::size_t     field_points_np_,
-                                                            std::size_t     dofs_np,
-                                                            std::size_t     headings_np
-                                                        )
+std::size_t RadDiffData<mode_f, mode_dfdn, mode_dfdc>::get_end_pos( void ) const
 {
-    // Store number of field points
-    this->field_points_np   = field_points_np_;
-
-    // Allocate memory on heap for field points
-    this->field_points      = new cut::CusTensor<cusfloat>( { field_points_np_, 3 } );
-
-    // Allocate memory on heap for potential fields
-    STATIC_COND( ONLY_FCN,   this->pot_incident    = new cut::CusTensor<cuscomplex>( { field_points_np_, headings_np } );           )
-    STATIC_COND( ONLY_FCN,   this->pot_raddiff     = new cut::CusTensor<cuscomplex>( { field_points_np_, headings_np } );           )
-    STATIC_COND( ONLY_FCN,   this->pot_total       = new cut::CusTensor<cuscomplex>( { field_points_np_, headings_np } );           )
-
-    // Allocate memory on heap for normal velocity derivative fields
-    STATIC_COND( ONLY_FCNDN, this->vel_dn_incident = new cut::CusTensor<cuscomplex>( { field_points_np_, headings_np } );           )
-    STATIC_COND( ONLY_FCNDN, this->vel_dn_raddiff  = new cut::CusTensor<cuscomplex>( { field_points_np_, dofs_np * headings_np } ); )
-    STATIC_COND( ONLY_FCNDN, this->vel_dn_total    = new cut::CusTensor<cuscomplex>( { field_points_np_, headings_np } );           )
-
-    // Allocate memory on heap for velocity components fields
-    STATIC_COND( ONLY_FCNDC, this->vel_x_incident  = new cut::CusTensor<cuscomplex>( { field_points_np_, headings_np } );           )
-    STATIC_COND( ONLY_FCNDC, this->vel_y_incident  = new cut::CusTensor<cuscomplex>( { field_points_np_, headings_np } );           )
-    STATIC_COND( ONLY_FCNDC, this->vel_z_incident  = new cut::CusTensor<cuscomplex>( { field_points_np_, headings_np } );           )
-    STATIC_COND( ONLY_FCNDC, this->vel_x_raddiff   = new cut::CusTensor<cuscomplex>( { field_points_np_, dofs_np * headings_np } ); )
-    STATIC_COND( ONLY_FCNDC, this->vel_y_raddiff   = new cut::CusTensor<cuscomplex>( { field_points_np_, dofs_np * headings_np } ); )
-    STATIC_COND( ONLY_FCNDC, this->vel_z_raddiff   = new cut::CusTensor<cuscomplex>( { field_points_np_, dofs_np * headings_np } ); )
-    STATIC_COND( ONLY_FCNDC, this->vel_x_total     = new cut::CusTensor<cuscomplex>( { field_points_np_, headings_np } );           )
-    STATIC_COND( ONLY_FCNDC, this->vel_y_total     = new cut::CusTensor<cuscomplex>( { field_points_np_, headings_np } );           )
-    STATIC_COND( ONLY_FCNDC, this->vel_z_total     = new cut::CusTensor<cuscomplex>( { field_points_np_, headings_np } );           )
-
-    // Set flag to indicate that memory is allocated on heap
-    this->_is_heap        = true;
-
+    return this->_end_pos;
 }
 
 
 template<int mode_f, int mode_dfdn, int mode_dfdc>
-RadDiffData<mode_f, mode_dfdn, mode_dfdc>::~RadDiffData( )
+std::size_t RadDiffData<mode_f, mode_dfdn, mode_dfdc>::get_size_global( void ) const
 {
-    // Deallocate memory only if it was allocated on heap
-    if ( this->_is_heap )
+    return this->_size_global;
+}
+
+
+template<int mode_f, int mode_dfdn, int mode_dfdc>
+std::size_t RadDiffData<mode_f, mode_dfdn, mode_dfdc>::get_size_local( void ) const
+{
+    return this->_size_local;
+}
+
+
+template<int mode_f, int mode_dfdn, int mode_dfdc>
+std::size_t RadDiffData<mode_f, mode_dfdn, mode_dfdc>::get_start_pos( void ) const
+{
+    return this->_start_pos;
+}
+
+
+template<int mode_f, int mode_dfdn, int mode_dfdc>
+RadDiffData<mode_f, mode_dfdn, mode_dfdc>::RadDiffData( 
+                                                            MpiConfig*      mpi_config_,
+                                                            std::size_t     panels_np_,
+                                                            std::size_t     field_points_np_,
+                                                            std::size_t     headings_np_,
+                                                            std::size_t     dofs_np_
+                                                        )
+{
+    // Store number of field points
+    this->_size_global      = panels_np_;
+    this->_mpi_config       = mpi_config_;
+
+    // Calculate start and end positions for the current process
+    this->_mpi_config->get_1d_bounds(
+                                        static_cast<int>( panels_np_ ),
+                                        reinterpret_cast<int&>( this->_start_pos ),
+                                        reinterpret_cast<int&>( this->_end_pos )
+                                    );
+
+    this->_size_local       = this->_end_pos - this->_start_pos;
+
+    // Allocate PanelData
+    this->panel_data.reserve( this->_size_local );
+
+    for ( std::size_t i=0; i<this->_size_local; i++ )
     {
-        // Delete field points memory
-        _DELETE_TENSOR_FIELD( this->field_points )
-
-        // Delete potential fields memory
-        STATIC_COND( ONLY_FCN,   _DELETE_TENSOR_FIELD( this->pot_incident )    )
-        STATIC_COND( ONLY_FCN,   _DELETE_TENSOR_FIELD( this->pot_raddiff  )    )
-        STATIC_COND( ONLY_FCN,   _DELETE_TENSOR_FIELD( this->pot_total    )    )
-
-        // Delete normal velocity derivative fields memory
-        STATIC_COND( ONLY_FCNDN, _DELETE_TENSOR_FIELD( this->vel_dn_incident ) )
-        STATIC_COND( ONLY_FCNDN, _DELETE_TENSOR_FIELD( this->vel_dn_raddiff  ) )
-        STATIC_COND( ONLY_FCNDN, _DELETE_TENSOR_FIELD( this->vel_dn_total    ) )
-
-        // Delete velocity fields components memory
-        STATIC_COND( ONLY_FCNDC, _DELETE_TENSOR_FIELD( this->vel_x_incident )  )
-        STATIC_COND( ONLY_FCNDC, _DELETE_TENSOR_FIELD( this->vel_y_incident )  )
-        STATIC_COND( ONLY_FCNDC, _DELETE_TENSOR_FIELD( this->vel_z_incident )  )
-        STATIC_COND( ONLY_FCNDC, _DELETE_TENSOR_FIELD( this->vel_x_raddiff  )  )
-        STATIC_COND( ONLY_FCNDC, _DELETE_TENSOR_FIELD( this->vel_y_raddiff  )  )
-        STATIC_COND( ONLY_FCNDC, _DELETE_TENSOR_FIELD( this->vel_z_raddiff  )  )
-        STATIC_COND( ONLY_FCNDC, _DELETE_TENSOR_FIELD( this->vel_x_total    )  )
-        STATIC_COND( ONLY_FCNDC, _DELETE_TENSOR_FIELD( this->vel_y_total    )  )
-        STATIC_COND( ONLY_FCNDC, _DELETE_TENSOR_FIELD( this->vel_z_total    )  )
-
+        this->panel_data.emplace_back( 
+                                            PanelData<mode_f, mode_dfdn, mode_dfdc>(
+                                                                                        field_points_np_,
+                                                                                        headings_np_,
+                                                                                        dofs_np_
+                                                                                    ) 
+                                    );
     }
+
 }

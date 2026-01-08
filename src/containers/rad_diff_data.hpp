@@ -22,6 +22,9 @@
 
 // Include local modules
 #include "../math/custensor/custensor.hpp"
+#include "../mesh/mesh_group.hpp"
+#include "mpi_config.hpp"
+#include "panel_data.hpp"
 
 
 template<int mode_f, int mode_dfdn, int mode_dfdc>
@@ -29,38 +32,36 @@ struct RadDiffData
 {
 private:
     // Declare private variables
-    bool                            _is_heap        = false; // Flag to indicate if memory is allocated on heap
-
+    std::size_t                     _end_pos        = 0;        // End position along field points for the current process
+    bool                            _is_heap        = false;    // Flag to indicate if memory is allocated on heap
+    MpiConfig*                      _mpi_config     = nullptr;  // Pointer to MPI configuration
+    std::size_t                     _size_global    = 0;        // Total number of field points all across processes
+    std::size_t                     _size_local     = 0;        // Total number of field points for the current process
+    std::size_t                     _start_pos      = 0;        // Start position along field points for the current process
+    
 public:
     // Declare public variables
-    cut::CusTensor<cusfloat>*       field_points    = nullptr; // Store field points coordinates
-    std::size_t                     field_points_np = 0;       // Number of field points
-    cut::CusTensor<cuscomplex>*     pot_incident    = nullptr; // Store wave incident potential value                           [field_points, headings_np]
-    cut::CusTensor<cuscomplex>*     pot_raddiff     = nullptr; // Store wave radiated diffracted potential value                [field_points, headings_np]
-    cut::CusTensor<cuscomplex>*     pot_total       = nullptr; // Store wave total potential value                              [field_points, headings_np]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
-    cut::CusTensor<cuscomplex>*     vel_dn_incident = nullptr; // Store wave incident normal velocity derivative value          [field_points, headings_np]
-    cut::CusTensor<cuscomplex>*     vel_dn_raddiff  = nullptr;  // Store radiated diffracted normal velocity derivative values  [field_points, dofs_np · headings_np]
-    cut::CusTensor<cuscomplex>*     vel_dn_total    = nullptr; // Store total normal velocity derivative value                  [field_points, headings_np]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
-    cut::CusTensor<cuscomplex>*     vel_x_incident  = nullptr; // Store wave incident velocity_x value                          [field_points, headings_np]
-    cut::CusTensor<cuscomplex>*     vel_y_incident  = nullptr; // Store wave incident velocity_y value                          [field_points, headings_np]
-    cut::CusTensor<cuscomplex>*     vel_z_incident  = nullptr; // Store wave incident velocity_z value                          [field_points, headings_np]
-    cut::CusTensor<cuscomplex>*     vel_x_raddiff   = nullptr; // Store radiated diffracted velocity_x values                   [field_points, dofs_np · headings_np]
-    cut::CusTensor<cuscomplex>*     vel_y_raddiff   = nullptr; // Store radiated diffracted velocity_y values                   [field_points, dofs_np · headings_np]
-    cut::CusTensor<cuscomplex>*     vel_z_raddiff   = nullptr; // Store radiated diffracted velocity_z values                   [field_points, dofs_np · headings_np]
-    cut::CusTensor<cuscomplex>*     vel_x_total     = nullptr; // Store total velocity_x value                                  [field_points, headings_np]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
-    cut::CusTensor<cuscomplex>*     vel_y_total     = nullptr; // Store total velocity_y value                                  [field_points, headings_np]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
-    cut::CusTensor<cuscomplex>*     vel_z_total     = nullptr; // Store total velocity_z value                                  [field_points, headings_np]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
+    std::vector<PanelData<mode_f, mode_dfdn, mode_dfdc>>   panel_data; // Store panel data for radiation and diffraction calculations
 
     /* Declare class constructors and destructor */
     RadDiffData( ) = default;
 
     RadDiffData( 
-                    std::size_t     field_points_np,
-                    std::size_t     dofs_np,
-                    std::size_t     headings_np
+                    MpiConfig*      mpi_config_,
+                    std::size_t     panels_np_,
+                    std::size_t     field_points_np_,
+                    std::size_t     headings_np_,
+                    std::size_t     dofs_np_
                 );
 
-    ~RadDiffData( );
+    /* Declare public methods */
+    std::size_t get_end_pos( void ) const;
+
+    std::size_t get_size_global( void ) const;
+
+    std::size_t get_size_local( void ) const;
+
+    std::size_t get_start_pos( void ) const;
     
 };
 
