@@ -36,6 +36,30 @@
 
 
 template<std::size_t N, int mode_pf>
+void FrequencySolver<N, mode_pf>::_calculate_field_points_values( 
+                                                                    cusfloat ang_freq 
+                                                                )
+{
+    if ( this->input->is_calc_mdrift )
+    {
+        // Calculate waterline field points values for QTF calculations
+        this->kernel->template calculate_field_points<G_ON, DGDN_OFF, DGDC_OFF>( 
+                                                                                    this->_qtf_wl_fields,
+                                                                                    this->sim_data->raos,
+                                                                                    ang_freq
+                                                                                );
+
+        // Calculate velocity field at Bernoulli points for QTF calculations
+        this->kernel->template calculate_field_points<G_OFF, DGDN_OFF, DGDC_ON>( 
+                                                                                    this->_qtf_bern_fields,
+                                                                                    this->sim_data->raos,
+                                                                                    ang_freq
+                                                                                );
+    }
+}
+
+
+template<std::size_t N, int mode_pf>
 void FrequencySolver<N, mode_pf>::calculate_first_order( void )
 {
     /*******************************************************/
@@ -56,6 +80,12 @@ void FrequencySolver<N, mode_pf>::calculate_first_order( void )
 
         // Calculate first order coefficients
         this->_calculate_first_order_coeffs<freq_regime_t::REGULAR>( i, this->input->angfreqs[i] );
+
+        // Calculate field points values at the positions required
+        this->_calculate_field_points_values( this->input->angfreqs[i] );
+
+        // Calculate second order coefficients given by first order potential solution
+        this->_calculate_first_to_second_order_coeffs( this->input->angfreqs[i] );
         
         // Print out execution times
         LOG_TASK_TIME( freq, freq_timer )
@@ -181,6 +211,15 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
                             this->sim_data->raos
                         );
     }
+
+    // Distribute RAOs to all processors
+    MPI_Bcast(
+                    this->sim_data->raos,
+                    this->sim_data->wave_exc_np,
+                    mpi_cuscomplex,
+                    this->mpi_config->proc_root,
+                    MPI_COMM_WORLD
+                );
 
     
     // Storage results
@@ -386,6 +425,19 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
 
 
 template<std::size_t N, int mode_pf>
+void FrequencySolver<N, mode_pf>::_calculate_first_to_second_order_coeffs( 
+                                                                            cusfloat ang_freq 
+                                                                        )
+{
+    // Calculate QTF coefficients if required
+    if ( this->input->is_calc_mdrift )
+    {
+        
+    }
+}
+
+
+template<std::size_t N, int mode_pf>
 void FrequencySolver<N, mode_pf>::_calculate_global_static_matrixes( void )
 {
     // Calculate global structural mass
@@ -435,6 +487,12 @@ void FrequencySolver<N, mode_pf>::_calculate_hydrostatics( void )
 }
 
 
+template<std::size_t N, int mode_pf>
+void FrequencySolver<N, mode_pf>::calculate_second_order( void )
+{
+    // TO DO: Second order implementation
+}
+
 
 template<std::size_t N, int mode_pf>
 FrequencySolver<N, mode_pf>::FrequencySolver( Input* input_in, MpiConfig* mpi_config_in )
@@ -471,12 +529,29 @@ FrequencySolver<N, mode_pf>::FrequencySolver( Input* input_in, MpiConfig* mpi_co
     // used for the calculation of the RAOs.
     this->_calculate_global_static_matrixes( );
 
+    // Initialize field data containers if any
+    this->_initialize_field_data( );
+
 }
 
 
 template<std::size_t N, int mode_pf>
 FrequencySolver<N, mode_pf>::~FrequencySolver( void )
 {
+    // Delete field data if any
+    if ( this->input->is_calc_mdrift )
+    {
+        if ( this->_qtf_wl_fields != nullptr )
+        {
+            delete this->_qtf_wl_fields;
+        }
+
+        if ( this->_qtf_bern_fields != nullptr )
+        {
+            delete this->_qtf_bern_fields;
+        }
+
+    }
     // Delete simulation data
     delete this->sim_data;
 
@@ -504,6 +579,38 @@ void FrequencySolver<N, mode_pf>::_generate_formulation_kernel( void )
     MpiTimer kernel_timer;
     this->kernel = new FormulationKernelBackend<NUM_GP, PF_OFF>( this->input, this->mpi_config, this->mesh_gp );
     LOG_TASK_TIME( kernel, kernel_timer )
+}
+
+
+template<std::size_t N, int mode_pf>
+void FrequencySolver<N, mode_pf>::_initialize_field_data( void )
+{
+    LOG_TASK_SS( fields, "Initialize field points data..." )
+    MpiTimer fields_timer;
+
+    // Initialize QTF waterline field points data container
+    if ( this->input->is_calc_mdrift )
+    {
+        this->_qtf_wl_fields    = new RadDiffData<G_ON, DGDN_OFF, DGDC_OFF>(
+                                                                                this->input,
+                                                                                this->mpi_config,
+                                                                                this->mesh_fs_qtf_gp,
+                                                                                this->input->dofs_np,
+                                                                                this->input->heads_np,
+                                                                                true
+                                                                            );
+        
+        this->_qtf_bern_fields  = new RadDiffData<G_OFF, DGDN_OFF, DGDC_ON>(
+                                                                                this->input,
+                                                                                this->mpi_config,
+                                                                                this->mesh_fs_qtf_gp,
+                                                                                this->input->dofs_np,
+                                                                                this->input->heads_np,
+                                                                                false
+                                                                            );
+    }
+
+    LOG_TASK_TIME( fields, fields_timer )
 }
 
 
