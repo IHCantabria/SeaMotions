@@ -55,6 +55,7 @@ public:
     cut::CusTensor<cuscomplex>*     pot_incident    = nullptr; // Store wave incident potential value                           [field_points, headings_np]
     cut::CusTensor<cuscomplex>*     pot_raddiff     = nullptr; // Store wave radiated diffracted potential value                [field_points, headings_np]
     cut::CusTensor<cuscomplex>*     pot_total       = nullptr; // Store wave total potential value                              [field_points, headings_np]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
+    cut::CusTensor<cuscomplex>*     press_total     = nullptr; // Store total pressure value                                    [field_points, headings_np]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
     cut::CusTensor<cuscomplex>*     vel_dn_incident = nullptr; // Store wave incident normal velocity derivative value          [field_points, headings_np]
     cut::CusTensor<cuscomplex>*     vel_dn_raddiff  = nullptr; // Store radiated diffracted normal velocity derivative values   [field_points, dofs_np · headings_np]
     cut::CusTensor<cuscomplex>*     vel_dn_total    = nullptr; // Store total normal velocity derivative value                  [field_points, headings_np]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
@@ -67,6 +68,8 @@ public:
     cut::CusTensor<cuscomplex>*     vel_x_total     = nullptr; // Store total velocity_x value                                  [field_points, headings_np]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
     cut::CusTensor<cuscomplex>*     vel_y_total     = nullptr; // Store total velocity_y value                                  [field_points, headings_np]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
     cut::CusTensor<cuscomplex>*     vel_z_total     = nullptr; // Store total velocity_z value                                  [field_points, headings_np]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
+    cut::CusTensor<cuscomplex>*     wev_total       = nullptr; // Store wave elevation                                          [field_points, headings_np]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
+    cut::CusTensor<cuscomplex>*     wev_rel_total   = nullptr; // Store relative wave elevation                                 [field_points, headings_np]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
 
 
     /* Declare class contructor */
