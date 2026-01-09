@@ -61,7 +61,7 @@ public:
     cusfloat                        gauss_points_global_x[NUM_GP2];
     cusfloat                        gauss_points_global_y[NUM_GP2];
     cusfloat                        gauss_points_global_z[NUM_GP2];
-    static constexpr std::size_t    gauss_points_np         = NUM_GP2;
+    static constexpr std::size_t    gauss_points_np         = NUM_GP;
     cusfloat                        jac_det_gauss_points[NUM_GP2];
     cusfloat                        is_move_f               = 0.0;
     bool                            is_wl_boundary          = false;
