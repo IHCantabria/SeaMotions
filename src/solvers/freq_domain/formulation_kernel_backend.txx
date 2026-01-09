@@ -1009,13 +1009,14 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
     cusfloat    vel_total[3]        = { 0.0, 0.0, 0.0 };
     cusfloat    vel_total_st[3]     = { 0.0, 0.0, 0.0 };
     cusfloat    vel_total_wv[3]     = { 0.0, 0.0, 0.0 };
-    cusfloat    water_depth         = this->_input->water_depth;
+    cusfloat    _wave_amplitude     = this->_input->wave_amplitude;
+    cusfloat    _water_depth        = this->_input->water_depth;
 
     // Compute incident wave field
     cusfloat    k               =   w2k( 
                                             ang_freq,
-                                            this->_input->water_depth,
-                                            this->_input->grav_acc
+                                            _water_depth,
+                                            _grav_acc
                                         );
 
     // Compute diffraction and radiation fields at the field points
@@ -1041,11 +1042,11 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
                 STATIC_COND( 
                                 ONLY_FCN,   
                                 panel_rdd->pot_incident[index_fd]       =   wave_potential_fo_space(
-                                                                                                        this->_input->wave_amplitude,
+                                                                                                        _wave_amplitude,
                                                                                                         ang_freq,
                                                                                                         k,
-                                                                                                        this->_input->water_depth,
-                                                                                                        this->_input->grav_acc,
+                                                                                                        _water_depth,
+                                                                                                        _grav_acc,
                                                                                                         field_point[0],
                                                                                                         field_point[1],
                                                                                                         field_point[2],
@@ -1056,11 +1057,11 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
                 STATIC_COND( 
                                 ONLY_FCNDC,
                                 panel_rdd->vel_x_incident[index_fd]     =   wave_potential_fo_space_dx(
-                                                                                                            this->_input->wave_amplitude,
+                                                                                                            _wave_amplitude,
                                                                                                             ang_freq,
                                                                                                             k,
-                                                                                                            this->_input->water_depth,
-                                                                                                            this->_input->grav_acc,
+                                                                                                            _water_depth,
+                                                                                                            _grav_acc,
                                                                                                             field_point[0],
                                                                                                             field_point[1],
                                                                                                             field_point[2],
@@ -1071,11 +1072,11 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
                 STATIC_COND( 
                                 ONLY_FCNDC,
                                 panel_rdd->vel_y_incident[index_fd]     =   wave_potential_fo_space_dy(
-                                                                                                            this->_input->wave_amplitude,
+                                                                                                            _wave_amplitude,
                                                                                                             ang_freq,
                                                                                                             k,
-                                                                                                            this->_input->water_depth,
-                                                                                                            this->_input->grav_acc,
+                                                                                                            _water_depth,
+                                                                                                            _grav_acc,
                                                                                                             field_point[0],
                                                                                                             field_point[1],
                                                                                                             field_point[2],
@@ -1086,11 +1087,11 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
                 STATIC_COND( 
                                 ONLY_FCNDC,
                                 panel_rdd->vel_z_incident[index_fd]     =   wave_potential_fo_space_dz(
-                                                                                                            this->_input->wave_amplitude,
+                                                                                                            _wave_amplitude,
                                                                                                             ang_freq,
                                                                                                             k,
-                                                                                                            this->_input->water_depth,
-                                                                                                            this->_input->grav_acc,
+                                                                                                            _water_depth,
+                                                                                                            _grav_acc,
                                                                                                             field_point[0],
                                                                                                             field_point[1],
                                                                                                             field_point[2],
@@ -1115,7 +1116,7 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
                                                 is_close,
                                                 this->_mesh_gp->source_nodes[k]->panel,
                                                 field_point,
-                                                water_depth,
+                                                _water_depth,
                                                 pot_term_st,
                                                 int_dn_pf_value,
                                                 int_dn_sf_st,
@@ -1276,8 +1277,8 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
                                                         0.0 
                                                     );
                         
-                        rao_trans[r]    = raos[index_ax+r]   * input->wave_amplitude;
-                        rao_rot[r]      = raos[index_ax+3+r] * input->wave_amplitude;
+                        rao_trans[r]    = raos[index_ax+r]   * _wave_amplitude;
+                        rao_rot[r]      = raos[index_ax+3+r] * _wave_amplitude;
                     }
 
                     cross( 
