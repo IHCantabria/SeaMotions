@@ -53,32 +53,32 @@ void    PanelData<mode_f, mode_dfdn, mode_dfdc>::_allocate_memory(
     this->field_points      = new cut::CusTensor<cusfloat>( { field_points_np_, 3 } );
 
     // Allocate memory on heap for potential fields
-    STATIC_COND( ONLY_FCN,   this->pot_incident    = new cut::CusTensor<cuscomplex>( { headings_np_,            field_points_np_ } ); )
-    STATIC_COND( ONLY_FCN,   this->pot_raddiff     = new cut::CusTensor<cuscomplex>( { dofs_np_ + headings_np_, field_points_np_ } ); )
-    STATIC_COND( ONLY_FCN,   this->pot_total       = new cut::CusTensor<cuscomplex>( { headings_np_,            field_points_np_ } ); )
+    STATIC_COND( ONLY_FCN,   this->pot_incident    = new cut::CusTensor<cuscomplex>( { headings_np_, field_points_np_ } ); )
+    STATIC_COND( ONLY_FCN,   this->pot_raddiff     = new cut::CusTensor<cuscomplex>( { headings_np_, field_points_np_ } ); )
+    STATIC_COND( ONLY_FCN,   this->pot_total       = new cut::CusTensor<cuscomplex>( { headings_np_, field_points_np_ } ); )
 
     // Allocate memory on heap for pressure field
-    STATIC_COND( ONLY_FCN,   this->press_total     = new cut::CusTensor<cuscomplex>( { headings_np_,            field_points_np_ } ); )
+    STATIC_COND( ONLY_FCN,   this->press_total     = new cut::CusTensor<cuscomplex>( { headings_np_, field_points_np_ } ); )
 
     // Allocate memory on heap for normal velocity derivative fields
-    STATIC_COND( ONLY_FCNDN, this->vel_dn_incident = new cut::CusTensor<cuscomplex>( { headings_np_,            field_points_np_ } ); )
-    STATIC_COND( ONLY_FCNDN, this->vel_dn_raddiff  = new cut::CusTensor<cuscomplex>( { dofs_np_ + headings_np_, field_points_np_ } ); )
-    STATIC_COND( ONLY_FCNDN, this->vel_dn_total    = new cut::CusTensor<cuscomplex>( { headings_np_,            field_points_np_ } ); )
+    STATIC_COND( ONLY_FCNDN, this->vel_dn_incident = new cut::CusTensor<cuscomplex>( { headings_np_, field_points_np_ } ); )
+    STATIC_COND( ONLY_FCNDN, this->vel_dn_raddiff  = new cut::CusTensor<cuscomplex>( { headings_np_, field_points_np_ } ); )
+    STATIC_COND( ONLY_FCNDN, this->vel_dn_total    = new cut::CusTensor<cuscomplex>( { headings_np_, field_points_np_ } ); )
 
     // Allocate memory on heap for velocity components fields
-    STATIC_COND( ONLY_FCNDC, this->vel_x_incident  = new cut::CusTensor<cuscomplex>( { headings_np_,            field_points_np_ } ); )
-    STATIC_COND( ONLY_FCNDC, this->vel_y_incident  = new cut::CusTensor<cuscomplex>( { headings_np_,            field_points_np_ } ); )
-    STATIC_COND( ONLY_FCNDC, this->vel_z_incident  = new cut::CusTensor<cuscomplex>( { headings_np_,            field_points_np_ } ); )
-    STATIC_COND( ONLY_FCNDC, this->vel_x_raddiff   = new cut::CusTensor<cuscomplex>( { dofs_np_ + headings_np_, field_points_np_ } ); )
-    STATIC_COND( ONLY_FCNDC, this->vel_y_raddiff   = new cut::CusTensor<cuscomplex>( { dofs_np_ + headings_np_, field_points_np_ } ); )
-    STATIC_COND( ONLY_FCNDC, this->vel_z_raddiff   = new cut::CusTensor<cuscomplex>( { dofs_np_ + headings_np_, field_points_np_ } ); )
-    STATIC_COND( ONLY_FCNDC, this->vel_x_total     = new cut::CusTensor<cuscomplex>( { headings_np_,            field_points_np_ } ); )
-    STATIC_COND( ONLY_FCNDC, this->vel_y_total     = new cut::CusTensor<cuscomplex>( { headings_np_,            field_points_np_ } ); )
-    STATIC_COND( ONLY_FCNDC, this->vel_z_total     = new cut::CusTensor<cuscomplex>( { headings_np_,            field_points_np_ } ); )
+    STATIC_COND( ONLY_FCNDC, this->vel_x_incident  = new cut::CusTensor<cuscomplex>( { headings_np_, field_points_np_ } ); )
+    STATIC_COND( ONLY_FCNDC, this->vel_y_incident  = new cut::CusTensor<cuscomplex>( { headings_np_, field_points_np_ } ); )
+    STATIC_COND( ONLY_FCNDC, this->vel_z_incident  = new cut::CusTensor<cuscomplex>( { headings_np_, field_points_np_ } ); )
+    STATIC_COND( ONLY_FCNDC, this->vel_x_raddiff   = new cut::CusTensor<cuscomplex>( { headings_np_, field_points_np_ } ); )
+    STATIC_COND( ONLY_FCNDC, this->vel_y_raddiff   = new cut::CusTensor<cuscomplex>( { headings_np_, field_points_np_ } ); )
+    STATIC_COND( ONLY_FCNDC, this->vel_z_raddiff   = new cut::CusTensor<cuscomplex>( { headings_np_, field_points_np_ } ); )
+    STATIC_COND( ONLY_FCNDC, this->vel_x_total     = new cut::CusTensor<cuscomplex>( { headings_np_, field_points_np_ } ); )
+    STATIC_COND( ONLY_FCNDC, this->vel_y_total     = new cut::CusTensor<cuscomplex>( { headings_np_, field_points_np_ } ); )
+    STATIC_COND( ONLY_FCNDC, this->vel_z_total     = new cut::CusTensor<cuscomplex>( { headings_np_, field_points_np_ } ); )
 
     // Allocate memory on heap for wave elevation fields
-    STATIC_COND( ONLY_FCN,   this->wev_total       = new cut::CusTensor<cuscomplex>( { headings_np_,            field_points_np_ } ); )
-    STATIC_COND( ONLY_FCN,   this->wev_rel_total   = new cut::CusTensor<cuscomplex>( { headings_np_,            field_points_np_ } ); )
+    STATIC_COND( ONLY_FCN,   this->wev_total       = new cut::CusTensor<cuscomplex>( { headings_np_, field_points_np_ } ); )
+    STATIC_COND( ONLY_FCN,   this->wev_rel_total   = new cut::CusTensor<cuscomplex>( { headings_np_, field_points_np_ } ); )
 
     // Set flag to indicate that memory is allocated on heap
     this->_is_heap        = true;
