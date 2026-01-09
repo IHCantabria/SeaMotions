@@ -78,6 +78,10 @@ typedef std::vector<size_t> vector_st;
 
 constexpr int       G_ON                    = 1;                // Flag used as template argument to SET the calculation of the potential green function
 constexpr int       G_OFF                   = 0;                // Flag used as template argument to NOT SET the calculation of the potential green function
+constexpr int       DGDC_ON                 = 1;                // Flag used as template argument to SET the calculation of the gradient of the potential green function
+constexpr int       DGDC_OFF                = 0;                // Flag used as template argument to NOT SET the calculation of the gradient of the potential green function
+constexpr int       DGDN_ON                 = 1;                // Flag used as template argument to SET the calculation of the normal derivative of the potential green function
+constexpr int       DGDN_OFF                = 0;                // Flag used as template argument to NOT SET the calculation of the normal derivative of the potential green function
 constexpr int       DGDR_ON                 = 1;                // Flag used as template argument to SET the calculation of the derivative of the potential green function with respect to the horizontal radius
 constexpr int       DGDR_OFF                = 0;                // Flag used as template argument to NOT SET the calculation of the derivative of the potential green function with respect to the horizontal radius
 constexpr int       DGDZ_ON                 = 1;                // Flag used as template argument to SET the calculation of the derivative of the potential green function with respect to the vertical coordinate
