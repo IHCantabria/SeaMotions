@@ -32,6 +32,18 @@ private:
     // Define private variables
     bool                            _is_heap        = false;    // Flag to indicate if memory is allocated on heap
 
+    /* Declare class private methods */
+    void    _allocate_memory( 
+                                    std::size_t field_points_np_,
+                                    std::size_t headings_np_,
+                                    std::size_t dofs_np_
+                                );
+
+    void    _load_field_points( 
+                                    PanelGeom*  panel_geom_,
+                                    bool        use_waterline_
+                                );
+
 public:
     // Declare public variables
     std::size_t                     body_id         = 0;       // Index of the body at which the panel belongs
@@ -64,6 +76,14 @@ public:
                             std::size_t field_points_np_,
                             std::size_t headings_np_,
                             std::size_t dofs_np_
+                        );
+
+    PanelData::PanelData( 
+                            PanelGeom*  panel_geom_,
+                            std::size_t body_id_,
+                            std::size_t headings_np_,
+                            std::size_t dofs_np_,
+                            bool        use_waterline_ = false
                         );
 
     PanelData::~PanelData( );

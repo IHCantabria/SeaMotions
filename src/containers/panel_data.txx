@@ -38,6 +38,85 @@
 /**************** Define RadDiffData class *****************/
 /***********************************************************/
 template<int mode_f, int mode_dfdn, int mode_dfdc>
+void    PanelData<mode_f, mode_dfdn, mode_dfdc>::_allocate_memory( 
+                                                                    std::size_t field_points_np_,
+                                                                    std::size_t headings_np_,
+                                                                    std::size_t dofs_np_
+                                                                )
+{
+    // Set number of field points
+    this->dofs_np           = dofs_np_;
+    this->field_points_np   = field_points_np_;
+    this->headings_np       = headings_np_;
+
+    // Allocate memory on heap for field points
+    this->field_points      = new cut::CusTensor<cusfloat>( { field_points_np_, 3 } );
+
+    // Allocate memory on heap for potential fields
+    STATIC_COND( ONLY_FCN,   this->pot_incident    = new cut::CusTensor<cuscomplex>( { headings_np_,            field_points_np_ } ); )
+    STATIC_COND( ONLY_FCN,   this->pot_raddiff     = new cut::CusTensor<cuscomplex>( { dofs_np_ + headings_np_, field_points_np_ } ); )
+    STATIC_COND( ONLY_FCN,   this->pot_total       = new cut::CusTensor<cuscomplex>( { headings_np_,            field_points_np_ } ); )
+
+    // Allocate memory on heap for normal velocity derivative fields
+    STATIC_COND( ONLY_FCNDN, this->vel_dn_incident = new cut::CusTensor<cuscomplex>( { headings_np_,            field_points_np_ } ); )
+    STATIC_COND( ONLY_FCNDN, this->vel_dn_raddiff  = new cut::CusTensor<cuscomplex>( { dofs_np_ + headings_np_, field_points_np_ } ); )
+    STATIC_COND( ONLY_FCNDN, this->vel_dn_total    = new cut::CusTensor<cuscomplex>( { headings_np_,            field_points_np_ } ); )
+
+    // Allocate memory on heap for velocity components fields
+    STATIC_COND( ONLY_FCNDC, this->vel_x_incident  = new cut::CusTensor<cuscomplex>( { headings_np_,            field_points_np_ } ); )
+    STATIC_COND( ONLY_FCNDC, this->vel_y_incident  = new cut::CusTensor<cuscomplex>( { headings_np_,            field_points_np_ } ); )
+    STATIC_COND( ONLY_FCNDC, this->vel_z_incident  = new cut::CusTensor<cuscomplex>( { headings_np_,            field_points_np_ } ); )
+    STATIC_COND( ONLY_FCNDC, this->vel_x_raddiff   = new cut::CusTensor<cuscomplex>( { dofs_np_ + headings_np_, field_points_np_ } ); )
+    STATIC_COND( ONLY_FCNDC, this->vel_y_raddiff   = new cut::CusTensor<cuscomplex>( { dofs_np_ + headings_np_, field_points_np_ } ); )
+    STATIC_COND( ONLY_FCNDC, this->vel_z_raddiff   = new cut::CusTensor<cuscomplex>( { dofs_np_ + headings_np_, field_points_np_ } ); )
+    STATIC_COND( ONLY_FCNDC, this->vel_x_total     = new cut::CusTensor<cuscomplex>( { headings_np_,            field_points_np_ } ); )
+    STATIC_COND( ONLY_FCNDC, this->vel_y_total     = new cut::CusTensor<cuscomplex>( { headings_np_,            field_points_np_ } ); )
+    STATIC_COND( ONLY_FCNDC, this->vel_z_total     = new cut::CusTensor<cuscomplex>( { headings_np_,            field_points_np_ } ); )
+
+    // Set flag to indicate that memory is allocated on heap
+    this->_is_heap        = true;
+}
+
+
+template<int mode_f, int mode_dfdn, int mode_dfdc>
+void    PanelData<mode_f, mode_dfdn, mode_dfdc>::_load_field_points( 
+                                                                        PanelGeom*  panel_geom_,
+                                                                        bool        use_waterline_
+                                                                    )
+{
+    if ( use_waterline_ )
+    {
+        int         count_lines = 0;
+        cusfloat    tv[3];      clear_vector( 3, tv );
+        GaussPoints gp( panel_geom_->gauss_points_np );
+
+        // Create direction vector
+        tv[0]   = ( panel_geom_->x_wl[1] - panel_geom_->x_wl[0] ) / panel_geom_->len_wl;
+        tv[1]   = ( panel_geom_->y_wl[1] - panel_geom_->y_wl[0] ) / panel_geom_->len_wl;
+
+        for ( std::size_t i=0; i<panel_geom_->gauss_points_np; i++ )
+        {
+            this->field_points[3*i]     = tv[0] * ( gp.roots[i] + 1.0 ) / 2.0 * panel_geom_->len_wl + panel_geom_->x_wl[0];
+            this->field_points[3*i+1]   = tv[1] * ( gp.roots[i] + 1.0 ) / 2.0 * panel_geom_->len_wl + panel_geom_->y_wl[0];
+            this->field_points[3*i+2]   = 0.0;
+        }
+
+    }
+    else
+    {
+        // Loop over gauss points defined in PanelGeom to 
+        // load field points coordinates
+        for ( std::size_t i = 0; i < pow2s( panel_geom_->gauss_points_np ); ++i )
+        {
+            this->field_points[3*i + 0] = panel_geom_->gauss_points_global_x[i];
+            this->field_points[3*i + 1] = panel_geom_->gauss_points_global_y[i];
+            this->field_points[3*i + 2] = panel_geom_->gauss_points_global_z[i];
+        }
+    }
+}
+
+                                        
+template<int mode_f, int mode_dfdn, int mode_dfdc>
 void PanelData<mode_f, mode_dfdn, mode_dfdc>::clear_data( void )
 {
     // Create auxiliary variables to have a 
@@ -74,37 +153,44 @@ PanelData<mode_f, mode_dfdn, mode_dfdc>::PanelData(
                                                         std::size_t dofs_np_
                                                     )
 {
-    // Set number of field points
-    this->dofs_np           = dofs_np_;
-    this->field_points_np   = field_points_np_;
-    this->headings_np       = headings_np_;
+    // Allocate space for fields data
+    this->_allocate_memory( 
+                                field_points_np_, 
+                                headings_np_ ,
+                                dofs_np_ 
+                            );
+}
 
-    // Allocate memory on heap for field points
-    this->field_points      = new cut::CusTensor<cusfloat>( { field_points_np_, 3 } );
 
-    // Allocate memory on heap for potential fields
-    STATIC_COND( ONLY_FCN,   this->pot_incident    = new cut::CusTensor<cuscomplex>( { headings_np ,          field_points_np_ } ); )
-    STATIC_COND( ONLY_FCN,   this->pot_raddiff     = new cut::CusTensor<cuscomplex>( { dofs_np + headings_np, field_points_np_ } ); )
-    STATIC_COND( ONLY_FCN,   this->pot_total       = new cut::CusTensor<cuscomplex>( { headings_np,           field_points_np_ } ); )
+template<int mode_f, int mode_dfdn, int mode_dfdc>
+PanelData<mode_f, mode_dfdn, mode_dfdc>::PanelData( 
+                                                        PanelGeom*  panel_geom_,
+                                                        std::size_t body_id_,
+                                                        std::size_t headings_np_,
+                                                        std::size_t dofs_np_,
+                                                        bool        use_waterline_
+                                                    )
+{
+    // Storage input arguments
+    this->panel_geom        = panel_geom_;
+    this->body_id           = body_id_;
 
-    // Allocate memory on heap for normal velocity derivative fields
-    STATIC_COND( ONLY_FCNDN, this->vel_dn_incident = new cut::CusTensor<cuscomplex>( { headings_np,           field_points_np_ } ); )
-    STATIC_COND( ONLY_FCNDN, this->vel_dn_raddiff  = new cut::CusTensor<cuscomplex>( { dofs_np + headings_np, field_points_np_ } ); )
-    STATIC_COND( ONLY_FCNDN, this->vel_dn_total    = new cut::CusTensor<cuscomplex>( { headings_np,           field_points_np_ } ); )
+    // Allocate space for fields data
+    std::size_t gp_np       = panel_geom_->gauss_points_np;
+    std::size_t fp_np       = ( use_waterline_) ? gp_np : pow2s(  gp_np );
 
-    // Allocate memory on heap for velocity components fields
-    STATIC_COND( ONLY_FCNDC, this->vel_x_incident  = new cut::CusTensor<cuscomplex>( { headings_np,           field_points_np_ } ); )
-    STATIC_COND( ONLY_FCNDC, this->vel_y_incident  = new cut::CusTensor<cuscomplex>( { headings_np,           field_points_np_ } ); )
-    STATIC_COND( ONLY_FCNDC, this->vel_z_incident  = new cut::CusTensor<cuscomplex>( { headings_np,           field_points_np_ } ); )
-    STATIC_COND( ONLY_FCNDC, this->vel_x_raddiff   = new cut::CusTensor<cuscomplex>( { dofs_np + headings_np, field_points_np_ } ); )
-    STATIC_COND( ONLY_FCNDC, this->vel_y_raddiff   = new cut::CusTensor<cuscomplex>( { dofs_np + headings_np, field_points_np_ } ); )
-    STATIC_COND( ONLY_FCNDC, this->vel_z_raddiff   = new cut::CusTensor<cuscomplex>( { dofs_np + headings_np, field_points_np_ } ); )
-    STATIC_COND( ONLY_FCNDC, this->vel_x_total     = new cut::CusTensor<cuscomplex>( { headings_np,           field_points_np_ } ); )
-    STATIC_COND( ONLY_FCNDC, this->vel_y_total     = new cut::CusTensor<cuscomplex>( { headings_np,           field_points_np_ } ); )
-    STATIC_COND( ONLY_FCNDC, this->vel_z_total     = new cut::CusTensor<cuscomplex>( { headings_np,           field_points_np_ } ); )
+    this->_allocate_memory( 
+                                fp_np,
+                                headings_np_ ,
+                                dofs_np_ 
+                            );
 
-    // Set flag to indicate that memory is allocated on heap
-    this->_is_heap        = true;
+    // Load field points from PanelGeom
+    this->_load_field_points( 
+                                this->_panel_geom,
+                                use_waterline_
+                            );
+
 }
 
 
