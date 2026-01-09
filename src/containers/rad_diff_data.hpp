@@ -54,6 +54,14 @@ public:
                     std::size_t     dofs_np_
                 );
 
+    RadDiffData( 
+                    MpiConfig*      mpi_config_,
+                    MeshGroup*      mesh_gp_,
+                    std::size_t     headings_np_,
+                    std::size_t     dofs_np_,
+                    bool            use_waterline_ = false
+                );
+
     /* Declare public methods */
     std::size_t get_end_pos( void ) const;
 

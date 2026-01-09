@@ -20,6 +20,7 @@
 
 // Include local modules
 #include "rad_diff_data.hpp"
+#include "../mesh/panel_set_view.hpp"
 
 
 template<int mode_f, int mode_dfdn, int mode_dfdc>
@@ -86,4 +87,63 @@ RadDiffData<mode_f, mode_dfdn, mode_dfdc>::RadDiffData(
                                     );
     }
 
+}
+
+
+template<int mode_f, int mode_dfdn, int mode_dfdc>
+RadDiffData<mode_f, mode_dfdn, mode_dfdc>::RadDiffData( 
+                                                            MpiConfig*      mpi_config_,
+                                                            MeshGroup*      mesh_gp_,
+                                                            std::size_t     headings_np_,
+                                                            std::size_t     dofs_np_,
+                                                            bool            use_waterline_
+                                                        )
+{    
+    // Get panel set view
+    PanelSetView panel_view = make_panel_view( mesh_gp_, use_waterline_ );
+    
+    // Store number of field points
+    this->_size_global      = panel_view.panels_tnp;
+    this->_mpi_config       = mpi_config_;
+
+    // Calculate start and end positions for the current process
+    this->_mpi_config->get_1d_bounds(
+                                        static_cast<int>( this->_size_global ),
+                                        reinterpret_cast<int&>( this->_start_pos ),
+                                        reinterpret_cast<int&>( this->_end_pos )
+                                    );
+
+    this->_size_local       = this->_end_pos - this->_start_pos;
+
+    // Allocate PanelData
+    this->panel_data.reserve( this->_size_local );
+
+    std::size_t body_id         = 0;
+    std::size_t global_panel_id = 0;
+    for ( std::size_t i=0; i<this->_size_local; i++ )
+    {
+        // Calculate global panel ID
+        global_panel_id = this->_start_pos + i;
+
+        // Search current body ID
+        for ( std::size_t j=body_id; j<mesh_gp_->meshes_np; j++ )
+        {
+            if ( global_panel_id < static_cast<std::size_t>( panel_view.panels_cnp[j+1] ) )
+            {
+                body_id     = j;
+                break;
+            }
+        }
+
+        // Create new panel data
+        this->panel_data.emplace_back( 
+                                            PanelData<mode_f, mode_dfdn, mode_dfdc>(
+                                                                                        panel_view.panels[ global_panel_id ],
+                                                                                        body_id,
+                                                                                        headings_np_,
+                                                                                        dofs_np_,
+                                                                                        use_waterline_
+                                                                                    ) 
+                                    );
+    }
 }
