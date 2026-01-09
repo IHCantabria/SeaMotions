@@ -976,8 +976,10 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
 {
     // Declare local auxiliary variables
     std::size_t body_id             = 0;
+    std::size_t _body_np            = this->_mesh_gp->meshes_np;
     cusfloat    center_aux[3]       = { 0.0, 0.0, 0.0 };
     std::size_t _dofs_np            = this->_input->dofs_np;
+    cusfloat    _grav_acc           = this->_input->grav_acc;
     std::size_t _heads_np           = this->_input->heads_np;
     std::size_t index_ax            = 0;
     std::size_t index_sc            = 0;
@@ -988,6 +990,7 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
 
     SourceNode  source_aux( &panel_aux, 0, 0,  0, center_aux, normal_vec_aux );
 
+    cuscomplex  point_disp[3]       ;
     cuscomplex  pot_term            = cuscomplex( 0.0, 0.0 );
     cuscomplex  pot_term_st         = cuscomplex( 0.0, 0.0 );
     cuscomplex  pot_term_wv         = cuscomplex( 0.0, 0.0 );
@@ -995,8 +998,13 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
     cuscomplex  int_dn_sf_st        = cuscomplex( 0.0, 0.0 );
     cuscomplex  int_dn_sf_wv        = cuscomplex( 0.0, 0.0 );
     cuscomplex  int_dn_pf_value     = cuscomplex( 0.0, 0.0 );
+    cuscomplex  radius[3]           ;
+    cuscomplex  rao_rot[3]          ;
+    cuscomplex  rao_trans[3]        ;
     cuscomplex  rao_val             = cuscomplex( 0.0, 0.0 );
+    cusfloat    _rhow               = this->_input->water_density;
     std::size_t sources_np          = this->_solver->num_rows;
+    cuscomplex  source_val          = cuscomplex( 0.0, 0.0 );
     std::size_t start_pos           = rad_diff_data->get_start_pos( );
     cusfloat    vel_total[3]        = { 0.0, 0.0, 0.0 };
     cusfloat    vel_total_st[3]     = { 0.0, 0.0, 0.0 };
@@ -1141,30 +1149,43 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
                 STATIC_COND( ONLY_FCNDC,    vel_total[2]    = vel_total_st[2] + vel_total_wv[2];    )
                 STATIC_COND( ONLY_FCNDN,    int_dn_sf       = int_dn_sf_st    + int_dn_sf_wv;       )
 
-                // Loop over dofs and headings
-                for ( std::size_t l=0; l<(_dofs_np+_heads_np); l++ )
+                // Loop over headings to add radiation and diffraction contribution
+                for ( std::size_t idh=0; idh<_heads_np; idh++ )
                 {
-                    // Get current RAO value
-                    if ( l < _dofs_np )
+                    // Get indexes to locate and to storage data
+                    index_sc    = ( _dofs_np + idh ) * sources_np + k;
+                    index_fd    = idh * panel_rdd->field_points_np + j;
+
+                    // Get source value for the current position
+                    source_val  = this->_sf_gp->field_values[index_sc];
+
+                    // Calculate diffraction field contribution
+                    STATIC_COND( ONLY_FCN,   panel_rdd->pot_raddif[index_fd]    = pot_term     * source_val;   )
+                    STATIC_COND( ONLY_FCNDN, panel_rdd->vel_dn_raddif[index_fd] = int_dn_sf    * source_val;   )
+                    STATIC_COND( ONLY_FCNDC, panel_rdd->vel_x_raddif[index_fd]  = vel_total[0] * source_val;   )
+                    STATIC_COND( ONLY_FCNDC, panel_rdd->vel_y_raddif[index_fd]  = vel_total[1] * source_val;   )
+                    STATIC_COND( ONLY_FCNDC, panel_rdd->vel_z_raddif[index_fd]  = vel_total[2] * source_val;   )
+
+                    for ( std::size_t idd=0; i<_dofs_np; idd++ )
                     {
-                        rao_val     = raos[ body_id * _dofs_np + l ];
+                        // Get indexes to locate and to storage data
+                        index_ax    = idh * ( _dofs_np * _body_np ) + body_id * _dofs_np + idd;
+                        index_sc    = idd * sources_np + k;
+                        
+                        // Get source value for the current position
+                        source_val  = this->_sf_gp->field_values[index_sc];
+
+                        // Get current RAO value
+                        rao_val     = raos[ index_ax ];
+
+                        // Calculate field contributions
+                        STATIC_COND( ONLY_FCN,   panel_rdd->pot_raddif[index_fd]    += pot_term     * rao_val * source_val;   )
+                        STATIC_COND( ONLY_FCNDN, panel_rdd->vel_dn_raddif[index_fd] += int_dn_sf    * rao_val * source_val;   )
+                        STATIC_COND( ONLY_FCNDC, panel_rdd->vel_x_raddif[index_fd]  += vel_total[0] * rao_val * source_val;   )
+                        STATIC_COND( ONLY_FCNDC, panel_rdd->vel_y_raddif[index_fd]  += vel_total[1] * rao_val * source_val;   )
+                        STATIC_COND( ONLY_FCNDC, panel_rdd->vel_z_raddif[index_fd]  += vel_total[2] * rao_val * source_val;   )
+
                     }
-                    else
-                    {
-                        rao_val     = cuscomplex( 1.0, 0.0 );
-                    }
-
-                    // Get global indexes to locate and to storage data
-                    index_sc    = l * sources_np + k;
-                    index_fd    = l * panel_rdd->field_points_np + j;
-
-                    // Calculate field contributions
-                    STATIC_COND( ONLY_FCN,   panel_rdd->pot_raddif[index_fd]    += pot_term     * rao_val * this->_sf_gp->field_values[index_sc];   )
-                    STATIC_COND( ONLY_FCNDN, panel_rdd->vel_dn_raddif[index_fd] += int_dn_sf    * rao_val * this->_sf_gp->field_values[index_sc];   )
-                    STATIC_COND( ONLY_FCNDC, panel_rdd->vel_x_raddif[index_fd]  += vel_total[0] * rao_val * this->_sf_gp->field_values[index_sc];   )
-                    STATIC_COND( ONLY_FCNDC, panel_rdd->vel_y_raddif[index_fd]  += vel_total[1] * rao_val * this->_sf_gp->field_values[index_sc];   )
-                    STATIC_COND( ONLY_FCNDC, panel_rdd->vel_z_raddif[index_fd]  += vel_total[2] * rao_val * this->_sf_gp->field_values[index_sc];   )
-
                 }
             }
         
@@ -1176,90 +1197,112 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
                 // Add incident field contribution
                 STATIC_COND( 
                                 ONLY_FCN,   
-                                panel_rdd->pot_total[index_fd]      =   panel_rdd->pot_incident[index_fd];
+                                panel_rdd->pot_total[index_fd]      =   ( 
+                                                                            panel_rdd->pot_incident[index_fd]
+                                                                            +
+                                                                            panel_rdd->pot_raddif[index_fd]
+                                                                        );
                             )
 
                 STATIC_COND( 
                                 ONLY_FCNDN,
-                                panel_rdd->vel_dn_total[index_fd]   =   panel_rdd->vel_dn_incident[index_fd];
+                                panel_rdd->vel_dn_total[index_fd]   =   (
+                                                                            panel_rdd->vel_dn_incident[index_fd]
+                                                                            +
+                                                                            panel_rdd->vel_dn_raddif[index_fd]
+                                                                        );
                             )
 
                 STATIC_COND( 
                                 ONLY_FCNDC,
-                                panel_rdd->vel_x_total[index_fd]    =   panel_rdd->vel_x_incident[index_fd];
+                                panel_rdd->vel_x_total[index_fd]    =   (
+                                                                            panel_rdd->vel_x_incident[index_fd]
+                                                                            +
+                                                                            panel_rdd->vel_x_raddif[index_fd]
+                                                                        );
                             )
 
                 STATIC_COND( 
                                 ONLY_FCNDC,
-                                panel_rdd->vel_y_total[index_fd]    =   panel_rdd->vel_y_incident[index_fd];
+                                panel_rdd->vel_y_total[index_fd]    =   (
+                                                                            panel_rdd->vel_y_incident[index_fd]
+                                                                            +
+                                                                            panel_rdd->vel_y_raddif[index_fd]
+                                                                        );
                             )
 
                 STATIC_COND( 
                                 ONLY_FCNDC,
-                                panel_rdd->vel_z_total[index_fd]    =   panel_rdd->vel_z_incident[index_fd];
+                                panel_rdd->vel_z_total[index_fd]    =   (
+                                                                            panel_rdd->vel_z_incident[index_fd]
+                                                                            +
+                                                                            panel_rdd->vel_z_raddif[index_fd]
+                                                                        );
                             )
 
-                // Add radiation field contributions
-                for ( std::size_t l=0; l<_dofs_np; l++ )
+            }
+
+            // Calculate total pressure field
+            for ( std::size_t idh=0; idh<_heads_np; idh++ )
+            {
+                index_fd = idh * panel_rdd->field_points_np + j;
+
+                STATIC_COND(  
+                                ONLY_FCN, 
+                                panel_rdd->press_total[index_fd] = cuscomplex( 0.0, _rhow * ang_freq ) * panel_rdd->pot_total[index_fd];
+                            )
+            }
+
+            // Calculate wave elevation field
+            for ( std::size_t idh=0; idh<_heads_np; idh++ )
+            {
+                index_fd = idh * panel_rdd->field_points_np + j;
+
+                STATIC_COND(  
+                                ONLY_FCN, 
+                                panel_rdd->wev_total[index_fd]  = panel_rdd->pot_total[index_fd] * cuscomplex( 0.0, ang_freq ) / _grav_acc;
+                            )
+
+                if constexpr( ONLY_FCN )
                 {
-                    // Calculate radiation position index
-                    index_ax = l * panel_rdd->field_points_np + j;
+                    index_ax = idh * ( _dofs_np * _body_np ) + body_id * _dofs_np;
 
-                    // Add contributions
-                    STATIC_COND( 
-                                    ONLY_FCN,   
-                                    panel_rdd->pot_total[index_fd]      +=   panel_rdd->pot_raddif[index_ax];
-                                )
+                    for ( int r=0; r<3; r++ )
+                    {
+                        radius[r]       = cuscomplex( 
+                                                        panel_rdd->field_points[3*j+r] 
+                                                        - 
+                                                        panel_rdd->panel_geom->body_cog[r], 
+                                                        0.0 
+                                                    );
+                        
+                        rao_trans[r]    = raos[index_ax+r]   * input->wave_amplitude;
+                        rao_rot[r]      = raos[index_ax+3+r] * input->wave_amplitude;
+                    }
 
-                    STATIC_COND( 
-                                    ONLY_FCNDN,
-                                    panel_rdd->vel_dn_total[index_fd]   +=   panel_rdd->vel_dn_raddif[index_ax];
-                                )
+                    cross( 
+                            rao_rot,
+                            radius,
+                            point_disp
+                    );
 
-                    STATIC_COND( 
-                                    ONLY_FCNDC,
-                                    panel_rdd->vel_x_total[index_fd]    +=   panel_rdd->vel_x_raddif[index_ax];
-                                )
+                    sv_add(
+                                3,
+                                point_disp,
+                                rao_trans,
+                                point_disp
+                            );
 
-                    STATIC_COND( 
-                                    ONLY_FCNDC,
-                                    panel_rdd->vel_y_total[index_fd]    +=   panel_rdd->vel_y_raddif[index_ax];
-                                )
+                    // Calculate relative water height by substracting the 
+                    // vertical motion at the required point to the wave elevation
+                    panel_rdd->wev_rel_total[index_fd] = ( 
+                                                                panel_rdd->wev_total[index_fd] 
+                                                                - 
+                                                                cuscomplex( point_disp[2], 0.0 ) 
+                                                            );
 
-                    STATIC_COND( 
-                                    ONLY_FCNDC,
-                                    panel_rdd->vel_z_total[index_fd]    +=   panel_rdd->vel_z_raddif[index_ax];
-                                )
-                    
                 }
 
-                // Add diffraction field contributions
-                index_ax = ( _dofs_np + idh ) * panel_rdd->field_points_np + j;
-
-                STATIC_COND( 
-                                ONLY_FCN,   
-                                panel_rdd->pot_total[index_fd]      +=   panel_rdd->pot_raddif[index_ax];
-                            )
-                
-                STATIC_COND( 
-                                ONLY_FCNDN,
-                                panel_rdd->vel_dn_total[index_fd]   +=   panel_rdd->vel_dn_raddif[index_ax];
-                            )
-                
-                STATIC_COND( 
-                                ONLY_FCNDC,
-                                panel_rdd->vel_x_total[index_fd]    +=   panel_rdd->vel_x_raddif[index_ax];
-                            )
-                
-                STATIC_COND( 
-                                ONLY_FCNDC,
-                                panel_rdd->vel_y_total[index_fd]    +=   panel_rdd->vel_y_raddif[index_ax];
-                            )
-                
-                STATIC_COND( 
-                                ONLY_FCNDC,
-                                panel_rdd->vel_z_total[index_fd]    +=   panel_rdd->vel_z_raddif[index_ax];
-                            )
             }
 
         }
