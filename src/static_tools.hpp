@@ -39,3 +39,4 @@
 #define ONLY_FCNDRZ                                         mode_dfdr == 1 || mode_dfdz == 0
 #define ONLY_FCNDZ                                          mode_dfdz == 1
 #define ONLY_PF                                             mode_pf   == 1
+#define USE_COMP                                            mode_comp == 1
