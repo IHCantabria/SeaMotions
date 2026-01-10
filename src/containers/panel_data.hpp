@@ -23,6 +23,7 @@
 // Include local modules
 #include "../containers/panel_geom.hpp"
 #include "../math/custensor/custensor.hpp"
+#include "rad_diff_data_config.hpp"
 
 
 template<typename Config>

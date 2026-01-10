@@ -25,6 +25,7 @@
 #include "../mesh/mesh_group.hpp"
 #include "mpi_config.hpp"
 #include "panel_data.hpp"
+#include "rad_diff_data_config.hpp"
 
 
 template<typename Config>
@@ -35,7 +36,7 @@ struct RadDiffData
     static constexpr int mode_f    = Config::mode_f;
     static constexpr int mode_dfdn = Config::mode_dfdn;
     static constexpr int mode_dfdc = Config::mode_dfdc;
-    
+
 private:
     // Declare private variables
     std::size_t                     _end_pos        = 0;        // End position along field points for the current process

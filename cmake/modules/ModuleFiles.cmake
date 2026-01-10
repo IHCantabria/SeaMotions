@@ -21,6 +21,7 @@ set(
         ${CMAKE_SOURCE_DIR}/src/containers/performance_stats.cpp
         ${CMAKE_SOURCE_DIR}/src/containers/rad_diff_data.hpp
         ${CMAKE_SOURCE_DIR}/src/containers/rad_diff_data.txx
+        ${CMAKE_SOURCE_DIR}/src/containers/rad_diff_data_config.hpp
         ${CMAKE_SOURCE_DIR}/src/containers/simulation_data.hpp
         ${CMAKE_SOURCE_DIR}/src/containers/simulation_data.cpp
         ${CMAKE_SOURCE_DIR}/src/containers/source_node.hpp
