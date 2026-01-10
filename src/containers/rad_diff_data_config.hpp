@@ -25,6 +25,10 @@
 #include "../static_tools.hpp"
 
 
+/**
+ * @struct RDDFDConfig
+ * @brief Configuration struct for custom field data in radiation and diffraction problems.
+ */
 struct RDDFDConfig 
 {
     static constexpr int mode_comp = ON;
@@ -33,6 +37,11 @@ struct RDDFDConfig
     static constexpr int mode_dfdc = G_ON;
 };
 
+
+/**
+ * @struct RDDQTFConfig
+ * @brief Configuration struct for field data in QTF calculations.
+ */
 struct RDDQTFConfig 
 {
     static constexpr int mode_comp = OFF;
