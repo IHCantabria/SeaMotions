@@ -27,7 +27,7 @@
 #include "panel_data.hpp"
 
 
-template<int mode_f, int mode_dfdn, int mode_dfdc>
+template<int mode_comp, int mode_f, int mode_dfdn, int mode_dfdc>
 struct RadDiffData
 {
 private:
@@ -41,7 +41,7 @@ private:
     
 public:
     // Declare public variables
-    std::vector<PanelData<mode_f, mode_dfdn, mode_dfdc>>   panel_data; // Store panel data for radiation and diffraction calculations
+    std::vector<PanelData<mode_comp, mode_f, mode_dfdn, mode_dfdc>> panel_data; // Store panel data for radiation and diffraction calculations
 
     /* Declare class constructors and destructor */
     RadDiffData( ) = default;
@@ -50,6 +50,7 @@ public:
                     MpiConfig*      mpi_config_,
                     std::size_t     panels_np_,
                     std::size_t     field_points_np_,
+                    std::size_t     freqs_np_,
                     std::size_t     headings_np_,
                     std::size_t     dofs_np_
                 );
@@ -57,6 +58,7 @@ public:
     RadDiffData( 
                     MpiConfig*      mpi_config_,
                     MeshGroup*      mesh_gp_,
+                    std::size_t     freqs_np_,
                     std::size_t     headings_np_,
                     std::size_t     dofs_np_,
                     bool            use_waterline_ = false
