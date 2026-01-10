@@ -23,6 +23,7 @@
 // Include local modules
 #include "../../config.hpp"
 #include "../../containers/mpi_config.hpp"
+#include "../../containers/rad_diff_data.hpp"
 #include "../../containers/simulation_data.hpp"
 #include "formulation_kernel_backend.hpp"
 #include "../../hydrostatics.hpp"
@@ -59,18 +60,32 @@ template<std::size_t N, int mode_pf>
 class FrequencySolver
 {
 private:
+    /**** Declare class private attributes ****/
+    RadDiffData<RDDQTFConfig>*  _qtf_wl_fields     = nullptr;  // Storage of waterline field points for QTF calculations
+    RadDiffData<RDDQTFConfig>*  _qtf_bern_fields   = nullptr;  // Storage of velocity field for the calculation of bernoulli term in QTFs
+
     /**** Declare class private methods ****/
-    void _calculate_global_static_matrixes( );
+    void _calculate_field_points_values( 
+                                                    cusfloat ang_freq 
+                                        );
 
     template<freq_regime_t freq_regime>
     void _calculate_first_order_coeffs( 
-                                            int      freq_index,
-                                            cusfloat ang_freq
+                                                    int      freq_index,
+                                                    cusfloat ang_freq
                                         );
+
+    void _calculate_first_to_second_order_coeffs( 
+                                                    cusfloat ang_freq 
+                                                );
+
+    void _calculate_global_static_matrixes( );
 
     void _calculate_hydrostatics( );
 
     void _generate_formulation_kernel( );
+
+    void _initialize_field_data( );
 
     void _initialize_mesh_groups( );
 
@@ -101,6 +116,8 @@ public:
 
     /* Declare class public methods */
     void calculate_first_order( );
+
+    void calculate_second_order( );
 
 };
 

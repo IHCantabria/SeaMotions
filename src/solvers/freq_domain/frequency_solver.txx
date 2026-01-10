@@ -432,7 +432,7 @@ void FrequencySolver<N, mode_pf>::_calculate_first_to_second_order_coeffs(
     // Calculate QTF coefficients if required
     if ( this->input->is_calc_mdrift )
     {
-        
+
     }
 }
 
@@ -591,23 +591,23 @@ void FrequencySolver<N, mode_pf>::_initialize_field_data( void )
     // Initialize QTF waterline field points data container
     if ( this->input->is_calc_mdrift )
     {
-        this->_qtf_wl_fields    = new RadDiffData<G_ON, DGDN_OFF, DGDC_OFF>(
-                                                                                this->input,
-                                                                                this->mpi_config,
-                                                                                this->mesh_fs_qtf_gp,
-                                                                                this->input->dofs_np,
-                                                                                this->input->heads_np,
-                                                                                true
-                                                                            );
+        this->_qtf_wl_fields    = new RadDiffData<RDDQTFConfig>(
+                                                                        this->mpi_config,
+                                                                        this->mesh_gp,
+                                                                        this->input->angfreqs_np,
+                                                                        this->input->heads_np,
+                                                                        this->input->dofs_np,
+                                                                        true
+                                                                );
         
-        this->_qtf_bern_fields  = new RadDiffData<G_OFF, DGDN_OFF, DGDC_ON>(
-                                                                                this->input,
-                                                                                this->mpi_config,
-                                                                                this->mesh_fs_qtf_gp,
-                                                                                this->input->dofs_np,
-                                                                                this->input->heads_np,
-                                                                                false
-                                                                            );
+        this->_qtf_bern_fields  = new RadDiffData<RDDQTFConfig>(
+                                                                        this->mpi_config,
+                                                                        this->mesh_gp,
+                                                                        this->input->angfreqs_np,
+                                                                        this->input->heads_np,
+                                                                        this->input->dofs_np,
+                                                                        false
+                                                                    );
     }
 
     LOG_TASK_TIME( fields, fields_timer )
