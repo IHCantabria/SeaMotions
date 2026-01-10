@@ -25,9 +25,15 @@
 #include "../math/custensor/custensor.hpp"
 
 
-template<int mode_comp, int mode_f, int mode_dfdn, int mode_dfdc>
+template<typename Config>
 struct PanelData
 {
+    /*** Template parameters from Config ***/
+    static constexpr int mode_comp = Config::mode_comp;
+    static constexpr int mode_f    = Config::mode_f;
+    static constexpr int mode_dfdn = Config::mode_dfdn;
+    static constexpr int mode_dfdc = Config::mode_dfdc;
+
 private:
     // Define private variables
     bool                            _is_heap        = false;    // Flag to indicate if memory is allocated on heap

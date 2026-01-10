@@ -27,9 +27,15 @@
 #include "panel_data.hpp"
 
 
-template<int mode_comp, int mode_f, int mode_dfdn, int mode_dfdc>
+template<typename Config>
 struct RadDiffData
 {
+    /*** Template parameters from Config ***/
+    static constexpr int mode_comp = Config::mode_comp;
+    static constexpr int mode_f    = Config::mode_f;
+    static constexpr int mode_dfdn = Config::mode_dfdn;
+    static constexpr int mode_dfdc = Config::mode_dfdc;
+    
 private:
     // Declare private variables
     std::size_t                     _end_pos        = 0;        // End position along field points for the current process
