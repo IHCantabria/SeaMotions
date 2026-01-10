@@ -20,7 +20,7 @@ set(
         ${CMAKE_SOURCE_DIR}/src/containers/performance_stats.hpp
         ${CMAKE_SOURCE_DIR}/src/containers/performance_stats.cpp
         ${CMAKE_SOURCE_DIR}/src/containers/rad_diff_data.hpp
-        ${CMAKE_SOURCE_DIR}/src/containers/rad_diff_data.cpp
+        ${CMAKE_SOURCE_DIR}/src/containers/rad_diff_data.txx
         ${CMAKE_SOURCE_DIR}/src/containers/simulation_data.hpp
         ${CMAKE_SOURCE_DIR}/src/containers/simulation_data.cpp
         ${CMAKE_SOURCE_DIR}/src/containers/source_node.hpp
@@ -259,6 +259,7 @@ set(
         ${CMAKE_SOURCE_DIR}/src/mesh/mesh_refinement.cpp
         ${CMAKE_SOURCE_DIR}/src/mesh/mesh_operations.hpp
         ${CMAKE_SOURCE_DIR}/src/mesh/mesh_operations.cpp
+        ${CMAKE_SOURCE_DIR}/src/mesh/panel_set_view.hpp
         ${CMAKE_SOURCE_DIR}/src/mesh/rigid_body_mesh.hpp
         ${CMAKE_SOURCE_DIR}/src/mesh/rigid_body_mesh.cpp
         ${CMAKE_SOURCE_DIR}/src/mesh/tools.hpp
