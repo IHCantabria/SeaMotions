@@ -40,13 +40,13 @@
 /***********************************************************/
 /**************** Define RadDiffData class *****************/
 /***********************************************************/
-template<int mode_comp, int mode_f, int mode_dfdn, int mode_dfdc>
-void    PanelData<mode_comp, mode_f, mode_dfdn, mode_dfdc>::_allocate_memory( 
-                                                                                std::size_t field_points_np_,
-                                                                                std::size_t freqs_np_,
-                                                                                std::size_t headings_np_,
-                                                                                std::size_t dofs_np_
-                                                                            )
+template<typename Config>
+void    PanelData<Config>::_allocate_memory( 
+                                                std::size_t field_points_np_,
+                                                std::size_t freqs_np_,
+                                                std::size_t headings_np_,
+                                                std::size_t dofs_np_
+                                            )
 {
     // Set number of field points
     this->dofs_np           = dofs_np_;
@@ -99,11 +99,11 @@ void    PanelData<mode_comp, mode_f, mode_dfdn, mode_dfdc>::_allocate_memory(
 }
 
 
-template<int mode_comp, int mode_f, int mode_dfdn, int mode_dfdc>
-void    PanelData<mode_comp, mode_f, mode_dfdn, mode_dfdc>::_load_field_points( 
-                                                                                PanelGeom*  panel_geom_,
-                                                                                bool        use_waterline_
-                                                                            )
+template<typename Config>
+void    PanelData<Config>::_load_field_points( 
+                                                    PanelGeom*  panel_geom_,
+                                                    bool        use_waterline_
+                                                )
 {
     if ( use_waterline_ )
     {
@@ -137,8 +137,8 @@ void    PanelData<mode_comp, mode_f, mode_dfdn, mode_dfdc>::_load_field_points(
 }
 
                                         
-template<int mode_comp, int mode_f, int mode_dfdn, int mode_dfdc>
-void PanelData<mode_comp, mode_f, mode_dfdn, mode_dfdc>::clear_data( void )
+template<typename Config>
+void PanelData<Config>::clear_data( void )
 {
     // Create auxiliary variables to have a 
     // clear implementation
@@ -171,13 +171,13 @@ void PanelData<mode_comp, mode_f, mode_dfdn, mode_dfdc>::clear_data( void )
     STATIC_COND( ONLY_FCNDC,                LOOP_DEF( hfnp,  this->vel_z_total[i]       = 0.0; ) )
 }
 
-template<int mode_comp, int mode_f, int mode_dfdn, int mode_dfdc>
-PanelData<mode_comp, mode_f, mode_dfdn, mode_dfdc>::PanelData( 
-                                                        std::size_t field_points_np_,
-                                                        std::size_t freqs_np_,
-                                                        std::size_t headings_np_,
-                                                        std::size_t dofs_np_
-                                                    )
+template<typename Config>
+PanelData<Config>::PanelData( 
+                                std::size_t field_points_np_,
+                                std::size_t freqs_np_,
+                                std::size_t headings_np_,
+                                std::size_t dofs_np_
+                            )
 {
     // Allocate space for fields data
     this->_allocate_memory( 
@@ -189,15 +189,15 @@ PanelData<mode_comp, mode_f, mode_dfdn, mode_dfdc>::PanelData(
 }
 
 
-template<int mode_comp, int mode_f, int mode_dfdn, int mode_dfdc>
-PanelData<mode_comp, mode_f, mode_dfdn, mode_dfdc>::PanelData( 
-                                                                PanelGeom*  panel_geom_,
-                                                                std::size_t body_id_,
-                                                                std::size_t freqs_np_,
-                                                                std::size_t headings_np_,
-                                                                std::size_t dofs_np_,
-                                                                bool        use_waterline_
-                                                            )
+template<typename Config>
+PanelData<Config>::PanelData( 
+                                PanelGeom*  panel_geom_,
+                                std::size_t body_id_,
+                                std::size_t freqs_np_,
+                                std::size_t headings_np_,
+                                std::size_t dofs_np_,
+                                bool        use_waterline_
+                            )
 {
     // Storage input arguments
     this->panel_geom        = panel_geom_;
@@ -223,8 +223,8 @@ PanelData<mode_comp, mode_f, mode_dfdn, mode_dfdc>::PanelData(
 }
 
 
-template<int mode_comp, int mode_f, int mode_dfdn, int mode_dfdc>
-PanelData<mode_comp, mode_f, mode_dfdn, mode_dfdc>::~PanelData( )
+template<typename Config>
+PanelData<Config>::~PanelData( )
 {
     // Deallocate memory only if it was allocated on heap
     if ( this->_is_heap )
