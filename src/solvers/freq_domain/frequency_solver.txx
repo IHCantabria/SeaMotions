@@ -37,24 +37,27 @@
 
 template<std::size_t N, int mode_pf>
 void FrequencySolver<N, mode_pf>::_calculate_field_points_values( 
-                                                                    cusfloat ang_freq 
+                                                                    std::size_t freq_index,
+                                                                    cusfloat    ang_freq 
                                                                 )
 {
     if ( this->input->is_calc_mdrift )
     {
         // Calculate waterline field points values for QTF calculations
-        this->kernel->template calculate_field_points<G_ON, DGDN_OFF, DGDC_OFF>( 
-                                                                                    this->_qtf_wl_fields,
-                                                                                    this->sim_data->raos,
-                                                                                    ang_freq
-                                                                                );
+        this->kernel->template calculate_field_points<RDDQTFConfig>( 
+                                                                        freq_index,
+                                                                        ang_freq,
+                                                                        this->sim_data->raos,
+                                                                        this->_qtf_wl_fields
+                                                                    );
 
         // Calculate velocity field at Bernoulli points for QTF calculations
-        this->kernel->template calculate_field_points<G_OFF, DGDN_OFF, DGDC_ON>( 
-                                                                                    this->_qtf_bern_fields,
-                                                                                    this->sim_data->raos,
-                                                                                    ang_freq
-                                                                                );
+        this->kernel->template calculate_field_points<RDDQTFConfig>(
+                                                                        freq_index, 
+                                                                        ang_freq,
+                                                                        this->sim_data->raos,
+                                                                        this->_qtf_bern_fields
+                                                                    );
     }
 }
 
@@ -67,7 +70,7 @@ void FrequencySolver<N, mode_pf>::calculate_first_order( void )
     /*******************************************************/
 
     // Loop over frequencies
-    for ( int i=0; i<this->input->angfreqs_np; i++ )
+    for ( std::size_t i=0; i<this->input->angfreqs_np; i++ )
     {
         LOG_TASK_SS( freq, "FO - Calculating period: " << std::setw( 10 ) << std::fixed << std::setprecision( 3 ) << angfreq_to_period( this->input->angfreqs[i] ) << " s" )
 
@@ -82,7 +85,7 @@ void FrequencySolver<N, mode_pf>::calculate_first_order( void )
         this->_calculate_first_order_coeffs<freq_regime_t::REGULAR>( i, this->input->angfreqs[i] );
 
         // Calculate field points values at the positions required
-        this->_calculate_field_points_values( this->input->angfreqs[i] );
+        this->_calculate_field_points_values( i, this->input->angfreqs[i] );
 
         // Calculate second order coefficients given by first order potential solution
         this->_calculate_first_to_second_order_coeffs( this->input->angfreqs[i] );
@@ -134,7 +137,7 @@ void FrequencySolver<N, mode_pf>::calculate_first_order( void )
 template<std::size_t N, int mode_pf>
 template<freq_regime_t freq_regime>
 void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs( 
-                                                                    int         freq_index, 
+                                                                    std::size_t freq_index, 
                                                                     cusfloat    ang_freq 
                                                                 )
 {

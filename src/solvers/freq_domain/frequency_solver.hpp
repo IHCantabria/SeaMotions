@@ -66,13 +66,14 @@ private:
 
     /**** Declare class private methods ****/
     void _calculate_field_points_values( 
-                                                    cusfloat ang_freq 
+                                                    std::size_t freq_index,
+                                                    cusfloat    ang_freq 
                                         );
 
     template<freq_regime_t freq_regime>
     void _calculate_first_order_coeffs( 
-                                                    int      freq_index,
-                                                    cusfloat ang_freq
+                                                    std::size_t freq_index,
+                                                    cusfloat    ang_freq
                                         );
 
     void _calculate_first_to_second_order_coeffs( 
