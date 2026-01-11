@@ -48,7 +48,7 @@ private:
     
 public:
     // Declare public variables
-    std::vector<PanelData<mode_comp, mode_f, mode_dfdn, mode_dfdc>> panel_data; // Store panel data for radiation and diffraction calculations
+    std::vector<PanelData<Config>> panel_data; // Store panel data for radiation and diffraction calculations
 
     /* Declare class constructors and destructor */
     RadDiffData( ) = default;

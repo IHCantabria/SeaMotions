@@ -23,43 +23,43 @@
 #include "../mesh/panel_set_view.hpp"
 
 
-template<int mode_comp, int mode_f, int mode_dfdn, int mode_dfdc>
-std::size_t RadDiffData<mode_comp, mode_f, mode_dfdn, mode_dfdc>::get_end_pos( void ) const
+template<typename Config>
+std::size_t RadDiffData<Config>::get_end_pos( void ) const
 {
     return this->_end_pos;
 }
 
 
-template<int mode_comp, int mode_f, int mode_dfdn, int mode_dfdc>
-std::size_t RadDiffData<mode_comp, mode_f, mode_dfdn, mode_dfdc>::get_size_global( void ) const
+template<typename Config>
+std::size_t RadDiffData<Config>::get_size_global( void ) const
 {
     return this->_size_global;
 }
 
 
-template<int mode_comp, int mode_f, int mode_dfdn, int mode_dfdc>
-std::size_t RadDiffData<mode_comp, mode_f, mode_dfdn, mode_dfdc>::get_size_local( void ) const
+template<typename Config>
+std::size_t RadDiffData<Config>::get_size_local( void ) const
 {
     return this->_size_local;
 }
 
 
-template<int mode_comp, int mode_f, int mode_dfdn, int mode_dfdc>
-std::size_t RadDiffData<mode_comp, mode_f, mode_dfdn, mode_dfdc>::get_start_pos( void ) const
+template<typename Config>
+std::size_t RadDiffData<Config>::get_start_pos( void ) const
 {
     return this->_start_pos;
 }
 
 
-template<int mode_comp, int mode_f, int mode_dfdn, int mode_dfdc>
-RadDiffData<mode_comp, mode_f, mode_dfdn, mode_dfdc>::RadDiffData( 
-                                                                        MpiConfig*      mpi_config_,
-                                                                        std::size_t     panels_np_,
-                                                                        std::size_t     field_points_np_,
-                                                                        std::size_t     freqs_np_,
-                                                                        std::size_t     headings_np_,
-                                                                        std::size_t     dofs_np_
-                                                                    )
+template<typename Config>
+RadDiffData<Config>::RadDiffData( 
+                                    MpiConfig*      mpi_config_,
+                                    std::size_t     panels_np_,
+                                    std::size_t     field_points_np_,
+                                    std::size_t     freqs_np_,
+                                    std::size_t     headings_np_,
+                                    std::size_t     dofs_np_
+                                )
 {
     // Store number of field points
     this->_size_global      = panels_np_;
@@ -92,15 +92,15 @@ RadDiffData<mode_comp, mode_f, mode_dfdn, mode_dfdc>::RadDiffData(
 }
 
 
-template<int mode_comp, int mode_f, int mode_dfdn, int mode_dfdc>
-RadDiffData<mode_comp, mode_f, mode_dfdn, mode_dfdc>::RadDiffData( 
-                                                                    MpiConfig*      mpi_config_,
-                                                                    MeshGroup*      mesh_gp_,
-                                                                    std::size_t     freqs_np_,
-                                                                    std::size_t     headings_np_,
-                                                                    std::size_t     dofs_np_,
-                                                                    bool            use_waterline_
-                                                                )
+template<typename Config>
+RadDiffData<Config>::RadDiffData( 
+                                    MpiConfig*      mpi_config_,
+                                    MeshGroup*      mesh_gp_,
+                                    std::size_t     freqs_np_,
+                                    std::size_t     headings_np_,
+                                    std::size_t     dofs_np_,
+                                    bool            use_waterline_
+                                )
 {    
     // Get panel set view
     PanelSetView panel_view = make_panel_view( mesh_gp_, use_waterline_ );
