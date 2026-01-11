@@ -203,6 +203,7 @@ public:
     cuscomplex*     qtf_wl_vel_y_total_freq             = nullptr;
     cuscomplex*     qtf_wl_vel_z_total_freq             = nullptr;
     cuscomplex*     raos                                = nullptr;
+    cuscomplex*     raos_hist                           = nullptr;
     cusfloat*       structural_mass_p0                  = nullptr;
     cuscomplex*     sysmat                              = nullptr;
     cuscomplex*     sysmat_steady                       = nullptr;

@@ -396,6 +396,12 @@ SimulationData::SimulationData(
     this->panels_pressure   = generate_empty_vector<cuscomplex>( ( dofs_np_in + heads_np_in ) * rows_np );
     this->wave_diffrac      = generate_empty_vector<cuscomplex>( this->wave_exc_np );
 
+    // Storage required variables for second order calculations
+    if ( this->_input->is_calc_mdrift || this->_input->out_qtf )
+    {
+        this->raos_hist = generate_empty_vector<cuscomplex>( this->_input->angfreqs_np * this->wave_exc_np );
+    }
+
     // Allocate space for variables used only on root processor
     if ( this->_mpi_config->is_root( ) )
     {
@@ -438,6 +444,12 @@ SimulationData::~SimulationData(
     mkl_free( this->sysmat );
     mkl_free( this->sysmat_steady );
     mkl_free( this->wave_diffrac );
+
+    // Storage required variables for second order calculations
+    if ( this->_input->is_calc_mdrift || this->_input->out_qtf )
+    {
+        mkl_free( this->raos_hist );
+    }
 
     if ( this->_mpi_config->is_root( ) )
     {
