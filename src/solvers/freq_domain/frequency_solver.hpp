@@ -77,12 +77,22 @@ private:
                                         );
 
     void _calculate_first_to_second_order_coeffs( 
-                                                    cusfloat ang_freq 
+                                                    std::size_t freq_index_i,
+                                                    std::size_t freq_index_j,
+                                                    int         qtf_type,
+                                                    bool        is_multi_head 
                                                 );
 
     void _calculate_global_static_matrixes( );
 
     void _calculate_hydrostatics( );
+
+    void _calculate_quadratic_terms( 
+                                        std::size_t freq_index_i,
+                                        std::size_t freq_index_j,
+                                        int         qtf_type,
+                                        bool        is_multi_head
+                                    );
 
     void _generate_formulation_kernel( );
 

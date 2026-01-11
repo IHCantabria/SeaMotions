@@ -30,11 +30,96 @@
 #include "global_static_matrix.hpp"
 #include "hydromechanics.hpp"
 #include "../../hydrostatics.hpp"
+#include "../../math/integration.hpp"
 #include "../../math/math_tools.hpp"
 #include "../../mesh/mesh.hpp"
 #include "raos.hpp"
 
 
+/*****************************************************************/
+/************** Define Module auxiliar functions  ****************/
+/*****************************************************************/
+inline constexpr void _field_point_index( 
+                                            bool            is_multi_head,
+                                            std::size_t     heads_np,
+                                            std::size_t     fp_np,
+                                            std::size_t     freq_index_i,
+                                            std::size_t     freq_index_j,
+                                            std::size_t     ih1,
+                                            std::size_t     ih2,
+                                            std::size_t     k,
+                                            std::size_t&    idx1_i,
+                                            std::size_t&    idx1_j
+                                        )
+{
+    idx1_i =  freq_index_i * ( heads_np * fp_np ) + ih1 * fp_np + k;
+    if ( is_multi_head )
+    {
+        idx1_j = freq_index_j * ( heads_np * fp_np ) + ih2 * fp_np + k;
+    }
+    else
+    {
+        idx1_j = freq_index_j * ( heads_np * fp_np ) + ih1 * fp_np + k;
+    }
+}
+
+
+inline constexpr std::size_t _qtf_index_offset(
+                                                    bool        is_multi_head,
+                                                    std::size_t bodies_np,
+                                                    std::size_t heads_np,
+                                                    std::size_t dofs_np,
+                                                    std::size_t ih1,
+                                                    std::size_t ih2,
+                                                    std::size_t body_index
+                                                )
+{
+    std::size_t offset = 0;
+    if ( is_multi_head )
+    {
+        offset  = (
+                        ih1 * ( dofs_np * bodies_np * heads_np )
+                        +
+                        ih2 * ( dofs_np * bodies_np )
+                        +
+                        body_index * dofs_np
+                    );
+    }
+    else
+    {
+        offset  = ih1 * ( dofs_np * bodies_np ) + body_index * dofs_np;
+    }
+
+    return offset;
+}
+
+
+inline constexpr void _rao_offset( 
+                                    bool            is_multi_head,
+                                    std::size_t     bodies_np,
+                                    std::size_t     dofs_np,
+                                    std::size_t     ih1,
+                                    std::size_t     ih2,
+                                    std::size_t     j,
+                                    std::size_t&    idx1_i,
+                                    std::size_t&    idx1_j
+                                )
+{
+    idx1_i =  ih1 * ( dofs_np * bodies_np ) + dofs_np * j;
+    if ( is_multi_head )
+    {
+        idx1_j = ih2 * ( dofs_np * bodies_np ) + dofs_np * j;
+    }
+    else
+    {
+        idx1_j = ih1 * ( dofs_np * bodies_np ) + dofs_np * j;
+    }
+}
+
+
+/*****************************************************************/
+/*************** Define Frequency Solver class  ******************/
+/*****************************************************************/
 template<std::size_t N, int mode_pf>
 void FrequencySolver<N, mode_pf>::_calculate_field_points_values( 
                                                                     std::size_t freq_index,
@@ -223,6 +308,16 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
                     this->mpi_config->proc_root,
                     MPI_COMM_WORLD
                 );
+
+    // Copy raos to raos_hist
+    if ( this->input->is_calc_mdrift || this->input->out_qtf )
+    {
+        copy_vector(
+                        this->sim_data->wave_exc_np,
+                        this->sim_data->raos,
+                        &(this->sim_data->raos_hist[freq_index * this->sim_data->wave_exc_np])
+                    );
+    }
 
     
     // Storage results
@@ -429,13 +524,21 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
 
 template<std::size_t N, int mode_pf>
 void FrequencySolver<N, mode_pf>::_calculate_first_to_second_order_coeffs( 
-                                                                            cusfloat ang_freq 
+                                                                            std::size_t freq_index_i,
+                                                                            std::size_t freq_index_j,
+                                                                            int         qtf_type,
+                                                                            bool        is_multi_head
                                                                         )
 {
     // Calculate QTF coefficients if required
     if ( this->input->is_calc_mdrift )
     {
-
+        this->_calculate_quadratic_terms( 
+                                            freq_index_i, 
+                                            freq_index_j,
+                                            qtf_type,
+                                            is_multi_head 
+                                        );
     }
 }
 
@@ -487,6 +590,533 @@ void FrequencySolver<N, mode_pf>::_calculate_hydrostatics( void )
 
     LOG_TASK_TIME( hydro, hydro_timer )
 
+}
+
+
+template<std::size_t N, int mode_pf>
+void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms( 
+                                                                    std::size_t freq_index_i,
+                                                                    std::size_t freq_index_j,
+                                                                    int         qtf_type,
+                                                                    bool        is_multi_head
+                                                                )
+{
+    // Asssert if qtf_type is on the range
+    bool    assert_test = ( qtf_type == 0 ) | ( qtf_type == 1 );
+    assert( assert_test && "qtf_type variable with values differnt to 0 and 1" );
+
+    // Get local variables from structures for easier access
+    cusfloat                    ang_freq_i      = this->input->angfreqs[freq_index_i];
+    cusfloat                    ang_freq_j      = this->input->angfreqs[freq_index_j];
+    std::size_t                 bodies_np       = static_cast<std::size_t>( this->mesh_gp->meshes_np );
+    std::size_t                 dofs_np         = static_cast<std::size_t>( this->input->dofs_np );
+    cusfloat                    grav_acc        = this->input->grav_acc;
+    std::size_t                 heads_np        = static_cast<std::size_t>( this->input->heads_np );
+    Input*                      input           = this->input;
+    PanelData<RDDQTFConfig>*    paneld          = nullptr;
+    cuscomplex*                 qtf_values      = nullptr;
+    cuscomplex*                 qtf_wl          = nullptr;
+    cuscomplex*                 qtf_bern        = nullptr;
+    cuscomplex*                 qtf_acc         = nullptr;
+    cuscomplex*                 qtf_mom         = nullptr;
+    cuscomplex*                 raos_i          = &( this->sim_data->raos_hist[ freq_index_i * this->sim_data->wave_exc_np ] );
+    cuscomplex*                 raos_j          = &( this->sim_data->raos_hist[ freq_index_j * this->sim_data->wave_exc_np ] );
+    RadDiffData<RDDQTFConfig>*  rdd_bern        = this->_qtf_bern_fields;
+    RadDiffData<RDDQTFConfig>*  rdd_rwel        = this->_qtf_wl_fields;
+    cusfloat                    rhow            = this->input->water_density;
+    cusfloat                    wave_amplitude  = this->input->wave_amplitude;
+
+    if ( qtf_type == 0 )
+    {
+        qtf_values   = this->sim_data->qtf;
+        qtf_wl      = this->sim_data->qtf_diff_wl;
+        qtf_bern    = this->sim_data->qtf_diff_bern;
+        qtf_acc     = this->sim_data->qtf_diff_acc;
+        qtf_mom     = this->sim_data->qtf_diff_mom;
+    }
+    else if ( qtf_type == 1 )
+    {
+        qtf_values  = this->sim_data->qtf;
+        qtf_wl      = this->sim_data->qtf_sum_wl;
+        qtf_bern    = this->sim_data->qtf_sum_bern;
+        qtf_acc     = this->sim_data->qtf_sum_acc;
+        qtf_mom     = this->sim_data->qtf_sum_mom;
+    }
+
+
+    // Define aux variables to be used along the function
+    static constexpr std::size_t ngp  = PanelGeom::gauss_points_np;
+    static constexpr std::size_t ngp2 = PanelGeom::gauss_points_np * PanelGeom::gauss_points_np;
+
+    cusfloat*   body_cog            = nullptr;
+    std::size_t body_index          = 0; // Only first body for the moment
+    cuscomplex  daux                = 0.0;
+    std::size_t fp_np               = 0;
+    std::size_t idx0                = 0;
+    std::size_t idx1_i              = 0;
+    std::size_t idx1_j              = 0;
+    std::size_t idx2                = 0;
+    std::size_t ih2_end             = 0;
+    std::size_t ih2_start           = 0;
+    cuscomplex  int_mod_1d[ngp]     = 0.0;
+    cuscomplex  int_mod_2d[ngp2]    = 0.0;
+    cuscomplex  int_val             = 0.0;
+    cusfloat*   normal_vec          = nullptr;
+    PanelGeom*  panel_k             = nullptr;
+
+    // Set second heading loop bounds according with the multi-heading option
+    if ( is_multi_head )
+    {
+        ih2_start   = 0;
+        ih2_end     = heads_np;
+    }
+    else
+    {
+        ih2_start   = 0;
+        ih2_end     = 1;
+    }
+
+    // Clear QTF input vector to ensure that previous data will not be storaged
+    // erroneously
+    std::size_t heads_factor_np = ( is_multi_head ) ? pow2s( heads_np ) : heads_np;
+    std::size_t qtf_size        = heads_factor_np * bodies_np * dofs_np;
+
+    clear_vector( qtf_size, qtf_values  );
+    clear_vector( qtf_size, qtf_wl      );
+    clear_vector( qtf_size, qtf_bern    ); 
+    clear_vector( qtf_size, qtf_acc     );
+    clear_vector( qtf_size, qtf_mom     );
+
+    // Calculate second order force due to relative wave
+    // elevation at the WL
+    for ( std::size_t ih1=0; ih1<heads_np; ih1++ )
+    {
+        for ( std::size_t ih2=ih2_start; ih2<ih2_end; ih2++ )
+        {
+            for ( std::size_t i=0; i<this->rdd_rwel->get_size_local( ); i++  )
+            {
+                // Get panel
+                paneld      = &(this->panel_data[i]);
+                fp_np       = paneld->field_points_np;
+                normal_vec  = paneld->panel_geom->normal_vec;
+
+                // Loop over field points of the panel
+                for ( std::size_t k=0; k<fp_np; k++ )
+                {
+                    // Calculate indexes for the two field points
+                    _field_point_index( 
+                                            is_multi_head,
+                                            heads_np,
+                                            fp_np,
+                                            freq_index_i,
+                                            freq_index_j,
+                                            ih1,
+                                            ih2,
+                                            k,
+                                            idx1_i,
+                                            idx1_j
+                                        );
+
+                    // Calculate integrand value depending on the QTF type
+                    if ( qtf_type == 0 )
+                    {
+                        int_mod_1d[k] = rdd_rwel->wev_rel_total[idx1_i] * std::conj( rdd_rwel->wev_rel_total[idx1_j] );
+                    }
+                    else
+                    {
+                        int_mod_1d[k] = rdd_rwel->wev_rel_total[idx1_i] * rdd_rwel->wev_rel_total[idx1_j];
+                    }
+                }
+
+                // Integrate over the panel
+                int_val = 0.0;
+                gauss1d_loop<ngp>( int_val, int_mod_1d, paneld->len_wl );
+
+                // Get global QTF index offset
+                idx0    =   _qtf_index_offset(
+                                                is_multi_head,
+                                                bodies_np,
+                                                heads_np,
+                                                dofs_np,
+                                                ih1,
+                                                ih2,
+                                                paneld->body_id
+                                            );
+
+                // Calculate final qtf value and store appropriately
+                for ( int r=0; r<dofs_np; r++ )
+                {
+                    daux               = - 0.25 * grav_acc * rhow * int_val * normal_vec[r];
+                    qtf_values[idx0+r] += daux;
+                    qtf_wl[idx0+r]     += daux;
+                }
+                
+            }
+        }
+    }
+
+    // Calculate second order force due to the bernouilly contribution
+    for ( std::size_t ih1=0; ih1<heads_np; ih1++ )
+    {
+        for ( std::size_t ih2=ih2_start; ih2<ih2_end; ih2++ )
+        {
+            for ( std::size_t i=0; i<this->rdd_bern->get_size_local( ); i++  )
+            {
+                // Get panel
+                paneld      = &(this->panel_data[i]);
+                fp_np       = paneld->field_points_np;
+                normal_vec  = paneld->panel_geom->normal_vec;
+
+                // Loop over field points of the panel
+                for ( std::size_t k=0; k<fp_np; k++ )
+                {
+                    // Calculate indexes for the two field points
+                    _field_point_index( 
+                                            is_multi_head,
+                                            heads_np,
+                                            fp_np,
+                                            freq_index_i,
+                                            freq_index_j,
+                                            ih1,
+                                            ih2,
+                                            k,
+                                            idx1_i,
+                                            idx1_j
+                                        );
+
+                    if ( qtf_type == 0 )
+                    {
+                        int_mod_2d[k]   =   (
+                                                vel_x_i[idx1_i] * std::conj( vel_x_j[idx1_j] )
+                                                +
+                                                vel_y_i[idx1_i] * std::conj( vel_y_j[idx1_j] )
+                                                +
+                                                vel_z_i[idx1_i] * std::conj( vel_z_j[idx1_j] )
+                                            );
+                    }
+                    else
+                    {
+                        int_mod_2d[k]   =   (
+                                                vel_x_i[idx1_i] * vel_x_j[idx1_j]
+                                                +
+                                                vel_y_i[idx1_i] * vel_y_j[idx1_j]
+                                                +
+                                                vel_z_i[idx1_i] * vel_z_j[idx1_j]
+                                            );
+                    }
+                }
+
+                // Integrate over the panel
+                int_val = 0.0;
+                gauss2d_loop<ngp>( int_val, int_mod_2d, paneld );
+
+                // Get global QTF index offset
+                idx0    =   _qtf_index_offset(
+                                                is_multi_head,
+                                                bodies_np,
+                                                heads_np,
+                                                dofs_np,
+                                                ih1,
+                                                ih2,
+                                                paneld->body_id
+                                            );
+
+                // Calculate final qtf value and store appropriately
+                for ( std::size_t r=0; r<input->dofs_np; r++ )
+                {
+                    daux               = 0.25 * rhow * int_val * normal_vec[r];
+                    qtf_values[idx0+r] += daux;
+                    qtf_bern[idx0+r]   += daux;
+                }
+
+            }
+        }
+    }
+
+    // Calculate second order force due to acceleration term
+    cusfloat    cog_to_fp[3];               clear_vector( 3, cog_to_fp );
+    cuscomplex  cog_to_fp_c[3];             clear_vector( 3, cog_to_fp );
+    cuscomplex  point_disp_i[3];            clear_vector( 3, point_disp_i );
+    cuscomplex  point_disp_j[3];            clear_vector( 3, point_disp_j );
+    cuscomplex  rao_rot_i[3];               clear_vector( 3, rao_rot_i );
+    cuscomplex  rao_rot_j[3];               clear_vector( 3, rao_rot_j );
+    cuscomplex  rao_trans_i[3];             clear_vector( 3, rao_trans_i );
+    cuscomplex  rao_trans_j[3];             clear_vector( 3, rao_trans_j );
+    cuscomplex  vel_x_acc_i, vel_x_acc_j;
+    cuscomplex  vel_y_acc_i, vel_y_acc_j;
+    cuscomplex  vel_z_acc_i, vel_z_acc_j;
+
+    for ( int ih1=0; ih1<heads_np; ih1++ )
+    {
+        for ( int ih2=ih2_start; ih2<ih2_end; ih2++ )
+        {
+            for ( std::size_t i=0; i<this->rdd_bern->get_size_local( ); i++  )
+            {
+                // Get panel
+                paneld      = &(this->panel_data[i]);
+                body_cog    = paneld->body_cog;
+                fp_np       = paneld->field_points_np;
+                normal_vec  = paneld->panel_geom->normal_vec;
+
+                // Get RAO values
+                _rao_offset( 
+                                        is_multi_head,
+                                        bodies_np,
+                                        dofs_np,
+                                        ih1,
+                                        ih2,
+                                        paneld->body_id,
+                                        idx1_i,
+                                        idx1_j
+                                    );
+                
+                for ( int r=0; r<3; r++ )
+                {
+                    rao_rot_i[r]    = raos_i[idx1_i+3+r] * wave_amplitude;
+                    rao_rot_j[r]    = raos_j[idx1_j+3+r] * wave_amplitude;
+                    rao_trans_i[r]  = raos_i[idx1_i+r]   * wave_amplitude;
+                    rao_trans_j[r]  = raos_j[idx1_j+r]   * wave_amplitude;
+                }
+                
+                // Loop over field points of the panel
+                for ( std::size_t k=0; k<fp_np; k++ )
+                {
+                    // Calculate indexes for the two field points
+                    _field_point_index( 
+                                            is_multi_head,
+                                            heads_np,
+                                            fp_np,
+                                            freq_index_i,
+                                            freq_index_j,
+                                            ih1,
+                                            ih2,
+                                            k,
+                                            idx1_i,
+                                            idx1_j
+                                        );
+
+                    // Define vector from cog to field point
+                    sv_sub( 3, &(paneld->field_points[3*k]), body_cog, cog_to_fp );
+                    for ( int r=0; r<3; r++ )
+                    {
+                        cog_to_fp_c[r]  = cuscomplex( cog_to_fp[r], 0.0 );
+                    }
+
+                    // Calculate first order displacement of the panel centre
+                    clear_vector( 3, point_disp_i );
+
+                    cross(
+                                rao_rot_i,
+                                cog_to_fp_c,
+                                point_disp_i
+                        );
+                    sv_add(
+                                3,
+                                point_disp_i,
+                                rao_trans_i,
+                                point_disp_i
+                            );
+
+                    clear_vector( 3, point_disp_j );
+
+                    cross(
+                                rao_rot_j,
+                                cog_to_fp_c,
+                                point_disp_j
+                        );
+                    sv_add(
+                                3,
+                                point_disp_j,
+                                rao_trans_j,
+                                point_disp_j
+                            );
+
+                    // Get velocity pressure term
+                    vel_x_acc_i = rhow * cuscomplex( 0.0, -ang_freq_i ) * paneld->vel_x_total[idx1_i];
+                    vel_y_acc_i = rhow * cuscomplex( 0.0, -ang_freq_i ) * paneld->vel_y_total[idx1_i];
+                    vel_z_acc_i = rhow * cuscomplex( 0.0, -ang_freq_i ) * paneld->vel_z_total[idx1_i];
+
+                    vel_x_acc_j = rhow * cuscomplex( 0.0, -ang_freq_j ) * paneld->vel_x_total[idx1_j];
+                    vel_y_acc_j = rhow * cuscomplex( 0.0, -ang_freq_j ) * paneld->vel_y_total[idx1_j];
+                    vel_z_acc_j = rhow * cuscomplex( 0.0, -ang_freq_j ) * paneld->vel_z_total[idx1_j];
+
+                    // Calculate point displacement
+                    if ( qtf_type == 0 )
+                    {
+                        int_mod_2d[k]   = 0.25 * (
+                                                    point_disp_i[0] * std::conj( vel_x_acc_j )
+                                                    +
+                                                    point_disp_i[1] * std::conj( vel_y_acc_j )
+                                                    +
+                                                    point_disp_i[2] * std::conj( vel_z_acc_j )
+                                                    +
+                                                    std::conj( point_disp_j[0] ) * vel_x_acc_i
+                                                    +
+                                                    std::conj( point_disp_j[1] ) * vel_y_acc_i
+                                                    +
+                                                    std::conj( point_disp_j[2] ) * vel_z_acc_i
+                                                );
+                    }
+                    else
+                    {
+                        int_mod_2d[k]   = 0.25 * (
+                                                    point_disp_i[0] * vel_x_acc_j
+                                                    +
+                                                    point_disp_i[1] * vel_y_acc_j
+                                                    +
+                                                    point_disp_i[2] * vel_z_acc_j
+                                                    +
+                                                    point_disp_j[0] * vel_x_acc_i
+                                                    +
+                                                    point_disp_j[1] * vel_y_acc_i
+                                                    +
+                                                    point_disp_j[2] * vel_z_acc_i
+                                                );
+                    }
+                }
+
+                // Integrate over the panel
+                int_val = 0.0;
+                gauss2d_loop<ngp>( int_val, int_mod_2d, paneld );
+
+                // Get global QTF index offset
+                idx0    =   _qtf_index_offset(
+                                                is_multi_head,
+                                                bodies_np,
+                                                heads_np,
+                                                dofs_np,
+                                                ih1,
+                                                ih2,
+                                                paneld->body_id
+                                            );
+
+                // Calculate final qtf value and store appropriately
+                for ( int r=0; r<dofs_np; r++ )
+                {
+                    qtf_values[idx0+r] += int_val * normal_vec[r];
+                    qtf_acc[idx0+r]    += int_val * normal_vec[r];
+                }
+            }
+        }
+    }
+
+    // Calculate second order force due to momentum
+    cusfloat    ang_i_2                         = pow2s( ang_freq_i );
+    cusfloat    ang_j_2                         = pow2s( ang_freq_j );
+    cuscomplex  conj_vec[3];                    clear_vector( 3, conj_vec );
+    cuscomplex  hydro_force_i[input->dofs_np];  clear_vector( input->dofs_np, hydro_force_i );
+    cuscomplex  hydro_force_j[input->dofs_np];  clear_vector( input->dofs_np, hydro_force_j );
+    cuscomplex  mom_i[3];                       clear_vector( 3, mom_i );
+
+    for ( int ih1=0; ih1<input->heads_np; ih1++ )
+    {
+        for ( int ih2=ih2_start; ih2<ih2_end; ih2++ )
+        {
+            for ( int j=0; j<mesh_gp->meshes_np; j++ )
+            {
+                // Define chunk index
+                idx0    = ih1 * ( input->dofs_np * input->bodies_np ) + j * input->dofs_np;
+
+                if ( is_multi_head )
+                {
+                    idx1_i  = ih1 * ( input->dofs_np * input->bodies_np ) + j * input->dofs_np;
+                    idx1_j  = ih2 * ( input->dofs_np * input->bodies_np ) + j * input->dofs_np;
+                }
+                else
+                {
+                    idx1_i  = ih1 * ( input->dofs_np * input->bodies_np ) + j * input->dofs_np;
+                    idx1_j  = ih1 * ( input->dofs_np * input->bodies_np ) + j * input->dofs_np;
+                }
+
+                // Calculate total hydrodynamic force
+                calculate_mass_acceleration(
+                                                input,
+                                                raos_i,
+                                                ang_i_2,
+                                                j,
+                                                idx1_i,
+                                                hydro_force_i
+                                            );
+
+                calculate_mass_acceleration(
+                                                input,
+                                                raos_j,
+                                                ang_j_2,
+                                                j,
+                                                idx1_j,
+                                                hydro_force_j
+                                            );
+
+                // Add moment due to translational forces
+                if ( qtf_type == 0 )
+                {
+                    cuscomplex      scale_f( 0.25, 0.0 );
+
+                    clear_vector(   3,                  mom_i                                                       );
+                    conj_vector(    3,                  hydro_force_j,          conj_vec                            );
+                    cross(          &(raos_i[idx1_i+3]),conj_vec,               mom_i                               );
+                    svs_mult(       3,                  mom_i,                  scale_f,    mom_i                   );
+                    sv_add(         3,                  &(qtf_values[idx0]),    mom_i,      &(qtf_values[idx0])     );
+                    sv_add(         3,                  &(qtf_mom[idx0]),       mom_i,      &(qtf_mom[idx0])        );
+
+                    clear_vector(   3,                  mom_i                                                       );
+                    conj_vector(    3,                  &(raos_j[idx1_j+3]),    conj_vec                            );
+                    cross(          conj_vec,           hydro_force_i,          mom_i                               );
+                    svs_mult(       3,                  mom_i,                  scale_f,    mom_i                   );
+                    sv_add(         3,                  &(qtf_values[idx0]),    mom_i,      &(qtf_values[idx0])     );
+                    sv_add(         3,                  &(qtf_mom[idx0]),       mom_i,      &(qtf_mom[idx0])        );
+
+
+                    // Add moment due to rotational force
+                    clear_vector(   3,                  mom_i                                                       );
+                    conj_vector(    3,                  &(hydro_force_j[3]),    conj_vec                            );
+                    cross(          &(raos_i[idx1_i+3]),conj_vec,               mom_i                               );
+                    svs_mult(       3,                  mom_i,                  scale_f,    mom_i                   );
+                    sv_add(         3,                  &(qtf_values[idx0+3]),  mom_i,      &(qtf_values[idx0+3])   );
+                    sv_add(         3,                  &(qtf_mom[idx0+3]),     mom_i,      &(qtf_mom[idx0+3])      );
+
+                    clear_vector(   3,                  mom_i                                                       );
+                    conj_vector(    3,                  &(raos_j[idx1_j+3]),    conj_vec                            );
+                    cross(          conj_vec,           &(hydro_force_i[3]),    mom_i                               );
+                    svs_mult(       3,                  mom_i,                  scale_f,    mom_i                   );
+                    sv_add(         3,                  &(qtf_values[idx0+3]),  mom_i,      &(qtf_values[idx0+3])   );
+                    sv_add(         3,                  &(qtf_mom[idx0+3]),     mom_i,      &(qtf_mom[idx0+3])      );
+
+                }
+                else
+                {
+                    cuscomplex      scale_f( 0.25, 0.0 );
+
+                    clear_vector(   3,                  mom_i                                                       );
+                    cross(          &(raos_i[idx1_i+3]),hydro_force_j,          mom_i                               );
+                    svs_mult(       3,                  mom_i,                  scale_f,    mom_i                   );
+                    sv_add(         3,                  &(qtf_values[idx0]),    mom_i,      &(qtf_values[idx0])     );
+                    sv_add(         3,                  &(qtf_mom[idx0]),       mom_i,      &(qtf_mom[idx0])        );
+
+                    clear_vector(   3,                  mom_i                                                       );
+                    cross(          &(raos_j[idx1_j+3]),hydro_force_i,          mom_i                               );
+                    svs_mult(       3,                  mom_i,                  scale_f,    mom_i                   );
+                    sv_add(         3,                  &(qtf_values[idx0]),    mom_i,      &(qtf_values[idx0])     );
+                    sv_add(         3,                  &(qtf_mom[idx0]),       mom_i,      &(qtf_mom[idx0])        );
+
+                    // Add moment due to rotational force
+                    clear_vector(   3,                  mom_i                                                       );
+                    cross(          &(raos_i[idx1_i+3]),&(hydro_force_j[3]),    mom_i                               );
+                    svs_mult(       3,                  mom_i,                  scale_f,    mom_i                   );
+                    sv_add(         3,                  &(qtf_values[idx0+3]),  mom_i,      &(qtf_values[idx0+3])   );
+                    sv_add(         3,                  &(qtf_mom[idx0+3]),     mom_i,      &(qtf_mom[idx0+3])      );
+
+                    clear_vector(   3,                  mom_i                                                       );
+                    cross(          &(raos_j[idx1_j+3]),&(hydro_force_i[3]),    mom_i                               );
+                    svs_mult(       3,                  mom_i,                  scale_f,    mom_i                   );
+                    sv_add(         3,                  &(qtf_values[idx0+3]),  mom_i,      &(qtf_values[idx0+3])   );
+                    sv_add(         3,                  &(qtf_mom[idx0+3]),     mom_i,      &(qtf_mom[idx0+3])      );
+
+                }
+                
+            }
+        }
+    }
 }
 
 
