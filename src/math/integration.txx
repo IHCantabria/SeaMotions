@@ -229,6 +229,16 @@ inline cuscomplex adaptive_quadrature_panel(
 }
 
 
+template<int NGP, typename T, typename F, typename L>
+inline void gauss1d_loop( T& storage, const F* f, const L& len )
+{
+    for (int i = 0; i < NGP; i++)
+    {
+        storage += GaussPointsT<1,NGP>::weights_x[i] * f[i] * len / 2.0;
+    }
+}
+
+
 template<int NGP, typename T, typename F, typename P>
 inline void gauss2d_loop(T& storage, F&& f, const P* panel)
 {
@@ -237,6 +247,32 @@ inline void gauss2d_loop(T& storage, F&& f, const P* panel)
         storage += GaussPointsT<2,NGP>::weights_x[i] *
                    GaussPointsT<2,NGP>::weights_y[i] *
                    f(i) *
+                   panel->jac_det_gauss_points[i];
+    }
+}
+
+
+template<int NGP, typename T, typename F, typename P>
+inline void gauss2d_loop(T& storage, F&& f, const P* panel)
+{
+    for (int i = 0; i < NGP*NGP; i++)
+    {
+        storage += GaussPointsT<2,NGP>::weights_x[i] *
+                   GaussPointsT<2,NGP>::weights_y[i] *
+                   f(i) *
+                   panel->jac_det_gauss_points[i];
+    }
+}
+
+
+template<int NGP, typename T, typename F, typename P>
+inline void gauss2d_loop(T& storage, const F* f, const P* panel)
+{
+    for (int i = 0; i < NGP*NGP; i++)
+    {
+        storage += GaussPointsT<2,NGP>::weights_x[i] *
+                   GaussPointsT<2,NGP>::weights_y[i] *
+                   f[i] *
                    panel->jac_det_gauss_points[i];
     }
 }

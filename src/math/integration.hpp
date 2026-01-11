@@ -81,11 +81,34 @@ template<
             int NGP, 
             typename T, 
             typename F, 
+            typename L
+        >                           inline void         gauss1d_loop( 
+                                                                                        T&              storage, 
+                                                                                        const F*        f, 
+                                                                                        const L&        len 
+                                                                    );
+
+template<
+            int NGP, 
+            typename T, 
+            typename F, 
             typename P
         >
                                     inline  void        gauss2d_loop(
                                                                                         T&              storage, 
                                                                                         F&&             f, 
+                                                                                        const P*        panel
+                                                                    );
+
+template<
+            int NGP, 
+            typename T, 
+            typename F, 
+            typename P
+        >
+                                    inline  void        gauss2d_loop(
+                                                                                        T&              storage, 
+                                                                                        const F*        f, 
                                                                                         const P*        panel
                                                                     );
 
