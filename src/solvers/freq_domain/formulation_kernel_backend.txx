@@ -967,23 +967,35 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
 
 
 template<std::size_t N, int mode_pf>
-template<int mode_f, int mode_dfdn, int mode_dfdc>
+template<typename RDDConfig>
 void FormulationKernelBackend<N, mode_pf>::compute_fields(
-                                                                cusfloat                                    ang_freq,
-                                                                cuscomplex*                                 raos,
-                                                                RadDiffData<mode_f, mode_dfdn, mode_dfdc>*  rad_diff_data
+                                                                std::size_t             freq_index,
+                                                                cusfloat                ang_freq,
+                                                                cuscomplex*             raos,
+                                                                RadDiffData<RDDConfig>* rad_diff_data
                                                             )
 {
+    /*** Get template parameters from Config ***/
+    static constexpr int mode_comp = RDDConfig::mode_comp;
+    static constexpr int mode_f    = RDDConfig::mode_f;
+    static constexpr int mode_dfdn = RDDConfig::mode_dfdn;
+    static constexpr int mode_dfdc = RDDConfig::mode_dfdc;
+
     // Declare local auxiliary variables
     std::size_t body_id             = 0;
-    std::size_t _body_np            = this->_mesh_gp->meshes_np;
+    std::size_t body_np             = this->_mesh_gp->meshes_np;
     cusfloat    center_aux[3]       = { 0.0, 0.0, 0.0 };
-    std::size_t _dofs_np            = this->_input->dofs_np;
-    cusfloat    _grav_acc           = this->_input->grav_acc;
-    std::size_t _heads_np           = this->_input->heads_np;
+    std::size_t dofs_np             = this->_input->dofs_np;
+    std::size_t fp_np               = 0;
+    cusfloat    grav_acc            = this->_input->grav_acc;
+    std::size_t heads_np            = this->_input->heads_np;
     std::size_t index_ax            = 0;
     std::size_t index_sc            = 0;
     std::size_t index_fd            = 0;
+    cuscomplex  int_dn_sf           = cuscomplex( 0.0, 0.0 );
+    cuscomplex  int_dn_sf_st        = cuscomplex( 0.0, 0.0 );
+    cuscomplex  int_dn_sf_wv        = cuscomplex( 0.0, 0.0 );
+    cuscomplex  int_dn_pf_value     = cuscomplex( 0.0, 0.0 );
     cusfloat*   field_point         = nullptr;
     PanelGeom   panel_aux;
     cusfloat    normal_vec_aux[3]   = { 0.0, 0.0, 0.0 };
@@ -991,32 +1003,31 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
     SourceNode  source_aux( &panel_aux, 0, 0,  0, center_aux, normal_vec_aux );
 
     cuscomplex  point_disp[3]       ;
+    cuscomplex  pot_aux             = cuscomplex( 0.0, 0.0 );
     cuscomplex  pot_term            = cuscomplex( 0.0, 0.0 );
     cuscomplex  pot_term_st         = cuscomplex( 0.0, 0.0 );
     cuscomplex  pot_term_wv         = cuscomplex( 0.0, 0.0 );
-    cuscomplex  int_dn_sf           = cuscomplex( 0.0, 0.0 );
-    cuscomplex  int_dn_sf_st        = cuscomplex( 0.0, 0.0 );
-    cuscomplex  int_dn_sf_wv        = cuscomplex( 0.0, 0.0 );
-    cuscomplex  int_dn_pf_value     = cuscomplex( 0.0, 0.0 );
     cuscomplex  radius[3]           ;
     cuscomplex  rao_rot[3]          ;
     cuscomplex  rao_trans[3]        ;
     cuscomplex  rao_val             = cuscomplex( 0.0, 0.0 );
-    cusfloat    _rhow               = this->_input->water_density;
+    cusfloat    rhow                = this->_input->water_density;
     std::size_t sources_np          = this->_solver->num_rows;
     cuscomplex  source_val          = cuscomplex( 0.0, 0.0 );
     std::size_t start_pos           = rad_diff_data->get_start_pos( );
-    cusfloat    vel_total[3]        = { 0.0, 0.0, 0.0 };
-    cusfloat    vel_total_st[3]     = { 0.0, 0.0, 0.0 };
-    cusfloat    vel_total_wv[3]     = { 0.0, 0.0, 0.0 };
-    cusfloat    _wave_amplitude     = this->_input->wave_amplitude;
-    cusfloat    _water_depth        = this->_input->water_depth;
+    cuscomplex  vel_aux[3]          = { 0.0, 0.0, 0.0 };
+    cuscomplex  vel_dn_aux[3]       = { 0.0, 0.0, 0.0 };
+    cuscomplex  vel_total[3]        = { 0.0, 0.0, 0.0 };
+    cuscomplex  vel_total_st[3]     = { 0.0, 0.0, 0.0 };
+    cuscomplex  vel_total_wv[3]     = { 0.0, 0.0, 0.0 };
+    cusfloat    wave_amplitude      = this->_input->wave_amplitude;
+    cusfloat    water_depth         = this->_input->water_depth;
 
     // Compute incident wave field
     cusfloat    k               =   w2k( 
                                             ang_freq,
-                                            _water_depth,
-                                            _grav_acc
+                                            water_depth,
+                                            grav_acc
                                         );
 
     // Compute diffraction and radiation fields at the field points
@@ -1025,28 +1036,29 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
         // Get panel data instance
         PanelData*   panel_rdd  = rad_diff_data->panel_data[i];
         body_id                 = panel_rdd->body_id;
+        fp_np                   = panel_rdd->field_points_np;
 
         // Clear fields data to avoid spurious values
         panel_rdd->clear_data( );
 
         // Loop over field points in the current panel
-        for ( std::size_t j=0; j<panel_rdd->field_points_np; j++ )
+        for ( std::size_t j=0; j<fp_np; j++ )
         {
             // Get current field point
             field_point = &(panel_rdd->field_points[3*j]);
 
             // Calculate incident wave field at the field point
-            for ( std::size_t idh=0; idh<_heads_np; idh++ )
+            for ( std::size_t idh=0; idh<heads_np; idh++ )
             {
-                index_fd = idh * panel_rdd->field_points_np + j;
+                index_fd = freq_index * ( heads_np * fp_np ) + idh * fp_np + j;
                 STATIC_COND( 
                                 ONLY_FCN,   
-                                panel_rdd->pot_incident[index_fd]       =   wave_potential_fo_space(
-                                                                                                        _wave_amplitude,
+                                panel_rdd->pot_total[index_fd]      =   wave_potential_fo_space(
+                                                                                                        wave_amplitude,
                                                                                                         ang_freq,
                                                                                                         k,
-                                                                                                        _water_depth,
-                                                                                                        _grav_acc,
+                                                                                                        water_depth,
+                                                                                                        grav_acc,
                                                                                                         field_point[0],
                                                                                                         field_point[1],
                                                                                                         field_point[2],
@@ -1056,12 +1068,12 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
 
                 STATIC_COND( 
                                 ONLY_FCNDC,
-                                panel_rdd->vel_x_incident[index_fd]     =   wave_potential_fo_space_dx(
-                                                                                                            _wave_amplitude,
+                                panel_rdd->vel_x_total[index_fd]    =   wave_potential_fo_space_dx(
+                                                                                                            wave_amplitude,
                                                                                                             ang_freq,
                                                                                                             k,
-                                                                                                            _water_depth,
-                                                                                                            _grav_acc,
+                                                                                                            water_depth,
+                                                                                                            grav_acc,
                                                                                                             field_point[0],
                                                                                                             field_point[1],
                                                                                                             field_point[2],
@@ -1071,12 +1083,12 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
                 
                 STATIC_COND( 
                                 ONLY_FCNDC,
-                                panel_rdd->vel_y_incident[index_fd]     =   wave_potential_fo_space_dy(
-                                                                                                            _wave_amplitude,
+                                panel_rdd->vel_y_total[index_fd]    =   wave_potential_fo_space_dy(
+                                                                                                            wave_amplitude,
                                                                                                             ang_freq,
                                                                                                             k,
-                                                                                                            _water_depth,
-                                                                                                            _grav_acc,
+                                                                                                            water_depth,
+                                                                                                            grav_acc,
                                                                                                             field_point[0],
                                                                                                             field_point[1],
                                                                                                             field_point[2],
@@ -1086,18 +1098,28 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
 
                 STATIC_COND( 
                                 ONLY_FCNDC,
-                                panel_rdd->vel_z_incident[index_fd]     =   wave_potential_fo_space_dz(
-                                                                                                            _wave_amplitude,
+                                panel_rdd->vel_z_total[index_fd]    =   wave_potential_fo_space_dz(
+                                                                                                            wave_amplitude,
                                                                                                             ang_freq,
                                                                                                             k,
-                                                                                                            _water_depth,
-                                                                                                            _grav_acc,
+                                                                                                            water_depth,
+                                                                                                            grav_acc,
                                                                                                             field_point[0],
                                                                                                             field_point[1],
                                                                                                             field_point[2],
                                                                                                             this->_input->heads[idh]
                                                                                                         );                                      
                             )
+
+                if constexpr( USE_COMP )
+                {
+                    STATIC_COND( ONLY_FCN,      panel_rdd->pot_incident[index_fd]   = panel_rdd->pot_total[index_fd];   )
+                    STATIC_COND( ONLY_FCNDC,    panel_rdd->vel_x_incident[index_fd] = panel_rdd->vel_x_total[index_fd]; )
+                    STATIC_COND( ONLY_FCNDC,    panel_rdd->vel_y_incident[index_fd] = panel_rdd->vel_y_total[index_fd]; )
+                    STATIC_COND( ONLY_FCNDC,    panel_rdd->vel_z_incident[index_fd] = panel_rdd->vel_z_total[index_fd]; )
+                }
+
+                
             }
 
             // Calculate raddiation and diffraction fields
@@ -1116,7 +1138,7 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
                                                 is_close,
                                                 this->_mesh_gp->source_nodes[k]->panel,
                                                 field_point,
-                                                _water_depth,
+                                                water_depth,
                                                 pot_term_st,
                                                 int_dn_pf_value,
                                                 int_dn_sf_st,
@@ -1151,26 +1173,41 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
                 STATIC_COND( ONLY_FCNDN,    int_dn_sf       = int_dn_sf_st    + int_dn_sf_wv;       )
 
                 // Loop over headings to add radiation and diffraction contribution
-                for ( std::size_t idh=0; idh<_heads_np; idh++ )
+                for ( std::size_t idh=0; idh<heads_np; idh++ )
                 {
                     // Get indexes to locate and to storage data
-                    index_sc    = ( _dofs_np + idh ) * sources_np + k;
-                    index_fd    = idh * panel_rdd->field_points_np + j;
+                    index_sc    = ( dofs_np + idh ) * sources_np + k;
+                    index_fd    = freq_index * ( heads_np * fp_np ) + idh * fp_np + j;
 
                     // Get source value for the current position
                     source_val  = this->_sf_gp->field_values[index_sc];
 
                     // Calculate diffraction field contribution
-                    STATIC_COND( ONLY_FCN,   panel_rdd->pot_raddif[index_fd]    = pot_term     * source_val;   )
-                    STATIC_COND( ONLY_FCNDN, panel_rdd->vel_dn_raddif[index_fd] = int_dn_sf    * source_val;   )
-                    STATIC_COND( ONLY_FCNDC, panel_rdd->vel_x_raddif[index_fd]  = vel_total[0] * source_val;   )
-                    STATIC_COND( ONLY_FCNDC, panel_rdd->vel_y_raddif[index_fd]  = vel_total[1] * source_val;   )
-                    STATIC_COND( ONLY_FCNDC, panel_rdd->vel_z_raddif[index_fd]  = vel_total[2] * source_val;   )
+                    STATIC_COND( ONLY_FCN,   pot_aux    = pot_term     * source_val;   )
+                    STATIC_COND( ONLY_FCNDN, vel_dn_aux = int_dn_sf    * source_val;   )
+                    STATIC_COND( ONLY_FCNDC, vel_aux[0] = vel_total[0] * source_val;   )
+                    STATIC_COND( ONLY_FCNDC, vel_aux[1] = vel_total[1] * source_val;   )
+                    STATIC_COND( ONLY_FCNDC, vel_aux[2] = vel_total[2] * source_val;   )
 
-                    for ( std::size_t idd=0; i<_dofs_np; idd++ )
+                    STATIC_COND( ONLY_FCN,   panel_rdd->pot_total[index_fd]     += pot_aux;      )
+                    STATIC_COND( ONLY_FCNDN, panel_rdd->vel_dn_total[index_fd]  += vel_dn_aux;   )
+                    STATIC_COND( ONLY_FCNDC, panel_rdd->vel_x_total[index_fd]   += vel_aux[0];   )
+                    STATIC_COND( ONLY_FCNDC, panel_rdd->vel_y_total[index_fd]   += vel_aux[1];   )
+                    STATIC_COND( ONLY_FCNDC, panel_rdd->vel_z_total[index_fd]   += vel_aux[2];   )
+
+                    if constexpr( USE_COMP )
+                    {
+                        STATIC_COND( ONLY_FCN,   panel_rdd->pot_diff[index_fd]      = pot_aux;      )
+                        STATIC_COND( ONLY_FCNDN, panel_rdd->vel_dn_diff[index_fd]   = vel_dn_aux;   )
+                        STATIC_COND( ONLY_FCNDC, panel_rdd->vel_x_diff[index_fd]    = vel_aux[0];   )
+                        STATIC_COND( ONLY_FCNDC, panel_rdd->vel_y_diff[index_fd]    = vel_aux[1];   )
+                        STATIC_COND( ONLY_FCNDC, panel_rdd->vel_z_diff[index_fd]    = vel_aux[2];   )
+                    }
+
+                    for ( std::size_t idd=0; i<dofs_np; idd++ )
                     {
                         // Get indexes to locate and to storage data
-                        index_ax    = idh * ( _dofs_np * _body_np ) + body_id * _dofs_np + idd;
+                        index_ax    = idh * ( dofs_np * body_np ) + body_id * dofs_np + idd;
                         index_sc    = idd * sources_np + k;
                         
                         // Get source value for the current position
@@ -1180,93 +1217,55 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
                         rao_val     = raos[ index_ax ];
 
                         // Calculate field contributions
-                        STATIC_COND( ONLY_FCN,   panel_rdd->pot_raddif[index_fd]    += pot_term     * rao_val * source_val;   )
-                        STATIC_COND( ONLY_FCNDN, panel_rdd->vel_dn_raddif[index_fd] += int_dn_sf    * rao_val * source_val;   )
-                        STATIC_COND( ONLY_FCNDC, panel_rdd->vel_x_raddif[index_fd]  += vel_total[0] * rao_val * source_val;   )
-                        STATIC_COND( ONLY_FCNDC, panel_rdd->vel_y_raddif[index_fd]  += vel_total[1] * rao_val * source_val;   )
-                        STATIC_COND( ONLY_FCNDC, panel_rdd->vel_z_raddif[index_fd]  += vel_total[2] * rao_val * source_val;   )
+                        STATIC_COND( ONLY_FCN,   pot_aux    = pot_term     * rao_val * source_val;   )
+                        STATIC_COND( ONLY_FCNDN, vel_dn_aux = int_dn_sf    * rao_val * source_val;   )
+                        STATIC_COND( ONLY_FCNDC, vel_aux[0] = vel_total[0] * rao_val * source_val;   )
+                        STATIC_COND( ONLY_FCNDC, vel_aux[1] = vel_total[1] * rao_val * source_val;   )
+                        STATIC_COND( ONLY_FCNDC, vel_aux[2] = vel_total[2] * rao_val * source_val;   )
+
+                        STATIC_COND( ONLY_FCN,   panel_rdd->pot_total[index_fd]     += pot_aux;   )
+                        STATIC_COND( ONLY_FCNDN, panel_rdd->vel_dn_total[index_fd]  += vel_dn_aux;   )
+                        STATIC_COND( ONLY_FCNDC, panel_rdd->vel_x_total[index_fd]   += vel_aux[0];   )
+                        STATIC_COND( ONLY_FCNDC, panel_rdd->vel_y_total[index_fd]   += vel_aux[1];   )
+                        STATIC_COND( ONLY_FCNDC, panel_rdd->vel_z_total[index_fd]   += vel_aux[2];   )
+
+                        if constexpr( USE_COMP )
+                        {
+                            STATIC_COND( ONLY_FCN,   panel_rdd->pot_rad[index_fd]    += pot_aux;   )
+                            STATIC_COND( ONLY_FCNDN, panel_rdd->vel_dn_rad[index_fd] += vel_dn_aux;   )
+                            STATIC_COND( ONLY_FCNDC, panel_rdd->vel_x_rad[index_fd]  += vel_aux[0];   )
+                            STATIC_COND( ONLY_FCNDC, panel_rdd->vel_y_rad[index_fd]  += vel_aux[1];   )
+                            STATIC_COND( ONLY_FCNDC, panel_rdd->vel_z_rad[index_fd]  += vel_aux[2];   )
+                        }
 
                     }
                 }
             }
         
-            // Calculate total fields by adding incident + rad + diff
-            for ( std::size_t idh=0; idh<_heads_np; idh++ )
-            {
-                index_fd = idh * panel_rdd->field_points_np + j;
-
-                // Add incident field contribution
-                STATIC_COND( 
-                                ONLY_FCN,   
-                                panel_rdd->pot_total[index_fd]      =   ( 
-                                                                            panel_rdd->pot_incident[index_fd]
-                                                                            +
-                                                                            panel_rdd->pot_raddif[index_fd]
-                                                                        );
-                            )
-
-                STATIC_COND( 
-                                ONLY_FCNDN,
-                                panel_rdd->vel_dn_total[index_fd]   =   (
-                                                                            panel_rdd->vel_dn_incident[index_fd]
-                                                                            +
-                                                                            panel_rdd->vel_dn_raddif[index_fd]
-                                                                        );
-                            )
-
-                STATIC_COND( 
-                                ONLY_FCNDC,
-                                panel_rdd->vel_x_total[index_fd]    =   (
-                                                                            panel_rdd->vel_x_incident[index_fd]
-                                                                            +
-                                                                            panel_rdd->vel_x_raddif[index_fd]
-                                                                        );
-                            )
-
-                STATIC_COND( 
-                                ONLY_FCNDC,
-                                panel_rdd->vel_y_total[index_fd]    =   (
-                                                                            panel_rdd->vel_y_incident[index_fd]
-                                                                            +
-                                                                            panel_rdd->vel_y_raddif[index_fd]
-                                                                        );
-                            )
-
-                STATIC_COND( 
-                                ONLY_FCNDC,
-                                panel_rdd->vel_z_total[index_fd]    =   (
-                                                                            panel_rdd->vel_z_incident[index_fd]
-                                                                            +
-                                                                            panel_rdd->vel_z_raddif[index_fd]
-                                                                        );
-                            )
-
-            }
-
             // Calculate total pressure field
-            for ( std::size_t idh=0; idh<_heads_np; idh++ )
+            for ( std::size_t idh=0; idh<heads_np; idh++ )
             {
-                index_fd = idh * panel_rdd->field_points_np + j;
+                index_fd = freq_index * ( heads_np * fp_np ) + idh * fp_np + j;
 
                 STATIC_COND(  
                                 ONLY_FCN, 
-                                panel_rdd->press_total[index_fd] = cuscomplex( 0.0, _rhow * ang_freq ) * panel_rdd->pot_total[index_fd];
+                                panel_rdd->press_total[index_fd] = cuscomplex( 0.0, rhow * ang_freq ) * panel_rdd->pot_total[index_fd];
                             )
             }
 
             // Calculate wave elevation field
-            for ( std::size_t idh=0; idh<_heads_np; idh++ )
+            for ( std::size_t idh=0; idh<heads_np; idh++ )
             {
-                index_fd = idh * panel_rdd->field_points_np + j;
+                index_fd = freq_index * ( heads_np * fp_np ) + idh * fp_np + j;
 
                 STATIC_COND(  
                                 ONLY_FCN, 
-                                panel_rdd->wev_total[index_fd]  = panel_rdd->pot_total[index_fd] * cuscomplex( 0.0, ang_freq ) / _grav_acc;
+                                panel_rdd->wev_total[index_fd]  = panel_rdd->pot_total[index_fd] * cuscomplex( 0.0, ang_freq ) / grav_acc;
                             )
 
                 if constexpr( ONLY_FCN )
                 {
-                    index_ax = idh * ( _dofs_np * _body_np ) + body_id * _dofs_np;
+                    index_ax = idh * ( dofs_np * body_np ) + body_id * dofs_np;
 
                     for ( int r=0; r<3; r++ )
                     {
@@ -1277,8 +1276,8 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
                                                         0.0 
                                                     );
                         
-                        rao_trans[r]    = raos[index_ax+r]   * _wave_amplitude;
-                        rao_rot[r]      = raos[index_ax+3+r] * _wave_amplitude;
+                        rao_trans[r]    = raos[index_ax+r]   * wave_amplitude;
+                        rao_rot[r]      = raos[index_ax+3+r] * wave_amplitude;
                     }
 
                     cross( 

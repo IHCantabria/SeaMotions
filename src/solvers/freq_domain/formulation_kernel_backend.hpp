@@ -92,11 +92,12 @@ public:
     ~FormulationKernelBackend( );
 
     /* Declare class public methods */
-    template<int mode_f, int mode_dfdn, int mode_dfdc>
+    template<typename RDDConfig>
     void    compute_fields(
-                                    cusfloat                                    ang_freq,
-                                    cuscomplex*                                 raos,
-                                    RadDiffData<mode_f, mode_dfdn, mode_dfdc>*  rad_diff_data
+                                    std::size_t             freq_index,
+                                    cusfloat                ang_freq,
+                                    cuscomplex*             raos,
+                                    RadDiffData<RDDConfig>* rad_diff_data
                             );
     int     size(
                             void
