@@ -129,7 +129,7 @@ RadDiffData<Config>::RadDiffData(
         global_panel_id = this->_start_pos + i;
 
         // Search current body ID
-        for ( std::size_t j=body_id; j<mesh_gp_->meshes_np; j++ )
+        for ( std::size_t j=body_id; j<static_cast<std::size_t>( mesh_gp_->meshes_np ); j++ )
         {
             if ( global_panel_id < static_cast<std::size_t>( panel_view.panels_cnp[j+1] ) )
             {
@@ -140,14 +140,14 @@ RadDiffData<Config>::RadDiffData(
 
         // Create new panel data
         this->panel_data.emplace_back( 
-                                            PanelData<mode_comp, mode_f, mode_dfdn, mode_dfdc>(
-                                                                                                    panel_view.panels[ global_panel_id ],
-                                                                                                    body_id,
-                                                                                                    freqs_np_,
-                                                                                                    headings_np_,
-                                                                                                    dofs_np_,
-                                                                                                    use_waterline_
-                                                                                                ) 
+                                            PanelData<Config>(
+                                                                    panel_view.panels[ global_panel_id ],
+                                                                    body_id,
+                                                                    freqs_np_,
+                                                                    headings_np_,
+                                                                    dofs_np_,
+                                                                    use_waterline_
+                                                                ) 
                                     );
     }
 }
