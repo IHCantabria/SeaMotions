@@ -33,6 +33,7 @@
 #include "../../math/integration.hpp"
 #include "../../math/math_tools.hpp"
 #include "../../mesh/mesh.hpp"
+#include "qtf.hpp"
 #include "raos.hpp"
 
 
@@ -129,20 +130,20 @@ void FrequencySolver<N, mode_pf>::_calculate_field_points_values(
     if ( this->input->is_calc_mdrift )
     {
         // Calculate waterline field points values for QTF calculations
-        this->kernel->template calculate_field_points<RDDQTFConfig>( 
-                                                                        freq_index,
-                                                                        ang_freq,
-                                                                        this->sim_data->raos,
-                                                                        this->_qtf_wl_fields
-                                                                    );
+        this->kernel->template compute_fields<RDDQTFConfig>( 
+                                                                freq_index,
+                                                                ang_freq,
+                                                                this->sim_data->raos,
+                                                                this->_qtf_wl_fields
+                                                            );
 
         // Calculate velocity field at Bernoulli points for QTF calculations
-        this->kernel->template calculate_field_points<RDDQTFConfig>(
-                                                                        freq_index, 
-                                                                        ang_freq,
-                                                                        this->sim_data->raos,
-                                                                        this->_qtf_bern_fields
-                                                                    );
+        this->kernel->template compute_fields<RDDQTFConfig>(
+                                                                freq_index, 
+                                                                ang_freq,
+                                                                this->sim_data->raos,
+                                                                this->_qtf_bern_fields
+                                                            );
     }
 }
 
@@ -155,7 +156,7 @@ void FrequencySolver<N, mode_pf>::calculate_first_order( void )
     /*******************************************************/
 
     // Loop over frequencies
-    for ( std::size_t i=0; i<this->input->angfreqs_np; i++ )
+    for ( std::size_t i=0; i<static_cast<std::size_t>(this->input->angfreqs_np); i++ )
     {
         LOG_TASK_SS( freq, "FO - Calculating period: " << std::setw( 10 ) << std::fixed << std::setprecision( 3 ) << angfreq_to_period( this->input->angfreqs[i] ) << " s" )
 
@@ -632,10 +633,6 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
                                                                     bool        is_multi_head
                                                             )
 {
-    // Asssert if qtf_type is on the range
-    bool    assert_test = ( qtf_type == 0 ) | ( qtf_type == 1 );
-    assert( assert_test && "qtf_type variable with values differnt to 0 and 1" );
-
     // Get local variables from structures for easier access
     cusfloat                    ang_freq_i      = this->input->angfreqs[freq_index_i];
     cusfloat                    ang_freq_j      = this->input->angfreqs[freq_index_j];
@@ -655,6 +652,9 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
     RadDiffData<RDDQTFConfig>*  rdd_bern        = this->_qtf_bern_fields;
     RadDiffData<RDDQTFConfig>*  rdd_rwel        = this->_qtf_wl_fields;
     cusfloat                    rhow            = this->input->water_density;
+    cuscomplex*                 vel_x           = nullptr;
+    cuscomplex*                 vel_y           = nullptr;
+    cuscomplex*                 vel_z           = nullptr;
     cusfloat                    wave_amplitude  = this->input->wave_amplitude;
 
     if constexpr( qtf_type == QTFTypeT::QTF_DIFF_CODE )
@@ -680,20 +680,17 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
     static constexpr std::size_t ngp2 = PanelGeom::gauss_points_np * PanelGeom::gauss_points_np;
 
     cusfloat*   body_cog            = nullptr;
-    std::size_t body_index          = 0; // Only first body for the moment
     cuscomplex  daux                = 0.0;
     std::size_t fp_np               = 0;
     std::size_t idx0                = 0;
     std::size_t idx1_i              = 0;
     std::size_t idx1_j              = 0;
-    std::size_t idx2                = 0;
     std::size_t ih2_end             = 0;
     std::size_t ih2_start           = 0;
-    cuscomplex  int_mod_1d[ngp]     = 0.0;
-    cuscomplex  int_mod_2d[ngp2]    = 0.0;
+    cuscomplex  int_mod_1d[ngp]     ;
+    cuscomplex  int_mod_2d[ngp2]    ;
     cuscomplex  int_val             = 0.0;
     cusfloat*   normal_vec          = nullptr;
-    PanelGeom*  panel_k             = nullptr;
 
     // Set second heading loop bounds according with the multi-heading option
     if ( is_multi_head )
@@ -724,10 +721,10 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
     {
         for ( std::size_t ih2=ih2_start; ih2<ih2_end; ih2++ )
         {
-            for ( std::size_t i=0; i<this->rdd_rwel->get_size_local( ); i++  )
+            for ( std::size_t i=0; i<rdd_rwel->get_size_local( ); i++  )
             {
                 // Get panel
-                paneld      = &(this->panel_data[i]);
+                paneld      = &(rdd_rwel->panel_data[i]);
                 fp_np       = paneld->field_points_np;
                 normal_vec  = paneld->panel_geom->normal_vec;
 
@@ -751,17 +748,17 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
                     // Calculate integrand value depending on the QTF type
                     if constexpr( qtf_type == QTFTypeT::QTF_DIFF_CODE )
                     {
-                        int_mod_1d[k] = rdd_rwel->wev_rel_total[idx1_i] * std::conj( rdd_rwel->wev_rel_total[idx1_j] );
+                        int_mod_1d[k] = paneld->wev_rel_total[idx1_i] * std::conj( paneld->wev_rel_total[idx1_j] );
                     }
                     else if constexpr( qtf_type == QTFTypeT::QTF_SUM_CODE )
                     {
-                        int_mod_1d[k] = rdd_rwel->wev_rel_total[idx1_i] * rdd_rwel->wev_rel_total[idx1_j];
+                        int_mod_1d[k] = paneld->wev_rel_total[idx1_i] * paneld->wev_rel_total[idx1_j];
                     }
                 }
 
                 // Integrate over the panel
                 int_val = 0.0;
-                gauss1d_loop<ngp>( int_val, int_mod_1d, paneld->len_wl );
+                gauss1d_loop<ngp>( int_val, int_mod_1d, paneld->panel_geom->len_wl );
 
                 // Get global QTF index offset
                 idx0    =   _qtf_index_offset(
@@ -775,7 +772,7 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
                                             );
 
                 // Calculate final qtf value and store appropriately
-                for ( int r=0; r<dofs_np; r++ )
+                for ( std::size_t r=0; r<dofs_np; r++ )
                 {
                     daux                = - 0.25 * grav_acc * rhow * int_val * normal_vec[r];
                     qtf_values[idx0+r]  += daux;
@@ -791,12 +788,17 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
     {
         for ( std::size_t ih2=ih2_start; ih2<ih2_end; ih2++ )
         {
-            for ( std::size_t i=0; i<this->rdd_bern->get_size_local( ); i++  )
+            for ( std::size_t i=0; i<rdd_bern->get_size_local( ); i++  )
             {
                 // Get panel
-                paneld      = &(this->panel_data[i]);
+                paneld      = &(rdd_bern->panel_data[i]);
                 fp_np       = paneld->field_points_np;
                 normal_vec  = paneld->panel_geom->normal_vec;
+
+                // Get field data
+                vel_x       = paneld->vel_x_total;
+                vel_y       = paneld->vel_y_total;
+                vel_z       = paneld->vel_z_total;
 
                 // Loop over field points of the panel
                 for ( std::size_t k=0; k<fp_np; k++ )
@@ -818,28 +820,28 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
                     if constexpr( qtf_type == QTFTypeT::QTF_DIFF_CODE )
                     {
                         int_mod_2d[k]   =   (
-                                                vel_x_i[idx1_i] * std::conj( vel_x_j[idx1_j] )
+                                                vel_x[idx1_i] * std::conj( vel_x[idx1_j] )
                                                 +
-                                                vel_y_i[idx1_i] * std::conj( vel_y_j[idx1_j] )
+                                                vel_y[idx1_i] * std::conj( vel_y[idx1_j] )
                                                 +
-                                                vel_z_i[idx1_i] * std::conj( vel_z_j[idx1_j] )
+                                                vel_z[idx1_i] * std::conj( vel_z[idx1_j] )
                                             );
                     }
                     else if constexpr( qtf_type == QTFTypeT::QTF_SUM_CODE )
                     {
                         int_mod_2d[k]   =   (
-                                                vel_x_i[idx1_i] * vel_x_j[idx1_j]
+                                                vel_x[idx1_i] * vel_x[idx1_j]
                                                 +
-                                                vel_y_i[idx1_i] * vel_y_j[idx1_j]
+                                                vel_y[idx1_i] * vel_y[idx1_j]
                                                 +
-                                                vel_z_i[idx1_i] * vel_z_j[idx1_j]
+                                                vel_z[idx1_i] * vel_z[idx1_j]
                                             );
                     }
                 }
 
                 // Integrate over the panel
                 int_val = 0.0;
-                gauss2d_loop<ngp>( int_val, int_mod_2d, paneld );
+                gauss2d_loop<ngp>( int_val, int_mod_2d, paneld->panel_geom );
 
                 // Get global QTF index offset
                 idx0    =   _qtf_index_offset(
@@ -853,7 +855,7 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
                                             );
 
                 // Calculate final qtf value and store appropriately
-                for ( std::size_t r=0; r<input->dofs_np; r++ )
+                for ( std::size_t r=0; r<dofs_np; r++ )
                 {
                     daux                = 0.25 * rhow * int_val * normal_vec[r];
                     qtf_values[idx0+r]  += daux;
@@ -877,17 +879,22 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
     cuscomplex  vel_y_acc_i, vel_y_acc_j;
     cuscomplex  vel_z_acc_i, vel_z_acc_j;
 
-    for ( int ih1=0; ih1<heads_np; ih1++ )
+    for ( std::size_t ih1=0; ih1<heads_np; ih1++ )
     {
-        for ( int ih2=ih2_start; ih2<ih2_end; ih2++ )
+        for ( std::size_t ih2=ih2_start; ih2<ih2_end; ih2++ )
         {
-            for ( std::size_t i=0; i<this->rdd_bern->get_size_local( ); i++  )
+            for ( std::size_t i=0; i<rdd_bern->get_size_local( ); i++  )
             {
                 // Get panel
-                paneld      = &(this->panel_data[i]);
-                body_cog    = paneld->body_cog;
+                paneld      = &(rdd_bern->panel_data[i]);
+                body_cog    = paneld->panel_geom->body_cog;
                 fp_np       = paneld->field_points_np;
                 normal_vec  = paneld->panel_geom->normal_vec;
+
+                // Get field data
+                vel_x       = paneld->vel_x_total;
+                vel_y       = paneld->vel_y_total;
+                vel_z       = paneld->vel_z_total;
 
                 // Get RAO values
                 _rao_offset( 
@@ -901,7 +908,7 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
                                         idx1_j
                                     );
                 
-                for ( int r=0; r<3; r++ )
+                for ( std::size_t r=0; r<3; r++ )
                 {
                     rao_rot_i[r]    = raos_i[idx1_i+3+r] * wave_amplitude;
                     rao_rot_j[r]    = raos_j[idx1_j+3+r] * wave_amplitude;
@@ -928,7 +935,7 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
 
                     // Define vector from cog to field point
                     sv_sub( 3, &(paneld->field_points[3*k]), body_cog, cog_to_fp );
-                    for ( int r=0; r<3; r++ )
+                    for ( std::size_t r=0; r<3; r++ )
                     {
                         cog_to_fp_c[r]  = cuscomplex( cog_to_fp[r], 0.0 );
                     }
@@ -963,13 +970,13 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
                             );
 
                     // Get velocity pressure term
-                    vel_x_acc_i = rhow * cuscomplex( 0.0, -ang_freq_i ) * paneld->vel_x_total[idx1_i];
-                    vel_y_acc_i = rhow * cuscomplex( 0.0, -ang_freq_i ) * paneld->vel_y_total[idx1_i];
-                    vel_z_acc_i = rhow * cuscomplex( 0.0, -ang_freq_i ) * paneld->vel_z_total[idx1_i];
+                    vel_x_acc_i = rhow * cuscomplex( 0.0, -ang_freq_i ) * vel_x[idx1_i];
+                    vel_y_acc_i = rhow * cuscomplex( 0.0, -ang_freq_i ) * vel_y[idx1_i];
+                    vel_z_acc_i = rhow * cuscomplex( 0.0, -ang_freq_i ) * vel_z[idx1_i];
 
-                    vel_x_acc_j = rhow * cuscomplex( 0.0, -ang_freq_j ) * paneld->vel_x_total[idx1_j];
-                    vel_y_acc_j = rhow * cuscomplex( 0.0, -ang_freq_j ) * paneld->vel_y_total[idx1_j];
-                    vel_z_acc_j = rhow * cuscomplex( 0.0, -ang_freq_j ) * paneld->vel_z_total[idx1_j];
+                    vel_x_acc_j = rhow * cuscomplex( 0.0, -ang_freq_j ) * vel_x[idx1_j];
+                    vel_y_acc_j = rhow * cuscomplex( 0.0, -ang_freq_j ) * vel_y[idx1_j];
+                    vel_z_acc_j = rhow * cuscomplex( 0.0, -ang_freq_j ) * vel_z[idx1_j];
 
                     // Calculate point displacement
                     if constexpr( qtf_type == QTFTypeT::QTF_DIFF_CODE )
@@ -1008,7 +1015,7 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
 
                 // Integrate over the panel
                 int_val = 0.0;
-                gauss2d_loop<ngp>( int_val, int_mod_2d, paneld );
+                gauss2d_loop<ngp>( int_val, int_mod_2d, paneld->panel_geom );
 
                 // Get global QTF index offset
                 idx0    =   _qtf_index_offset(
@@ -1022,7 +1029,7 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
                                             );
 
                 // Calculate final qtf value and store appropriately
-                for ( int r=0; r<dofs_np; r++ )
+                for ( std::size_t r=0; r<dofs_np; r++ )
                 {
                     qtf_values[idx0+r]  += int_val * normal_vec[r];
                     qtf_acc[idx0+r]     += int_val * normal_vec[r];
@@ -1039,11 +1046,11 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
     cuscomplex  hydro_force_j[input->dofs_np];  clear_vector( input->dofs_np, hydro_force_j );
     cuscomplex  mom_i[3];                       clear_vector( 3, mom_i );
 
-    for ( int ih1=0; ih1<input->heads_np; ih1++ )
+    for ( std::size_t ih1=0; ih1<heads_np; ih1++ )
     {
-        for ( int ih2=ih2_start; ih2<ih2_end; ih2++ )
+        for ( std::size_t ih2=ih2_start; ih2<ih2_end; ih2++ )
         {
-            for ( int j=0; j<bodies_np; j++ )
+            for ( std::size_t j=0; j<bodies_np; j++ )
             {
                 // Define chunk index
                 idx0    = ih1 * ( dofs_np * bodies_np ) + j * dofs_np;
