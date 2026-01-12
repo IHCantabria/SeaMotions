@@ -76,22 +76,20 @@ private:
                                                     cusfloat    ang_freq
                                         );
 
-    void _calculate_first_to_second_order_coeffs( 
-                                                    std::size_t freq_index_i,
-                                                    std::size_t freq_index_j,
-                                                    int         qtf_type,
+    void _calculate_mean_drift( 
+                                                    std::size_t freq_index,
                                                     bool        is_multi_head 
-                                                );
+                                );
 
     void _calculate_global_static_matrixes( );
 
     void _calculate_hydrostatics( );
 
+    template<QTFTypeT qtf_type>
     void _calculate_quadratic_terms( 
-                                        std::size_t freq_index_i,
-                                        std::size_t freq_index_j,
-                                        int         qtf_type,
-                                        bool        is_multi_head
+                                                    std::size_t freq_index_i,
+                                                    std::size_t freq_index_j,
+                                                    bool        is_multi_head
                                     );
 
     void _generate_formulation_kernel( );

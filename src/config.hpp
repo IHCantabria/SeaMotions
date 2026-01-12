@@ -124,3 +124,12 @@ enum class freq_regime_t: int
     ASYMPT_LOW,     // Low frequency asymptotic regime
     ASYMPT_HIGH     // High frequency asymptotic regime
 };
+
+
+// QTF type enum. Used to classify the type of QTF
+// term to be calculated.
+enum class QTFTypeT: int
+{
+    QTF_DIFF_CODE      = 0,    // QTF difference term
+    QTF_SUM_CODE       = 1     // QTF sum term
+};

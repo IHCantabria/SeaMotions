@@ -1408,36 +1408,36 @@ void    freq_domain_linear_solver(
         //     //                                 sim_data->qtf_wl_we_pot_total
         //     //                             );
 
-        //     calculate_fields_lin(
-        //                             input,
-        //                             mpi_config,
-        //                             mesh_gp,
-        //                             gwf_interf,
-        //                             wave_potential_fo_space,
-        //                             input->angfreqs[i],
-        //                             sim_data->intensities,
-        //                             sim_data->raos,
-        //                             qtf_wl_we_gp,
-        //                             sim_data->mdrift_wl_pot_fk,
-        //                             sim_data->mdrift_wl_pot_raddif,
-        //                             sim_data->mdrift_wl_pot_total
-        //                         );
+            // calculate_fields_lin(
+            //                         input,
+            //                         mpi_config,
+            //                         mesh_gp,
+            //                         gwf_interf,
+            //                         wave_potential_fo_space,
+            //                         input->angfreqs[i],
+            //                         sim_data->intensities,
+            //                         sim_data->raos,
+            //                         qtf_wl_we_gp,
+            //                         sim_data->mdrift_wl_pot_fk,
+            //                         sim_data->mdrift_wl_pot_raddif,
+            //                         sim_data->mdrift_wl_pot_total
+            //                     );
             
         //     // Calculate velocities over panels
-        //     // calculate_velocities_total(
-        //     //                             input,
-        //     //                             mpi_config,
-        //     //                             mesh_gp,
-        //     //                             input->angfreqs[i],
-        //     //                             sim_data->intensities,
-        //     //                             sim_data->raos,
-        //     //                             vel_x_body_gp,
-        //     //                             vel_y_body_gp,
-        //     //                             vel_z_body_gp,
-        //     //                             sim_data->mdrift_press_vel_x,
-        //     //                             sim_data->mdrift_press_vel_y,
-        //     //                             sim_data->mdrift_press_vel_z
-        //     //                         );
+            // calculate_velocities_total(
+            //                             input,
+            //                             mpi_config,
+            //                             mesh_gp,
+            //                             input->angfreqs[i],
+            //                             sim_data->intensities,
+            //                             sim_data->raos,
+            //                             vel_x_body_gp,
+            //                             vel_y_body_gp,
+            //                             vel_z_body_gp,
+            //                             sim_data->mdrift_press_vel_x,
+            //                             sim_data->mdrift_press_vel_y,
+            //                             sim_data->mdrift_press_vel_z
+            //                         );
             
         //     calculate_fields_lin(
         //                             input,
