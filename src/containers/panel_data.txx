@@ -32,7 +32,7 @@
 #define _DELETE_TENSOR_FIELD( tensor_ptr )              \
     if ( tensor_ptr != nullptr )                        \
     {                                                   \
-        delete tensor_ptr;                              \
+        mkl_free( tensor_ptr );                         \
         tensor_ptr = nullptr;                           \
     }                                                   \
 
@@ -55,43 +55,43 @@ void    PanelData<Config>::_allocate_memory(
     this->headings_np       = headings_np_;
 
     // Define vector shape sizes for fields
-    std::vector<std::size_t> shape_fp( { freqs_np_, headings_np_, field_points_np_ } );
+    std::size_t field_len   = freqs_np_ * headings_np_ * field_points_np_;
 
     // Allocate memory on heap for field points
-    this->field_points      = new cut::CusTensor<cusfloat>( { field_points_np_, 3 } );
+    this->field_points      = generate_empty_vector<cusfloat>( 3 * field_points_np_ );
 
     // Allocate memory on heap for potential fields
-    STATIC_COND( ONLY_FCN && USE_COMP,   this->pot_incident     = new cut::CusTensor<cuscomplex>( shape_fp ); )
-    STATIC_COND( ONLY_FCN && USE_COMP,   this->pot_rad          = new cut::CusTensor<cuscomplex>( shape_fp ); )
-    STATIC_COND( ONLY_FCN && USE_COMP,   this->pot_diff         = new cut::CusTensor<cuscomplex>( shape_fp ); )
-    STATIC_COND( ONLY_FCN            ,   this->pot_total        = new cut::CusTensor<cuscomplex>( shape_fp ); )
+    STATIC_COND( ONLY_FCN && USE_COMP,   this->pot_incident     = generate_empty_vector<cuscomplex>( field_len ); )
+    STATIC_COND( ONLY_FCN && USE_COMP,   this->pot_rad          = generate_empty_vector<cuscomplex>( field_len ); )
+    STATIC_COND( ONLY_FCN && USE_COMP,   this->pot_diff         = generate_empty_vector<cuscomplex>( field_len ); )
+    STATIC_COND( ONLY_FCN            ,   this->pot_total        = generate_empty_vector<cuscomplex>( field_len ); )
 
     // Allocate memory on heap for pressure field
-    STATIC_COND( ONLY_FCN,               this->press_total      = new cut::CusTensor<cuscomplex>( shape_fp ); )
+    STATIC_COND( ONLY_FCN,               this->press_total      = generate_empty_vector<cuscomplex>( field_len ); )
 
     // Allocate memory on heap for normal velocity derivative fields
-    STATIC_COND( ONLY_FCNDN && USE_COMP, this->vel_dn_incident  = new cut::CusTensor<cuscomplex>( shape_fp ); )
-    STATIC_COND( ONLY_FCNDN && USE_COMP, this->vel_dn_rad       = new cut::CusTensor<cuscomplex>( shape_fp ); )
-    STATIC_COND( ONLY_FCNDN && USE_COMP, this->vel_dn_diff      = new cut::CusTensor<cuscomplex>( shape_fp ); )
-    STATIC_COND( ONLY_FCNDN,             this->vel_dn_total     = new cut::CusTensor<cuscomplex>( shape_fp ); )
+    STATIC_COND( ONLY_FCNDN && USE_COMP, this->vel_dn_incident  = generate_empty_vector<cuscomplex>( field_len ); )
+    STATIC_COND( ONLY_FCNDN && USE_COMP, this->vel_dn_rad       = generate_empty_vector<cuscomplex>( field_len ); )
+    STATIC_COND( ONLY_FCNDN && USE_COMP, this->vel_dn_diff      = generate_empty_vector<cuscomplex>( field_len ); )
+    STATIC_COND( ONLY_FCNDN,             this->vel_dn_total     = generate_empty_vector<cuscomplex>( field_len ); )
 
     // Allocate memory on heap for velocity components fields
-    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_x_incident   = new cut::CusTensor<cuscomplex>( shape_fp ); )
-    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_y_incident   = new cut::CusTensor<cuscomplex>( shape_fp ); )
-    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_z_incident   = new cut::CusTensor<cuscomplex>( shape_fp ); )
-    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_x_rad        = new cut::CusTensor<cuscomplex>( shape_fp ); )
-    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_y_rad        = new cut::CusTensor<cuscomplex>( shape_fp ); )
-    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_z_rad        = new cut::CusTensor<cuscomplex>( shape_fp ); )
-    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_x_diff       = new cut::CusTensor<cuscomplex>( shape_fp ); )
-    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_y_diff       = new cut::CusTensor<cuscomplex>( shape_fp ); )
-    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_z_diff       = new cut::CusTensor<cuscomplex>( shape_fp ); )
-    STATIC_COND( ONLY_FCNDC,             this->vel_x_total      = new cut::CusTensor<cuscomplex>( shape_fp ); )
-    STATIC_COND( ONLY_FCNDC,             this->vel_y_total      = new cut::CusTensor<cuscomplex>( shape_fp ); )
-    STATIC_COND( ONLY_FCNDC,             this->vel_z_total      = new cut::CusTensor<cuscomplex>( shape_fp ); )
+    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_x_incident   = generate_empty_vector<cuscomplex>( field_len ); )
+    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_y_incident   = generate_empty_vector<cuscomplex>( field_len ); )
+    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_z_incident   = generate_empty_vector<cuscomplex>( field_len ); )
+    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_x_rad        = generate_empty_vector<cuscomplex>( field_len ); )
+    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_y_rad        = generate_empty_vector<cuscomplex>( field_len ); )
+    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_z_rad        = generate_empty_vector<cuscomplex>( field_len ); )
+    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_x_diff       = generate_empty_vector<cuscomplex>( field_len ); )
+    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_y_diff       = generate_empty_vector<cuscomplex>( field_len ); )
+    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_z_diff       = generate_empty_vector<cuscomplex>( field_len ); )
+    STATIC_COND( ONLY_FCNDC,             this->vel_x_total      = generate_empty_vector<cuscomplex>( field_len ); )
+    STATIC_COND( ONLY_FCNDC,             this->vel_y_total      = generate_empty_vector<cuscomplex>( field_len ); )
+    STATIC_COND( ONLY_FCNDC,             this->vel_z_total      = generate_empty_vector<cuscomplex>( field_len ); )
 
     // Allocate memory on heap for wave elevation fields
-    STATIC_COND( ONLY_FCN,               this->wev_total        = new cut::CusTensor<cuscomplex>( shape_fp ); )
-    STATIC_COND( ONLY_FCN,               this->wev_rel_total    = new cut::CusTensor<cuscomplex>( shape_fp ); )
+    STATIC_COND( ONLY_FCN,               this->wev_total        = generate_empty_vector<cuscomplex>( field_len ); )
+    STATIC_COND( ONLY_FCN,               this->wev_rel_total    = generate_empty_vector<cuscomplex>( field_len ); )
 
     // Set flag to indicate that memory is allocated on heap
     this->_is_heap        = true;
@@ -107,7 +107,6 @@ void    PanelData<Config>::_load_field_points(
 {
     if ( use_waterline_ )
     {
-        int         count_lines = 0;
         cusfloat    tv[3];      clear_vector( 3, tv );
         GaussPoints gp( panel_geom_->gauss_points_np );
 
@@ -216,7 +215,7 @@ PanelData<Config>::PanelData(
 
     // Load field points from PanelGeom
     this->_load_field_points( 
-                                this->_panel_geom,
+                                this->panel_geom,
                                 use_waterline_
                             );
 
