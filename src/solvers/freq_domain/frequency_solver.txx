@@ -746,9 +746,9 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
                 // Calculate final qtf value and store appropriately
                 for ( int r=0; r<dofs_np; r++ )
                 {
-                    daux               = - 0.25 * grav_acc * rhow * int_val * normal_vec[r];
-                    qtf_values[idx0+r] += daux;
-                    qtf_wl[idx0+r]     += daux;
+                    daux                = - 0.25 * grav_acc * rhow * int_val * normal_vec[r];
+                    qtf_values[idx0+r]  += daux;
+                    qtf_wl[idx0+r]      += daux;
                 }
                 
             }
@@ -824,9 +824,9 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
                 // Calculate final qtf value and store appropriately
                 for ( std::size_t r=0; r<input->dofs_np; r++ )
                 {
-                    daux               = 0.25 * rhow * int_val * normal_vec[r];
-                    qtf_values[idx0+r] += daux;
-                    qtf_bern[idx0+r]   += daux;
+                    daux                = 0.25 * rhow * int_val * normal_vec[r];
+                    qtf_values[idx0+r]  += daux;
+                    qtf_bern[idx0+r]    += daux;
                 }
 
             }
@@ -993,8 +993,8 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
                 // Calculate final qtf value and store appropriately
                 for ( int r=0; r<dofs_np; r++ )
                 {
-                    qtf_values[idx0+r] += int_val * normal_vec[r];
-                    qtf_acc[idx0+r]    += int_val * normal_vec[r];
+                    qtf_values[idx0+r]  += int_val * normal_vec[r];
+                    qtf_acc[idx0+r]     += int_val * normal_vec[r];
                 }
             }
         }
@@ -1012,20 +1012,20 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
     {
         for ( int ih2=ih2_start; ih2<ih2_end; ih2++ )
         {
-            for ( int j=0; j<mesh_gp->meshes_np; j++ )
+            for ( int j=0; j<bodies_np; j++ )
             {
                 // Define chunk index
-                idx0    = ih1 * ( input->dofs_np * input->bodies_np ) + j * input->dofs_np;
+                idx0    = ih1 * ( dofs_np * bodies_np ) + j * dofs_np;
 
                 if ( is_multi_head )
                 {
-                    idx1_i  = ih1 * ( input->dofs_np * input->bodies_np ) + j * input->dofs_np;
-                    idx1_j  = ih2 * ( input->dofs_np * input->bodies_np ) + j * input->dofs_np;
+                    idx1_i  = ih1 * ( dofs_np * bodies_np ) + j * dofs_np;
+                    idx1_j  = ih2 * ( dofs_np * bodies_np ) + j * dofs_np;
                 }
                 else
                 {
-                    idx1_i  = ih1 * ( input->dofs_np * input->bodies_np ) + j * input->dofs_np;
-                    idx1_j  = ih1 * ( input->dofs_np * input->bodies_np ) + j * input->dofs_np;
+                    idx1_i  = ih1 * ( dofs_np * bodies_np ) + j * dofs_np;
+                    idx1_j  = ih1 * ( dofs_np * bodies_np ) + j * dofs_np;
                 }
 
                 // Calculate total hydrodynamic force
@@ -1117,6 +1117,53 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
             }
         }
     }
+
+    // Sum-up contributions from all processes
+    MPI_Allreduce(
+                        MPI_IN_PLACE,
+                        qtf_values,
+                        qtf_size,
+                        mpi_cuscomplex,
+                        MPI_SUM,
+                        MPI_COMM_WORLD
+                    );
+    
+    MPI_Allreduce(
+                        MPI_IN_PLACE,
+                        qtf_wl,
+                        qtf_size,
+                        mpi_cuscomplex,
+                        MPI_SUM,
+                        MPI_COMM_WORLD
+                    );
+                    
+    MPI_Allreduce(
+                        MPI_IN_PLACE,
+                        qtf_bern,
+                        qtf_size,
+                        mpi_cuscomplex,
+                        MPI_SUM,
+                        MPI_COMM_WORLD
+                    ); 
+
+    MPI_Allreduce(
+                        MPI_IN_PLACE,
+                        qtf_acc,
+                        qtf_size,
+                        mpi_cuscomplex,
+                        MPI_SUM,
+                        MPI_COMM_WORLD
+                    );
+
+    MPI_Allreduce(
+                        MPI_IN_PLACE,
+                        qtf_mom,
+                        qtf_size,
+                        mpi_cuscomplex,
+                        MPI_SUM,
+                        MPI_COMM_WORLD
+                    ); 
+
 }
 
 
