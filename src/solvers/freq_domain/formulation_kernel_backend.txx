@@ -841,7 +841,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
     {
         // Get memory address of the ith panel
         source_i = this->_mesh_gp->source_nodes[i];
-        this->_gwfcns_interf.set_source_i( source_i, 1.0 );
+        gwf_interf.set_source_i( source_i, 1.0 );
 
         // Loop over rows to calcualte the influence of the panel
         // over each collocation point
@@ -850,7 +850,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
         {
             // Get memory address of the panel jth
             panel_j = this->_mesh_gp->source_nodes[j]->panel;
-            this->_gwfcns_interf.set_source_j( this->_mesh_gp->source_nodes[j] );
+            gwf_interf.set_source_j( this->_mesh_gp->source_nodes[j] );
             
             // Calculate distance in between field point and source
             distn   =  std::sqrt( 
@@ -908,7 +908,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
                                             NUM_GP
                                         >( 
                                             source_i->panel, 
-                                            this->_gwfcns_interf, 
+                                            gwf_interf, 
                                             wave_fcn_value,
                                             wave_fcn_dn_sf_value,
                                             wave_fcn_dn_pf_value,
