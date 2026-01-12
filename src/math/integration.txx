@@ -244,22 +244,16 @@ inline void gauss2d_loop(T& storage, F&& f, const P* panel)
 {
     for (int i = 0; i < NGP*NGP; i++)
     {
+        auto value = [&] {
+                            if constexpr (std::is_invocable_v<F, int>)
+                                return f(i);
+                            else
+                                return f[i];
+                        }();
+
         storage += GaussPointsT<2,NGP>::weights_x[i] *
                    GaussPointsT<2,NGP>::weights_y[i] *
-                   f(i) *
-                   panel->jac_det_gauss_points[i];
-    }
-}
-
-
-template<int NGP, typename T, typename F, typename P>
-inline void gauss2d_loop(T& storage, F&& f, const P* panel)
-{
-    for (int i = 0; i < NGP*NGP; i++)
-    {
-        storage += GaussPointsT<2,NGP>::weights_x[i] *
-                   GaussPointsT<2,NGP>::weights_y[i] *
-                   f(i) *
+                   value *
                    panel->jac_det_gauss_points[i];
     }
 }
@@ -270,9 +264,16 @@ inline void gauss2d_loop(T& storage, const F* f, const P* panel)
 {
     for (int i = 0; i < NGP*NGP; i++)
     {
+        auto value = [&] {
+                            if constexpr (std::is_invocable_v<F, int>)
+                                return f(i);
+                            else
+                                return f[i];
+                        }();
+        
         storage += GaussPointsT<2,NGP>::weights_x[i] *
                    GaussPointsT<2,NGP>::weights_y[i] *
-                   f[i] *
+                   value *
                    panel->jac_det_gauss_points[i];
     }
 }
