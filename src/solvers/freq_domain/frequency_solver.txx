@@ -538,38 +538,41 @@ void FrequencySolver<N, mode_pf>::_calculate_mean_drift(
                                                                         is_multi_head 
                                                                     );
 
-        // Storage data if any
-        this->output->save_wave_exciting_format(
-                                                    freq_index,
-                                                    _DN_MDRIFT,
-                                                    this->sim_data->qtf
-                                                );
-
-        if ( this->input->out_qtf_comp )
+        if ( this->mpi_config->is_root( ) )
         {
-            output->save_wave_exciting_format(
-                                                freq_index,
-                                                _DN_MDRIFT_WL,
-                                                sim_data->qtf_diff_wl
-                                            );
-            
-            output->save_wave_exciting_format(
-                                                freq_index,
-                                                _DN_MDRIFT_BERN,
-                                                sim_data->qtf_diff_bern
-                                            );
-
-            output->save_wave_exciting_format(
-                                                freq_index,
-                                                _DN_MDRIFT_ACC,
-                                                sim_data->qtf_diff_acc
-                                            );
-            
-            output->save_wave_exciting_format(
-                                                freq_index,
-                                                _DN_MDRIFT_MOM,
-                                                sim_data->qtf_diff_mom
-                                            );
+            // Storage data if any
+            this->output->save_wave_exciting_format(
+                                                        freq_index,
+                                                        _DN_MDRIFT,
+                                                        this->sim_data->qtf
+                                                    );
+    
+            if ( this->input->out_qtf_comp )
+            {
+                output->save_wave_exciting_format(
+                                                    freq_index,
+                                                    _DN_MDRIFT_WL,
+                                                    sim_data->qtf_diff_wl
+                                                );
+                
+                output->save_wave_exciting_format(
+                                                    freq_index,
+                                                    _DN_MDRIFT_BERN,
+                                                    sim_data->qtf_diff_bern
+                                                );
+    
+                output->save_wave_exciting_format(
+                                                    freq_index,
+                                                    _DN_MDRIFT_ACC,
+                                                    sim_data->qtf_diff_acc
+                                                );
+                
+                output->save_wave_exciting_format(
+                                                    freq_index,
+                                                    _DN_MDRIFT_MOM,
+                                                    sim_data->qtf_diff_mom
+                                                );
+            }
         }
     }
 }
@@ -796,9 +799,9 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
                 normal_vec  = paneld->panel_geom->normal_vec;
 
                 // Get field data
-                vel_x       = paneld->vel_x_total;
-                vel_y       = paneld->vel_y_total;
-                vel_z       = paneld->vel_z_total;
+                vel_x       = paneld->vel_x_total.data();
+                vel_y       = paneld->vel_y_total.data();
+                vel_z       = paneld->vel_z_total.data();
 
                 // Loop over field points of the panel
                 for ( std::size_t k=0; k<fp_np; k++ )
@@ -892,9 +895,9 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
                 normal_vec  = paneld->panel_geom->normal_vec;
 
                 // Get field data
-                vel_x       = paneld->vel_x_total;
-                vel_y       = paneld->vel_y_total;
-                vel_z       = paneld->vel_z_total;
+                vel_x       = paneld->vel_x_total.data( );
+                vel_y       = paneld->vel_y_total.data( );
+                vel_z       = paneld->vel_z_total.data( );
 
                 // Get RAO values
                 _rao_offset( 
