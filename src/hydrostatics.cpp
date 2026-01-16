@@ -40,80 +40,8 @@ void Hydrostatics::_calculate(
     /**** Calculate volume and area integrals ****/
     /*********************************************/
     
-    // Define lambda function to calculate the 
-    // volume and the volume centroid
-    auto get_z_coord     =  [ ]
-                            ( PanelGeom* panel, cusfloat x, cusfloat y ) -> cusfloat
-                            {
-                                std::cout << "Getting Z coord..." << std::endl;
-                                // Get local coordinates
-                                cusfloat xi=0.0, eta=0.0;
-                                std::cout << "x: " << x << " - y: " << y << std::endl;
-                                panel->local_coords_from_z_proj( x, y, xi, eta );
-                                std::cout << "xi: " << xi << " - eta: " << eta << std::endl;
-
-                                // Calculate Z position over the mesh panel
-                                cusfloat global_pos[3] = { 0.0, 0.0, 0.0 };
-                                panel->local_to_global( xi, eta, global_pos );
-
-                                return global_pos[2];
-                            };
-    
-    // Define lambda function to calculate wl area,
-    // area centroid and area inertias
-    auto wl_area_fcn        =   [ ]
-                                ( cusfloat, cusfloat, cusfloat , cusfloat , cusfloat ) -> cuscomplex
-                                {
-                                    return 1.0;
-                                };
-
-    auto wl_area_mom_x_fcn  =   [ this ]
-                                ( cusfloat, cusfloat, cusfloat x, cusfloat , cusfloat ) -> cuscomplex
-                                {
-                                    return x - this->cog[0];
-                                };
-
-    auto wl_area_mom_y_fcn  =   [ this ]
-                                ( cusfloat, cusfloat, cusfloat , cusfloat y, cusfloat ) -> cuscomplex
-                                {
-                                    return y - this->cog[1];
-                                };
-
-    auto wl_area_ixx_fcn    =   [ this ]
-                                ( cusfloat, cusfloat, cusfloat , cusfloat y, cusfloat ) -> cuscomplex
-                                {
-                                    return pow2s( y - this->cog[1] );
-                                };
-
-    auto wl_area_ixy_fcn    =   [ this ]
-                                ( cusfloat, cusfloat, cusfloat x, cusfloat y, cusfloat ) -> cuscomplex
-                                {
-                                    return ( x - this->cog[0] ) * ( y - this->cog[1] );
-                                };
-    
-    auto wl_area_iyy_fcn    =   [ this ]
-                                ( cusfloat, cusfloat, cusfloat x, cusfloat , cusfloat ) -> cuscomplex
-                                {
-                                    return pow2s( x - this->cog[0] );
-                                };
-
     // Loop over panels to calculate total hydrostatic force
     // over the floating object
-    cusfloat _ai            = 0.0;
-    cusfloat _amxi          = 0.0;
-    cusfloat _amyi          = 0.0;
-    cusfloat _aixi          = 0.0;
-    cusfloat _aixyi         = 0.0;
-    cusfloat _aiyi          = 0.0;
-    cusfloat _area_abs_eps  = 0.1;
-    cusfloat _area_rel_eps  = 0.0;
-    cusfloat normal_sign    = 0.0;
-    cusfloat vi             = 0.0;
-    cusfloat vim_x          = 0.0;
-    cusfloat vim_y          = 0.0;
-    cusfloat vim_z          = 0.0;
-    cusfloat _vol_abs_eps   = 0.1;
-    cusfloat _vol_rel_eps   = 0.0;
     cusfloat _volume        = 0.0;
     cusfloat _volume_mx     = 0.0;
     cusfloat _volume_my     = 0.0;
