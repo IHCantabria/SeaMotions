@@ -45,9 +45,12 @@ void Hydrostatics::_calculate(
     auto get_z_coord     =  [ ]
                             ( PanelGeom* panel, cusfloat x, cusfloat y ) -> cusfloat
                             {
+                                std::cout << "Getting Z coord..." << std::endl;
                                 // Get local coordinates
                                 cusfloat xi=0.0, eta=0.0;
+                                std::cout << "x: " << x << " - y: " << y << std::endl;
                                 panel->local_coords_from_z_proj( x, y, xi, eta );
+                                std::cout << "xi: " << xi << " - eta: " << eta << std::endl;
 
                                 // Calculate Z position over the mesh panel
                                 cusfloat global_pos[3] = { 0.0, 0.0, 0.0 };
@@ -112,15 +115,15 @@ void Hydrostatics::_calculate(
     cusfloat _vol_abs_eps   = 0.1;
     cusfloat _vol_rel_eps   = 0.0;
     cusfloat _volume        = 0.0;
-    cusfloat _volume_mom_x  = 0.0;
-    cusfloat _volume_mom_y  = 0.0;
-    cusfloat _volume_mom_z  = 0.0;
-    cusfloat _wl_area       = 0.0;
-    cusfloat _wl_area_mx    = 0.0;
-    cusfloat _wl_area_my    = 0.0;
-    cusfloat _wl_area_ixx   = 0.0;
-    cusfloat _wl_area_ixy   = 0.0;
-    cusfloat _wl_area_iyy   = 0.0;
+    cusfloat _volume_mx     = 0.0;
+    cusfloat _volume_my     = 0.0;
+    cusfloat _volume_mz     = 0.0;
+    cusfloat _area_wl       = 0.0;
+    cusfloat _area_wl_mx    = 0.0;
+    cusfloat _area_wl_my    = 0.0;
+    cusfloat _area_wl_ixx   = 0.0;
+    cusfloat _area_wl_ixy   = 0.0;
+    cusfloat _area_wl_iyy   = 0.0;
 
 
     #ifndef MPI_BUILD
@@ -133,322 +136,255 @@ void Hydrostatics::_calculate(
     last_elem               = ( last_elem > mesh->elems_np ) ? mesh->elems_np: last_elem;
     #endif
 
+    PanelGeom panel_proj;
     for ( int i=start_elem; i<last_elem; i++ )
     {
         // Get current panel
-        PanelGeom* panel    = mesh->panels[i];
+        PanelGeom* paneli   = mesh->panels[i];
 
-        if ( panel->type == 0 )
+        if ( paneli->type == 0 )
         {
-            // Get projection panel
-            PanelGeom* panel_proj = new PanelGeom;
-            panel->get_panel_xy_proj( panel_proj );
+            // Calculate water plane area
+            auto    area_wl_fcn     =   [&]( int ){ return paneli->normal_vec[2]; };
 
-            // Get normal sign
-            normal_sign = -(cusfloat)sign( mesh->panels[i]->normal_vec[2] );
+            gauss2d_loop<NUM_GP>(
+                                    _area_wl,
+                                    area_wl_fcn,
+                                    paneli
+                                );
 
-            // std::cout << "Panel: " << i << " - nz: " << mesh->panels[i]->normal_vec[2] << std::endl;
+            // Calculate water plane area first order moments
+            auto    area_wl_mx_fcn  =   [&]( int i )
+                                        { 
+                                            return (
+                                                        paneli->gauss_points_global_y[i]
+                                                        *
+                                                        paneli->normal_vec[2]
+                                                    ); 
+                                        };
 
-            if ( std::abs( mesh->panels[i]->normal_vec[2] ) > 1e-2 )
-            {
-                // Define volume functions
-                auto volume_fcn         =   [ panel, get_z_coord ]
-                                            ( cusfloat, cusfloat, cusfloat x, cusfloat y, cusfloat ) -> cuscomplex
-                                            {
-                                                // Calculate Z position over the mesh panel
-                                                cusfloat zg = get_z_coord( panel, x, y );
+            gauss2d_loop<NUM_GP>(
+                                    _area_wl_mx,
+                                    area_wl_mx_fcn,
+                                    paneli
+                                );
 
-                                                return cuscomplex( zg, 0.0 );
-                                            };
+            auto    area_wl_my_fcn  =   [&]( int i )
+                                        { 
+                                            return (
+                                                        paneli->gauss_points_global_x[i]
+                                                        *
+                                                        paneli->normal_vec[2]
+                                                    ); 
+                                        };
 
-                auto volume_mom_x_fcn   =   [ panel, get_z_coord ]
-                                            ( cusfloat, cusfloat, cusfloat x, cusfloat y, cusfloat ) -> cuscomplex
-                                            {
-                                                // Calculate Z position over the mesh panel
-                                                cusfloat zg = get_z_coord( panel, x, y );
+            gauss2d_loop<NUM_GP>(
+                                    _area_wl_my,
+                                    area_wl_my_fcn,
+                                    paneli
+                                );
 
-                                                return cuscomplex( x*zg, 0.0 );
-                                            };
+            // Calculate water plane area second order moments
+            auto    area_wl_ixx_fcn  =   [&]( int i )
+                                        { 
+                                            return (
+                                                        pow2s( paneli->gauss_points_global_y[i] )
+                                                        *
+                                                        paneli->normal_vec[2]
+                                                    ); 
+                                        };
 
-                auto volume_mom_y_fcn   =   [ panel, get_z_coord ]
-                                            ( cusfloat, cusfloat, cusfloat x, cusfloat y, cusfloat ) -> cuscomplex
-                                            {
-                                                // Calculate Z position over the mesh panel
-                                                cusfloat zg = get_z_coord( panel, x, y );
+            gauss2d_loop<NUM_GP>(
+                                    _area_wl_ixx,
+                                    area_wl_ixx_fcn,
+                                    paneli
+                                );
 
-                                                return cuscomplex( y*zg, 0.0 );
-                                            };
+            auto    area_wl_iyy_fcn  =   [&]( int i )
+                                        { 
+                                            return (
+                                                        pow2s( paneli->gauss_points_global_x[i] )
+                                                        *
+                                                        paneli->normal_vec[2]
+                                                    ); 
+                                        };
 
-                auto volume_mom_z_fcn   =   [ panel, get_z_coord ]
-                                            ( cusfloat, cusfloat, cusfloat x, cusfloat y, cusfloat ) -> cuscomplex
-                                            {
-                                                // Calculate Z position over the mesh panel
-                                                cusfloat zg = get_z_coord( panel, x, y );
+            gauss2d_loop<NUM_GP>(
+                                    _area_wl_iyy,
+                                    area_wl_iyy_fcn,
+                                    paneli
+                                );
 
-                                                return cuscomplex( zg*zg/2.0, 0.0 );
-                                            };
-                
-                // Calculate submerged volume
-                vi                  = adaptive_quadrature_panel(
-                                                                    panel_proj,
-                                                                    volume_fcn,
-                                                                    _vol_abs_eps,
-                                                                    _vol_rel_eps
-                                                                ).real( );
-                _volume             +=  vi * normal_sign;
+            // Calculate volume
+            auto    volume_fcn      =   [&](int i)
+                                        { 
+                                            return ( 
+                                                        -paneli->gauss_points_global_z[i] 
+                                                        * 
+                                                        paneli->normal_vec[2] 
+                                                    );
+                                        };
+            
+            gauss2d_loop<NUM_GP>(
+                                        _volume,
+                                        volume_fcn,
+                                        paneli
+                                    );
 
-                // throw std::runtime_error( "" );
+            // Calculate volume moments
+            auto    volume_mx_fcn   =   [&](int i)
+                                        { 
+                                            return (
+                                                        -paneli->gauss_points_global_z[i] 
+                                                        *  
+                                                        paneli->gauss_points_global_x[i]
+                                                        * 
+                                                        paneli->normal_vec[2] 
+                                                    ); 
+                                        };
+            
+            gauss2d_loop<NUM_GP>(
+                                        _volume_mx,
+                                        volume_mx_fcn,
+                                        paneli
+                                    );
 
-                // Calculate x moment submerged volume
-                vim_x               = adaptive_quadrature_panel(
-                                                                    panel_proj,
-                                                                    volume_mom_x_fcn,
-                                                                    _vol_abs_eps,
-                                                                    _vol_rel_eps
-                                                                ).real( );
-                _volume_mom_x       +=  vim_x * normal_sign;
+            auto    volume_my_fcn   =   [&](int i)
+                                        { 
+                                            return (
+                                                        -paneli->gauss_points_global_z[i] 
+                                                        *  
+                                                        paneli->gauss_points_global_y[i]
+                                                        * 
+                                                        paneli->normal_vec[2] 
+                                                    ); 
+                                        };
+            
+            gauss2d_loop<NUM_GP>(
+                                        _volume_my,
+                                        volume_my_fcn,
+                                        paneli
+                                    );
 
-                // Calculate x moment submerged volume
-                vim_y               = adaptive_quadrature_panel(
-                                                                    panel_proj,
-                                                                    volume_mom_y_fcn,
-                                                                    _vol_abs_eps,
-                                                                    _vol_rel_eps
-                                                                ).real( );
-                _volume_mom_y       +=  vim_y * normal_sign;
-
-                // Calculate z moment submerged volume
-                vim_z               = adaptive_quadrature_panel(
-                                                                    panel_proj,
-                                                                    volume_mom_z_fcn,
-                                                                    _vol_abs_eps,
-                                                                    _vol_rel_eps
-                                                                ).real( );
-                _volume_mom_z       +=  vim_z * normal_sign;
-
-                // Integrate panel area
-                _ai                  = adaptive_quadrature_panel(
-                                                                    panel_proj,
-                                                                    wl_area_fcn,
-                                                                    _area_abs_eps,
-                                                                    _area_rel_eps
-                                                                ).real( );
-                _wl_area            -= _ai * normal_sign;
-
-                // Integrate panel area moments around x axis
-                _amxi                = adaptive_quadrature_panel(
-                                                                    panel_proj,
-                                                                    wl_area_mom_x_fcn,
-                                                                    _area_abs_eps,
-                                                                    _area_rel_eps
-                                                                ).real( );
-                _wl_area_mx         -= _amxi * normal_sign;
-
-                // Integrate panel area moments around y axis
-                _amyi                = adaptive_quadrature_panel(
-                                                                    panel_proj,
-                                                                    wl_area_mom_y_fcn,
-                                                                    _area_abs_eps,
-                                                                    _area_rel_eps
-                                                                ).real( );
-                _wl_area_my         -= _amyi * normal_sign;
-
-                // Integrate panel area inertia around x axis
-                _aixi                = adaptive_quadrature_panel(
-                                                                    panel_proj,
-                                                                    wl_area_ixx_fcn,
-                                                                    _area_abs_eps,
-                                                                    _area_rel_eps
-                                                                ).real( );
-                _wl_area_ixx        -= _aixi * normal_sign;
-
-                // Integrate panel area inertia around x axis
-                _aixyi               = adaptive_quadrature_panel(
-                                                                    panel_proj,
-                                                                    wl_area_ixy_fcn,
-                                                                    _area_abs_eps,
-                                                                    _area_rel_eps
-                                                                ).real( );
-                _wl_area_ixy        -= _aixyi * normal_sign;
-
-                // Integrate panel area inertia around x axis
-                _aiyi                = adaptive_quadrature_panel(
-                                                                    panel_proj,
-                                                                    wl_area_iyy_fcn,
-                                                                    _area_abs_eps,
-                                                                    _area_rel_eps
-                                                                ).real( );
-                _wl_area_iyy        -= _aiyi * normal_sign;
-
-            }
-            else
-            {
-                // Calculate submerged volume
-                vi                  = panel_proj->area * panel->center[2];
-                _volume             +=  vi * normal_sign;
-
-                // throw std::runtime_error( "" );
-
-                // Calculate x moment submerged volume
-                vim_x               = vi * panel->center[0];
-                _volume_mom_x       +=  vim_x * normal_sign;
-
-                // Calculate x moment submerged volume
-                vim_y               = vi * panel->center[1];
-                _volume_mom_y       +=  vim_y * normal_sign;
-
-                // Calculate z moment submerged volume
-                vim_z               = vi * panel->center[2] / 2.0;
-                _volume_mom_z       +=  vim_z * normal_sign;
-
-                // Integrate panel area
-                _ai                  = panel_proj->area;
-                _wl_area            -= _ai * normal_sign;
-
-                // Integrate panel area moments around x axis
-                _amxi                = _ai * ( panel->center[0] - this->cog[0] );
-                _wl_area_mx         -= _amxi * normal_sign;
-
-                // Integrate panel area moments around y axis
-                _amyi                = _ai * ( panel->center[1] - this->cog[1] );
-                _wl_area_my         -= _amyi * normal_sign;
-
-                // Integrate panel area inertia around x axis
-                _aixi                = _ai * pow2s( panel->center[1] - this->cog[1] );
-                _wl_area_ixx        -= _aixi * normal_sign;
-
-                // Integrate panel area inertia in the XY plane
-                _aixyi               = _ai * ( panel->center[0] - this->cog[0] ) * ( panel->center[1] - this->cog[1] );
-                _wl_area_ixy        -= _aixyi * normal_sign;
-
-                // Integrate panel area inertia around x axis
-                _aiyi                = _ai * pow2s( panel->center[0] - this->cog[0] );
-                _wl_area_iyy        -= _aiyi * normal_sign;
-
-            }
+            auto    volume_mz_fcn   =   [&](int i)
+                                        { 
+                                            return (
+                                                        -paneli->gauss_points_global_z[i] 
+                                                        *  
+                                                        paneli->gauss_points_global_z[i] / 2.0
+                                                        * 
+                                                        paneli->normal_vec[2] 
+                                                    ); 
+                                        };
+            
+            gauss2d_loop<NUM_GP>(
+                                        _volume_mz,
+                                        volume_mz_fcn,
+                                        paneli
+                                    );
         }
     }
 
     #ifdef MPI_BUILD
     // Sum the volume in all processors
-    cusfloat _volume_d = 0.0;
     MPI_Allreduce(
+                    MPI_IN_PLACE,
                     &_volume,
-                    &_volume_d,
                     1,
                     mpi_cusfloat,
                     MPI_SUM,
                     MPI_COMM_WORLD
                 );
-    _volume = _volume_d;
 
     // Sum all the volume X moment
-    cusfloat _volume_mom_x_d = 0.0;
     MPI_Allreduce(
-                    &_volume_mom_x,
-                    &_volume_mom_x_d,
+                    MPI_IN_PLACE,
+                    &_volume_mx,
                     1,
                     mpi_cusfloat,
                     MPI_SUM,
                     MPI_COMM_WORLD
                 );
-    _volume_mom_x   = _volume_mom_x_d;
 
     // Sum all the volume Y moment
-    cusfloat _volume_mom_y_d = 0.0;
     MPI_Allreduce(
-                    &_volume_mom_y,
-                    &_volume_mom_y_d,
+                    MPI_IN_PLACE,
+                    &_volume_my,
                     1,
                     mpi_cusfloat,
                     MPI_SUM,
                     MPI_COMM_WORLD
                 );
-    _volume_mom_y   = _volume_mom_y_d;
 
     // Sum all the volume Z moment
-    cusfloat _volume_mom_z_d = 0.0;
     MPI_Allreduce(
-                    &_volume_mom_z,
-                    &_volume_mom_z_d,
+                    MPI_IN_PLACE,
+                    &_volume_mz,
                     1,
                     mpi_cusfloat,
                     MPI_SUM,
                     MPI_COMM_WORLD
                 );
-    _volume_mom_z   = _volume_mom_z_d;
 
     // Sum all the area
-    cusfloat _wl_area_d = 0.0;
     MPI_Allreduce(
-                    &_wl_area,
-                    &_wl_area_d,
+                    MPI_IN_PLACE,
+                    &_area_wl,
                     1,
                     mpi_cusfloat,
                     MPI_SUM,
                     MPI_COMM_WORLD
                 );
-    _wl_area        = _wl_area_d;
 
     // Sum all the area X moments
-    cusfloat _wl_area_mx_d = 0.0;
     MPI_Allreduce(
-                    &_wl_area_mx,
-                    &_wl_area_mx_d,
+                    MPI_IN_PLACE,
+                    &_area_wl_mx,
                     1,
                     mpi_cusfloat,
                     MPI_SUM,
                     MPI_COMM_WORLD
                 );
-    _wl_area_mx     = _wl_area_mx_d;
 
     // Sum all the area Y moments
-    cusfloat _wl_area_my_d = 0.0;
     MPI_Allreduce(
-                    &_wl_area_my,
-                    &_wl_area_my_d,
+                    MPI_IN_PLACE,
+                    &_area_wl_my,
                     1,
                     mpi_cusfloat,
                     MPI_SUM,
                     MPI_COMM_WORLD
                 );
-    _wl_area_my     = _wl_area_my_d;
 
     // Sum all the area interia around X axis
-    cusfloat _wl_area_ixx_d = 0.0;
     MPI_Allreduce(
-                    &_wl_area_ixx,
-                    &_wl_area_ixx_d,
+                    MPI_IN_PLACE,
+                    &_area_wl_ixx,
                     1,
                     mpi_cusfloat,
                     MPI_SUM,
                     MPI_COMM_WORLD
                 );
-    _wl_area_ixx    = _wl_area_ixx_d;
 
     // Sum all the area interia in XY plane
-    cusfloat _wl_area_ixy_d = 0.0;
     MPI_Allreduce(
-                    &_wl_area_ixy,
-                    &_wl_area_ixy_d,
+                    MPI_IN_PLACE,
+                    &_area_wl_ixy,
                     1,
                     mpi_cusfloat,
                     MPI_SUM,
                     MPI_COMM_WORLD
                 );
-    _wl_area_ixy    = _wl_area_ixy_d;
 
     // Sum all the area interia around Y axis
-    cusfloat _wl_area_iyy_d = 0.0;
     MPI_Allreduce(
-                    &_wl_area_iyy,
-                    &_wl_area_iyy_d,
+                    MPI_IN_PLACE,
+                    &_area_wl_iyy,
                     1,
                     mpi_cusfloat,
                     MPI_SUM,
                     MPI_COMM_WORLD
                 );
-    _wl_area_iyy    = _wl_area_iyy_d;
 
     #endif
 
@@ -457,18 +393,18 @@ void Hydrostatics::_calculate(
     this->displacement  = _volume * rho_water;
 
     // Calculate KB
-    this->cob[0]        = _volume_mom_x / volume;
-    this->cob[1]        = _volume_mom_y / volume;
-    this->cob[2]        = _volume_mom_z / volume;
+    this->cob[0]        = _volume_mx / volume;
+    this->cob[1]        = _volume_my / volume;
+    this->cob[2]        = _volume_mz / volume;
     this->kb            = this->cob[2] - mesh->z_min;
 
     // Storage area properties
-    this->wl_area       = _wl_area;
-    this->wl_area_mx    = _wl_area_mx;
-    this->wl_area_my    = _wl_area_my;
-    this->wl_area_ixx   = _wl_area_ixx;
-    this->wl_area_ixy   = _wl_area_ixy;
-    this->wl_area_iyy   = _wl_area_iyy;
+    this->wl_area       = _area_wl;
+    this->wl_area_mx    = _area_wl_mx;
+    this->wl_area_my    = _area_wl_my;
+    this->wl_area_ixx   = _area_wl_ixx;
+    this->wl_area_ixy   = _area_wl_ixy;
+    this->wl_area_iyy   = _area_wl_iyy;
 
     // Calculate water line area centre of gravity
     this->wl_area_cog[0] = this->wl_area_mx / this->wl_area;
