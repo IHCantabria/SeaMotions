@@ -80,12 +80,12 @@ RadDiffData<Config>::RadDiffData(
     for ( std::size_t i=0; i<this->_size_local; i++ )
     {
         this->panel_data.emplace_back( 
-                                            PanelData<mode_comp, mode_f, mode_dfdn, mode_dfdc>(
-                                                                                                    field_points_np_,
-                                                                                                    freqs_np_,
-                                                                                                    headings_np_,
-                                                                                                    dofs_np_
-                                                                                                ) 
+                                            PanelData<Config>(
+                                                                    field_points_np_,
+                                                                    freqs_np_,
+                                                                    headings_np_,
+                                                                    dofs_np_
+                                                                ) 
                                     );
     }
 
