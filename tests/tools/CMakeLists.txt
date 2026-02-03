@@ -447,3 +447,19 @@ add_executable( test_cusvector_speed_cmd "test_cusvector_speed.cpp" )
 set_mkl_lib_target( test_cusvector_speed_cmd )
 
 add_executable( test_read_gmsh_cmd test_read_gmsh.cpp )
+
+
+# Add test to check CusTensor class and expressions
+set(
+        test_custensor_src
+        test_custensor.cpp
+        ${math_module_files}
+    )
+
+add_executable( test_custensor_cmd ${test_custensor_src} )
+set_mkl_lib_target( test_custensor_cmd )
+
+add_test(
+            NAME test_custensor
+            COMMAND test_custensor_cmd
+        )
