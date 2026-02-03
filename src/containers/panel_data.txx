@@ -48,7 +48,7 @@ void    PanelData<T, Config>::_allocate_memory(
     std::size_t field_len   = freqs_np_ * headings_np_ * field_points_np_;
 
     // Allocate memory on heap for field points
-    this->field_points      = std::vector<cusfloat>( 3 * field_points_np_ );
+    this->field_points.resize( 3 * field_points_np_ );
 
     // Allocate memory on heap for potential fields
     STATIC_COND( ONLY_FCN && USE_COMP,   this->pot_incident.resize( field_len ); )
