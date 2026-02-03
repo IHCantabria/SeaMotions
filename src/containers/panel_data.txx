@@ -22,26 +22,16 @@
 #include <vector>
 
 // Include local modules
+#include "../math/gauss.hpp"
 #include "panel_data.hpp"
 #include "../static_tools.hpp"
 
 
 /***********************************************************/
-/**************** Module Auxiliar Macros *******************/
-/***********************************************************/
-#define _DELETE_TENSOR_FIELD( tensor_ptr )              \
-    if ( tensor_ptr != nullptr )                        \
-    {                                                   \
-        mkl_free( tensor_ptr );                         \
-        tensor_ptr = nullptr;                           \
-    }                                                   \
-
-
-/***********************************************************/
 /**************** Define RadDiffData class *****************/
 /***********************************************************/
-template<typename Config>
-void    PanelData<Config>::_allocate_memory( 
+template<typename T, typename Config>
+void    PanelData<T, Config>::_allocate_memory( 
                                                 std::size_t field_points_np_,
                                                 std::size_t freqs_np_,
                                                 std::size_t headings_np_,
@@ -58,40 +48,41 @@ void    PanelData<Config>::_allocate_memory(
     std::size_t field_len   = freqs_np_ * headings_np_ * field_points_np_;
 
     // Allocate memory on heap for field points
-    this->field_points      = generate_empty_vector<cusfloat>( 3 * field_points_np_ );
+    this->field_points      = std::vector<cusfloat>( 3 * field_points_np_ );
 
     // Allocate memory on heap for potential fields
-    STATIC_COND( ONLY_FCN && USE_COMP,   this->pot_incident     = generate_empty_vector<cuscomplex>( field_len ); )
-    STATIC_COND( ONLY_FCN && USE_COMP,   this->pot_rad          = generate_empty_vector<cuscomplex>( field_len ); )
-    STATIC_COND( ONLY_FCN && USE_COMP,   this->pot_diff         = generate_empty_vector<cuscomplex>( field_len ); )
-    STATIC_COND( ONLY_FCN            ,   this->pot_total        = generate_empty_vector<cuscomplex>( field_len ); )
+    STATIC_COND( ONLY_FCN && USE_COMP,   this->pot_incident.resize( field_len ); )
+    STATIC_COND( ONLY_FCN && USE_COMP,   this->pot_rad.resize( field_len ); )
+    STATIC_COND( ONLY_FCN && USE_COMP,   this->pot_diff.resize( field_len ); )
+    STATIC_COND( ONLY_FCN            ,   this->pot_total.resize( field_len ); )
+    STATIC_COND( ONLY_FCN            ,   this->pot_total_2.resize( field_len ); )
 
     // Allocate memory on heap for pressure field
-    STATIC_COND( ONLY_FCN,               this->press_total      = generate_empty_vector<cuscomplex>( field_len ); )
+    STATIC_COND( ONLY_FCN,               this->press_total.resize( field_len ); )
 
     // Allocate memory on heap for normal velocity derivative fields
-    STATIC_COND( ONLY_FCNDN && USE_COMP, this->vel_dn_incident  = generate_empty_vector<cuscomplex>( field_len ); )
-    STATIC_COND( ONLY_FCNDN && USE_COMP, this->vel_dn_rad       = generate_empty_vector<cuscomplex>( field_len ); )
-    STATIC_COND( ONLY_FCNDN && USE_COMP, this->vel_dn_diff      = generate_empty_vector<cuscomplex>( field_len ); )
-    STATIC_COND( ONLY_FCNDN,             this->vel_dn_total     = generate_empty_vector<cuscomplex>( field_len ); )
+    STATIC_COND( ONLY_FCNDN && USE_COMP, this->vel_dn_incident.resize( field_len ); )
+    STATIC_COND( ONLY_FCNDN && USE_COMP, this->vel_dn_rad.resize( field_len ); )
+    STATIC_COND( ONLY_FCNDN && USE_COMP, this->vel_dn_diff.resize( field_len ); )
+    STATIC_COND( ONLY_FCNDN,             this->vel_dn_total.resize( field_len ); )
 
     // Allocate memory on heap for velocity components fields
-    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_x_incident   = generate_empty_vector<cuscomplex>( field_len ); )
-    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_y_incident   = generate_empty_vector<cuscomplex>( field_len ); )
-    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_z_incident   = generate_empty_vector<cuscomplex>( field_len ); )
-    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_x_rad        = generate_empty_vector<cuscomplex>( field_len ); )
-    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_y_rad        = generate_empty_vector<cuscomplex>( field_len ); )
-    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_z_rad        = generate_empty_vector<cuscomplex>( field_len ); )
-    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_x_diff       = generate_empty_vector<cuscomplex>( field_len ); )
-    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_y_diff       = generate_empty_vector<cuscomplex>( field_len ); )
-    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_z_diff       = generate_empty_vector<cuscomplex>( field_len ); )
-    STATIC_COND( ONLY_FCNDC,             this->vel_x_total      = generate_empty_vector<cuscomplex>( field_len ); )
-    STATIC_COND( ONLY_FCNDC,             this->vel_y_total      = generate_empty_vector<cuscomplex>( field_len ); )
-    STATIC_COND( ONLY_FCNDC,             this->vel_z_total      = generate_empty_vector<cuscomplex>( field_len ); )
+    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_x_incident.resize( field_len ); )
+    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_y_incident.resize( field_len ); )
+    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_z_incident.resize( field_len ); )
+    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_x_rad.resize( field_len ); )
+    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_y_rad.resize( field_len ); )
+    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_z_rad.resize( field_len ); )
+    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_x_diff.resize( field_len ); )
+    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_y_diff.resize( field_len ); )
+    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_z_diff.resize( field_len ); )
+    STATIC_COND( ONLY_FCNDC,             this->vel_x_total.resize( field_len ); )
+    STATIC_COND( ONLY_FCNDC,             this->vel_y_total.resize( field_len ); )
+    STATIC_COND( ONLY_FCNDC,             this->vel_z_total.resize( field_len ); )
 
     // Allocate memory on heap for wave elevation fields
-    STATIC_COND( ONLY_FCN,               this->wev_total        = generate_empty_vector<cuscomplex>( field_len ); )
-    STATIC_COND( ONLY_FCN,               this->wev_rel_total    = generate_empty_vector<cuscomplex>( field_len ); )
+    STATIC_COND( ONLY_FCN,               this->wev_total.resize( field_len ); )
+    STATIC_COND( ONLY_FCN,               this->wev_rel_total.resize( field_len ); )
 
     // Set flag to indicate that memory is allocated on heap
     this->_is_heap        = true;
@@ -99,8 +90,9 @@ void    PanelData<Config>::_allocate_memory(
 }
 
 
-template<typename Config>
-void    PanelData<Config>::_load_field_points( 
+
+template<typename T, typename Config>
+void    PanelData<T, Config>::_load_field_points( 
                                                     PanelGeom*  panel_geom_,
                                                     bool        use_waterline_
                                                 )
@@ -136,8 +128,8 @@ void    PanelData<Config>::_load_field_points(
 }
 
                                         
-template<typename Config>
-void PanelData<Config>::clear_data( void )
+template<typename T, typename Config>
+void PanelData<T, Config>::clear_data( void )
 {
     // Create auxiliary variables to have a 
     // clear implementation
@@ -148,11 +140,12 @@ void PanelData<Config>::clear_data( void )
     STATIC_COND( ONLY_FCN && USE_COMP,      LOOP_DEF( hfnp,  this->pot_rad[i]           = 0.0; ) )
     STATIC_COND( ONLY_FCN && USE_COMP,      LOOP_DEF( hfnp,  this->pot_diff[i]          = 0.0; ) )
     STATIC_COND( ONLY_FCN,                  LOOP_DEF( hfnp,  this->pot_total[i]         = 0.0; ) )
+    STATIC_COND( ONLY_FCN,                  LOOP_DEF( hfnp,  this->pot_total_2[i]       = 0.0; ) )
 
     // Clear normal velocity derivative fields data
     STATIC_COND( ONLY_FCNDN && USE_COMP,    LOOP_DEF( hfnp,  this->vel_dn_incident[i]   = 0.0; ) )
-    STATIC_COND( ONLY_FCNDN && USE_COMP,    LOOP_DEF( hfnp,  this->vel_dn_raddiff[i]    = 0.0; ) )
-    STATIC_COND( ONLY_FCNDN && USE_COMP,    LOOP_DEF( hfnp,  this->vel_dn_raddiff[i]    = 0.0; ) )
+    STATIC_COND( ONLY_FCNDN && USE_COMP,    LOOP_DEF( hfnp,  this->vel_dn_rad[i]        = 0.0; ) )
+    STATIC_COND( ONLY_FCNDN && USE_COMP,    LOOP_DEF( hfnp,  this->vel_dn_diff[i]       = 0.0; ) )
     STATIC_COND( ONLY_FCNDN,                LOOP_DEF( hfnp,  this->vel_dn_total[i]      = 0.0; ) )
 
     // Clear velocity components fields data
@@ -168,10 +161,15 @@ void PanelData<Config>::clear_data( void )
     STATIC_COND( ONLY_FCNDC,                LOOP_DEF( hfnp,  this->vel_x_total[i]       = 0.0; ) )
     STATIC_COND( ONLY_FCNDC,                LOOP_DEF( hfnp,  this->vel_y_total[i]       = 0.0; ) )
     STATIC_COND( ONLY_FCNDC,                LOOP_DEF( hfnp,  this->vel_z_total[i]       = 0.0; ) )
+
+    // Clear wave elevation fields data
+    STATIC_COND( ONLY_FCN && USE_COMP,      LOOP_DEF( hfnp,  this->wev_total[i]         = 0.0; ) )
+    STATIC_COND( ONLY_FCN,                  LOOP_DEF( hfnp,  this->wev_rel_total[i]     = 0.0; ) )
+
 }
 
-template<typename Config>
-PanelData<Config>::PanelData( 
+template<typename T, typename Config>
+PanelData<T, Config>::PanelData( 
                                 std::size_t field_points_np_,
                                 std::size_t freqs_np_,
                                 std::size_t headings_np_,
@@ -188,8 +186,8 @@ PanelData<Config>::PanelData(
 }
 
 
-template<typename Config>
-PanelData<Config>::PanelData( 
+template<typename T, typename Config>
+PanelData<T, Config>::PanelData( 
                                 PanelGeom*  panel_geom_,
                                 std::size_t body_id_,
                                 std::size_t freqs_np_,
@@ -219,43 +217,4 @@ PanelData<Config>::PanelData(
                                 use_waterline_
                             );
 
-}
-
-
-template<typename Config>
-PanelData<Config>::~PanelData( )
-{
-    // Deallocate memory only if it was allocated on heap
-    if ( this->_is_heap )
-    {
-        // Delete field points memory
-        _DELETE_TENSOR_FIELD( this->field_points )
-
-        // Delete potential fields memory
-        STATIC_COND( ONLY_FCN && USE_COMP,      _DELETE_TENSOR_FIELD( this->pot_incident    ) )
-        STATIC_COND( ONLY_FCN && USE_COMP,      _DELETE_TENSOR_FIELD( this->pot_rad         ) )
-        STATIC_COND( ONLY_FCN && USE_COMP,      _DELETE_TENSOR_FIELD( this->pot_diff        ) )
-        STATIC_COND( ONLY_FCN,                  _DELETE_TENSOR_FIELD( this->pot_total       ) )
-
-        // Delete normal velocity derivative fields memory
-        STATIC_COND( ONLY_FCNDN && USE_COMP,    _DELETE_TENSOR_FIELD( this->vel_dn_incident ) )
-        STATIC_COND( ONLY_FCNDN && USE_COMP,    _DELETE_TENSOR_FIELD( this->vel_dn_rad      ) )
-        STATIC_COND( ONLY_FCNDN && USE_COMP,    _DELETE_TENSOR_FIELD( this->vel_dn_diff     ) )
-        STATIC_COND( ONLY_FCNDN,                _DELETE_TENSOR_FIELD( this->vel_dn_total    ) )
-
-        // Delete velocity fields components memory
-        STATIC_COND( ONLY_FCNDC && USE_COMP,    _DELETE_TENSOR_FIELD( this->vel_x_incident  ) )
-        STATIC_COND( ONLY_FCNDC && USE_COMP,    _DELETE_TENSOR_FIELD( this->vel_y_incident  ) )
-        STATIC_COND( ONLY_FCNDC && USE_COMP,    _DELETE_TENSOR_FIELD( this->vel_z_incident  ) )
-        STATIC_COND( ONLY_FCNDC && USE_COMP,    _DELETE_TENSOR_FIELD( this->vel_x_rad       ) )
-        STATIC_COND( ONLY_FCNDC && USE_COMP,    _DELETE_TENSOR_FIELD( this->vel_y_rad       ) )
-        STATIC_COND( ONLY_FCNDC && USE_COMP,    _DELETE_TENSOR_FIELD( this->vel_z_rad       ) )
-        STATIC_COND( ONLY_FCNDC && USE_COMP,    _DELETE_TENSOR_FIELD( this->vel_x_diff      ) )
-        STATIC_COND( ONLY_FCNDC && USE_COMP,    _DELETE_TENSOR_FIELD( this->vel_y_diff      ) )
-        STATIC_COND( ONLY_FCNDC && USE_COMP,    _DELETE_TENSOR_FIELD( this->vel_z_diff      ) )
-        STATIC_COND( ONLY_FCNDC,                _DELETE_TENSOR_FIELD( this->vel_x_total     ) )
-        STATIC_COND( ONLY_FCNDC,                _DELETE_TENSOR_FIELD( this->vel_y_total     ) )
-        STATIC_COND( ONLY_FCNDC,                _DELETE_TENSOR_FIELD( this->vel_z_total     ) )
-
-    }
 }
