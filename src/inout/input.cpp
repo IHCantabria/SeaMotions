@@ -158,6 +158,14 @@ void Input::configure( void )
                                                         this->poly_order,
                                                         this->bodies[i]->cog
                                                     );
+
+        if ( this->bodies[i]->is_mesh_int_lid )
+        {
+            this->bodies[i]->mesh_int_lid->define_source_nodes(
+                                                                this->poly_order,
+                                                                this->bodies[i]->cog
+                                                            );
+        }
     }
 
 }

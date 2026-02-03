@@ -71,6 +71,11 @@ private:
                                     cusfloat w
                             );
 
+    template<freq_regime_t freq_regime>
+    void _build_wave_matrixes_2( 
+                                    cusfloat w
+                                );
+
     void _initialize(                
                                     void 
                     );

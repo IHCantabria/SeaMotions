@@ -88,7 +88,7 @@ void    calculate_diffraction_forces_lin(
                                                             *
                                                             mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->area
                                                         );
-                        wave_diffrac[index]         += cuscomplex( 0.0, -w * rho_w ) * press_i;
+                        wave_diffrac[index]         += cuscomplex( 0.0, w * rho_w ) * press_i;
                         panels_pressure[index_1]    = - cuscomplex( 0.0, 1.0 ) * rho_w * w * panel_pot[index_1] ;
                     }
                 }

@@ -170,7 +170,7 @@ bool test_quadrilateral_0( void )
     cusfloat s2 = std::sqrt( 2.0 );
     cusfloat s3 = std::sqrt( 3.0 );
     cusfloat dir_vec[5][3];
-    dir_vec[0][0] = 1.0;        dir_vec[0][1] = 0.0;        dir_vec[0][2] = 0.0;
+    dir_vec[0][0] = 0.0;        dir_vec[0][1] = 0.0;        dir_vec[0][2] = 0.0;
     dir_vec[1][0] = 0.0;        dir_vec[1][1] = 1.0;        dir_vec[1][2] = 0.0;
     dir_vec[2][0] = 0.0;        dir_vec[2][1] = 0.0;        dir_vec[2][2] = -1.0;
     dir_vec[3][0] = -1/s2;      dir_vec[3][1] = -1/s2;      dir_vec[3][2] = 0.0;

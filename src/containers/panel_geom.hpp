@@ -163,6 +163,11 @@ public:
                                                     cusfloat*&  normals_vec
                                 );
 
+    bool    is_john( 
+                                                    cusfloat*   position,
+                                                    cusfloat    water_depth
+                                );
+
     void    local_coords_from_z_proj(
                                                     cusfloat    x,
                                                     cusfloat    y,

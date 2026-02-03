@@ -210,12 +210,14 @@ set(
         test_wave_term_fin_depth_consistency_src
         test_wave_term_fin_depth_consistency.cpp
         ${containers_module_files}
+        ${inout_module_files}
         ${panel_geometry_src}
         ${green_module_files}
         ${interfaces_module_files}
         ${math_module_files}
         ${mesh_module_files}
         ${tools_module_files}
+        ${version_module_files}
         ${waves_module_files}
     )
 
@@ -224,6 +226,8 @@ add_executable(
                     ${test_wave_term_fin_depth_consistency_src}
                 )
 set_mkl_lib_target( test_wave_term_fin_depth_consistency_cmd )
+set_mpi_target( test_wave_term_fin_depth_consistency_cmd )
+set_hdf5_target( test_wave_term_fin_depth_consistency_cmd )
 
 # Add test to check the finite water depth 
 # wave term
