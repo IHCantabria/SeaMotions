@@ -357,6 +357,11 @@ namespace cut
         CUSTENSOR_OPERATOR( /, DivOp  )
 
         // Define custensor methods
+        T* data( void )
+        {
+            return this->_data;
+        }
+        
         void free( void )
         {
             if ( this->_is_heap )
