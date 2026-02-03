@@ -106,44 +106,17 @@ namespace cut
 
         CusTensor( int N )
         {
-            // Storage input arguments
-            this->_shape    = { static_cast<size_t>( N ) };
-            this->_size     = N;
-
-            // Compute strides
-            this->_compute_strides( );
-
-            // Allocate memory space
-            this->_allocate_memory( );
+            this->resize( static_cast<size_t>( N ) );
         }
 
         CusTensor( size_t N )
         {
-            // Storage input arguments
-            this->_shape    = { N };
-            this->_size     = N;
-
-            // Compute strides
-            this->_compute_strides( );
-
-            // Allocate memory space
-            this->_allocate_memory( );
+            this->resize( N );
         }
 
         CusTensor( const vector_st& shape )
         {
-            // Storage input arguments
-            this->_shape = shape;
-            
-            // Compute matrix size
-            this->_size = 1;
-            for ( size_t s : shape ) this->_size *= s;
-
-            // Compute tensor strides
-            this->_compute_strides( );
-
-            // Allocate memory to stroage the data
-            this->_allocate_memory( );
+            this->resize( shape );
         }
 
         // Copy constructor (deep copy)
@@ -383,6 +356,20 @@ namespace cut
         CUSTENSOR_OPERATOR( *, MultOp )
         CUSTENSOR_OPERATOR( /, DivOp  )
 
+        // Define custensor methods
+        void free( void )
+        {
+            if ( this->_is_heap )
+            {
+                mkl_free( this->_data );
+                this->_data     = nullptr;
+                this->_is_heap  = false;
+                this->_size     = 0;
+                this->_shape.clear( );
+                this->_strides.clear( );
+            }
+        }
+
         void print( void ) const
         {
             if ( this->_is_heap )
@@ -398,6 +385,46 @@ namespace cut
             {
                 std::cout << "WARNING: there is no data allocated to be printed into the screen" << std::endl;
             }
+        }
+
+        void resize( int N )
+        {
+            this->resize( static_cast<size_t>( N ) );
+        }
+
+        void resize( std::size_t N )
+        {
+            // Check if data is already allocated
+            this->free( );
+
+            // Storage input arguments
+            this->_shape    = { N };
+            this->_size     = N;
+
+            // Compute strides
+            this->_compute_strides( );
+
+            // Allocate memory space
+            this->_allocate_memory( );
+        }
+
+        void resize( const vector_st& shape )
+        {
+            // Check if data is already allocated
+            this->free( );
+
+            // Storage input arguments
+            this->_shape = shape;
+            
+            // Compute matrix size
+            this->_size = 1;
+            for ( size_t s : shape ) this->_size *= s;
+
+            // Compute tensor strides
+            this->_compute_strides( );
+
+            // Allocate memory to storage the data
+            this->_allocate_memory( );
         }
 
     };
