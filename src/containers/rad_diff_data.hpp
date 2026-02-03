@@ -28,7 +28,7 @@
 #include "rad_diff_data_config.hpp"
 
 
-template<typename Config>
+template<typename T, typename Config>
 struct RadDiffData
 {
     /*** Template parameters from Config ***/
@@ -48,7 +48,7 @@ private:
     
 public:
     // Declare public variables
-    std::vector<PanelData<Config>> panel_data; // Store panel data for radiation and diffraction calculations
+    std::vector<PanelData<T, Config>> panel_data; // Store panel data for radiation and diffraction calculations
 
     /* Declare class constructors and destructor */
     RadDiffData( ) = default;

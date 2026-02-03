@@ -61,8 +61,8 @@ class FrequencySolver
 {
 private:
     /**** Declare class private attributes ****/
-    RadDiffData<RDDQTFConfig>*  _qtf_wl_fields     = nullptr;  // Storage of waterline field points for QTF calculations
-    RadDiffData<RDDQTFConfig>*  _qtf_bern_fields   = nullptr;  // Storage of velocity field for the calculation of bernoulli term in QTFs
+    RadDiffData<cuscomplex, RDDQTFConfig>*  _qtf_wl_fields     = nullptr;  // Storage of waterline field points for QTF calculations
+    RadDiffData<cuscomplex, RDDQTFConfig>*  _qtf_bern_fields   = nullptr;  // Storage of velocity field for the calculation of bernoulli term in QTFs
 
     /**** Declare class private methods ****/
     void _calculate_field_points_values( 

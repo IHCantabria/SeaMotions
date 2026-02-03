@@ -99,10 +99,10 @@ public:
     /* Declare class public methods */
     template<typename RDDConfig>
     void    compute_fields(
-                                    std::size_t             freq_index,
-                                    cusfloat                ang_freq,
-                                    cuscomplex*             raos,
-                                    RadDiffData<RDDConfig>* rad_diff_data
+                                    std::size_t                         freq_index,
+                                    cusfloat                            ang_freq,
+                                    cuscomplex*                         raos,
+                                    RadDiffData<cuscomplex, RDDConfig>* rad_diff_data
                             );
     int     size(
                             void

@@ -878,9 +878,6 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
             //                                         this->_input->water_depth 
             //                                     );
 
-            ELEM_ID_GLOBAL_X = i;
-            ELEM_ID_GLOBAL_Y = j;
-
             
             int_value       = 0.0;
             int_dn_sf_value = 0.0;
@@ -1123,10 +1120,10 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes_2(
 template<std::size_t N, int mode_pf>
 template<typename RDDConfig>
 void FormulationKernelBackend<N, mode_pf>::compute_fields(
-                                                                std::size_t             freq_index,
-                                                                cusfloat                ang_freq,
-                                                                cuscomplex*             raos,
-                                                                RadDiffData<RDDConfig>* rad_diff_data
+                                                                std::size_t                         freq_index,
+                                                                cusfloat                            ang_freq,
+                                                                cuscomplex*                         raos,
+                                                                RadDiffData<cuscomplex, RDDConfig>* rad_diff_data
                                                             )
 {
     /*** Get template parameters from Config ***/
@@ -1136,48 +1133,46 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
     static constexpr int mode_dfdc = RDDConfig::mode_dfdc;
 
     // Declare local auxiliary variables
-    std::size_t             body_id             = 0;
-    std::size_t             body_np             = this->_mesh_gp->meshes_np;
-    cusfloat                center_aux[3]       = { 0.0, 0.0, 0.0 };
-    std::size_t             dofs_np             = this->_input->dofs_np;
-    std::size_t             fp_np               = 0;
-    cusfloat                grav_acc            = this->_input->grav_acc;
-    std::size_t             heads_np            = this->_input->heads_np;
-    std::size_t             index_ax            = 0;
-    std::size_t             index_sc            = 0;
-    std::size_t             index_fd            = 0;
-    cuscomplex              int_dn_sf           = cuscomplex( 0.0, 0.0 );
-    cuscomplex              int_dn_sf_st        = cuscomplex( 0.0, 0.0 );
-    cuscomplex              int_dn_sf_wv        = cuscomplex( 0.0, 0.0 );
-    cuscomplex              int_dn_pf_st        = cuscomplex( 0.0, 0.0 );
-    cuscomplex              int_dn_pf_wv        = cuscomplex( 0.0, 0.0 );
-    bool                    is_john             = false;
-    cusfloat*               field_point         = nullptr;
-    PanelGeom               panel_aux;
-    PanelData<RDDConfig>*   panel_rdd;
-    cusfloat                normal_vec_aux[3]   = { 0.0, 0.0, 0.0 };
-
-    SourceNode              source_aux( &panel_aux, 0, 0,  0, center_aux, normal_vec_aux );
-
-    cuscomplex              point_disp[3]       ;
-    cuscomplex              pot_aux             = cuscomplex( 0.0, 0.0 );
-    cuscomplex              pot_term            = cuscomplex( 0.0, 0.0 );
-    cuscomplex              pot_term_st         = cuscomplex( 0.0, 0.0 );
-    cuscomplex              pot_term_wv         = cuscomplex( 0.0, 0.0 );
-    cuscomplex              radius[3]           ;
-    cuscomplex              rao_rot[3]          ;
-    cuscomplex              rao_trans[3]        ;
-    cuscomplex              rao_val             = cuscomplex( 0.0, 0.0 );
-    cusfloat                rhow                = this->_input->water_density;
-    std::size_t             sources_np          = this->_solver->num_rows;
-    cuscomplex              source_val          = cuscomplex( 0.0, 0.0 );
-    cuscomplex              vel_aux[3]          = { 0.0, 0.0, 0.0 };
-    cuscomplex              vel_dn_aux          = 0.0;
-    cuscomplex              vel_total[3]        = { 0.0, 0.0, 0.0 };
-    cuscomplex              vel_total_st[3]     = { 0.0, 0.0, 0.0 };
-    cuscomplex              vel_total_wv[3]     = { 0.0, 0.0, 0.0 };
-    cusfloat                wave_amplitude      = this->_input->wave_amplitude;
-    cusfloat                water_depth         = this->_input->water_depth;
+    std::size_t                         body_id             = 0;
+    std::size_t                         body_np             = this->_mesh_gp->meshes_np;
+    cusfloat                            center_aux[3]       = { 0.0, 0.0, 0.0 };
+    std::size_t                         dofs_np             = this->_input->dofs_np;
+    std::size_t                         fp_np               = 0;
+    cusfloat                            grav_acc            = this->_input->grav_acc;
+    std::size_t                         heads_np            = this->_input->heads_np;
+    std::size_t                         index_ax            = 0;
+    std::size_t                         index_sc            = 0;
+    std::size_t                         index_fd            = 0;
+    cuscomplex                          int_dn_sf           = cuscomplex( 0.0, 0.0 );
+    cuscomplex                          int_dn_sf_st        = cuscomplex( 0.0, 0.0 );
+    cuscomplex                          int_dn_sf_wv        = cuscomplex( 0.0, 0.0 );
+    cuscomplex                          int_dn_pf_st        = cuscomplex( 0.0, 0.0 );
+    cuscomplex                          int_dn_pf_wv        = cuscomplex( 0.0, 0.0 );
+    bool                                is_john             = false;
+    cusfloat*                           field_point         = nullptr;
+    cusfloat                            normal_vec_aux[3]   = { 0.0, 0.0, 0.0 };
+    PanelGeom                           panel_aux;
+    PanelData<cuscomplex, RDDConfig>*   panel_rdd;
+    cuscomplex                          point_disp[3]       ;
+    cuscomplex                          pot_aux             = cuscomplex( 0.0, 0.0 );
+    cuscomplex                          pot_term            = cuscomplex( 0.0, 0.0 );
+    cuscomplex                          pot_term_st         = cuscomplex( 0.0, 0.0 );
+    cuscomplex                          pot_term_wv         = cuscomplex( 0.0, 0.0 );
+    cuscomplex                          radius[3]           ;
+    cuscomplex                          rao_rot[3]          ;
+    cuscomplex                          rao_trans[3]        ;
+    cuscomplex                          rao_val             = cuscomplex( 0.0, 0.0 );
+    cusfloat                            rhow                = this->_input->water_density;
+    SourceNode                          source_aux( &panel_aux, 0, 0,  0, center_aux, normal_vec_aux );
+    std::size_t                         sources_np          = this->_solver->num_rows;
+    cuscomplex                          source_val          = cuscomplex( 0.0, 0.0 );
+    cuscomplex                          vel_aux[3]          = { 0.0, 0.0, 0.0 };
+    cuscomplex                          vel_dn_aux          = 0.0;
+    cuscomplex                          vel_total[3]        = { 0.0, 0.0, 0.0 };
+    cuscomplex                          vel_total_st[3]     = { 0.0, 0.0, 0.0 };
+    cuscomplex                          vel_total_wv[3]     = { 0.0, 0.0, 0.0 };
+    cusfloat                            wave_amplitude      = this->_input->wave_amplitude;
+    cusfloat                            water_depth         = this->_input->water_depth;
 
     // Calculate wave dependent parameters
     cusfloat    k               =   w2k( 

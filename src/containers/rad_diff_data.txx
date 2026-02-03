@@ -23,36 +23,36 @@
 #include "../mesh/panel_set_view.hpp"
 
 
-template<typename Config>
-std::size_t RadDiffData<Config>::get_end_pos( void ) const
+template<typename T, typename Config>
+std::size_t RadDiffData<T, Config>::get_end_pos( void ) const
 {
     return this->_end_pos;
 }
 
 
-template<typename Config>
-std::size_t RadDiffData<Config>::get_size_global( void ) const
+template<typename T, typename Config>
+std::size_t RadDiffData<T, Config>::get_size_global( void ) const
 {
     return this->_size_global;
 }
 
 
-template<typename Config>
-std::size_t RadDiffData<Config>::get_size_local( void ) const
+template<typename T, typename Config>
+std::size_t RadDiffData<T, Config>::get_size_local( void ) const
 {
     return this->_size_local;
 }
 
 
-template<typename Config>
-std::size_t RadDiffData<Config>::get_start_pos( void ) const
+template<typename T, typename Config>
+std::size_t RadDiffData<T, Config>::get_start_pos( void ) const
 {
     return this->_start_pos;
 }
 
 
-template<typename Config>
-RadDiffData<Config>::RadDiffData( 
+template<typename T, typename Config>
+RadDiffData<T, Config>::RadDiffData( 
                                     MpiConfig*      mpi_config_,
                                     std::size_t     panels_np_,
                                     std::size_t     field_points_np_,
@@ -80,7 +80,7 @@ RadDiffData<Config>::RadDiffData(
     for ( std::size_t i=0; i<this->_size_local; i++ )
     {
         this->panel_data.emplace_back( 
-                                            PanelData<Config>(
+                                            PanelData<T, Config>(
                                                                     field_points_np_,
                                                                     freqs_np_,
                                                                     headings_np_,
@@ -92,8 +92,8 @@ RadDiffData<Config>::RadDiffData(
 }
 
 
-template<typename Config>
-RadDiffData<Config>::RadDiffData( 
+template<typename T, typename Config>
+RadDiffData<T, Config>::RadDiffData( 
                                     MpiConfig*      mpi_config_,
                                     MeshGroup*      mesh_gp_,
                                     std::size_t     freqs_np_,
@@ -140,7 +140,7 @@ RadDiffData<Config>::RadDiffData(
 
         // Create new panel data
         this->panel_data.emplace_back( 
-                                            PanelData<Config>(
+                                            PanelData<T, Config>(
                                                                     panel_view.panels[ global_panel_id ],
                                                                     body_id,
                                                                     freqs_np_,

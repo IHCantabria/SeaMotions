@@ -637,28 +637,28 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
                                                             )
 {
     // Get local variables from structures for easier access
-    cusfloat                    ang_freq_i      = this->input->angfreqs[freq_index_i];
-    cusfloat                    ang_freq_j      = this->input->angfreqs[freq_index_j];
-    std::size_t                 bodies_np       = static_cast<std::size_t>( this->mesh_gp->meshes_np );
-    std::size_t                 dofs_np         = static_cast<std::size_t>( this->input->dofs_np );
-    cusfloat                    grav_acc        = this->input->grav_acc;
-    std::size_t                 heads_np        = static_cast<std::size_t>( this->input->heads_np );
-    Input*                      input           = this->input;
-    PanelData<RDDQTFConfig>*    paneld          = nullptr;
-    cuscomplex*                 qtf_values      = nullptr;
-    cuscomplex*                 qtf_wl          = nullptr;
-    cuscomplex*                 qtf_bern        = nullptr;
-    cuscomplex*                 qtf_acc         = nullptr;
-    cuscomplex*                 qtf_mom         = nullptr;
-    cuscomplex*                 raos_i          = &( this->sim_data->raos_hist[ freq_index_i * this->sim_data->wave_exc_np ] );
-    cuscomplex*                 raos_j          = &( this->sim_data->raos_hist[ freq_index_j * this->sim_data->wave_exc_np ] );
-    RadDiffData<RDDQTFConfig>*  rdd_bern        = this->_qtf_bern_fields;
-    RadDiffData<RDDQTFConfig>*  rdd_rwel        = this->_qtf_wl_fields;
-    cusfloat                    rhow            = this->input->water_density;
-    cuscomplex*                 vel_x           = nullptr;
-    cuscomplex*                 vel_y           = nullptr;
-    cuscomplex*                 vel_z           = nullptr;
-    cusfloat                    wave_amplitude  = this->input->wave_amplitude;
+    cusfloat                                ang_freq_i      = this->input->angfreqs[freq_index_i];
+    cusfloat                                ang_freq_j      = this->input->angfreqs[freq_index_j];
+    std::size_t                             bodies_np       = static_cast<std::size_t>( this->mesh_gp->meshes_np );
+    std::size_t                             dofs_np         = static_cast<std::size_t>( this->input->dofs_np );
+    cusfloat                                grav_acc        = this->input->grav_acc;
+    std::size_t                             heads_np        = static_cast<std::size_t>( this->input->heads_np );
+    Input*                                  input           = this->input;
+    PanelData<cuscomplex, RDDQTFConfig>*    paneld          = nullptr;
+    cuscomplex*                             qtf_values      = nullptr;
+    cuscomplex*                             qtf_wl          = nullptr;
+    cuscomplex*                             qtf_bern        = nullptr;
+    cuscomplex*                             qtf_acc         = nullptr;
+    cuscomplex*                             qtf_mom         = nullptr;
+    cuscomplex*                             raos_i          = &( this->sim_data->raos_hist[ freq_index_i * this->sim_data->wave_exc_np ] );
+    cuscomplex*                             raos_j          = &( this->sim_data->raos_hist[ freq_index_j * this->sim_data->wave_exc_np ] );
+    RadDiffData<cuscomplex, RDDQTFConfig>*  rdd_bern        = this->_qtf_bern_fields;
+    RadDiffData<cuscomplex, RDDQTFConfig>*  rdd_rwel        = this->_qtf_wl_fields;
+    cusfloat                                rhow            = this->input->water_density;
+    cuscomplex*                             vel_x           = nullptr;
+    cuscomplex*                             vel_y           = nullptr;
+    cuscomplex*                             vel_z           = nullptr;
+    cusfloat                                wave_amplitude  = this->input->wave_amplitude;
 
     if constexpr( qtf_type == QTFTypeT::QTF_DIFF_CODE )
     {
@@ -1312,16 +1312,16 @@ void FrequencySolver<N, mode_pf>::_initialize_field_data( void )
     // Initialize QTF waterline field points data container
     if ( this->input->is_calc_mdrift )
     {
-        this->_qtf_bern_fields  = new RadDiffData<RDDQTFConfig>(
-                                                                        this->mpi_config,
-                                                                        this->mesh_gp,
-                                                                        this->input->angfreqs_np,
-                                                                        this->input->heads_np,
-                                                                        this->input->dofs_np,
-                                                                        false
-                                                                    );
+        this->_qtf_bern_fields  = new RadDiffData<cuscomplex, RDDQTFConfig>(
+                                                                                this->mpi_config,
+                                                                                this->mesh_gp,
+                                                                                this->input->angfreqs_np,
+                                                                                this->input->heads_np,
+                                                                                this->input->dofs_np,
+                                                                                false
+                                                                            );
 
-        this->_qtf_wl_fields    = new RadDiffData<RDDQTFConfig>(
+        this->_qtf_wl_fields    = new RadDiffData<cuscomplex, RDDQTFConfig>(
                                                                         this->mpi_config,
                                                                         this->mesh_gp,
                                                                         this->input->angfreqs_np,
