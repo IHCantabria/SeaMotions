@@ -569,28 +569,61 @@ int PanelGeom::is_inside( cusfloat* field_point )
 }
 
 
+bool PanelGeom::is_john( 
+                            cusfloat*   position,
+                            cusfloat    water_depth
+                        )
+{
+    bool        is_john = false;
+    cusfloat    dist    = 0.0;
+    cusfloat    distn   = 0.0;
+    for ( std::size_t i=0; i<pow2s(PanelGeom::gauss_points_np); i++ )
+    {
+        dist    =  std::sqrt( 
+                                    pow2s( position[0] - this->gauss_points_global_x[i] )
+                                    +
+                                    pow2s( position[1] - this->gauss_points_global_y[i] )
+                                );
+        distn   = dist / water_depth;
+
+        if ( distn > 1.0 )
+        {
+            is_john = true;
+            break;
+        }
+    }
+
+    return is_john;
+}
+
+
 void PanelGeom::local_to_global( 
                                     cusfloat    xi, 
                                     cusfloat    eta,
                                     cusfloat*   global_pos
                                 )
 {
+    // std::cout << "here1!" << std::endl;
     // Generate shape functions value container
     cusfloat N[MAX_LIN_NODES]; clear_vector( MAX_LIN_NODES, N );
 
     // Get shape functions value
+    // std::cout << "here2!" << std::endl;
     shape_fcn_2d( this->num_nodes, xi, eta, N );
 
     // Get global coordinates
     // cusfloat x2d[3]         = { 0.0, 0.0, 0.0 };
+    // std::cout << "here3!" << std::endl;
     this->_x2d[0]                  = cblas_dot<cusfloat>( this->num_nodes, this->xl, 1, N, 1 );
     this->_x2d[1]                  = cblas_dot<cusfloat>( this->num_nodes, this->yl, 1, N, 1 );
     this->_x2d[2]                  = 0.0;
 
     clear_vector( 3, this->_global_pos );
     clear_vector( 3, global_pos );
+    // std::cout << "here4!" << std::endl;
     cblas_gemv<cusfloat>(CblasRowMajor, CblasNoTrans, 3, 3, 1.0, this->local_to_global_mat, 3, this->_x2d, 1, 0, this->_global_pos, 1);
 
+    // std::cout << "here4!" << std::endl;
     sv_add( 3, this->_global_pos, this->sysref_centre, global_pos );
 
 }

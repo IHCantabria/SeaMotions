@@ -225,7 +225,8 @@ void read_body(
                                     body->is_fix,
                                     DIFFRAC_PANEL_CODE                                
                                   );
-    body->is_mesh   = true;
+    body->is_mesh       = true;
+    body->mesh_items_np = 1;
     
     // Write mesh
     fs::path mesh_foname_1_( std::string( "0_mesh" ) );
@@ -253,30 +254,16 @@ void read_body(
         ss << body->mesh_body_name << "_lid";
         
         // Load lid mesh
-        Mesh* lid_mesh = new Mesh(
-                                    mesh_fipath_.string( ),
-                                    ss.str( ),
-                                    body->cog,
-                                    body->is_fix,
-                                    LID_PANEL_CODE
-                                );
+        body->mesh_int_lid  = new Mesh(
+                                            mesh_fipath_.string( ),
+                                            ss.str( ),
+                                            body->cog,
+                                            body->is_fix,
+                                            LID_PANEL_CODE
+                                        );
+        body->is_mesh_int_lid   = true;
+        body->mesh_items_np++;
 
-        // Joint body and lid meshes
-        std::vector<Mesh*> meshes;
-        meshes.push_back( body->mesh );
-        meshes.push_back( lid_mesh );
-
-        body->mesh  = new Mesh(
-                                    meshes,
-                                    body->cog,
-                                    body->is_fix
-                                );
-
-        // Delete body and lid meshes
-        for ( auto mi: meshes )
-        {
-            delete mi;
-        }
     }
 
     // Load QTF free surface
@@ -299,6 +286,7 @@ void read_body(
         body->mesh_fs_qtf->calculate_fs_radius( );
 
         body->is_mesh_fs_qtf    = true;
+        body->mesh_items_np++;
     }
 
     // Close file unit

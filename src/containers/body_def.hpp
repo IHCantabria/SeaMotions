@@ -37,12 +37,15 @@ public:
     bool            interia_by_rad  = false;
     bool            is_fix          = false;
     bool            is_mesh         = false;
+    bool            is_mesh_int_lid = false;
     bool            is_mesh_fs_qtf  = false;
     int             lid_type        = 0;
     cusfloat        mass            = 0.0;
     Mesh*           mesh            = nullptr;
-    Mesh*           mesh_fs_qtf     = nullptr;
     std::string     mesh_finame     = "";
+    Mesh*           mesh_fs_qtf     = nullptr;
+    Mesh*           mesh_int_lid    = nullptr;
+    int             mesh_items_np   = 0;
     std::string     mesh_body_name  = "";
     cusfloat        rad_inertia[3]  = { 0.0, 0.0, 0.0 };
 

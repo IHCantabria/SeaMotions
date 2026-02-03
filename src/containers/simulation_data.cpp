@@ -400,6 +400,18 @@ SimulationData::SimulationData(
     if ( this->_input->is_calc_mdrift || this->_input->out_qtf )
     {
         this->raos_hist = generate_empty_vector<cuscomplex>( this->_input->angfreqs_np * this->wave_exc_np );
+
+        this->qtf                       = generate_empty_vector<cuscomplex>( this->qtf_np );
+        this->qtf_diff_acc              = generate_empty_vector<cuscomplex>( this->qtf_np );
+        this->qtf_diff_bern             = generate_empty_vector<cuscomplex>( this->qtf_np );
+        this->qtf_diff_mom              = generate_empty_vector<cuscomplex>( this->qtf_np );
+        this->qtf_diff_secord_force     = generate_empty_vector<cuscomplex>( this->qtf_np );
+        this->qtf_diff_wl               = generate_empty_vector<cuscomplex>( this->qtf_np );
+        this->qtf_sum_acc               = generate_empty_vector<cuscomplex>( this->qtf_np );
+        this->qtf_sum_bern              = generate_empty_vector<cuscomplex>( this->qtf_np );
+        this->qtf_sum_mom               = generate_empty_vector<cuscomplex>( this->qtf_np );
+        this->qtf_sum_secord_force      = generate_empty_vector<cuscomplex>( this->qtf_np );
+        this->qtf_sum_wl                = generate_empty_vector<cuscomplex>( this->qtf_np );
     }
 
     // Allocate space for variables used only on root processor
@@ -435,20 +447,32 @@ SimulationData::~SimulationData(
                                     void
                                 )
 {
-    mkl_free( this->added_mass );
-    mkl_free( this->damping_rad );
-    mkl_free( this->froude_krylov );
-    mkl_free( this->raos );
-    mkl_free( this->intensities );
-    mkl_free( this->panels_potential );
-    mkl_free( this->sysmat );
-    mkl_free( this->sysmat_steady );
-    mkl_free( this->wave_diffrac );
+    mkl_free( this->added_mass          );
+    mkl_free( this->damping_rad         );
+    mkl_free( this->froude_krylov       );
+    mkl_free( this->raos                );
+    mkl_free( this->intensities         );
+    mkl_free( this->panels_potential    );
+    mkl_free( this->sysmat              );
+    mkl_free( this->sysmat_steady       );
+    mkl_free( this->wave_diffrac        );
 
     // Storage required variables for second order calculations
     if ( this->_input->is_calc_mdrift || this->_input->out_qtf )
     {
         mkl_free( this->raos_hist );
+
+        mkl_free( this->qtf                   );
+        mkl_free( this->qtf_diff_acc          );
+        mkl_free( this->qtf_diff_bern         );
+        mkl_free( this->qtf_diff_mom          );
+        mkl_free( this->qtf_diff_secord_force );
+        mkl_free( this->qtf_diff_wl           );
+        mkl_free( this->qtf_sum_acc           );
+        mkl_free( this->qtf_sum_bern          );
+        mkl_free( this->qtf_sum_mom           );
+        mkl_free( this->qtf_sum_secord_force  );
+        mkl_free( this->qtf_sum_wl            );
     }
 
     if ( this->_mpi_config->is_root( ) )

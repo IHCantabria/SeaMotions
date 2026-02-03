@@ -82,7 +82,7 @@ void        fd_green_rad_asymptotic(
     }
 
     // Get variables as local constants for convient naming
-    cusfloat k0 = this->k0;
+    cusfloat k0 = wave_data.k0;
 
     // Calculate C0 constant
     cusfloat c0 = wave_data.k0nu * std::sqrt( 2.0 / PI / k0 );
@@ -117,10 +117,10 @@ void        fd_green_rad_asymptotic(
     }
 
     // Calculate Green function values
-    STATIC_COND( ONLY_FCN,      STATIC_LOOP( n, N, G[i]       = c0 * r_inv_sqrt[i] * ( v2[i] + v3[i] + v4[i] + v5[i] ) * exp_term[i];   ) )
-    STATIC_COND( ONLY_FCNDR,    STATIC_LOOP( n, N, G_dr[i]    = G[i] * ( -1/2.0/R[i] + cuscomplex( 0.0, -k0 ) );                        ) )
-    STATIC_COND( ONLY_FCNDZ,    STATIC_LOOP( n, N, G_dz[i]    = c0 * r_inv_sqrt[i] * ( - v2[i] + v3[i] - v4[i] + v5[i] ) * exp_term[i]; ) )
-    STATIC_COND( ONLY_FCNDZ,    STATIC_LOOP( n, N, G_dzeta[i] = c0 * r_inv_sqrt[i] * ( - v2[i] - v3[i] + v4[i] + v5[i] ) * exp_term[i]; ) )
+    STATIC_COND( ONLY_FCN,      LOOP_DEF( N, G[i]       = c0 * r_inv_sqrt[i] * ( v2[i] + v3[i] + v4[i] + v5[i] ) * exp_term[i];   ) )
+    STATIC_COND( ONLY_FCNDR,    LOOP_DEF( N, G_dr[i]    = G[i] * ( -1/2.0/R[i] + cuscomplex( 0.0, -k0 ) );                        ) )
+    STATIC_COND( ONLY_FCNDZ,    LOOP_DEF( N, G_dz[i]    = c0 * r_inv_sqrt[i] * ( - v2[i] + v3[i] - v4[i] + v5[i] ) * exp_term[i]; ) )
+    STATIC_COND( ONLY_FCNDZ,    LOOP_DEF( N, G_dzeta[i] = c0 * r_inv_sqrt[i] * ( - v2[i] - v3[i] + v4[i] + v5[i] ) * exp_term[i]; ) )
 
 }
 
@@ -644,6 +644,27 @@ void        john_series(
     {
         zetah[i]    = zeta[i] + h;
         zh[i]       = z[i] + h;
+    }
+
+    bool is_lower = false;
+    for ( std::size_t i=0; i<N; i++ )
+    {
+        if ( R[i]/h < 1.0 )
+        {
+            is_lower = true;
+        }
+    }
+
+    if ( is_lower )
+    {
+        std::cout << "Warning: John series may have convergence problems for R/h < 1. Current values:" << std::endl;
+        std::cout << "I: " << ELEM_ID_GLOBAL_X << " - J: " << ELEM_ID_GLOBAL_Y << std::endl;
+        for ( std::size_t i=0; i<N; i++ )
+        {
+            std::cout << "R/h: " << R[i]/h << std::endl;
+        }
+        std::cout << std::endl;
+        std::cout << std::endl;
     }
 
     // Calculate imag root series part

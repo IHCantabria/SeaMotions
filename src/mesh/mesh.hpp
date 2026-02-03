@@ -63,6 +63,10 @@ protected:
     void    _calculate_fs_centre(
                                         void
                                 );
+
+    void    _check_mesh_properties(
+                                        void
+                                );
     
     void    _create_panels(
                                         int                 panel_type,

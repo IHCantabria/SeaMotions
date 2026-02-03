@@ -153,7 +153,7 @@ void    calculate_froude_krylov_fo(
                     // Integrate pressure over panel
                     index_1                 = max_panels * ib + ie;
                     press_i                 = pressure[index_1] * mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->normal_vec[id];
-                    froude_krylov[index]    += cuscomplex( 0.0, -ang_freq * rho_w ) * press_i;
+                    froude_krylov[index]    += cuscomplex( 0.0, ang_freq * rho_w ) * press_i;
                 }
             }
         }

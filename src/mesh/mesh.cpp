@@ -144,6 +144,52 @@ void        Mesh::calculate_fs_radius(
 }
 
 
+void        Mesh::_check_mesh_properties(
+                                               void
+                                       )
+{
+    // #include <fstream>
+    
+    // std::ofstream out_file( "S:/seamotions_validation/0_seamotions/1_H50/0_Box/eval_points.COR" );
+    // Loop over panels to check they have a positive area
+    for ( int i=0; i<this->elems_np; i++ )
+    {
+        if ( this->panels[i]->area <= 1e-5 )
+        {
+            std::cerr << "Panel: " << i << " has a negative or zero area: " << this->panels[i]->area << std::endl;
+            throw std::runtime_error( "" );
+        }
+
+        if ( this->panels[i]->num_nodes < 3 )
+        {
+            std::cerr << "Panel: " << i << " has less than 3 nodes: " << this->panels[i]->num_nodes << std::endl;
+            throw std::runtime_error( "" );
+        }
+
+        if ( 
+                std::abs( this->panels[i]->center[0] ) > 1e6
+                ||
+                std::abs( this->panels[i]->center[1] ) > 1e6
+                ||
+                std::abs( this->panels[i]->center[2] ) > 1e6
+            )
+        {
+            std::cerr << "Panel: " << i << " is out of bounds: ";
+            std::cerr << this->panels[i]->center[0] << ", "; 
+            std::cerr << this->panels[i]->center[1] << ", ";
+            std::cerr << this->panels[i]->center[2] << std::endl;
+            throw std::runtime_error( "" );
+        }
+
+        // out_file << i << " "
+        //          << this->panels[i]->center[0] << " "
+        //          << this->panels[i]->center[1] << " "
+        //          << this->panels[i]->center[2] << std::endl;
+    }
+    // out_file.close( );
+}
+
+
 void        Mesh::_create_panels(
                                                int          panel_type,
                                                bool         auto_force_type,
@@ -1217,6 +1263,9 @@ Mesh::Mesh(
 
     // Create panels for each element
     this->_create_panels( panel_type, auto_force_type, cog );
+
+    // Check mesh properties
+    this->_check_mesh_properties( );
 
 }
 

@@ -28,11 +28,20 @@
 #include "../../mesh/mesh_group.hpp"
 
 // Set module definitions
-#define QTF_DIFF_CODE   0
-#define QTF_SUM_CODE    1
+// #define QTF_DIFF_CODE   0
+// #define QTF_SUM_CODE    1
 
 
 // Declare module functions
+void        calculate_mass_acceleration(
+                                            Input*      input,
+                                            cuscomplex* raos,
+                                            cusfloat    ang_2,
+                                            int         ib,
+                                            int         idx,
+                                            cuscomplex* hydro_force
+                                        );
+
 void        calculate_pinkster(
                                             Input*      input,
                                             MpiConfig*  mpi_config,

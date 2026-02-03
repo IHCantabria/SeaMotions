@@ -129,20 +129,20 @@ void FrequencySolver<N, mode_pf>::_calculate_field_points_values(
 {
     if ( this->input->is_calc_mdrift )
     {
-        // Calculate waterline field points values for QTF calculations
-        this->kernel->template compute_fields<RDDQTFConfig>( 
-                                                                freq_index,
-                                                                ang_freq,
-                                                                this->sim_data->raos,
-                                                                this->_qtf_wl_fields
-                                                            );
-
         // Calculate velocity field at Bernoulli points for QTF calculations
         this->kernel->template compute_fields<RDDQTFConfig>(
                                                                 freq_index, 
                                                                 ang_freq,
                                                                 this->sim_data->raos,
                                                                 this->_qtf_bern_fields
+                                                            );
+        
+        // Calculate waterline field points values for QTF calculations
+        this->kernel->template compute_fields<RDDQTFConfig>( 
+                                                                freq_index,
+                                                                ang_freq,
+                                                                this->sim_data->raos,
+                                                                this->_qtf_wl_fields
                                                             );
     }
 }
@@ -1312,6 +1312,15 @@ void FrequencySolver<N, mode_pf>::_initialize_field_data( void )
     // Initialize QTF waterline field points data container
     if ( this->input->is_calc_mdrift )
     {
+        this->_qtf_bern_fields  = new RadDiffData<RDDQTFConfig>(
+                                                                        this->mpi_config,
+                                                                        this->mesh_gp,
+                                                                        this->input->angfreqs_np,
+                                                                        this->input->heads_np,
+                                                                        this->input->dofs_np,
+                                                                        false
+                                                                    );
+
         this->_qtf_wl_fields    = new RadDiffData<RDDQTFConfig>(
                                                                         this->mpi_config,
                                                                         this->mesh_gp,
@@ -1321,14 +1330,7 @@ void FrequencySolver<N, mode_pf>::_initialize_field_data( void )
                                                                         true
                                                                 );
         
-        this->_qtf_bern_fields  = new RadDiffData<RDDQTFConfig>(
-                                                                        this->mpi_config,
-                                                                        this->mesh_gp,
-                                                                        this->input->angfreqs_np,
-                                                                        this->input->heads_np,
-                                                                        this->input->dofs_np,
-                                                                        false
-                                                                    );
+        
     }
 
     LOG_TASK_TIME( fields, fields_timer )
@@ -1342,16 +1344,33 @@ void FrequencySolver<N, mode_pf>::_initialize_mesh_groups( void )
     MpiTimer mesh_timer;
     
     // Group all meshes in a vector
-    Mesh** all_meshes = new Mesh*[input->bodies_np];
+    int _total_meshes_np = 0;
     for ( int i=0; i<input->bodies_np; i++ )
     {
-        all_meshes[i] = this->input->bodies[i]->mesh;
+        _total_meshes_np += this->input->bodies[i]->mesh_items_np;
+    }
+
+    Mesh** all_meshes = new Mesh*[_total_meshes_np];
+    int _count_mesh = 0;
+    for ( int i=0; i<this->input->bodies_np; i++ )
+    {
+        if ( this->input->bodies[i]->is_mesh )
+        {
+            all_meshes[_count_mesh] = this->input->bodies[i]->mesh;
+        }
+        _count_mesh++;
+
+        if ( this->input->bodies[i]->is_mesh_int_lid )
+        {
+            all_meshes[_count_mesh] = this->input->bodies[i]->mesh_int_lid;
+        }
+        _count_mesh++;
     }
 
     // Create new mesh from the meshes of all objects
     this->mesh_gp       = new MeshGroup( 
                                             all_meshes,
-                                            input->bodies_np,
+                                            _total_meshes_np,
                                             input->is_wl_points
                                         );
 
