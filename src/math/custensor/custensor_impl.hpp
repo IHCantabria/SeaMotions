@@ -20,14 +20,24 @@
 
 #pragma once
 
+// Include general usage libraries
+#include <algorithm>
+#include <array>
+#include <type_traits>
+
 // Include local modules
 #include "base.hpp"
 #include "binary_expression.hpp"
 #include "../math_tools.hpp"
 
-
 namespace cut
 {
+    // Define epsilon value for floating point comparisons
+    inline constexpr cusfloat CUSTENSOR_EPS =
+        std::is_same<cusfloat, float>::value
+            ? static_cast<cusfloat>(1e-6)
+            : static_cast<cusfloat>(1e-14);
+
     /********************************************/
     /************** MODULE MACROS ***************/
     /********************************************/
@@ -136,20 +146,30 @@ namespace cut
             this->_allocate_memory( );
         }
 
-        // Move constructor
+        // Copy constructor (deep copy)
+        CusTensor( const CusTensor& other )
+        {
+            this->_shape   = other._shape;
+            this->_strides = other._strides;
+            this->_size    = other._size;
+            this->_allocate_memory( );
+            std::copy( other._data, other._data + this->_size, this->_data );
+        }
+
+        // Move constructor (transfer ownership)
         CusTensor( CusTensor&& other ) noexcept
         {
-            // Move data into current class
-            this->_data( other._data );
-            this->_shape( std::move( other._shape ) );
-            this->_strides( std::move( other._strides ) );
-            this->_size( other._size );
-            this->_is_heap( other._is_heap );
+            this->_data    = other._data;
+            this->_shape   = std::move( other._shape );
+            this->_strides = std::move( other._strides );
+            this->_size    = other._size;
+            this->_is_heap = other._is_heap;
 
-            // Unlink data from other class and reset it
-            other._data     = nullptr;
-            other._is_heap  = false;
-            other._size     = 0;
+            other._data    = nullptr;
+            other._is_heap = false;
+            other._size    = 0;
+            other._shape.clear( );
+            other._strides.clear( );
         }
 
         // Copy assignment operator
@@ -172,7 +192,7 @@ namespace cut
             return *this;
         }
 
-        // Move assignement operator
+        // Move assignment operator (transfer ownership)
         CusTensor& operator=( CusTensor&& other ) noexcept
         {
             if ( this != &other ) 
@@ -184,15 +204,17 @@ namespace cut
 
                 // Move data into current class
                 this->_data     = other._data;
-                this->_shape    = std::move(other._shape);
-                this->_strides  = std::move(other._strides);
+                this->_shape    = std::move( other._shape );
+                this->_strides  = std::move( other._strides );
                 this->_size     = other._size;
                 this->_is_heap  = other._is_heap;
 
                 // Unlink and reset from previous class
-                other._data = nullptr;
+                other._data    = nullptr;
                 other._is_heap = false;
-                other._size = 0;
+                other._size    = 0;
+                other._shape.clear( );
+                other._strides.clear( );
 
             }
 
@@ -205,11 +227,6 @@ namespace cut
             this->operator=( expr );
         }
 
-        template<>
-        CusTensor( const CusTensor& other )
-        {
-            this->_operator=( other );
-        }
 
         ~CusTensor( )
         {
@@ -316,32 +333,48 @@ namespace cut
             return *this;
         }
 
-        template<>
-        CusTensor& operator=( const CusTensor& other )
+        bool operator==( const CusTensor& other ) const
         {
-            // Check for size and shape inconsistency
-            if ( this->_is_heap )
+            // Check for shape mismatch
+            if ( this->_shape != other._shape )
             {
-                if ( this->_shape != other.shape( ) )
+                return false;
+            }
+
+            // Compare element-wise with type-appropriate semantics
+            for ( size_t i = 0; i < this->_size; ++i )
+            {
+                if constexpr ( std::is_integral<T>::value )
                 {
-                    CUSTENSOR_SHAPE_MISMATCH( this->_shape, other.shape( ) )
+                    if ( this->_data[i] != other._data[i] )
+                    {
+                        return false;
+                    }
+                }
+                else if constexpr ( std::is_floating_point<T>::value )
+                {
+                    T tol = static_cast<T>( EPS_PRECISION );
+                    if ( std::abs( this->_data[i] - other._data[i] ) > tol )
+                    {
+                        return false;
+                    }
+                }
+                else if constexpr ( std::is_same<T, cuscomplex>::value )
+                {
+                    cusfloat tol = static_cast<cusfloat>( EPS_PRECISION );
+                    if ( std::abs( this->_data[i].real( ) - other._data[i].real( ) ) > tol ||
+                         std::abs( this->_data[i].imag( ) - other._data[i].imag( ) ) > tol )
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    static_assert( std::is_same<T, void>::value, "CusTensor equality operator supports only integral, floating point and complex types." );
                 }
             }
-            else
-            {
-                this->_size     = other.size( );
-                this->_shape    = other.shape( );
-                this->_compute_strides( );
-                this->_allocate_memory( this->_size );
-            }
 
-            // Copy data
-            for ( size_t i=0; i<this->_size; i++ )
-            {
-                this->_data[i] = other.data[i];
-            }
-
-            return *this;
+            return true;
         }
 
         // Define custensor operators
