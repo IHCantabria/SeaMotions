@@ -646,27 +646,6 @@ void        john_series(
         zh[i]       = z[i] + h;
     }
 
-    bool is_lower = false;
-    for ( std::size_t i=0; i<N; i++ )
-    {
-        if ( R[i]/h < 1.0 )
-        {
-            is_lower = true;
-        }
-    }
-
-    if ( is_lower )
-    {
-        std::cout << "Warning: John series may have convergence problems for R/h < 1. Current values:" << std::endl;
-        std::cout << "I: " << ELEM_ID_GLOBAL_X << " - J: " << ELEM_ID_GLOBAL_Y << std::endl;
-        for ( std::size_t i=0; i<N; i++ )
-        {
-            std::cout << "R/h: " << R[i]/h << std::endl;
-        }
-        std::cout << std::endl;
-        std::cout << std::endl;
-    }
-
     // Calculate imag root series part
     cusfloat    c_max           = 0.0;
     cusfloat    c_g_max         = 0.0;

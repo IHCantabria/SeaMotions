@@ -111,8 +111,6 @@ constexpr cusfloat  W_ASYMPT_HIGH           = 100.0;            // High frequenc
 constexpr cusfloat  W_ASYMPT_LOW            = 0.0001;           // Low frequency asymptotic regime threshold
 constexpr cusfloat  ZEROTH_EPS              = 1E-14;
 
-static std::size_t  ELEM_ID_GLOBAL_X = 0;
-static std::size_t  ELEM_ID_GLOBAL_Y = 0;
 
 /************************************************************/
 /****** Define class enums to be used along the code  *******/

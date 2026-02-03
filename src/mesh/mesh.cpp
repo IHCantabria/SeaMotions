@@ -148,9 +148,6 @@ void        Mesh::_check_mesh_properties(
                                                void
                                        )
 {
-    // #include <fstream>
-    
-    // std::ofstream out_file( "S:/seamotions_validation/0_seamotions/1_H50/0_Box/eval_points.COR" );
     // Loop over panels to check they have a positive area
     for ( int i=0; i<this->elems_np; i++ )
     {
@@ -181,12 +178,7 @@ void        Mesh::_check_mesh_properties(
             throw std::runtime_error( "" );
         }
 
-        // out_file << i << " "
-        //          << this->panels[i]->center[0] << " "
-        //          << this->panels[i]->center[1] << " "
-        //          << this->panels[i]->center[2] << std::endl;
     }
-    // out_file.close( );
 }
 
 
