@@ -371,13 +371,13 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
                 this->output->save_hydromechanics_format(
                                                             freq_index,
                                                             _DN_ADDED_MASS,
-                                                            this->sim_data->added_mass
+                                                            this->sim_data->added_mass_p0
                                                         );
 
                 this->output->save_hydromechanics_format(
                                                             freq_index,
                                                             _DN_DAMPING_RAD,
-                                                            this->sim_data->damping_rad
+                                                            this->sim_data->damping_rad_p0
                                                         );
             }
             else
