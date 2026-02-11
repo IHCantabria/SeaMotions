@@ -1,27 +1,39 @@
 # SeaMotions
 
-# Introduction
+SeaMotions is a Boundary Element Method (BEM) solver that models the interaction between ocean waves and floating bodies across a wide frequency range. The codebase serves both research and industrial design workflows by combining high-order hydrodynamics, multi-body formulations, and curated tooling to inspect loads, motions, and derived quantities.
 
-SeaMotions is a software designed to simulate the interaction in between the waves and floating bodies. It is based on the Boundary Element Method and employs special Green functions to accelerate the computation of the sources on the frequency domain.
+## Capabilities
 
-## Features
+### Hydrodynamics Core
+- BEM formulation for mono- and multi-body layouts, including Oscillating Water Columns (OWCs).
+- Database generators for deep- and finite-depth conditions.
+- Consistent hydrostatic restoring and initial-stability estimators that feed the dynamic solvers.
 
-### First order module
-- Calculation of AddedMass/Damping coefficients (Hydromechanic Forces)
-- Calculation of wave diffraction and Froude-Krylov forces (Wave Exciting Forces)
-- Multi-Body formulation which allows to simulate OWCs
-- Calculation of wave height along the domain
-- Calculation of relative wave height
-- Calculation of velocities and pressures along the domain
+### First-Order Frequency-Domain Analysis
+- Added-mass and radiation damping matrices for 6N rigid-body modes.
+- Incident-wave diffraction, Froude-Krylov loads, and complex wave exciting forces.
+- Field reconstruction for velocities, pressures, and free-surface elevations throughout the computational domain.
 
-### Second order module
-- Calculation of Mean Drift (Second Order force estimated through first order contributions)
-- QTF coefficients
-- Second order potential
-    - Pinkster
-    - Indirect method (X.Chen)
+### Second-Order and Nonlinear Estimators
+- Quadratic Transfer Functions (QTFs) via Pinkster and X. Chen (indirect) formulations.
+- Mean-drift force prediction built from first-order solutions.
 
-The calculation of the second order quantities is performed in serial.
+### Numerical Infrastructure and Tooling
+- MPI-enabled execution paths for heavy frequency sweep workloads.
+- Python-based utilities in `aux_tools/` to create, validate, and fit hydrodynamic databases.
+- Ready-to-run examples under `examples/` and regression tests in `tests/` for continuous validation.
+
+## Repository Layout
+- `src/`: Core C++ solvers, interfaces, and numerical utilities.
+- `examples/`: Representative hydrodynamic setups with ready-made meshes.
+- `aux_tools/`: Python scripts to generate integrals, fit coefficient surfaces, and cross-check outputs.
+- `tests/`: Catch2-based unit and integration tests guarding dispersion, hydrostatics, MPI, and IO behavior.
+- `bin/`: Convenience launchers produced after building (`seamotions_freq`, `seamotions_stab`, etc.).
+
+## Documentation Roadmap
+- Build and install instructions: see [INSTALL.md](INSTALL.md).
+- Parallel HDF5 compilation guide: see [PARALLEL_HDF5.md](PARALLEL_HDF5.md).
+- Example setups and validation workflows: inspect the `examples/` and `tests/` folders.
 
 ## Contact
-For any software related issues contact with the software developer: [Sergio Fernandez Ruano](https://ihcantabria.com/directorio-personal/sergio-fernandez-ruano/)
+For any software-related questions or bug reports, contact [Sergio Fernandez Ruano](https://ihcantabria.com/directorio-personal/sergio-fernandez-ruano/).
