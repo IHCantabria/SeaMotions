@@ -215,18 +215,20 @@ void read_body(
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Load mesh for the current body
+    std::vector<Mesh*> _mesh_total;
     fs::path mesh_foname_( std::string( "mesh" ) );
     fs::path mesh_finame_( body->mesh_finame );
     fs::path mesh_fipath_ = folder_path_ / mesh_foname_ / mesh_finame_;
-    body->mesh      = new   Mesh( 
-                                    mesh_fipath_.string( ),
-                                    body->mesh_body_name,
-                                    body->cog,
-                                    body->is_fix,
-                                    DIFFRAC_PANEL_CODE                                
-                                  );
+    body->mesh          = new   Mesh( 
+                                        mesh_fipath_.string( ),
+                                        body->mesh_body_name,
+                                        body->cog,
+                                        body->is_fix,
+                                        DIFFRAC_PANEL_CODE                                
+                                    );
     body->is_mesh       = true;
     body->mesh_items_np = 1;
+    _mesh_total.push_back( body->mesh );
     
     // Write mesh
     fs::path mesh_foname_1_( std::string( "0_mesh" ) );
@@ -263,6 +265,7 @@ void read_body(
                                         );
         body->is_mesh_int_lid   = true;
         body->mesh_items_np++;
+        _mesh_total.push_back( body->mesh_int_lid );
 
     }
 
@@ -288,6 +291,15 @@ void read_body(
         body->is_mesh_fs_qtf    = true;
         body->mesh_items_np++;
     }
+
+    // Compose total mesh
+    body->mesh_total    = new Mesh( 
+                                        _mesh_total, 
+                                        body->cog, 
+                                        body->is_fix,
+                                        DIFFRAC_PANEL_CODE
+                                    );
+    body->is_mesh_total = true;
 
     // Close file unit
     infile.close();

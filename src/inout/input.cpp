@@ -145,7 +145,7 @@ void Input::configure( void )
         // Detect points over the free surface
         for ( int i=0; i<this->bodies_np; i++ )
         {
-            this->bodies[i]->mesh->detect_wl_points( this->wl_det_prec );
+            this->bodies[i]->mesh_total->detect_wl_points( this->wl_det_prec );
         }
     }
 
@@ -154,18 +154,10 @@ void Input::configure( void )
     /**********************************************************/
     for ( int i=0; i<this->bodies_np; i++ )
     {
-        this->bodies[i]->mesh->define_source_nodes(
+        this->bodies[i]->mesh_total->define_source_nodes(
                                                         this->poly_order,
                                                         this->bodies[i]->cog
                                                     );
-
-        if ( this->bodies[i]->is_mesh_int_lid )
-        {
-            this->bodies[i]->mesh_int_lid->define_source_nodes(
-                                                                this->poly_order,
-                                                                this->bodies[i]->cog
-                                                            );
-        }
     }
 
 }
