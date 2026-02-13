@@ -655,7 +655,7 @@ void        Mesh::_joint_meshes(
     }
 
     this->elems_np = elems_np_cum[ meshes.size( ) ];
-    this->nodes_np = meshes[0]->nodes_np;
+    this->nodes_np = nodes_np_cum[ meshes.size( ) ];
 
     // Get maximum nodes per element and it's extended counterpart
     // to allocate space for all the elements in the mesh
@@ -704,11 +704,14 @@ void        Mesh::_joint_meshes(
     }
 
     // Add node positions
-    for ( int i=0; i<meshes[0]->nodes_np; i++ )
+    for ( std::size_t i=0; i<meshes.size( ); i++ )
     {
-        this->x[i] = meshes[0]->x[i];
-        this->y[i] = meshes[0]->y[i];
-        this->z[i] = meshes[0]->z[i];
+        for ( int j=0; j<meshes[i]->nodes_np; j++ )
+        {
+            this->x[ nodes_np_cum[i] + j ] = meshes[i]->x[j];
+            this->y[ nodes_np_cum[i] + j ] = meshes[i]->y[j];
+            this->z[ nodes_np_cum[i] + j ] = meshes[i]->z[j];
+        }
     }
 }
 
