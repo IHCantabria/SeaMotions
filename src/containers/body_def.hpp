@@ -39,14 +39,16 @@ public:
     bool            is_mesh         = false;
     bool            is_mesh_int_lid = false;
     bool            is_mesh_fs_qtf  = false;
+    bool            is_mesh_total   = false;
     int             lid_type        = 0;
     cusfloat        mass            = 0.0;
     Mesh*           mesh            = nullptr;
+    std::string     mesh_body_name  = "";
     std::string     mesh_finame     = "";
     Mesh*           mesh_fs_qtf     = nullptr;
     Mesh*           mesh_int_lid    = nullptr;
     int             mesh_items_np   = 0;
-    std::string     mesh_body_name  = "";
+    Mesh*           mesh_total      = nullptr;
     cusfloat        rad_inertia[3]  = { 0.0, 0.0, 0.0 };
 
     // Define class constructor and destructor

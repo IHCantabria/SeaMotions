@@ -34,6 +34,16 @@ BodyDef::~BodyDef( void )
     {
         delete this->mesh_fs_qtf;
     }
+
+    if ( this->is_mesh_int_lid ) 
+    { 
+        delete this->mesh_int_lid; 
+    }
+
+    if ( this->is_mesh_total )
+    {
+        delete this->mesh_total;
+    }
 }
 
 
