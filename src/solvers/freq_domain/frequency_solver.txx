@@ -1298,7 +1298,7 @@ void FrequencySolver<N, mode_pf>::_generate_formulation_kernel( void )
 {
     LOG_TASK_SS( kernel, "Generating kernel..." )
     MpiTimer kernel_timer;
-    this->kernel = new FormulationKernelBackend<NUM_GP, PF_OFF>( this->input, this->mpi_config, this->mesh_gp );
+    this->kernel = new FormulationKernelBackend<NUM_GP, mode_pf>( this->input, this->mpi_config, this->mesh_gp );
     LOG_TASK_TIME( kernel, kernel_timer )
 }
 
@@ -1344,25 +1344,13 @@ void FrequencySolver<N, mode_pf>::_initialize_mesh_groups( void )
     MpiTimer mesh_timer;
     
     // Group all meshes in a vector
-    int _total_meshes_np = 0;
-    for ( int i=0; i<input->bodies_np; i++ )
-    {
-        _total_meshes_np += this->input->bodies[i]->mesh_items_np;
-    }
-
-    Mesh** all_meshes = new Mesh*[_total_meshes_np];
+    Mesh** all_meshes = new Mesh*[input->bodies_np];
     int _count_mesh = 0;
     for ( int i=0; i<this->input->bodies_np; i++ )
     {
-        if ( this->input->bodies[i]->is_mesh )
+        if ( this->input->bodies[i]->is_mesh_total )
         {
-            all_meshes[_count_mesh] = this->input->bodies[i]->mesh;
-        }
-        _count_mesh++;
-
-        if ( this->input->bodies[i]->is_mesh_int_lid )
-        {
-            all_meshes[_count_mesh] = this->input->bodies[i]->mesh_int_lid;
+            all_meshes[_count_mesh] = this->input->bodies[i]->mesh_total;
         }
         _count_mesh++;
     }
@@ -1370,7 +1358,7 @@ void FrequencySolver<N, mode_pf>::_initialize_mesh_groups( void )
     // Create new mesh from the meshes of all objects
     this->mesh_gp       = new MeshGroup( 
                                             all_meshes,
-                                            _total_meshes_np,
+                                            input->bodies_np,
                                             input->is_wl_points
                                         );
 

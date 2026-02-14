@@ -102,7 +102,7 @@ private:
 
 public:
     // Declare public attributes
-    FormulationKernelBackend<NUM_GP, PF_OFF>*   kernel          = nullptr;  // Kernel of the formulation. It solves the raddiation diffraction problem. It can be CPU or GPU based.
+    FormulationKernelBackend<NUM_GP, mode_pf>*  kernel          = nullptr;  // Kernel of the formulation. It solves the raddiation diffraction problem. It can be CPU or GPU based.
     Hydrostatics**                              hydrostatics    = nullptr;  // 
     Input*                                      input           = nullptr;  // 
     MeshGroup*                                  mesh_gp         = nullptr;  // 
