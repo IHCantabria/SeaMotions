@@ -828,7 +828,6 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
     
     // Declare local variables
     int         col_count               = 0;
-    cusfloat    dist                    = 0.0;
     cusfloat    distn                   = 0.0;
     auto        gwf_interf              = this->_gwfcns_interf;
     int         index_cm                = 0;
