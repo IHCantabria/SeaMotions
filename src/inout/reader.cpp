@@ -293,13 +293,15 @@ void read_body(
     }
 
     // Compose total mesh
-    body->mesh_total    = new Mesh( 
+    body->mesh_total    = new Mesh(
+                                        body->mesh->name, 
                                         _mesh_total, 
                                         body->cog, 
-                                        body->is_fix,
-                                        DIFFRAC_PANEL_CODE
+                                        body->is_fix
                                     );
     body->is_mesh_total = true;
+
+    body->mesh_total->write( plot_mesh_fipath_.string( ), "total" );
 
     // Close file unit
     infile.close();
