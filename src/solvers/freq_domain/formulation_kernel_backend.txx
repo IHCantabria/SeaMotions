@@ -29,7 +29,7 @@
 /********************************************************/
 #define _QUADRATURE_PANEL_T( TA0, TA1, TA2, TA3, TA4 )                                  \
 {                                                                                       \
-    if constexpr( freq_regime == FreqRegimeT::REGULAR )                               \
+    if constexpr( freq_regime == FreqRegimeE::REGULAR )                               \
     {                                                                                   \
         quadrature_panel_t<                                                             \
                                 PanelGeom,                                              \
@@ -47,7 +47,7 @@
                                 wave_fcn_dz_value                                       \
                             );                                                          \
     }                                                                                   \
-    else if constexpr( freq_regime == FreqRegimeT::ASYMPT_LOW )                       \
+    else if constexpr( freq_regime == FreqRegimeE::ASYMPT_LOW )                       \
     {                                                                                   \
         quadrature_panel_t<                                                             \
                                 PanelGeom,                                              \
@@ -89,7 +89,7 @@
 /*************************************************************************/
 /****************** Define auxiliar module functions *********************/
 /*************************************************************************/
-template<int mode_pf, FreqRegimeT freq_regime>
+template<int mode_pf, FreqRegimeE freq_regime>
 void _formulation_kernel_steady(
                                     bool        is_diag,
                                     PanelGeom*  panel_i,
@@ -201,7 +201,7 @@ void _formulation_kernel_steady(
                             );
 
     // Compose total velocity vector
-    if constexpr( freq_regime == FreqRegimeT::REGULAR || freq_regime == FreqRegimeT::ASYMPT_LOW )
+    if constexpr( freq_regime == FreqRegimeE::REGULAR || freq_regime == FreqRegimeE::ASYMPT_LOW )
     {
         vel_total[0]    = - ( vel_0[0] + vel_1[0] + vel_2[0] + vel_3[0] + vel_4[0] + vel_5[0] );
         vel_total[1]    = - ( vel_0[1] + vel_1[1] + vel_2[1] + vel_3[1] + vel_4[1] + vel_5[1] );
@@ -247,7 +247,7 @@ void _formulation_kernel_steady(
 }
 
 
-template<int mode_pf, FreqRegimeT freq_regime, typename T>
+template<int mode_pf, FreqRegimeE freq_regime, typename T>
 void _formulation_kernel_wave( 
                                 bool        is_diag,
                                 SourceNode* source_i,
@@ -312,7 +312,7 @@ void _formulation_kernel_wave(
             
             _QUADRATURE_PANEL_T( NUM_GP2, G_ON, DGDR_OFF, DGDZ_OFF, FSLID_ON )
             
-            if constexpr( freq_regime == FreqRegimeT::REGULAR )
+            if constexpr( freq_regime == FreqRegimeE::REGULAR )
             {
                 log_sing_val        = 2.0 * ( LOG2_GAMMA - std::log( nu ) - source_i->panel->free_surface_log_int ) * source_i->panel->area;
                 wave_fcn_value      += cuscomplex( nu * log_sing_val, 0.0 );
@@ -328,7 +328,7 @@ void _formulation_kernel_wave(
         wave_fcn_dn_sf_value    = 0.0;
         wave_fcn_dn_pf_value    = 0.0;
 
-        if ( is_john && freq_regime == FreqRegimeT::REGULAR )
+        if ( is_john && freq_regime == FreqRegimeE::REGULAR )
         {
             quadrature_panel_t<
                                     PanelGeom, 
@@ -363,7 +363,7 @@ void _formulation_kernel_wave(
 
 
 template<std::size_t N, int mode_pf>
-template<FreqRegimeT freq_regime>
+template<FreqRegimeE freq_regime>
 void FormulationKernelBackend<N, mode_pf>::_build_steady_matrixes( void )
 {
     /***************************************/
@@ -515,7 +515,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_steady_matrixes( void )
                                     );
 
             // Compose total velocity vector
-            if constexpr( freq_regime == FreqRegimeT::REGULAR || freq_regime == FreqRegimeT::ASYMPT_LOW )
+            if constexpr( freq_regime == FreqRegimeE::REGULAR || freq_regime == FreqRegimeE::ASYMPT_LOW )
             {
                 vel_total_sf[0] = - ( vel_0[0] + vel_1[0] + vel_2[0] + vel_3[0] + vel_4[0] + vel_5[0] );
                 vel_total_sf[1] = - ( vel_0[1] + vel_1[1] + vel_2[1] + vel_3[1] + vel_4[1] + vel_5[1] );
@@ -815,7 +815,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_rhs(
 
 
 template<std::size_t N, int mode_pf>
-template<FreqRegimeT freq_regime>
+template<FreqRegimeE freq_regime>
 void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes( 
                                                                     cusfloat w
                                                                 )
@@ -901,7 +901,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
                     
                     _QUADRATURE_PANEL_T( NUM_GP2, G_ON, DGDR_OFF, DGDZ_OFF, FSLID_ON )
                     
-                    if constexpr( freq_regime == FreqRegimeT::REGULAR )
+                    if constexpr( freq_regime == FreqRegimeE::REGULAR )
                     {
                         log_sing_val        = 2.0 * ( LOG2_GAMMA - std::log( nu ) - source_i->panel->free_surface_log_int ) * source_i->panel->area;
                         wave_fcn_value      += cuscomplex( nu * log_sing_val, 0.0 );
@@ -917,7 +917,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
                 wave_fcn_dn_sf_value    = 0.0;
                 wave_fcn_dn_pf_value    = 0.0;
 
-                if ( is_john && freq_regime == FreqRegimeT::REGULAR )
+                if ( is_john && freq_regime == FreqRegimeE::REGULAR )
                 {
                     quadrature_panel_t<
                                             PanelGeom, 
@@ -950,7 +950,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
             COL_MAJOR_INDEX( index_cm, row_count, col_count, this->_solver->num_rows_local )
             ROW_MAJOR_INDEX( index_rm, row_count, col_count, this->_solver->num_cols_local )
 
-            if ( is_john && freq_regime == FreqRegimeT::REGULAR )
+            if ( is_john && freq_regime == FreqRegimeE::REGULAR )
             {
                 this->_pot_gp->sysmat[index_rm] = int_value;
                 this->_sf_gp->sysmat[index_cm]  = int_dn_sf_value;
@@ -992,7 +992,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
 
 
 template<std::size_t N, int mode_pf>
-template<FreqRegimeT freq_regime>
+template<FreqRegimeE freq_regime>
 void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes_2( 
                                                                     cusfloat w
                                                                 )
@@ -1089,7 +1089,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes_2(
             COL_MAJOR_INDEX( index_cm, row_count, col_count, this->_solver->num_rows_local )
             ROW_MAJOR_INDEX( index_rm, row_count, col_count, this->_solver->num_cols_local )
 
-            if ( is_john && freq_regime == FreqRegimeT::REGULAR )
+            if ( is_john && freq_regime == FreqRegimeE::REGULAR )
             {
                 this->_pot_gp->sysmat[index_rm] = pot_term_wv;
                 this->_sf_gp->sysmat[index_cm]  = int_dn_sf_wv;
@@ -1314,7 +1314,7 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
                 // Calculate steady coefficients
                 _formulation_kernel_steady<
                                                 mode_pf,
-                                                FreqRegimeT::REGULAR
+                                                FreqRegimeE::REGULAR
                                             >
                                             (
                                                 is_close,
@@ -1331,7 +1331,7 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
                 // Calculate wave coefficients
                 _formulation_kernel_wave<
                                             mode_pf,
-                                            FreqRegimeT::REGULAR
+                                            FreqRegimeE::REGULAR
                                         >
                                         ( 
                                             is_close,
@@ -1606,7 +1606,7 @@ void FormulationKernelBackend<N, mode_pf>::_initialize(
                                                         )
 {
     // Calculate steady part integral over the panels
-    MPI_TIME_EXEC( this->_build_steady_matrixes<FreqRegimeT::REGULAR>( ); , this->exec_time_build_steady )
+    MPI_TIME_EXEC( this->_build_steady_matrixes<FreqRegimeE::REGULAR>( ); , this->exec_time_build_steady )
     this->_steady_mat_type  = 0;
 }
 
@@ -1712,7 +1712,7 @@ int FormulationKernelBackend<N, mode_pf>::size( void )
 
 
 template<std::size_t N, int mode_pf>
-template<FreqRegimeT freq_regime>
+template<FreqRegimeE freq_regime>
 void FormulationKernelBackend<N, mode_pf>::solve( cusfloat w )
 {
     // Recalculate steady part of the system matrixes if required
@@ -1720,9 +1720,9 @@ void FormulationKernelBackend<N, mode_pf>::solve( cusfloat w )
             this->_steady_mat_type != 0 
             &&
             (   
-                freq_regime == FreqRegimeT::REGULAR 
+                freq_regime == FreqRegimeE::REGULAR 
                 || 
-                freq_regime == FreqRegimeT::ASYMPT_LOW 
+                freq_regime == FreqRegimeE::ASYMPT_LOW 
             )
         )
     {
@@ -1732,7 +1732,7 @@ void FormulationKernelBackend<N, mode_pf>::solve( cusfloat w )
     else if ( 
                 this->_steady_mat_type != 1 
                 &&
-                freq_regime == FreqRegimeT::ASYMPT_HIGH 
+                freq_regime == FreqRegimeE::ASYMPT_HIGH 
             )
     {
         MPI_TIME_EXEC( this->_build_steady_matrixes<freq_regime>( ); , this->exec_time_build_steady )
@@ -1740,7 +1740,7 @@ void FormulationKernelBackend<N, mode_pf>::solve( cusfloat w )
     }
     
     // Fold integrals database if required
-    if constexpr( freq_regime == FreqRegimeT::REGULAR )
+    if constexpr( freq_regime == FreqRegimeE::REGULAR )
     {
         // Fold database for current frequency and water depth
         cusfloat H = pow2s( w ) * this->_input->water_depth / this->_input->grav_acc;

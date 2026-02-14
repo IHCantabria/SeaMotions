@@ -127,7 +127,7 @@ enum class PanelTypeE: int
 
 // Free regime enum. Used to classify the frequency regime
 // in frequency solver.
-enum class FreqRegimeT: int
+enum class FreqRegimeE: int
 {
     REGULAR,        // Regular frequency regime
     ASYMPT_LOW,     // Low frequency asymptotic regime

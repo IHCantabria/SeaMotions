@@ -164,11 +164,11 @@ void FrequencySolver<N, mode_pf>::calculate_first_order( void )
         MpiTimer freq_timer;
 
         // Solve radiation-diffraction problem for the current frequency
-        this->kernel->template solve<FreqRegimeT::REGULAR>( input->angfreqs[i] );
+        this->kernel->template solve<FreqRegimeE::REGULAR>( input->angfreqs[i] );
         this->kernel->update_results( sim_data );
 
         // Calculate first order coefficients
-        this->_calculate_first_order_coeffs<FreqRegimeT::REGULAR>( i, this->input->angfreqs[i] );
+        this->_calculate_first_order_coeffs<FreqRegimeE::REGULAR>( i, this->input->angfreqs[i] );
 
         // Calculate field points values at the positions required
         this->_calculate_field_points_values( i, this->input->angfreqs[i] );
@@ -190,11 +190,11 @@ void FrequencySolver<N, mode_pf>::calculate_first_order( void )
     MpiTimer freq_low_timer;
 
     // Solve radiation-diffraction problem for the current frequency
-    this->kernel->template solve<FreqRegimeT::ASYMPT_LOW>( W_ASYMPT_LOW );
+    this->kernel->template solve<FreqRegimeE::ASYMPT_LOW>( W_ASYMPT_LOW );
     this->kernel->update_results( sim_data );
 
     // Calculate first order coefficients
-    this->_calculate_first_order_coeffs<FreqRegimeT::ASYMPT_LOW>( -1, W_ASYMPT_LOW );
+    this->_calculate_first_order_coeffs<FreqRegimeE::ASYMPT_LOW>( -1, W_ASYMPT_LOW );
 
     // Print out execution times
     LOG_TASK_TIME( freq_lf, freq_low_timer )
@@ -208,11 +208,11 @@ void FrequencySolver<N, mode_pf>::calculate_first_order( void )
     MpiTimer freq_high_timer;
 
     // Solve radiation-diffraction problem for the current frequency
-    this->kernel->template solve<FreqRegimeT::ASYMPT_HIGH>( W_ASYMPT_HIGH );
+    this->kernel->template solve<FreqRegimeE::ASYMPT_HIGH>( W_ASYMPT_HIGH );
     this->kernel->update_results( sim_data );
 
     // Calculate first order coefficients
-    this->_calculate_first_order_coeffs<FreqRegimeT::ASYMPT_HIGH>( -1, W_ASYMPT_HIGH );
+    this->_calculate_first_order_coeffs<FreqRegimeE::ASYMPT_HIGH>( -1, W_ASYMPT_HIGH );
 
     // Print out execution times
     LOG_TASK_TIME( freq_hf, freq_high_timer )
@@ -221,7 +221,7 @@ void FrequencySolver<N, mode_pf>::calculate_first_order( void )
 
 
 template<std::size_t N, int mode_pf>
-template<FreqRegimeT freq_regime>
+template<FreqRegimeE freq_regime>
 void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs( 
                                                                     std::size_t freq_index, 
                                                                     cusfloat    ang_freq 
@@ -240,7 +240,7 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
                                         );
 
     // Calculate wave excitation forces
-    if ( freq_regime == FreqRegimeT::REGULAR || freq_regime == FreqRegimeT::ASYMPT_LOW )
+    if ( freq_regime == FreqRegimeE::REGULAR || freq_regime == FreqRegimeE::ASYMPT_LOW )
     {
         // Calculate diffraction forces
         calculate_diffraction_forces_lin(
@@ -286,7 +286,7 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
     }
     
     // Calculate RAOs
-    if ( this->mpi_config->is_root( )  && freq_regime == FreqRegimeT::REGULAR )
+    if ( this->mpi_config->is_root( )  && freq_regime == FreqRegimeE::REGULAR )
     {
         calculate_raos(
                             this->input,
@@ -323,7 +323,7 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
     
     // Storage results
     // MpiTimer storage_timer;       
-    if ( this->input->out_sources && freq_regime == FreqRegimeT::REGULAR )
+    if ( this->input->out_sources && freq_regime == FreqRegimeE::REGULAR )
     {
         MPI_Reduce(
                         this->sim_data->intensities,
@@ -336,7 +336,7 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
                     );
     }
 
-    if ( this->input->out_potential && freq_regime == FreqRegimeT::REGULAR )
+    if ( this->input->out_potential && freq_regime == FreqRegimeE::REGULAR )
     {
         MPI_Reduce(
                         this->sim_data->panels_potential,
@@ -349,7 +349,7 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
                     );
     }
 
-    if ( this->input->out_pressure && freq_regime == FreqRegimeT::REGULAR )
+    if ( this->input->out_pressure && freq_regime == FreqRegimeE::REGULAR )
     {
         MPI_Reduce(
                         this->sim_data->panels_pressure,
@@ -366,7 +366,7 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
     {
         if ( this->input->out_hydmech )
         {
-            if constexpr( freq_regime == FreqRegimeT::REGULAR )
+            if constexpr( freq_regime == FreqRegimeE::REGULAR )
             {
                 this->output->save_hydromechanics_format(
                                                             freq_index,
@@ -385,7 +385,7 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
                 // Select dataset names depending on the frequency regime
                 std::string added_mass_dn   = _DN_ADDED_MASS_LF;
                 std::string damping_dn      = _DN_DAMPING_RAD_LF;
-                if ( freq_regime == FreqRegimeT::ASYMPT_HIGH )
+                if ( freq_regime == FreqRegimeE::ASYMPT_HIGH )
                 {
                     added_mass_dn   = _DN_ADDED_MASS_HF;
                     damping_dn      = _DN_DAMPING_RAD_HF;
@@ -407,7 +407,7 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
 
         if ( this->input->out_diffrac )
         {
-            if constexpr( freq_regime == FreqRegimeT::REGULAR )
+            if constexpr( freq_regime == FreqRegimeE::REGULAR )
             {
                 this->output->save_wave_exciting_format(
                                                             freq_index,
@@ -418,7 +418,7 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
             else
             {
                 std::string diffrac_dn   = _DN_DIFFRAC_HF;
-                if ( freq_regime == FreqRegimeT::ASYMPT_LOW )
+                if ( freq_regime == FreqRegimeE::ASYMPT_LOW )
                 {
                     diffrac_dn   = _DN_DIFFRAC_LF;
                 }
@@ -432,7 +432,7 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
 
         if ( this->input->out_fk )
         {
-            if constexpr( freq_regime == FreqRegimeT::REGULAR )
+            if constexpr( freq_regime == FreqRegimeE::REGULAR )
             {
                 this->output->save_wave_exciting_format(
                                                             freq_index,
@@ -443,7 +443,7 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
             else
             {
                 std::string fk_dn   = _DN_FK_HF;
-                if ( freq_regime == FreqRegimeT::ASYMPT_LOW )
+                if ( freq_regime == FreqRegimeE::ASYMPT_LOW )
                 {
                     fk_dn   = _DN_FK_LF;
                 }
@@ -457,7 +457,7 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
 
         if ( this->input->out_wex )
         {
-            if constexpr( freq_regime == FreqRegimeT::REGULAR )
+            if constexpr( freq_regime == FreqRegimeE::REGULAR )
             {
                 this->output->save_wave_exciting_format(
                                                             freq_index,
@@ -468,7 +468,7 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
             else
             {
                 std::string wex_dn   = _DN_WEX_HF;
-                if ( freq_regime == FreqRegimeT::ASYMPT_LOW )
+                if ( freq_regime == FreqRegimeE::ASYMPT_LOW )
                 {
                     wex_dn   = _DN_WEX_LF;
                 }
@@ -480,7 +480,7 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
             }   
         }
 
-        if ( this->input->out_raos && freq_regime == FreqRegimeT::REGULAR )
+        if ( this->input->out_raos && freq_regime == FreqRegimeE::REGULAR )
         {
             this->output->save_wave_exciting_format(
                                                         freq_index,
@@ -490,7 +490,7 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
         }
 
         // Storage sources
-        if ( this->input->out_sources && freq_regime == FreqRegimeT::REGULAR )
+        if ( this->input->out_sources && freq_regime == FreqRegimeE::REGULAR )
         {
             this->output->save_fields_data( 
                                                 freq_index,
@@ -500,7 +500,7 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
         }
 
         // Storage panels potential
-        if ( this->input->out_potential && freq_regime == FreqRegimeT::REGULAR )
+        if ( this->input->out_potential && freq_regime == FreqRegimeE::REGULAR )
         {
             this->output->save_fields_data( 
                                                 freq_index,
@@ -510,7 +510,7 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
         }
 
         // Storage panels pressure
-        if ( this->input->out_pressure && freq_regime == FreqRegimeT::REGULAR )
+        if ( this->input->out_pressure && freq_regime == FreqRegimeE::REGULAR )
         {
             this->output->save_fields_data( 
                                                 freq_index,
