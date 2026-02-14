@@ -360,7 +360,7 @@ void    calculate_source_newman(
     // Calculate induced velocities
     cusfloat r_sum = 0.0;
     cusfloat b, b0, b1;
-    cusfloat a, c, d;
+    cusfloat a, c;
     int i1;
     for (int i=0; i<panel->num_nodes; i++)
     {
