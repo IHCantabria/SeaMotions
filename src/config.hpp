@@ -118,7 +118,7 @@ constexpr cusfloat  ZEROTH_EPS              = 1E-14;
 
 // Free regime enum. Used to classify the frequency regime
 // in frequency solver.
-enum class freq_regime_t: int
+enum class FreqRegimeT: int
 {
     REGULAR,        // Regular frequency regime
     ASYMPT_LOW,     // Low frequency asymptotic regime

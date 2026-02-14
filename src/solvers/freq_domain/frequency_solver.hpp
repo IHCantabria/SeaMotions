@@ -70,7 +70,7 @@ private:
                                                     cusfloat    ang_freq 
                                         );
 
-    template<freq_regime_t freq_regime>
+    template<FreqRegimeT freq_regime>
     void _calculate_first_order_coeffs( 
                                                     std::size_t freq_index,
                                                     cusfloat    ang_freq
