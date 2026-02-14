@@ -224,7 +224,7 @@ void read_body(
                                         body->mesh_body_name,
                                         body->cog,
                                         body->is_fix,
-                                        DIFFRAC_PANEL_CODE                                
+                                        PanelTypeE::DIFFRAC                                
                                     );
     body->is_mesh       = true;
     body->mesh_items_np = 1;
@@ -261,7 +261,7 @@ void read_body(
                                             ss.str( ),
                                             body->cog,
                                             body->is_fix,
-                                            LID_PANEL_CODE
+                                            PanelTypeE::INT_LID
                                         );
         body->is_mesh_int_lid   = true;
         body->mesh_items_np++;
@@ -282,7 +282,7 @@ void read_body(
                                             ss.str( ),
                                             body->cog,
                                             body->is_fix,
-                                            LID_PANEL_CODE
+                                            PanelTypeE::QTF_LID
                                         );
 
         // Calculate radius of the fs mesh

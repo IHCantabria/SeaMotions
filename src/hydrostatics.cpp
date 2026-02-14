@@ -70,7 +70,7 @@ void Hydrostatics::_calculate(
         // Get current panel
         PanelGeom* paneli   = mesh->panels[i];
 
-        if ( paneli->type == 0 )
+        if ( paneli->type == PanelTypeE::DIFFRAC )
         {
             // Calculate water plane area
             auto    area_wl_fcn     =   [&]( int ){ return paneli->normal_vec[2]; };

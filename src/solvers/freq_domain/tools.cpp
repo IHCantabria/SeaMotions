@@ -132,7 +132,7 @@ void        define_gauss_points_diffrac_panels(
     GaussPoints gp( input->gauss_order );
     for ( int i=0; i<mesh_gp->panels_tnp; i++ )
     {
-        if ( mesh_gp->panels[i]->type == DIFFRAC_PANEL_CODE )
+        if ( mesh_gp->panels[i]->type == PanelTypeE::DIFFRAC )
         {
             for ( int j=0; j<input->gauss_order; j++ )
             {

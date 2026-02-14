@@ -296,7 +296,7 @@ void _formulation_kernel_wave(
     // Integrate green function normal derivative along the current panel
     if ( is_diag )
     {
-        if ( panel_j->type == DIFFRAC_PANEL_CODE )
+        if ( panel_j->type == PanelTypeE::DIFFRAC )
         {
             int_dn_sf_value     = cuscomplex( 0.5, 0.0 );
             int_dn_pf_value     = cuscomplex( 0.5, 0.0 );
@@ -305,7 +305,7 @@ void _formulation_kernel_wave(
             
             pot_term   =   wave_fcn_value / 4.0 / PI;
         }
-        else if ( panel_j->type == LID_PANEL_CODE )
+        else if ( panel_j->type == PanelTypeE::INT_LID )
         {
             int_dn_sf_value     = -cuscomplex( 1.0, 0.0 );
             int_dn_pf_value     = -cuscomplex( 1.0, 0.0 );
@@ -638,7 +638,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_rhs(
             {
                 ROW_MAJOR_INDEX( index_rm, row_count, col_count, this->_solver->num_cols_local )
 
-                if ( source_i->panel->type == DIFFRAC_PANEL_CODE )
+                if ( source_i->panel->type == PanelTypeE::DIFFRAC )
                 {
                     for ( int id=0; id<this->_input->dofs_np; id++ )
                     {
@@ -729,7 +729,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_rhs(
         {
             panel_j = this->_mesh_gp->source_nodes[j]->panel;
             index   = i * this->_sf_gp->sysmat_nrows + j;
-            if ( panel_j->type == DIFFRAC_PANEL_CODE )
+            if ( panel_j->type == PanelTypeE::DIFFRAC )
             {
                 this->_sf_gp->field_values[index] = ( 
                                                         this->_mesh_gp->source_nodes[j]->normal_vec[i]
@@ -738,7 +738,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_rhs(
                                                     );
 
             }
-            else if ( panel_j->type == LID_PANEL_CODE )
+            else if ( panel_j->type == PanelTypeE::INT_LID )
             {
                 this->_sf_gp->field_values[index] = 0.0;
             }
@@ -752,7 +752,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_rhs(
         {
             panel_j = this->_mesh_gp->source_nodes[j]->panel;
             index   = dofs_offset + i * this->_sf_gp->sysmat_nrows + j; 
-            if ( panel_j->type == DIFFRAC_PANEL_CODE )
+            if ( panel_j->type == PanelTypeE::DIFFRAC )
             {
                 // Get wave potential derivatives for the panel
                 wave_dx     =   wave_potential_fo_space_dx(
@@ -800,7 +800,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_rhs(
                                                             wave_dz * this->_mesh_gp->source_nodes[j]->normal_vec[2]
                                                         );
             }
-            else if ( panel_j->type == LID_PANEL_CODE )
+            else if ( panel_j->type == PanelTypeE::INT_LID )
             {
                 this->_sf_gp->field_values[index]  = 0.0;
             }
@@ -828,6 +828,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
     
     // Declare local variables
     int         col_count               = 0;
+    cusfloat    dist                    = 0.0;
     cusfloat    distn                   = 0.0;
     auto        gwf_interf              = this->_gwfcns_interf;
     int         index_cm                = 0;
@@ -884,7 +885,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
             // Integrate green function normal derivative along the current panel
             if ( i == j )
             {
-                if ( panel_j->type == DIFFRAC_PANEL_CODE )
+                if ( panel_j->type == PanelTypeE::DIFFRAC )
                 {
                     int_dn_sf_value     = cuscomplex( 0.5, 0.0 );
                     int_dn_pf_value     = cuscomplex( 0.5, 0.0 );
@@ -893,7 +894,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
                     
                     int_value   =   wave_fcn_value / 4.0 / PI;
                 }
-                else if ( panel_j->type == LID_PANEL_CODE )
+                else if ( panel_j->type == PanelTypeE::INT_LID )
                 {
                     int_dn_sf_value     = -cuscomplex( 1.0, 0.0 );
                     int_dn_pf_value     = -cuscomplex( 1.0, 0.0 );
@@ -1807,7 +1808,7 @@ void FormulationKernelBackend<N, mode_pf>::solve( cusfloat w )
             for ( int j=this->_solver->start_row_0; j<this->_solver->end_row_0; j++ )
             {
                 panel_j = this->_mesh_gp->source_nodes[j]->panel;
-                if ( panel_j->type == LID_PANEL_CODE )
+                if ( panel_j->type == PanelTypeE::INT_LID )
                 {
                     index                               = i * this->_sf_gp->sysmat_nrows + j;
                     this->_sf_gp->field_values[index]   = -nu * this->_pf_gp->field_values[index];
@@ -1822,7 +1823,7 @@ void FormulationKernelBackend<N, mode_pf>::solve( cusfloat w )
             {
                 panel_j = this->_mesh_gp->source_nodes[j]->panel;
 
-                if ( panel_j->type == LID_PANEL_CODE )
+                if ( panel_j->type == PanelTypeE::INT_LID )
                 {
                     index                               = dofs_offset + i * this->_sf_gp->sysmat_nrows + j; 
                     this->_sf_gp->field_values[index]   = -nu * this->_pf_gp->field_values[index];

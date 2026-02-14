@@ -69,7 +69,7 @@ void    calculate_diffraction_forces_lin(
                 wave_diffrac[index]   = 0.0;
                 for ( int ie=elem_start_pos; ie<elem_end_pos; ie++ )
                 {
-                    if ( mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->type == DIFFRAC_PANEL_CODE )
+                    if ( mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->type == PanelTypeE::DIFFRAC )
                     {
                         // Integrate pressure over panel
                         index_1                     = (

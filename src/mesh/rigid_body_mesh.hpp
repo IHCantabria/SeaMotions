@@ -93,7 +93,7 @@ public:
                                         std::string         body_name,
                                         cusfloat*           cog_in,
                                         bool                is_fix,
-                                        int                 panel_type,
+                                        PanelTypeE          panel_type,
                                         cusfloat            draft_in
                     );
 
@@ -102,7 +102,7 @@ public:
                                         std::string         body_name,
                                         cusfloat*           cog_in,
                                         bool                is_fix,
-                                        int                 panel_type,
+                                        PanelTypeE          panel_type,
                                         cusfloat            draft_in,
                                         std::string         auto_flush_fopath
                     );

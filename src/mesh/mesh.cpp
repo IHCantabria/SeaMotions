@@ -183,7 +183,7 @@ void        Mesh::_check_mesh_properties(
 
 
 void        Mesh::_create_panels(
-                                               int          panel_type,
+                                               PanelTypeE   panel_type,
                                                bool         auto_force_type,
                                                cusfloat*    cog
                                )
@@ -494,7 +494,7 @@ void        Mesh::detect_wl_points(
     for ( int i=0; i<this->elems_np; i++ )
     {
         global_index = i * this->enrl;
-        if ( ( elems_wl[global_index] > 2 ) && ( this->panels[i]->type == DIFFRAC_PANEL_CODE ) )
+        if ( ( elems_wl[global_index] > 2 ) && ( this->panels[i]->type == PanelTypeE::DIFFRAC ) )
         {
             std::stringstream ss;
             ss << "ERROR - INPUT" << std::endl;
@@ -676,7 +676,7 @@ void        Mesh::_joint_meshes(
 
     // Allocate space for the full elements and nodes lists
     this->elems         = generate_empty_vector<int>( this->elems_np * this->enrl );
-    this->panels_type   = generate_empty_vector<int>( this->elems_np );
+    this->panels_type   = std::vector<PanelTypeE>( this->elems_np, PanelTypeE::NONE );
     this->x             = generate_empty_vector<cusfloat>(  this->nodes_np );
     this->y             = generate_empty_vector<cusfloat>(  this->nodes_np );
     this->z             = generate_empty_vector<cusfloat>(  this->nodes_np );
@@ -1218,7 +1218,7 @@ Mesh::Mesh(
                                         std::string body_name,
                                         cusfloat*   cog,
                                         bool        is_fix,
-                                        int         panel_type,
+                                        PanelTypeE  panel_type,
                                         bool        auto_force_type
             )
 {
@@ -1284,7 +1284,7 @@ Mesh::Mesh(
     this->_calculate_bounding_box( );
 
     // Create panels for each element
-    this->_create_panels( DIFFRAC_PANEL_CODE, auto_force_type, cog );
+    this->_create_panels( PanelTypeE::DIFFRAC, auto_force_type, cog );
 
     // Set Elements type
     this->set_elements_type( );
@@ -1321,9 +1321,6 @@ Mesh::~Mesh(
     mkl_free( this->elems );
     mkl_free( this->elems_type );
 
-    // Delete panel type
-    mkl_free( this->panels_type );
-
     // Delete nodal positions
     mkl_free( this->x );
     mkl_free( this->y );
@@ -1333,14 +1330,10 @@ Mesh::~Mesh(
 
 
 void        Mesh::set_all_panels_type(
-                                               int panel_type
+                                            PanelTypeE  panel_type
                                        )
 {
-    this->panels_type = generate_empty_vector<int>( this->elems_np );
-    for ( int i=0; i<this->elems_np; i++ )
-    {
-        this->panels_type[i] = panel_type;
-    }
+    this->panels_type = std::vector<PanelTypeE>( this->elems_np, panel_type );
 }
 
 

@@ -154,7 +154,7 @@ RigidBodyMesh::RigidBodyMesh(
                                 std::string         body_name,
                                 cusfloat*           cog_in,
                                 bool                is_fix,
-                                int                 panel_type,
+                                PanelTypeE          panel_type,
                                 cusfloat            draft_in
                             ): Mesh(
                                         file_path,
@@ -176,7 +176,7 @@ RigidBodyMesh::RigidBodyMesh(
                                 std::string         body_name,
                                 cusfloat*           cog_in,
                                 bool                is_fix,
-                                int                 panel_type,
+                                PanelTypeE          panel_type,
                                 cusfloat            draft_in,
                                 std::string         auto_flush_fopath
                             ): Mesh(

@@ -461,11 +461,11 @@ void PanelGeom::initialize(
     {
         if ( std::abs( this->center[2] ) < FS_SEL_THR )
         {
-            this->type = LID_PANEL_CODE;
+            this->type = PanelTypeE::INT_LID;
         }
         else
         {
-            this->type = DIFFRAC_PANEL_CODE;
+            this->type = PanelTypeE::DIFFRAC;
         }
     }
 
@@ -476,7 +476,7 @@ void PanelGeom::initialize(
     this->calculate_integration_properties<NUM_GP>( );
 
     // Calculate free surface singularity if necessary
-    if ( this->type == LID_PANEL_CODE )
+    if ( this->type == PanelTypeE::INT_LID )
     {
         this->calcualte_free_surface_singularity( );
     }
@@ -685,7 +685,7 @@ PanelGeom::PanelGeom(
                         cusfloat*   y_in,
                         cusfloat*   z_in,
                         int         is_move_f_in,
-                        int         type_in,
+                        PanelTypeE  type_in,
                         cusfloat*   cog,
                         bool        force_auto_type
                     )
@@ -716,7 +716,7 @@ PanelGeom::PanelGeom(
                         cusfloat*   y_in,
                         cusfloat*   z_in,
                         int         is_move_f_in,
-                        int         type_in,
+                        PanelTypeE  type_in,
                         cusfloat*   cog,
                         bool        force_auto_type
                     )

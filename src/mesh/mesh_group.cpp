@@ -99,7 +99,7 @@ void    MeshGroup::define_mirror_panels(
         this->panels_raddif_np[i]   = 0;
         for ( int j=0; j<this->meshes[i]->elems_np; j++ )
         {
-            if ( this->meshes[i]->panels[j]->type == DIFFRAC_PANEL_CODE )
+            if ( this->meshes[i]->panels[j]->type == PanelTypeE::DIFFRAC )
             {
                 this->panels_raddif_np[i] += 1;
             }

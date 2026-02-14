@@ -69,7 +69,7 @@ protected:
                                 );
     
     void    _create_panels(
-                                        int                 panel_type,
+                                        PanelTypeE          panel_type,
                                         bool                auto_force_type,
                                         cusfloat*           cog
                             );
@@ -103,29 +103,29 @@ protected:
 
 public:
     // Define class attributes
-    int             bodies_np       = 1;
-    int*            elems           = nullptr;
-    int*            elems_type      = nullptr;
-    int             elems_np        = 0;
-    int             enrl            = 0;
-    int             mnpe            = 0;
-    std::string     name            = "NoName";
-    int             nodes_np        = 0;
-    PanelGeom**     panels          = nullptr;
-    PanelGeom**     panels_wl       = nullptr;
-    int             panels_wl_np    = 0;
-    int*            panels_type     = nullptr;
-    SourceNode**    source_nodes    = nullptr;
-    int             source_nodes_np = 0;
-    cusfloat*       x               = nullptr;
-    cusfloat        x_max           = 0.0;
-    cusfloat        x_min           = 0.0;
-    cusfloat*       y               = nullptr;
-    cusfloat        y_max           = 0.0;
-    cusfloat        y_min           = 0.0;
-    cusfloat*       z               = nullptr;
-    cusfloat        z_max           = 0.0;
-    cusfloat        z_min           = 0.0;
+    int                         bodies_np       = 1;
+    int*                        elems           = nullptr;
+    int*                        elems_type      = nullptr;
+    int                         elems_np        = 0;
+    int                         enrl            = 0;
+    int                         mnpe            = 0;
+    std::string                 name            = "NoName";
+    int                         nodes_np        = 0;
+    PanelGeom**                 panels          = nullptr;
+    PanelGeom**                 panels_wl       = nullptr;
+    int                         panels_wl_np    = 0;
+    std::vector<PanelTypeE>     panels_type     = {};
+    SourceNode**                source_nodes    = nullptr;
+    int                         source_nodes_np = 0;
+    cusfloat*                   x               = nullptr;
+    cusfloat                    x_max           = 0.0;
+    cusfloat                    x_min           = 0.0;
+    cusfloat*                   y               = nullptr;
+    cusfloat                    y_max           = 0.0;
+    cusfloat                    y_min           = 0.0;
+    cusfloat*                   z               = nullptr;
+    cusfloat                    z_max           = 0.0;
+    cusfloat                    z_min           = 0.0;
 
     // Define class constructor and destructor
             Mesh( ) = default;
@@ -135,7 +135,7 @@ public:
                                                 std::string         body_name,
                                                 cusfloat*           cog,
                                                 bool                is_fix,
-                                                int                 panel_type,
+                                                PanelTypeE          panel_type,
                                                 bool                auto_force_type=true
                 );
 
@@ -191,7 +191,7 @@ public:
                                     ) const;
 
             void        set_all_panels_type(
-                                                int                 panel_type
+                                                PanelTypeE          panel_type
                                         );
 
 

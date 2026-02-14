@@ -106,7 +106,7 @@ void    calculate_froude_krylov_fo(
             {
                 // Integrate pressure over panel
                 index           = max_panels * ib + ie;
-                if ( mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->type == 0 )
+                if ( mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->type == PanelTypeE::DIFFRAC )
                 {
                     pressure[index] = adaptive_quadrature_panel(
                                                                     mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie],
@@ -249,7 +249,7 @@ void    calculate_froude_krylov_so(
                 {
                     // Integrate pressure over panel
                     index   = max_panels * ib + ie;
-                    if ( mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->type == 0 )
+                    if ( mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->type == PanelTypeE::DIFFRAC )
                     {
                         pressure[index] = adaptive_quadrature_panel(
                                                                         mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie],

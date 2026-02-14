@@ -77,7 +77,7 @@ public:
     cusfloat                        normal_vec_wl[6]        = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
     int                             num_nodes               = 0;
     cusfloat                        sysref_centre[3]        = { 0.0, 0.0, 0.0 };
-    int                             type                    = 0;
+    PanelTypeE                      type                    = PanelTypeE::NONE;
     int                             wl_nodes[2]             = { 0, 0 };
     cusfloat                        x[MAX_PANEL_NODES];
     cusfloat                        x_wl[2]                 = { 0.0, 0.0 };
@@ -103,7 +103,7 @@ public:
                                         cusfloat*   y_in,
                                         cusfloat*   z_in,
                                         int         is_move_f_in,
-                                        int         type_in,
+                                        PanelTypeE  type_in,
                                         cusfloat*   cog,
                                         bool        force_auto_type=true
                 );
@@ -116,7 +116,7 @@ public:
                                         cusfloat*   y_in,
                                         cusfloat*   z_in,
                                         int         is_move_f_in,
-                                        int         type_in,
+                                        PanelTypeE  type_in,
                                         cusfloat*   cog,
                                         bool        force_auto_type=true
                 );

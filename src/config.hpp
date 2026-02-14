@@ -86,12 +86,10 @@ constexpr int       DGDR_ON                 = 1;                // Flag used as 
 constexpr int       DGDR_OFF                = 0;                // Flag used as template argument to NOT SET the calculation of the derivative of the potential green function with respect to the horizontal radius
 constexpr int       DGDZ_ON                 = 1;                // Flag used as template argument to SET the calculation of the derivative of the potential green function with respect to the vertical coordinate
 constexpr int       DGDZ_OFF                = 0;                // Flag used as template argument to NOT SET the calculation of the derivative of the potential green function with respect to the vertical coordinate
-constexpr int       DIFFRAC_PANEL_CODE      = 0;                // Flag used to mark the panel as diffraction
 constexpr cusfloat  FIELD_POINT_LOCAL_TOL   = 1E-2;             // Tolerance distance to assume a field point to be in the source point.
 constexpr cusfloat  FS_SEL_THR              = 1e-3;             // Free surface selection threshold. All the points which z is below this threshold are considered to be in the free surface
 constexpr int       FSLID_ON                = 1;                // Flag used as template argument to REMOVE log singularity for free surface panels
 constexpr int       FSLID_OFF               = 0;                // Flag used as template argument to NOT REMOVE log singularity for free surface panels
-constexpr int       LID_PANEL_CODE          = 1;                // Flag used to mark the panel as lid
 constexpr cusfloat  MIN_PANEL_AREA          = 1e-5;             // Minimum panel area to be considered a workable panel during mesh refinement process
 constexpr int       NUM_GP                  = 2;                // Number of Gauss Points used for numerical integration
 constexpr int       NUM_GP2                 = NUM_GP*NUM_GP;    // Squared number of gauss points ( just for convenience along the code )
@@ -115,6 +113,17 @@ constexpr cusfloat  ZEROTH_EPS              = 1E-14;
 /************************************************************/
 /****** Define class enums to be used along the code  *******/
 /************************************************************/
+
+// Panel Type enum. Used to classify panel types according to its 
+// functionality
+enum class PanelTypeE: int
+{
+    NONE,           // No type. Used for default empty states.
+    DIFFRAC,        // Diffraction-Radation panel. Used as BC type for floating bodies
+    INT_LID,        // Internal lid panel. Used as BC type for internal free surface in floating bodies to suppress spurious irregular frequencies.
+    EXT_LID,        // External lid panel. Used as BC type for external free surface zones where it is necessary damp stationary waves that arise due to the lack of viscosity in the potential flow model.
+    QTF_LID         // QTF lid panel. Used as BC type to impose additional equations in the near field region of the floating bodies so it is possible to solve the second order potential.
+};
 
 // Free regime enum. Used to classify the frequency regime
 // in frequency solver.
