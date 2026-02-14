@@ -270,13 +270,10 @@ void _formulation_kernel_wave(
     gwf_interf.set_source_j( source_j );
     
     // Calculate distance in between field point and source
-    cusfloat    distn   =  std::sqrt( 
-                                        pow2s( source_j->position[0] - source_i->panel->center[0] )
-                                        +
-                                        pow2s( source_j->position[1] - source_i->panel->center[1] )
-                                    );
-    cusfloat    dist    =  distn / water_depth;
-                is_john = dist > 1.0;
+    is_john = source_i->panel->is_john(  
+                                            source_j->position, 
+                                            water_depth
+                                        );
     
 
     // Declare local auxiliar variables
@@ -828,8 +825,6 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
     
     // Declare local variables
     int         col_count               = 0;
-    cusfloat    dist                    = 0.0;
-    cusfloat    distn                   = 0.0;
     auto        gwf_interf              = this->_gwfcns_interf;
     int         index_cm                = 0;
     int         index_rm                = 0;
@@ -866,17 +861,11 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
             panel_j = this->_mesh_gp->source_nodes[j]->panel;
             gwf_interf.set_source_j( this->_mesh_gp->source_nodes[j] );
             
-            // Calculate distance in between field point and source
-            distn   =  std::sqrt( 
-                                    pow2s( this->_mesh_gp->source_nodes[j]->position[0] - source_i->panel->center[0] )
-                                    +
-                                    pow2s( this->_mesh_gp->source_nodes[j]->position[1] - source_i->panel->center[1] )
-                                );
-            dist    =  distn / this->_input->water_depth;
-            // is_john = source_i->panel->is_john( 
-            //                                         this->_mesh_gp->source_nodes[j]->position, 
-            //                                         this->_input->water_depth 
-            //                                     );
+            // Check if the field point is in the John region
+            is_john = source_i->panel->is_john( 
+                                                    this->_mesh_gp->source_nodes[j]->position, 
+                                                    this->_input->water_depth 
+                                                );
 
             
             int_value       = 0.0;
@@ -1005,8 +994,6 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes_2(
     
     // Declare local variables
     int         col_count               = 0;
-    cusfloat    dist                    = 0.0;
-    cusfloat    distn                   = 0.0;
     auto        gwf_interf              = this->_gwfcns_interf;
     int         index_cm                = 0;
     int         index_rm                = 0;
