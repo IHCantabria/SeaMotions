@@ -532,7 +532,7 @@ void FrequencySolver<N, mode_pf>::_calculate_mean_drift(
     // Calculate QTF coefficients if required
     if ( this->input->is_calc_mdrift )
     {
-        this->_calculate_quadratic_terms<QTFTypeT::QTF_DIFF_CODE>( 
+        this->_calculate_quadratic_terms<QTFTypeE::QTF_DIFF_CODE>( 
                                                                         freq_index,
                                                                         freq_index,
                                                                         is_multi_head 
@@ -629,7 +629,7 @@ void FrequencySolver<N, mode_pf>::_calculate_hydrostatics( void )
 
 
 template<std::size_t N, int mode_pf>
-template<QTFTypeT qtf_type>
+template<QTFTypeE qtf_type>
 void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms( 
                                                                     std::size_t freq_index_i,
                                                                     std::size_t freq_index_j,
@@ -660,7 +660,7 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
     cuscomplex*                             vel_z           = nullptr;
     cusfloat                                wave_amplitude  = this->input->wave_amplitude;
 
-    if constexpr( qtf_type == QTFTypeT::QTF_DIFF_CODE )
+    if constexpr( qtf_type == QTFTypeE::QTF_DIFF_CODE )
     {
         qtf_values   = this->sim_data->qtf;
         qtf_wl      = this->sim_data->qtf_diff_wl;
@@ -668,7 +668,7 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
         qtf_acc     = this->sim_data->qtf_diff_acc;
         qtf_mom     = this->sim_data->qtf_diff_mom;
     }
-    else if constexpr ( qtf_type == QTFTypeT::QTF_SUM_CODE )
+    else if constexpr ( qtf_type == QTFTypeE::QTF_SUM_CODE )
     {
         qtf_values  = this->sim_data->qtf;
         qtf_wl      = this->sim_data->qtf_sum_wl;
@@ -749,11 +749,11 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
                                         );
 
                     // Calculate integrand value depending on the QTF type
-                    if constexpr( qtf_type == QTFTypeT::QTF_DIFF_CODE )
+                    if constexpr( qtf_type == QTFTypeE::QTF_DIFF_CODE )
                     {
                         int_mod_1d[k] = paneld->wev_rel_total[idx1_i] * std::conj( paneld->wev_rel_total[idx1_j] );
                     }
-                    else if constexpr( qtf_type == QTFTypeT::QTF_SUM_CODE )
+                    else if constexpr( qtf_type == QTFTypeE::QTF_SUM_CODE )
                     {
                         int_mod_1d[k] = paneld->wev_rel_total[idx1_i] * paneld->wev_rel_total[idx1_j];
                     }
@@ -820,7 +820,7 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
                                             idx1_j
                                         );
 
-                    if constexpr( qtf_type == QTFTypeT::QTF_DIFF_CODE )
+                    if constexpr( qtf_type == QTFTypeE::QTF_DIFF_CODE )
                     {
                         int_mod_2d[k]   =   (
                                                 vel_x[idx1_i] * std::conj( vel_x[idx1_j] )
@@ -830,7 +830,7 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
                                                 vel_z[idx1_i] * std::conj( vel_z[idx1_j] )
                                             );
                     }
-                    else if constexpr( qtf_type == QTFTypeT::QTF_SUM_CODE )
+                    else if constexpr( qtf_type == QTFTypeE::QTF_SUM_CODE )
                     {
                         int_mod_2d[k]   =   (
                                                 vel_x[idx1_i] * vel_x[idx1_j]
@@ -982,7 +982,7 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
                     vel_z_acc_j = rhow * cuscomplex( 0.0, -ang_freq_j ) * vel_z[idx1_j];
 
                     // Calculate point displacement
-                    if constexpr( qtf_type == QTFTypeT::QTF_DIFF_CODE )
+                    if constexpr( qtf_type == QTFTypeE::QTF_DIFF_CODE )
                     {
                         int_mod_2d[k]   = 0.25 * (
                                                     point_disp_i[0] * std::conj( vel_x_acc_j )
@@ -998,7 +998,7 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
                                                     std::conj( point_disp_j[2] ) * vel_z_acc_i
                                                 );
                     }
-                    else if constexpr( qtf_type == QTFTypeT::QTF_SUM_CODE )
+                    else if constexpr( qtf_type == QTFTypeE::QTF_SUM_CODE )
                     {
                         int_mod_2d[k]   = 0.25 * (
                                                     point_disp_i[0] * vel_x_acc_j
@@ -1089,7 +1089,7 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
                                             );
 
                 // Add moment due to translational forces
-                if constexpr( qtf_type == QTFTypeT::QTF_DIFF_CODE )
+                if constexpr( qtf_type == QTFTypeE::QTF_DIFF_CODE )
                 {
                     cuscomplex      scale_f( 0.25, 0.0 );
 
@@ -1124,7 +1124,7 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
                     sv_add(         3,                  &(qtf_mom[idx0+3]),     mom_i,      &(qtf_mom[idx0+3])      );
 
                 }
-                else if constexpr( qtf_type == QTFTypeT::QTF_SUM_CODE )
+                else if constexpr( qtf_type == QTFTypeE::QTF_SUM_CODE )
                 {
                     cuscomplex      scale_f( 0.25, 0.0 );
 

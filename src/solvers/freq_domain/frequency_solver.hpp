@@ -85,7 +85,7 @@ private:
 
     void _calculate_hydrostatics( );
 
-    template<QTFTypeT qtf_type>
+    template<QTFTypeE qtf_type>
     void _calculate_quadratic_terms( 
                                                     std::size_t freq_index_i,
                                                     std::size_t freq_index_j,

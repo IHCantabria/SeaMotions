@@ -137,7 +137,7 @@ enum class FreqRegimeE: int
 
 // QTF type enum. Used to classify the type of QTF
 // term to be calculated.
-enum class QTFTypeT: int
+enum class QTFTypeE: int
 {
     QTF_DIFF_CODE      = 0,    // QTF difference term
     QTF_SUM_CODE       = 1     // QTF sum term
