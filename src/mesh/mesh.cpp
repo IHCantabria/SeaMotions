@@ -202,6 +202,11 @@ void        Mesh::_create_panels(
         nodes_pos   = &(this->elems[offset+1]);
         npe         = this->elems[offset];
 
+        if ( i == 600 )
+        {
+            double a = 0.0;
+        }
+
         // Create new panel
         this->panels[i] = new PanelGeom(
                                             npe,
@@ -701,6 +706,11 @@ void        Mesh::_joint_meshes(
             count_elems++;
         }
 
+    }
+
+    for ( std::size_t i=0; i<this->elems_np; i++ )
+    {
+        std::cout << "Panel: " << i << " type: " << this->panels_type[i] << std::endl;
     }
 
     // Add node positions
@@ -1266,6 +1276,7 @@ Mesh::Mesh(
 
 
 Mesh::Mesh(
+                                        std::string         name,
                                         std::vector<Mesh*>  meshes,
                                         cusfloat*           cog,
                                         bool                is_fix,
@@ -1274,6 +1285,7 @@ Mesh::Mesh(
 {
     // Storage the required input attributes
     this->_is_move_f = static_cast<cusfloat>( !is_fix );
+    this->name       = name;
 
     // Joint input meshes in a single one
     this->_joint_meshes( meshes );
@@ -1283,6 +1295,12 @@ Mesh::Mesh(
 
     // Create panels for each element
     this->_create_panels( DIFFRAC_PANEL_CODE, auto_force_type, cog );
+
+    // Set Elements type
+    this->set_elements_type( );
+
+    // Check mesh properties
+    this->_check_mesh_properties( );
 
 }
 
@@ -1389,7 +1407,8 @@ void        Mesh::_update_panels_properties(
 
 
 void        Mesh::write(
-                                                std::string fopath
+                                                std::string fopath,
+                                                std::string finame_app
                         )
 {
     // Get current process ID
@@ -1401,7 +1420,15 @@ void        Mesh::write(
     if ( proc_rank == MPI_ROOT_PROC_ID )
     {
         // Compose file path
-        std::string finame_ext = this->name + ".vtu";
+        std::string finame_ext;
+        if ( finame_app.empty( ) )
+        {
+            finame_ext = this->name + std::string( ".vtu" );
+        }
+        else
+        {
+            finame_ext = this->name + std::string( "_" ) + finame_app + std::string( ".vtu" );
+        }
         std::filesystem::path dir ( fopath );
         std::filesystem::path file ( finame_ext );
         std::filesystem::path filepath = dir / file;

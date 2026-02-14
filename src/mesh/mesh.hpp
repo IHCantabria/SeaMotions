@@ -140,6 +140,7 @@ public:
                 );
 
             Mesh(
+                                                std::string         name,
                                                 std::vector<Mesh*>  meshes,
                                                 cusfloat*           cog,
                                                 bool                is_fix,
@@ -200,7 +201,8 @@ public:
 
     
             void        write( 
-                                                std::string         fipath
+                                                std::string         fipath,
+                                                std::string         finame_app = ""
                                 );
     
 };
