@@ -202,11 +202,6 @@ void        Mesh::_create_panels(
         nodes_pos   = &(this->elems[offset+1]);
         npe         = this->elems[offset];
 
-        if ( i == 600 )
-        {
-            double a = 0.0;
-        }
-
         // Create new panel
         this->panels[i] = new PanelGeom(
                                             npe,
@@ -706,11 +701,6 @@ void        Mesh::_joint_meshes(
             count_elems++;
         }
 
-    }
-
-    for ( std::size_t i=0; i<this->elems_np; i++ )
-    {
-        std::cout << "Panel: " << i << " type: " << this->panels_type[i] << std::endl;
     }
 
     // Add node positions
