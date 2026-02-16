@@ -23,6 +23,7 @@
 // Include general usage libraries
 #include <algorithm>
 #include <array>
+#include <cassert>
 #include <type_traits>
 
 // Include local modules
@@ -241,7 +242,10 @@ namespace cut
             return this->_data[i];
         }
 
-        template<typename... Args>
+        template<
+                    typename... Args,
+                    typename = std::enable_if_t<(std::is_integral<Args>::value && ...)>
+                >
         T& operator( )( Args... args )
         {
             // Compute offset in the linear data array
@@ -261,7 +265,10 @@ namespace cut
             return _data[offset];
         }
 
-        template<typename... Args>
+        template<
+                    typename... Args,
+                    typename = std::enable_if_t<(std::is_integral<Args>::value && ...)>
+                >
         const T operator( )(Args... args) const 
         {
             // Compute index offset to get the correct item in the vector
