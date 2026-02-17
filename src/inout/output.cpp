@@ -25,6 +25,7 @@
 #include <cmath>
 
 // Include local modules
+#include "hdf5_wrappers.hpp"
 #include "output.hpp"
 #include "../tools.hpp"
 #include "../version.hpp"
@@ -107,543 +108,544 @@ Output::Output(
     /******************************************************/
 
     // Open file unit
-    H5::H5File fid( this->_results_fipath.c_str( ), H5F_ACC_TRUNC );
+    hid_t fid = H5Fcreate( this->_results_fipath.c_str( ), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
 
-    CREATE_ATTRIBUTE( fid, "version_major", VERSION_MAJOR, H5::PredType::NATIVE_INT );
-    CREATE_ATTRIBUTE( fid, "version_minor", VERSION_MINOR, H5::PredType::NATIVE_INT );
-    CREATE_ATTRIBUTE( fid, "version_patch", VERSION_PATCH, H5::PredType::NATIVE_INT );
+    write_hdf5_scalar_attribute( fid, "version_major", int_h5, VERSION_MAJOR );
+    write_hdf5_scalar_attribute( fid, "version_minor", int_h5, VERSION_MINOR );
+    write_hdf5_scalar_attribute( fid, "version_patch", int_h5, VERSION_PATCH );
 
     if ( input->out_diffrac )
     {
-        CREATE_DATASET( 
-                            fid,
-                            _DN_DIFFRAC_MAG,
-                            _DS_WX_NP,
-                            this->_ds_wx,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_DIFFRAC_MAG,
+                                        _DS_WX_NP,
+                                        this->_ds_wx,
+                                        cusfloat_h5
+                                    );
 
-        CREATE_DATASET( 
-                            fid,
-                            _DN_DIFFRAC_HF_MAG,
-                            _DS_WXA_NP,
-                            this->_ds_wxa,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_DIFFRAC_HF_MAG,
+                                        _DS_WXA_NP,
+                                        this->_ds_wxa,
+                                        cusfloat_h5
+                                    );
 
-        CREATE_DATASET( 
-                            fid,
-                            _DN_DIFFRAC_LF_MAG,
-                            _DS_WXA_NP,
-                            this->_ds_wxa,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_DIFFRAC_LF_MAG,
+                                        _DS_WXA_NP,
+                                        this->_ds_wxa,
+                                        cusfloat_h5
+                                    );
 
-        CREATE_DATASET( 
-                            fid,
-                            _DN_DIFFRAC_PHA,
-                            _DS_WX_NP,
-                            this->_ds_wx,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_DIFFRAC_PHA,
+                                        _DS_WX_NP,
+                                        this->_ds_wx,
+                                        cusfloat_h5
+                                    );
 
-        CREATE_DATASET( 
-                            fid,
-                            _DN_DIFFRAC_HF_PHA,
-                            _DS_WXA_NP,
-                            this->_ds_wxa,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_DIFFRAC_HF_PHA,
+                                        _DS_WXA_NP,
+                                        this->_ds_wxa,
+                                        cusfloat_h5
+                                    );
 
-        CREATE_DATASET( 
-                            fid,
-                            _DN_DIFFRAC_LF_PHA,
-                            _DS_WXA_NP,
-                            this->_ds_wxa,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_DIFFRAC_LF_PHA,
+                                        _DS_WXA_NP,
+                                        this->_ds_wxa,
+                                        cusfloat_h5
+                                    );
         
     }
 
     if ( input->out_fk )
     {
-        CREATE_DATASET( 
-                            fid,
-                            _DN_FK_MAG,
-                            _DS_WX_NP,
-                            this->_ds_wx,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_FK_MAG,
+                                        _DS_WX_NP,
+                                        this->_ds_wx,
+                                        cusfloat_h5
+                                    );
 
-        CREATE_DATASET( 
-                            fid,
-                            _DN_FK_HF_MAG,
-                            _DS_WXA_NP,
-                            this->_ds_wxa,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_FK_HF_MAG,
+                                        _DS_WXA_NP,
+                                        this->_ds_wxa,
+                                        cusfloat_h5
+                                    );
 
-        CREATE_DATASET( 
-                            fid,
-                            _DN_FK_LF_MAG,
-                            _DS_WXA_NP,
-                            this->_ds_wxa,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_FK_LF_MAG,
+                                        _DS_WXA_NP,
+                                        this->_ds_wxa,
+                                        cusfloat_h5
+                                    );
 
-        CREATE_DATASET( 
-                            fid,
-                            _DN_FK_PHA,
-                            _DS_WX_NP,
-                            this->_ds_wx,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_FK_PHA,
+                                        _DS_WX_NP,
+                                        this->_ds_wx,
+                                        cusfloat_h5
+                                    );
 
-        CREATE_DATASET( 
-                            fid,
-                            _DN_FK_HF_PHA,
-                            _DS_WXA_NP,
-                            this->_ds_wxa,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_FK_HF_PHA,
+                                        _DS_WXA_NP,
+                                        this->_ds_wxa,
+                                        cusfloat_h5
+                                    );
 
-        CREATE_DATASET( 
-                            fid,
-                            _DN_FK_LF_PHA,
-                            _DS_WXA_NP,
-                            this->_ds_wxa,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_FK_LF_PHA,
+                                        _DS_WXA_NP,
+                                        this->_ds_wxa,
+                                        cusfloat_h5
+                                    );
         
     }
 
     if ( input->out_hydmech )
     {
         // Create dataset for added mass
-        CREATE_DATASET( 
-                            fid,
-                            _DN_ADDED_MASS,
-                            _DS_HM_NP,
-                            this->_ds_hm,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_ADDED_MASS,
+                                        _DS_HM_NP,
+                                        this->_ds_hm,
+                                        cusfloat_h5
+                                    );
 
-        CREATE_DATASET( 
-                            fid,
-                            _DN_ADDED_MASS_HF,
-                            _DS_HMA_NP,
-                            this->_ds_hma,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_ADDED_MASS_HF,
+                                        _DS_HMA_NP,
+                                        this->_ds_hma,
+                                        cusfloat_h5
+                                    );
 
-        CREATE_DATASET( 
-                            fid,
-                            _DN_ADDED_MASS_LF,
-                            _DS_HMA_NP,
-                            this->_ds_hma,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_ADDED_MASS_LF,
+                                        _DS_HMA_NP,
+                                        this->_ds_hma,
+                                        cusfloat_h5
+                                    );
 
         // Create dataset for radiation damping
-        CREATE_DATASET( 
-                            fid,
-                            _DN_DAMPING_RAD,
-                            _DS_HM_NP,
-                            this->_ds_hm,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_DAMPING_RAD,
+                                        _DS_HM_NP,
+                                        this->_ds_hm,
+                                        cusfloat_h5
+                                    );
 
-        CREATE_DATASET( 
-                            fid,
-                            _DN_DAMPING_RAD_HF,
-                            _DS_HMA_NP,
-                            this->_ds_hma,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_DAMPING_RAD_HF,
+                                        _DS_HMA_NP,
+                                        this->_ds_hma,
+                                        cusfloat_h5
+                                    );
 
-        CREATE_DATASET( 
-                            fid,
-                            _DN_DAMPING_RAD_LF,
-                            _DS_HMA_NP,
-                            this->_ds_hma,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_DAMPING_RAD_LF,
+                                        _DS_HMA_NP,
+                                        this->_ds_hma,
+                                        cusfloat_h5
+                                    );
 
     }
 
     if ( input->out_hydstiff )
     {
-        CREATE_DATASET( 
-                            fid,
-                            _DN_HYDSTIFF,
-                            _DS_MH_NP,
-                            this->_ds_mh,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_HYDSTIFF,
+                                        _DS_MH_NP,
+                                        this->_ds_mh,
+                                        cusfloat_h5
+                                    );
     }
 
     // Create dataset for the frequencies set
-    CREATE_DATASET( 
-                        fid,
-                        _DN_FREQS,
-                        _DS_HF_NP,
-                        this->_ds_f,
-                        cusfloat_h5
-                    );
+    create_hdf5_dataset_simple( 
+                                    fid,
+                                    _DN_FREQS,
+                                    _DS_HF_NP,
+                                    this->_ds_f,
+                                    cusfloat_h5
+                                );
 
     // Create dataset for the headings set
-    CREATE_DATASET( 
-                        fid,
-                        _DN_HEADS,
-                        _DS_HF_NP,
-                        this->_ds_h,
-                        cusfloat_h5
-                    );
+    create_hdf5_dataset_simple( 
+                                    fid,
+                                    _DN_HEADS,
+                                    _DS_HF_NP,
+                                    this->_ds_h,
+                                    cusfloat_h5
+                                );
 
     // Create group for the mesh
     if ( this->_input->out_mesh )
     {
-        H5::Group mesh_gp( fid.createGroup( _GN_MESH ) );
+        hid_t mesh_gp = H5Gcreate2( fid, _GN_MESH, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
+        H5Gclose( mesh_gp );
     }
 
     // Create dataset for mean drift forces
     if ( input->is_calc_mdrift )
     {
-        CREATE_DATASET( 
-                            fid,
-                            _DN_MDRIFT_MAG,
-                            _DS_WX_NP,
-                            this->_ds_wx,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_MDRIFT_MAG,
+                                        _DS_WX_NP,
+                                        this->_ds_wx,
+                                        cusfloat_h5
+                                    );
         
-        CREATE_DATASET( 
-                            fid,
-                            _DN_MDRIFT_PHA,
-                            _DS_WX_NP,
-                            this->_ds_wx,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_MDRIFT_PHA,
+                                        _DS_WX_NP,
+                                        this->_ds_wx,
+                                        cusfloat_h5
+                                    );
 
         if ( this->_input->out_qtf_comp )
         {
-            CREATE_DATASET( 
-                                fid,
-                                _DN_MDRIFT_WL_MAG,
-                                _DS_WX_NP,
-                                this->_ds_wx,
-                                cusfloat_h5
-                            );
+            create_hdf5_dataset_simple( 
+                                            fid,
+                                            _DN_MDRIFT_WL_MAG,
+                                            _DS_WX_NP,
+                                            this->_ds_wx,
+                                            cusfloat_h5
+                                        );
             
-            CREATE_DATASET( 
-                                fid,
-                                _DN_MDRIFT_WL_PHA,
-                                _DS_WX_NP,
-                                this->_ds_wx,
-                                cusfloat_h5
-                            );
+            create_hdf5_dataset_simple( 
+                                            fid,
+                                            _DN_MDRIFT_WL_PHA,
+                                            _DS_WX_NP,
+                                            this->_ds_wx,
+                                            cusfloat_h5
+                                        );
 
-            CREATE_DATASET( 
-                                fid,
-                                _DN_MDRIFT_BERN_MAG,
-                                _DS_WX_NP,
-                                this->_ds_wx,
-                                cusfloat_h5
-                            );
+            create_hdf5_dataset_simple( 
+                                            fid,
+                                            _DN_MDRIFT_BERN_MAG,
+                                            _DS_WX_NP,
+                                            this->_ds_wx,
+                                            cusfloat_h5
+                                        );
             
-            CREATE_DATASET( 
-                                fid,
-                                _DN_MDRIFT_BERN_PHA,
-                                _DS_WX_NP,
-                                this->_ds_wx,
-                                cusfloat_h5
-                            );
+            create_hdf5_dataset_simple( 
+                                            fid,
+                                            _DN_MDRIFT_BERN_PHA,
+                                            _DS_WX_NP,
+                                            this->_ds_wx,
+                                            cusfloat_h5
+                                        );
 
-            CREATE_DATASET( 
-                                fid,
-                                _DN_MDRIFT_ACC_MAG,
-                                _DS_WX_NP,
-                                this->_ds_wx,
-                                cusfloat_h5
-                            );
+            create_hdf5_dataset_simple( 
+                                            fid,
+                                            _DN_MDRIFT_ACC_MAG,
+                                            _DS_WX_NP,
+                                            this->_ds_wx,
+                                            cusfloat_h5
+                                        );
             
-            CREATE_DATASET( 
-                                fid,
-                                _DN_MDRIFT_ACC_PHA,
-                                _DS_WX_NP,
-                                this->_ds_wx,
-                                cusfloat_h5
-                            );
+            create_hdf5_dataset_simple( 
+                                            fid,
+                                            _DN_MDRIFT_ACC_PHA,
+                                            _DS_WX_NP,
+                                            this->_ds_wx,
+                                            cusfloat_h5
+                                        );
 
-            CREATE_DATASET( 
-                                fid,
-                                _DN_MDRIFT_MOM_MAG,
-                                _DS_WX_NP,
-                                this->_ds_wx,
-                                cusfloat_h5
-                            );
+            create_hdf5_dataset_simple( 
+                                            fid,
+                                            _DN_MDRIFT_MOM_MAG,
+                                            _DS_WX_NP,
+                                            this->_ds_wx,
+                                            cusfloat_h5
+                                        );
             
-            CREATE_DATASET( 
-                                fid,
-                                _DN_MDRIFT_MOM_PHA,
-                                _DS_WX_NP,
-                                this->_ds_wx,
-                                cusfloat_h5
-                            );
+            create_hdf5_dataset_simple( 
+                                            fid,
+                                            _DN_MDRIFT_MOM_PHA,
+                                            _DS_WX_NP,
+                                            this->_ds_wx,
+                                            cusfloat_h5
+                                        );
         }
     }
     
     // Create dataset for panels pressure
     if ( input->out_pressure )
     {
-        CREATE_DATASET( 
-                            fid,
-                            _DN_PRESS_INT_MAG,
-                            _DS_FD_NP,
-                            this->_ds_fd,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_PRESS_INT_MAG,
+                                        _DS_FD_NP,
+                                        this->_ds_fd,
+                                        cusfloat_h5
+                                    );
 
-        CREATE_DATASET( 
-                            fid,
-                            _DN_PRESS_INT_PHA,
-                            _DS_FD_NP,
-                            this->_ds_fd,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_PRESS_INT_PHA,
+                                        _DS_FD_NP,
+                                        this->_ds_fd,
+                                        cusfloat_h5
+                                    );
     }
 
     // Create dataset for panels potential
     if ( input->out_potential )
     {
-        CREATE_DATASET( 
-                            fid,
-                            _DN_POT_INT_MAG,
-                            _DS_FD_NP,
-                            this->_ds_fd,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_POT_INT_MAG,
+                                        _DS_FD_NP,
+                                        this->_ds_fd,
+                                        cusfloat_h5
+                                    );
 
-        CREATE_DATASET( 
-                            fid,
-                            _DN_POT_INT_PHA,
-                            _DS_FD_NP,
-                            this->_ds_fd,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_POT_INT_PHA,
+                                        _DS_FD_NP,
+                                        this->_ds_fd,
+                                        cusfloat_h5
+                                    );
     }
 
     // Create dataset for QTF frequency difference
     if ( input->out_qtf )
     {
-        CREATE_DATASET( 
-                            fid,
-                            _DN_QTF_DIFF_MAG,
-                            _DS_QF_NP,
-                            this->_ds_qf,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_QTF_DIFF_MAG,
+                                        _DS_QF_NP,
+                                        this->_ds_qf,
+                                        cusfloat_h5
+                                    );
 
-        CREATE_DATASET( 
-                            fid,
-                            _DN_QTF_DIFF_PHA,
-                            _DS_QF_NP,
-                            this->_ds_qf,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_QTF_DIFF_PHA,
+                                        _DS_QF_NP,
+                                        this->_ds_qf,
+                                        cusfloat_h5
+                                    );
 
         if ( this->_input->out_qtf_comp )
         {
             // Set ouput for Acceleration component
-            CREATE_DATASET( 
-                                fid,
-                                _DN_QTF_DIFF_ACC_MAG,
-                                _DS_QF_NP,
-                                this->_ds_qf,
-                                cusfloat_h5
-                            );
+            create_hdf5_dataset_simple( 
+                                            fid,
+                                            _DN_QTF_DIFF_ACC_MAG,
+                                            _DS_QF_NP,
+                                            this->_ds_qf,
+                                            cusfloat_h5
+                                        );
             
-            CREATE_DATASET( 
-                                fid,
-                                _DN_QTF_DIFF_ACC_PHA,
-                                _DS_QF_NP,
-                                this->_ds_qf,
-                                cusfloat_h5
-                            );
+            create_hdf5_dataset_simple( 
+                                            fid,
+                                            _DN_QTF_DIFF_ACC_PHA,
+                                            _DS_QF_NP,
+                                            this->_ds_qf,
+                                            cusfloat_h5
+                                        );
             
             // Set output for Bernouilly component
-            CREATE_DATASET( 
-                                fid,
-                                _DN_QTF_DIFF_BERN_MAG,
-                                _DS_QF_NP,
-                                this->_ds_qf,
-                                cusfloat_h5
-                            );
+            create_hdf5_dataset_simple( 
+                                            fid,
+                                            _DN_QTF_DIFF_BERN_MAG,
+                                            _DS_QF_NP,
+                                            this->_ds_qf,
+                                            cusfloat_h5
+                                        );
             
-            CREATE_DATASET( 
-                                fid,
-                                _DN_QTF_DIFF_BERN_PHA,
-                                _DS_QF_NP,
-                                this->_ds_qf,
-                                cusfloat_h5
-                            );
+            create_hdf5_dataset_simple( 
+                                            fid,
+                                            _DN_QTF_DIFF_BERN_PHA,
+                                            _DS_QF_NP,
+                                            this->_ds_qf,
+                                            cusfloat_h5
+                                        );
             
             // Set output for Momentum component
-            CREATE_DATASET( 
-                                fid,
-                                _DN_QTF_DIFF_MOM_MAG,
-                                _DS_QF_NP,
-                                this->_ds_qf,
-                                cusfloat_h5
-                            );
+            create_hdf5_dataset_simple( 
+                                            fid,
+                                            _DN_QTF_DIFF_MOM_MAG,
+                                            _DS_QF_NP,
+                                            this->_ds_qf,
+                                            cusfloat_h5
+                                        );
             
-            CREATE_DATASET( 
-                                fid,
-                                _DN_QTF_DIFF_MOM_PHA,
-                                _DS_QF_NP,
-                                this->_ds_qf,
-                                cusfloat_h5
-                            );
+            create_hdf5_dataset_simple( 
+                                            fid,
+                                            _DN_QTF_DIFF_MOM_PHA,
+                                            _DS_QF_NP,
+                                            this->_ds_qf,
+                                            cusfloat_h5
+                                        );
 
             // Set out for second order potential component
-            CREATE_DATASET( 
-                                fid,
-                                _DN_QTF_DIFF_SOP_MAG,
-                                _DS_QF_NP,
-                                this->_ds_qf,
-                                cusfloat_h5
-                            );
+            create_hdf5_dataset_simple( 
+                                            fid,
+                                            _DN_QTF_DIFF_SOP_MAG,
+                                            _DS_QF_NP,
+                                            this->_ds_qf,
+                                            cusfloat_h5
+                                        );
             
-            CREATE_DATASET( 
-                                fid,
-                                _DN_QTF_DIFF_SOP_PHA,
-                                _DS_QF_NP,
-                                this->_ds_qf,
-                                cusfloat_h5
-                            );
+            create_hdf5_dataset_simple( 
+                                            fid,
+                                            _DN_QTF_DIFF_SOP_PHA,
+                                            _DS_QF_NP,
+                                            this->_ds_qf,
+                                            cusfloat_h5
+                                        );
             
             // Set output for WL component
-            CREATE_DATASET( 
-                                fid,
-                                _DN_QTF_DIFF_WL_MAG,
-                                _DS_QF_NP,
-                                this->_ds_qf,
-                                cusfloat_h5
-                            );
+            create_hdf5_dataset_simple( 
+                                            fid,
+                                            _DN_QTF_DIFF_WL_MAG,
+                                            _DS_QF_NP,
+                                            this->_ds_qf,
+                                            cusfloat_h5
+                                        );
             
-            CREATE_DATASET( 
-                                fid,
-                                _DN_QTF_DIFF_WL_PHA,
-                                _DS_QF_NP,
-                                this->_ds_qf,
-                                cusfloat_h5
-                            );
+            create_hdf5_dataset_simple( 
+                                            fid,
+                                            _DN_QTF_DIFF_WL_PHA,
+                                            _DS_QF_NP,
+                                            this->_ds_qf,
+                                            cusfloat_h5
+                                        );
             
         }
 
         // Create dataset for QTF frequency summation
-        CREATE_DATASET( 
-                            fid,
-                            _DN_QTF_SUM_MAG,
-                            _DS_QF_NP,
-                            this->_ds_qf,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_QTF_SUM_MAG,
+                                        _DS_QF_NP,
+                                        this->_ds_qf,
+                                        cusfloat_h5
+                                    );
 
-        CREATE_DATASET( 
-                            fid,
-                            _DN_QTF_SUM_PHA,
-                            _DS_QF_NP,
-                            this->_ds_qf,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_QTF_SUM_PHA,
+                                        _DS_QF_NP,
+                                        this->_ds_qf,
+                                        cusfloat_h5
+                                    );
 
         if ( this->_input->out_qtf_comp )
         {
             // Set ouput for Acceleration component
-            CREATE_DATASET( 
-                                fid,
-                                _DN_QTF_SUM_ACC_MAG,
-                                _DS_QF_NP,
-                                this->_ds_qf,
-                                cusfloat_h5
-                            );
+            create_hdf5_dataset_simple( 
+                                            fid,
+                                            _DN_QTF_SUM_ACC_MAG,
+                                            _DS_QF_NP,
+                                            this->_ds_qf,
+                                            cusfloat_h5
+                                        );
 
-            CREATE_DATASET( 
-                                fid,
-                                _DN_QTF_SUM_ACC_PHA,
-                                _DS_QF_NP,
-                                this->_ds_qf,
-                                cusfloat_h5
-                            );
+            create_hdf5_dataset_simple( 
+                                            fid,
+                                            _DN_QTF_SUM_ACC_PHA,
+                                            _DS_QF_NP,
+                                            this->_ds_qf,
+                                            cusfloat_h5
+                                        );
             
             // Set output for Bernouilly component
-            CREATE_DATASET( 
-                                fid,
-                                _DN_QTF_SUM_BERN_MAG,
-                                _DS_QF_NP,
-                                this->_ds_qf,
-                                cusfloat_h5
-                            );
+            create_hdf5_dataset_simple( 
+                                            fid,
+                                            _DN_QTF_SUM_BERN_MAG,
+                                            _DS_QF_NP,
+                                            this->_ds_qf,
+                                            cusfloat_h5
+                                        );
 
-            CREATE_DATASET( 
-                                fid,
-                                _DN_QTF_SUM_BERN_PHA,
-                                _DS_QF_NP,
-                                this->_ds_qf,
-                                cusfloat_h5
-                            );
+            create_hdf5_dataset_simple( 
+                                            fid,
+                                            _DN_QTF_SUM_BERN_PHA,
+                                            _DS_QF_NP,
+                                            this->_ds_qf,
+                                            cusfloat_h5
+                                        );
             
             // Set output for Momentum component
-            CREATE_DATASET( 
-                                fid,
-                                _DN_QTF_SUM_MOM_MAG,
-                                _DS_QF_NP,
-                                this->_ds_qf,
-                                cusfloat_h5
-                            );
+            create_hdf5_dataset_simple( 
+                                            fid,
+                                            _DN_QTF_SUM_MOM_MAG,
+                                            _DS_QF_NP,
+                                            this->_ds_qf,
+                                            cusfloat_h5
+                                        );
 
-            CREATE_DATASET( 
-                                fid,
-                                _DN_QTF_SUM_MOM_PHA,
-                                _DS_QF_NP,
-                                this->_ds_qf,
-                                cusfloat_h5
-                            );
+            create_hdf5_dataset_simple( 
+                                            fid,
+                                            _DN_QTF_SUM_MOM_PHA,
+                                            _DS_QF_NP,
+                                            this->_ds_qf,
+                                            cusfloat_h5
+                                        );
 
             // Set out for second order potential component
-            CREATE_DATASET( 
-                                fid,
-                                _DN_QTF_SUM_SOP_MAG,
-                                _DS_QF_NP,
-                                this->_ds_qf,
-                                cusfloat_h5
-                            );
+            create_hdf5_dataset_simple( 
+                                            fid,
+                                            _DN_QTF_SUM_SOP_MAG,
+                                            _DS_QF_NP,
+                                            this->_ds_qf,
+                                            cusfloat_h5
+                                        );
 
-            CREATE_DATASET( 
-                                fid,
-                                _DN_QTF_SUM_SOP_PHA,
-                                _DS_QF_NP,
-                                this->_ds_qf,
-                                cusfloat_h5
-                            );
+            create_hdf5_dataset_simple( 
+                                            fid,
+                                            _DN_QTF_SUM_SOP_PHA,
+                                            _DS_QF_NP,
+                                            this->_ds_qf,
+                                            cusfloat_h5
+                                        );
             
             // Set output for WL component
-            CREATE_DATASET( 
-                                fid,
-                                _DN_QTF_SUM_WL_MAG,
-                                _DS_QF_NP,
-                                this->_ds_qf,
-                                cusfloat_h5
-                            );
+            create_hdf5_dataset_simple( 
+                                            fid,
+                                            _DN_QTF_SUM_WL_MAG,
+                                            _DS_QF_NP,
+                                            this->_ds_qf,
+                                            cusfloat_h5
+                                        );
 
-            CREATE_DATASET( 
-                                fid,
-                                _DN_QTF_SUM_WL_PHA,
-                                _DS_QF_NP,
-                                this->_ds_qf,
-                                cusfloat_h5
-                            );
+            create_hdf5_dataset_simple( 
+                                            fid,
+                                            _DN_QTF_SUM_WL_PHA,
+                                            _DS_QF_NP,
+                                            this->_ds_qf,
+                                            cusfloat_h5
+                                        );
             
         }
 
@@ -652,111 +654,111 @@ Output::Output(
     // Create dataset for RAOs
     if ( input->out_raos )
     {
-        CREATE_DATASET( 
-                            fid,
-                            _DN_RAO_MAG,
-                            _DS_WX_NP,
-                            this->_ds_wx,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_RAO_MAG,
+                                        _DS_WX_NP,
+                                        this->_ds_wx,
+                                        cusfloat_h5
+                                    );
 
-        CREATE_DATASET( 
-                            fid,
-                            _DN_RAO_PHA,
-                            _DS_WX_NP,
-                            this->_ds_wx,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_RAO_PHA,
+                                        _DS_WX_NP,
+                                        this->_ds_wx,
+                                        cusfloat_h5
+                                    );
         
     }
 
     // Create dataset for source intensities
     if ( input->out_sources )
     {
-        CREATE_DATASET( 
-                            fid,
-                            _DN_SRC_INT_MAG,
-                            _DS_FD_NP,
-                            this->_ds_fd,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_SRC_INT_MAG,
+                                        _DS_FD_NP,
+                                        this->_ds_fd,
+                                        cusfloat_h5
+                                    );
 
-        CREATE_DATASET( 
-                            fid,
-                            _DN_SRC_INT_PHA,
-                            _DS_FD_NP,
-                            this->_ds_fd,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_SRC_INT_PHA,
+                                        _DS_FD_NP,
+                                        this->_ds_fd,
+                                        cusfloat_h5
+                                    );
     }
 
     // Create dataset for structural mass
     if ( input->out_struct_mass )
     {
-        CREATE_DATASET( 
-                            fid,
-                            _DN_STRUCT_MASS,
-                            _DS_MH_NP,
-                            this->_ds_mh,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_STRUCT_MASS,
+                                        _DS_MH_NP,
+                                        this->_ds_mh,
+                                        cusfloat_h5
+                                    );
     }
 
     // Create dataset for wave exciting forces
     if ( input->out_wex )
     {
-        CREATE_DATASET( 
-                            fid,
-                            _DN_WEX_MAG,
-                            _DS_WX_NP,
-                            this->_ds_wx,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_WEX_MAG,
+                                        _DS_WX_NP,
+                                        this->_ds_wx,
+                                        cusfloat_h5
+                                    );
 
-        CREATE_DATASET( 
-                            fid,
-                            _DN_WEX_HF_MAG,
-                            _DS_WXA_NP,
-                            this->_ds_wxa,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_WEX_HF_MAG,
+                                        _DS_WXA_NP,
+                                        this->_ds_wxa,
+                                        cusfloat_h5
+                                    );
 
-        CREATE_DATASET( 
-                            fid,
-                            _DN_WEX_LF_MAG,
-                            _DS_WXA_NP,
-                            this->_ds_wxa,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_WEX_LF_MAG,
+                                        _DS_WXA_NP,
+                                        this->_ds_wxa,
+                                        cusfloat_h5
+                                    );
 
-        CREATE_DATASET( 
-                            fid,
-                            _DN_WEX_PHA,
-                            _DS_WX_NP,
-                            this->_ds_wx,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_WEX_PHA,
+                                        _DS_WX_NP,
+                                        this->_ds_wx,
+                                        cusfloat_h5
+                                    );
 
-        CREATE_DATASET( 
-                            fid,
-                            _DN_WEX_HF_PHA,
-                            _DS_WXA_NP,
-                            this->_ds_wxa,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_WEX_HF_PHA,
+                                        _DS_WXA_NP,
+                                        this->_ds_wxa,
+                                        cusfloat_h5
+                                    );
 
-        CREATE_DATASET( 
-                            fid,
-                            _DN_WEX_LF_PHA,
-                            _DS_WXA_NP,
-                            this->_ds_wxa,
-                            cusfloat_h5
-                        );
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_WEX_LF_PHA,
+                                        _DS_WXA_NP,
+                                        this->_ds_wxa,
+                                        cusfloat_h5
+                                    );
 
     }
 
     // Close file unit
-    fid.close( );
+    H5Fclose( fid );
 
 }
 
@@ -766,23 +768,23 @@ void    Output::save_frequencies(
                                 )
 {
     // Open file unit
-    H5::H5File fid( this->_results_fipath.c_str( ), H5F_ACC_RDWR );
+    hid_t fid = H5Fopen( this->_results_fipath.c_str( ), H5F_ACC_RDWR, H5P_DEFAULT );
 
     // Storage data
     hsize_t offset_freqs[_DS_HF_NP] = { 0 };
-    SAVE_DATASET_CHUNK(
-                            fid,
-                            _DN_FREQS,
-                            _DS_HF_NP,
-                            this->_ds_f,
-                            this->_ds_f,
-                            offset_freqs,
-                            freqs,
-                            cusfloat_h5
-                        );
+    write_hdf5_dataset_chunk(
+                                fid,
+                                _DN_FREQS,
+                                _DS_HF_NP,
+                                this->_ds_f,
+                                this->_ds_f,
+                                offset_freqs,
+                                freqs,
+                                cusfloat_h5
+                            );
 
     // Close file unit
-    fid.close( );
+    H5Fclose( fid );
 }
 
 
@@ -791,11 +793,11 @@ void    Output::save_headings(
                             )
 {
     // Open file unit
-    H5::H5File fid( this->_results_fipath.c_str( ), H5F_ACC_RDWR );
+    hid_t fid = H5Fopen( this->_results_fipath.c_str( ), H5F_ACC_RDWR, H5P_DEFAULT );
 
     // Storage data
     hsize_t offset_heads[_DS_HF_NP] = { 0 };
-    SAVE_DATASET_CHUNK(
+    write_hdf5_dataset_chunk(
                             fid,
                             _DN_HEADS,
                             _DS_HF_NP,
@@ -807,7 +809,7 @@ void    Output::save_headings(
                         );
 
     // Close file unit
-    fid.close( );
+    H5Fclose( fid );
 }
 
 
@@ -818,7 +820,7 @@ void    Output::save_hydromechanics_format(
                                             )
 {
     // Open file unit
-    H5::H5File fid( this->_results_fipath.c_str( ), H5F_ACC_RDWR );
+    hid_t fid = H5Fopen( this->_results_fipath.c_str( ), H5F_ACC_RDWR, H5P_DEFAULT );
 
     // Allocate space for body data chunks
     cusfloat*   amb = generate_empty_vector<cusfloat>( pow2s( this->_input->dofs_np ) );
@@ -862,7 +864,7 @@ void    Output::save_hydromechanics_format(
             offset[1] = j;
 
             // Storage data
-            SAVE_DATASET_CHUNK(
+            write_hdf5_dataset_chunk(
                                     fid,
                                     channel_name.c_str( ),
                                     _DS_HM_NP,
@@ -876,7 +878,7 @@ void    Output::save_hydromechanics_format(
     }
 
     // Close file unit
-    fid.close( );
+    H5Fclose( fid );
 
     // Deallocate heap memory
     mkl_free( amb );
@@ -889,7 +891,7 @@ void    Output::save_hydromechanics_asympt_format(
                                                 )
 {
     // Open file unit
-    H5::H5File fid( this->_results_fipath.c_str( ), H5F_ACC_RDWR );
+    hid_t fid = H5Fopen( this->_results_fipath.c_str( ), H5F_ACC_RDWR, H5P_DEFAULT );
 
     // Allocate space for body data chunks
     cusfloat*   amb = generate_empty_vector<cusfloat>( pow2s( this->_input->dofs_np ) );
@@ -933,7 +935,7 @@ void    Output::save_hydromechanics_asympt_format(
             offset[1] = j;
 
             // Storage data
-            SAVE_DATASET_CHUNK(
+            write_hdf5_dataset_chunk(
                                     fid,
                                     channel_name.c_str( ),
                                     _DS_HMA_NP,
@@ -947,7 +949,7 @@ void    Output::save_hydromechanics_asympt_format(
     }
 
     // Close file unit
-    fid.close( );
+    H5Fclose( fid );
 
     // Deallocate heap memory
     mkl_free( amb );
@@ -959,7 +961,7 @@ void    Output::save_hydstiffness(
                                 )
 {
     // Open file unit
-    H5::H5File fid( this->_results_fipath.c_str( ), H5F_ACC_RDWR );
+    hid_t fid = H5Fopen( this->_results_fipath.c_str( ), H5F_ACC_RDWR, H5P_DEFAULT );
 
     // Loop over bodies to storage hydrostatic stiffness data matrix
     hsize_t offset[_DS_MH_NP]       = { 0, 0, 0 };
@@ -968,7 +970,7 @@ void    Output::save_hydstiffness(
     for ( int i=0; i<this->_input->bodies_np; i++ )
     {
         offset[0] = i;
-        SAVE_DATASET_CHUNK(
+        write_hdf5_dataset_chunk(
                                 fid,
                                 _DN_HYDSTIFF,
                                 _DS_MH_NP,
@@ -981,7 +983,7 @@ void    Output::save_hydstiffness(
     }
 
     // Close file unit
-    fid.close( );
+    H5Fclose( fid );
 }
 
 
@@ -990,13 +992,12 @@ void    Output::save_mesh(
                             )
 {
     // Open file unit
-    H5::H5File fid( this->_results_fipath.c_str( ), H5F_ACC_RDWR );
+    hid_t fid = H5Fopen( this->_results_fipath.c_str( ), H5F_ACC_RDWR, H5P_DEFAULT );
 
     // Take the mesh group
-    H5::Group mesh_gp = fid.openGroup( _GN_MESH );
+    hid_t mesh_gp = H5Gopen2( fid, _GN_MESH, H5P_DEFAULT );
 
     // Allocate mesh fields size matrixes
-    H5::DataSpace   attr_dataspace(H5S_SCALAR);
     hsize_t         offset[_DS_MH_NP] = { 0, 0, 0 };
     hsize_t         _ds_nd[_DS_ND_NP] = { 0 };
     hsize_t         _ds_el[_DS_EL_NP] = { 0, 0 };
@@ -1005,15 +1006,10 @@ void    Output::save_mesh(
     for ( int i=0; i<this->_input->bodies_np; i++ )
     {
         // Create group handle
-        H5::Group group_i( mesh_gp.createGroup( this->_input->bodies[i]->mesh_body_name.c_str( ) ) );
+        hid_t group_i = H5Gcreate2( mesh_gp, this->_input->bodies[i]->mesh_body_name.c_str( ), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
 
         // Add body index as a group attribute
-        H5::Attribute   body_id_attr    = group_i.createAttribute( 
-                                                                    "body_index",
-                                                                    int_h5,
-                                                                    attr_dataspace
-                                                                );
-        body_id_attr.write( int_h5, &i );
+        write_hdf5_scalar_attribute( group_i, "body_index", int_h5, i );
 
         // Define mesh fields size matrixes
         _ds_nd[0] = this->_input->bodies[i]->mesh->nodes_np;
@@ -1021,7 +1017,7 @@ void    Output::save_mesh(
         _ds_el[1] = this->_input->bodies[i]->mesh->enrl;
 
         // Create dataset for nodes and storage them
-        CREATE_DATASET(
+        create_hdf5_dataset_simple(
                             group_i,
                             _DN_NODES_X,
                             _DS_ND_NP,
@@ -1029,7 +1025,7 @@ void    Output::save_mesh(
                             cusfloat_h5
                         );
 
-        CREATE_DATASET(
+        create_hdf5_dataset_simple(
                             group_i,
                             _DN_NODES_Y,
                             _DS_ND_NP,
@@ -1037,7 +1033,7 @@ void    Output::save_mesh(
                             cusfloat_h5
                         );
 
-        CREATE_DATASET(
+        create_hdf5_dataset_simple(
                             group_i,
                             _DN_NODES_Z,
                             _DS_ND_NP,
@@ -1045,7 +1041,7 @@ void    Output::save_mesh(
                             cusfloat_h5
                         );
 
-        SAVE_DATASET_CHUNK(
+        write_hdf5_dataset_chunk(
                                 group_i,
                                 _DN_NODES_X,
                                 _DS_ND_NP,
@@ -1056,7 +1052,7 @@ void    Output::save_mesh(
                                 cusfloat_h5
                             );
 
-        SAVE_DATASET_CHUNK(
+        write_hdf5_dataset_chunk(
                                 group_i,
                                 _DN_NODES_Y,
                                 _DS_ND_NP,
@@ -1067,7 +1063,7 @@ void    Output::save_mesh(
                                 cusfloat_h5
                             );
 
-        SAVE_DATASET_CHUNK(
+        write_hdf5_dataset_chunk(
                                 group_i,
                                 _DN_NODES_Z,
                                 _DS_ND_NP,
@@ -1079,7 +1075,7 @@ void    Output::save_mesh(
                             );
 
         // Create dataset for elements and storage them
-        CREATE_DATASET(
+        create_hdf5_dataset_simple(
                             group_i,
                             _DN_ELEMS,
                             _DS_EL_NP,
@@ -1087,7 +1083,7 @@ void    Output::save_mesh(
                             int_h5
                         );
 
-        SAVE_DATASET_CHUNK(
+        write_hdf5_dataset_chunk(
                                 group_i,
                                 _DN_ELEMS,
                                 _DS_EL_NP,
@@ -1099,12 +1095,14 @@ void    Output::save_mesh(
                             );
 
         // Close group
-        group_i.close( );
+        H5Gclose( group_i );
 
     }
     
+    H5Gclose( mesh_gp );
+
     // Close file unit
-    fid.close( );
+    H5Fclose( fid );
 }
 
 
@@ -1119,7 +1117,7 @@ void    Output::save_fields_data(
     std::string _dn_pha = channel_name + std::string( "_pha" );
 
     // Open file unit
-    H5::H5File fid( this->_results_fipath.c_str( ), H5F_ACC_RDWR );
+    hid_t fid = H5Fopen( this->_results_fipath.c_str( ), H5F_ACC_RDWR, H5P_DEFAULT );
 
     // Allocate space for ith body data
     cusfloat* data_mag = generate_empty_vector<cusfloat>( this->_total_panels_np );
@@ -1143,7 +1141,7 @@ void    Output::save_fields_data(
         offset[1] = i;
 
         // Storage data
-        SAVE_DATASET_CHUNK(
+        write_hdf5_dataset_chunk(
                                 fid,
                                 _dn_mag.c_str( ),
                                 _DS_FD_NP,
@@ -1154,7 +1152,7 @@ void    Output::save_fields_data(
                                 cusfloat_h5
                             );
 
-        SAVE_DATASET_CHUNK(
+        write_hdf5_dataset_chunk(
                                 fid,
                                 _dn_pha.c_str( ),
                                 _DS_FD_NP,
@@ -1167,7 +1165,7 @@ void    Output::save_fields_data(
     }
 
     // Close file unit
-    fid.close( );
+    H5Fclose( fid );
 
     // Delete heap memory
     mkl_free( data_mag );
@@ -1181,7 +1179,7 @@ void    Output::save_structural_mass(
                                     )
 {
     // Open file unit
-    H5::H5File fid( this->_results_fipath.c_str( ), H5F_ACC_RDWR );
+    hid_t fid = H5Fopen( this->_results_fipath.c_str( ), H5F_ACC_RDWR, H5P_DEFAULT );
 
     // Allocate space for the ith body 
     // structural mass matrix
@@ -1225,7 +1223,7 @@ void    Output::save_structural_mass(
 
         // Storage data
         offset[0] = i;
-        SAVE_DATASET_CHUNK(
+        write_hdf5_dataset_chunk(
                                 fid,
                                 _DN_STRUCT_MASS,
                                 _DS_MH_NP,
@@ -1242,7 +1240,7 @@ void    Output::save_structural_mass(
     mkl_free( body_mass );
 
     // Close file unit
-    fid.close( );
+    H5Fclose( fid );
 }
 
 
@@ -1259,7 +1257,7 @@ void    Output::save_qtf_format(
     std::string _dn_pha = channel_name + std::string( "_pha" );
 
     // Open file unit
-    H5::H5File fid( this->_results_fipath.c_str( ), H5F_ACC_RDWR );
+    hid_t fid = H5Fopen( this->_results_fipath.c_str( ), H5F_ACC_RDWR, H5P_DEFAULT );
 
     // Convert to magnitude and phase format. Also, the data is re-ordered in the format: NB x NH x NH x NF x NF x NDOF
     int         force_np    =  (
@@ -1340,7 +1338,7 @@ void    Output::save_qtf_format(
 										};
     hsize_t offset[_DS_QF_NP]       = { 0, 0, 0, 0, 0, 0 };
 
-    SAVE_DATASET_CHUNK(
+    write_hdf5_dataset_chunk(
                             fid,
                             _dn_mag.c_str( ),
                             _DS_QF_NP,
@@ -1351,7 +1349,7 @@ void    Output::save_qtf_format(
                             cusfloat_h5
                         );
 
-    SAVE_DATASET_CHUNK(
+    write_hdf5_dataset_chunk(
                             fid,
                             _dn_pha.c_str( ),
                             _DS_QF_NP,
@@ -1363,7 +1361,7 @@ void    Output::save_qtf_format(
                         );
 
     // Close file unit
-    fid.close( );
+    H5Fclose( fid );
 
     // Deallocate heap memory used for the current function
     mkl_free( data_mag );
@@ -1382,7 +1380,7 @@ void    Output::save_wave_exciting_format(
     std::string _dn_pha = channel_name + std::string( "_pha" );
 
     // Open file unit
-    H5::H5File fid( this->_results_fipath.c_str( ), H5F_ACC_RDWR );
+    hid_t fid = H5Fopen( this->_results_fipath.c_str( ), H5F_ACC_RDWR, H5P_DEFAULT );
 
     // Allocate space for ith body data
     cusfloat* data_mag = generate_empty_vector<cusfloat>( this->_input->dofs_np );
@@ -1415,7 +1413,7 @@ void    Output::save_wave_exciting_format(
             offset[0] = i;
             offset[1] = j;
 
-            SAVE_DATASET_CHUNK(
+            write_hdf5_dataset_chunk(
                                     fid,
                                     _dn_mag.c_str( ),
                                     _DS_WX_NP,
@@ -1426,7 +1424,7 @@ void    Output::save_wave_exciting_format(
                                     cusfloat_h5
                                 );
 
-            SAVE_DATASET_CHUNK(
+            write_hdf5_dataset_chunk(
                                     fid,
                                     _dn_pha.c_str( ),
                                     _DS_WX_NP,
@@ -1441,7 +1439,7 @@ void    Output::save_wave_exciting_format(
     }
 
     // Close file unit
-    fid.close( );
+    H5Fclose( fid );
 
     // Deallocate heap memory used for the current function
     mkl_free( data_mag );
@@ -1459,7 +1457,7 @@ void    Output::save_wave_exciting_asympt_format(
     std::string _dn_pha = channel_name + std::string( "_pha" );
 
     // Open file unit
-    H5::H5File fid( this->_results_fipath.c_str( ), H5F_ACC_RDWR );
+    hid_t fid = H5Fopen( this->_results_fipath.c_str( ), H5F_ACC_RDWR, H5P_DEFAULT );
 
     // Allocate space for ith body data
     cusfloat* data_mag = generate_empty_vector<cusfloat>( this->_input->dofs_np );
@@ -1492,7 +1490,7 @@ void    Output::save_wave_exciting_asympt_format(
             offset[0] = i;
             offset[1] = j;
 
-            SAVE_DATASET_CHUNK(
+            write_hdf5_dataset_chunk(
                                     fid,
                                     _dn_mag.c_str( ),
                                     _DS_WXA_NP,
@@ -1503,7 +1501,7 @@ void    Output::save_wave_exciting_asympt_format(
                                     cusfloat_h5
                                 );
 
-            SAVE_DATASET_CHUNK(
+            write_hdf5_dataset_chunk(
                                     fid,
                                     _dn_pha.c_str( ),
                                     _DS_WXA_NP,
@@ -1518,7 +1516,7 @@ void    Output::save_wave_exciting_asympt_format(
     }
 
     // Close file unit
-    fid.close( );
+    H5Fclose( fid );
 
     // Deallocate heap memory used for the current function
     mkl_free( data_mag );
