@@ -153,6 +153,9 @@ set(
 # Pack inout module files
 set(
         inout_module_files
+        ${CMAKE_SOURCE_DIR}/src/inout/hdf5_time_series_exporter.hpp
+        ${CMAKE_SOURCE_DIR}/src/inout/hdf5_time_series_exporter.cpp
+        ${CMAKE_SOURCE_DIR}/src/inout/hdf5_wrappers.hpp
         ${CMAKE_SOURCE_DIR}/src/inout/input.hpp
         ${CMAKE_SOURCE_DIR}/src/inout/input.cpp
         ${CMAKE_SOURCE_DIR}/src/inout/output.hpp

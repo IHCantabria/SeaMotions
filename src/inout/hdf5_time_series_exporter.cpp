@@ -1,0 +1,348 @@
+
+/*
+ * Copyright (c) 2025 Sergio Fernández Ruano / IHCantabria
+ *
+ * This file is part of SeaMotions Software.
+ *
+ * SeaMotions is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeaMotions is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+
+// Include local modules
+#include "hdf5_time_series_exporter.hpp"
+
+
+void HDF5TimeSeriesExporter::add_field( 
+                                            std::string             field_name,
+                                            std::vector<hsize_t>    field_dims
+                                        )
+{
+    // Create max dimensions for extendable dataset (first dimension is time, set to unlimited)
+    std::vector<hsize_t> max_dims = field_dims;
+    max_dims[0] = H5S_UNLIMITED;
+
+    // Create fields file
+    hid_t file = H5Fopen(
+                            this->_field_file.c_str( ), 
+                            H5F_ACC_RDWR,
+                            H5P_DEFAULT
+                        );
+
+    // Create extendable datasets for each field
+    create_hdf5_extendable_dataset(
+                                    file, 
+                                    "/Fields/" + field_name,
+                                    cusfloat_h5,
+                                    field_dims,
+                                    max_dims
+                                );
+
+    // Close file unit
+    H5Fclose( file );
+
+    // Storage field names for later use in XDMF writing
+    this->_field_names.push_back( field_name );
+    this->_field_dims[field_name] = field_dims;
+}
+
+
+void HDF5TimeSeriesExporter::append_step(
+                                            std::string                 field_name,
+                                            cut::CusTensor<cusfloat>*   field_data
+                                        )
+{
+    // Create file unit
+    hid_t file = H5Fopen(
+                            this->_field_file.c_str( ), 
+                            H5F_ACC_RDWR, 
+                            H5P_DEFAULT
+                        );
+
+    std::cout << "Appending field '" << field_name << "' for step " << this->_steps << " with dimensions: ";
+    for ( auto& d : this->_field_dims[field_name] ) std::cout << d << " ";
+    std::cout << std::endl;
+
+    // Append field for current timestep
+    append_to_hdf5_dataset(
+                                file, 
+                                std::string( "/Fields/" ) + field_name,
+                                cusfloat_h5,
+                                this->_field_dims[field_name],
+                                field_data->data( )
+                            );
+
+    // Close file unit
+    H5Fclose(file);
+    
+}
+
+
+void HDF5TimeSeriesExporter::append_time( cusfloat append_value )
+{
+    // Store time value for current timestep (used for XDMF time series)
+    this->_time.push_back( append_value );
+
+    // Advance step counter
+    this->_steps++;
+}
+
+
+HDF5TimeSeriesExporter::HDF5TimeSeriesExporter(
+                                                    std::string&    folder_path,
+                                                    Mesh*           mesh
+                                                )
+{
+    // Store mesh info
+    this->_folder_path  = folder_path;
+    this->_mesh         = mesh;
+
+    // Compose file paths
+    this->_mesh_file   = folder_path + "/mesh.h5";
+    this->_field_file  = folder_path + "/fields.h5";
+    this->_xdmf_file   = folder_path + "/data.xdmf2";
+
+    // Write mesh on initialization (static mesh)
+    this->write_mesh( );
+
+    // Initialize time series datasets (extendable along time dimension)
+    this->initialize_time_series( );
+}
+
+
+void HDF5TimeSeriesExporter::initialize_time_series(  )
+{
+    // Create fields file
+    hid_t file = H5Fcreate(
+                                this->_field_file.c_str( ), 
+                                H5F_ACC_TRUNC,
+                                H5P_DEFAULT, 
+                                H5P_DEFAULT
+                            );
+
+    // Create Fields group
+    H5Gcreate( file, "/Fields", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
+
+    // Close file unit
+    H5Fclose( file );
+}
+
+
+void HDF5TimeSeriesExporter::write_mesh( void )
+{
+    // Create mesh file
+    hid_t file = H5Fcreate(
+                                this->_mesh_file.c_str(), 
+                                H5F_ACC_TRUNC,
+                                H5P_DEFAULT, 
+                                H5P_DEFAULT
+                            );
+
+    // Create Mesh group
+    H5Gcreate( file, "/Mesh", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
+
+    // Write mesh points (geometry)
+    std::size_t nodes_np = static_cast<std::size_t>( this->_mesh->nodes_np );
+    cusfloat* node_view_data = generate_empty_vector<cusfloat>( nodes_np * 3 );
+    for ( std::size_t i=0; i<nodes_np; i++ )
+    {
+        node_view_data[3*i + 0] = this->_mesh->x[i];
+        node_view_data[3*i + 1] = this->_mesh->y[i];
+        node_view_data[3*i + 2] = this->_mesh->z[i];
+    }
+
+    write_hdf5_dataset_compressed(
+                                    file, 
+                                    "/Mesh/Points",
+                                    cusfloat_h5,
+                                    {nodes_np, 3},
+                                    node_view_data
+                                );
+
+    mkl_free( node_view_data );
+
+    // Build MIXED connectivity (topology)
+    std::vector<int> mixed;
+    int ernl = this->_mesh->enrl;
+    for ( size_t i = 0; i < static_cast<size_t>(this->_mesh->elems_np); i++ )
+    {
+        if ( this->_mesh->elems_type[i] == 5 )
+        {
+            mixed.push_back(4);
+            mixed.push_back(this->_mesh->elems[ernl*i + 1]);
+            mixed.push_back(this->_mesh->elems[ernl*i + 2]);
+            mixed.push_back(this->_mesh->elems[ernl*i + 3]);
+            this->_tri_np++;
+        }
+        else if ( this->_mesh->elems_type[i] == 9 )
+        {
+            mixed.push_back(5);
+            mixed.push_back(this->_mesh->elems[ernl*i + 1]);
+            mixed.push_back(this->_mesh->elems[ernl*i + 2]);
+            mixed.push_back(this->_mesh->elems[ernl*i + 3]);
+            mixed.push_back(this->_mesh->elems[ernl*i + 4]);
+            this->_quads_np++;
+        }
+    }
+
+    // Write mixed connectivity (topology)
+    write_hdf5_dataset_compressed(
+                                    file, 
+                                    "/Mesh/MixedCells",
+                                    int_h5,
+                                    {mixed.size( )},
+                                    mixed.data( )
+                                );
+
+    // Close file unit
+    H5Fclose( file );
+}
+
+
+void HDF5TimeSeriesExporter::write_xdmf( void )
+{
+    std::ofstream x( this->_xdmf_file );
+
+    x << "<?xml version=\"1.0\" ?>\n";
+    x << "<Xdmf Version=\"3.0\">\n";
+    x << "  <Domain>\n";
+    x << "    <Grid Name=\"TimeSeries\" GridType=\"Collection\" CollectionType=\"Temporal\">\n";
+
+    for (size_t t = 0; t < this->_steps; ++t)
+    {
+        x << "      <Grid Name=\"Step" << t << "\" GridType=\"Uniform\">\n";
+        x << "        <Time Value=\"" << this->_time[t] << "\"/>\n";
+
+        if (t == 0)
+        {
+            // -------- MIXED TOPOLOGY --------
+            x << "        <Topology TopologyType=\"Mixed\" NumberOfElements=\""
+            << this->_mesh->elems_np << "\" "
+            << "BaseOffset=\"0\">\n";
+            x << "          <DataItem Format=\"HDF\" Dimensions=\""
+            << (this->_tri_np*4 + this->_quads_np*5) << "\">\n";
+            x << "            mesh.h5:/Mesh/MixedCells\n";
+            x << "          </DataItem>\n";
+            x << "        </Topology>\n";
+
+            // -------- GEOMETRY --------
+            x << "        <Geometry GeometryType=\"XYZ\">\n";
+            x << "          <DataItem Format=\"HDF\" Dimensions=\"" << this->_mesh->nodes_np << " 3\">\n";
+            x << "            mesh.h5:/Mesh/Points\n";
+            x << "          </DataItem>\n";
+            x << "        </Geometry>\n";
+        }
+        else
+        {
+            x << "        <Topology Reference=\"/Xdmf/Domain/Grid/Grid[1]/Topology\"/>\n";
+            x << "        <Geometry Reference=\"/Xdmf/Domain/Grid/Grid[1]/Geometry\"/>\n";
+        }
+
+        // Hyperslab selection in XDMF
+        x << "        <Attribute Name=\"Pressure\" AttributeType=\"Scalar\" Center=\"Node\">\n";
+        x << "          <DataItem ItemType=\"HyperSlab\" Dimensions=\"" << this->_mesh->nodes_np << "\">\n";
+        x << "            <DataItem Dimensions=\"3 2\" Format=\"XML\">\n";
+        x << "              " << t << " 0   1 1   1 " << this->_mesh->nodes_np << "\n";
+        x << "            </DataItem>\n";
+        x << "            <DataItem Format=\"HDF\" Dimensions=\"" << this->_steps << " " << this->_mesh->nodes_np << "\">\n";
+        x << "              fields.h5:/Fields/Pressure\n";
+        x << "            </DataItem>\n";
+        x << "          </DataItem>\n";
+        x << "        </Attribute>\n";
+
+        x << "        <Attribute Name=\"Velocity\" AttributeType=\"Vector\" Center=\"Node\">\n";
+        x << "          <DataItem ItemType=\"HyperSlab\" Dimensions=\"" << this->_mesh->nodes_np << " 3\">\n";
+        x << "            <DataItem Dimensions=\"3 3\" Format=\"XML\">\n";
+        x << "              " << t << " 0 0   1 1 1   1 " << this->_mesh->nodes_np << " 3\n";
+        x << "            </DataItem>\n";
+        x << "            <DataItem Format=\"HDF\" Dimensions=\"" << this->_steps << " " << this->_mesh->nodes_np << " 3\">\n";
+        x << "              fields.h5:/Fields/Velocity\n";
+        x << "            </DataItem>\n";
+        x << "          </DataItem>\n";
+        x << "        </Attribute>\n";
+
+        x << "      </Grid>\n";
+    }
+
+    x << "    </Grid>\n";
+    x << "  </Domain>\n";
+    x << "</Xdmf>\n";
+}
+
+
+inline void example_hdf5_time_series_exporter( void )
+{
+    // Define output folder and mesh parameters
+    std::string folder      = "path/to/output/folder";
+
+    // Create mesh
+    std::string mesh_fipath = "path/to/mesh/file.poly";
+    cusfloat cog[3]         = {0.0, 0.0, 0.0};
+
+    Mesh mesh( 
+                    mesh_fipath,
+                    "surface",
+                    cog,
+                    false,
+                    PanelTypeE::DIFFRAC,
+                    false
+                );
+
+
+    // Create exporter class
+    HDF5TimeSeriesExporter exporter(
+                                        folder,
+                                        &mesh
+                                    );
+
+    
+
+    // Add required fields to exporter (dataset names and dimensions must match the data passed to append_step())
+    exporter.add_field( "Pressure", {1, static_cast<std::size_t>( mesh.nodes_np )}      );
+    exporter.add_field( "Velocity", {1, static_cast<std::size_t>( mesh.nodes_np ), 3}   );
+
+    // Create auxiliary variables for synthetic solution
+    const int nSteps    = 5;
+    cusfloat T          = 2.0;
+    cusfloat w          = 2.0 * PI / T;
+    cusfloat k          = pow2s( w ) / 9.81;
+    cusfloat time       = 0.0;
+    cusfloat dt         = 0.1;
+
+    cut::CusTensor<cusfloat> pressure( static_cast<std::size_t>( mesh.nodes_np ) );
+    cut::CusTensor<cusfloat> velocity( { static_cast<std::size_t>( mesh.nodes_np ), 3 } );
+
+    // Loop over time steps, fill fields with synthetic solution, and append to exporter
+    for (int t = 0; t < nSteps; ++t)
+    {
+        time = t * dt;
+        for ( std::size_t i=0; i<static_cast<std::size_t>(mesh.nodes_np); i++ )
+        {
+            pressure[i] = std::cos( k * mesh.x[i] - w * time ) * std::cos( k * mesh.y[i] - w * time );
+            velocity(i, 0) = -k * std::sin( k * mesh.x[i] - w * time ) * std::cos( k * mesh.y[i] - w * time );
+            velocity(i, 1) = -k * std::cos( k * mesh.x[i] - w * time ) * std::sin( k * mesh.y[i] - w * time );
+            velocity(i, 2) = 0.0;
+
+            
+        }
+        exporter.append_time( t * dt );
+        exporter.append_step( "Pressure",  &pressure );
+        exporter.append_step( "Velocity",  &velocity );
+    }
+
+    // Write XDMF companion file referencing the HDF5 datasets
+    exporter.write_xdmf( );
+
+    std::cout << "Compressed HDF5 time‑series written. Open data.xdmf in ParaView.\n";
+
+}
