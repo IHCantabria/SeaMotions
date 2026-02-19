@@ -22,6 +22,7 @@
 
 // Include general usage libraries
 #include "hdf5.h"
+#include <vector>
 
 
 inline void append_to_hdf5_dataset(
