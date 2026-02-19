@@ -825,7 +825,7 @@ void    freq_domain_linear_solver(
     int _count_pot_np   = 0;
     for ( int i=0; i<mesh_gp->panels_tnp; i++ )
     {
-        if ( mesh_gp->panels[i]->type == DIFFRAC_PANEL_CODE || mesh_gp->panels[i]->type == LID_PANEL_CODE )
+        if ( mesh_gp->panels[i]->type == PanelTypeE::DIFFRAC || mesh_gp->panels[i]->type == PanelTypeE::INT_LID )
         {
             copy_vector( 3, mesh_gp->panels[i]->center, &(potpanel_lin_gp->field_points[3*_count_pot_np]) );
             _count_pot_np++;
