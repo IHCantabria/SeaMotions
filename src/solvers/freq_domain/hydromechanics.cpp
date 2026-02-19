@@ -217,7 +217,7 @@ void    calculate_hydromechanic_coeffs_lin(
 
 //                     // Integrate pressure over panel
 //                     index           = ( max_panels * mesh_gp->meshes_np ) * id + max_panels * jb + ie;
-//                     if ( mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->type == DIFFRAC_PANEL_CODE )
+//                     if ( mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->type == PanelTypeE::DIFFRAC )
 //                     {
 //                         pressure[index] = adaptive_quadrature_panel(
 //                                                                         mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie],

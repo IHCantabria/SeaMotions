@@ -85,9 +85,9 @@ void    calculate_raddif_velocity_mat_steady(
             panel_mirror_j  = mesh_gp->panels_mirror[j];
 
             if ( 
-                    mesh_gp->panels[i/fc]->type == DIFFRAC_PANEL_CODE
+                    mesh_gp->panels[i/fc]->type == PanelTypeE::DIFFRAC
                     &&
-                    mesh_gp->panels[j]->type == DIFFRAC_PANEL_CODE
+                    mesh_gp->panels[j]->type == PanelTypeE::DIFFRAC
                 )
             {
                 dist_fp_cp = eucledian_dist(
@@ -274,9 +274,9 @@ void    calculate_raddif_velocity_mat_steady_nlin(
         {
             // Compute steady and wave terms over the panel
             if ( 
-                    mesh_gp->panels[i]->type == DIFFRAC_PANEL_CODE
+                    mesh_gp->panels[i]->type == PanelTypeE::DIFFRAC
                     &&
-                    mesh_gp->panels[j]->type == DIFFRAC_PANEL_CODE
+                    mesh_gp->panels[j]->type == PanelTypeE::DIFFRAC
                 )
             {
                 vel_x_rank_term         = adaptive_quadrature_panel(
@@ -410,9 +410,9 @@ void    calculate_raddif_velocity_mat_wave(
         {
             // Compute steady and wave terms over the panel
             if ( 
-                    mesh_gp->panels[i/fc]->type == DIFFRAC_PANEL_CODE
+                    mesh_gp->panels[i/fc]->type == PanelTypeE::DIFFRAC
                     &&
-                    mesh_gp->panels[j]->type == DIFFRAC_PANEL_CODE
+                    mesh_gp->panels[j]->type == PanelTypeE::DIFFRAC
                 )
             {
                 dist_fp_cp = eucledian_dist(

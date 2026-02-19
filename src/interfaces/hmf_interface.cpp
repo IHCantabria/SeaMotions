@@ -125,7 +125,7 @@ cuscomplex  HMFInterface::operator()(
         // Set new source values
         index   =   this->_offset_index + i;
 
-        if ( this->_source_nodes[i]->panel->type == DIFFRAC_PANEL_CODE )
+        if ( this->_source_nodes[i]->panel->type == PanelTypeE::DIFFRAC )
         {
             this->_green_interf_steady->set_source(
                                                     this->_source_nodes[i],

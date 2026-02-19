@@ -172,7 +172,7 @@ void    calculate_diffraction_forces_lin(
 
 //                 // Integrate pressure over panel
 //                 index           = max_panels * ib + ie;
-//                 if ( mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->type == DIFFRAC_PANEL_CODE )
+//                 if ( mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->type == PanelTypeE::DIFFRAC )
 //                 {
 //                     pressure[index] = adaptive_quadrature_panel(
 //                                                                     mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie],

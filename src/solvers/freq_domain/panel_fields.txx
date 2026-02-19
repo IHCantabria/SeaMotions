@@ -62,14 +62,14 @@ void    calculate_influence_field_mat(
             is_diffrac  =   true;
             if ( field_gp->is_sysmat_field )
             {
-                is_diffrac  = ( mesh_gp->panels[i]->type == DIFFRAC_PANEL_CODE );
+                is_diffrac  = ( mesh_gp->panels[i]->type == PanelTypeE::DIFFRAC );
             }
             
             // Compute steady and wave terms over the panel
             if ( 
                     is_diffrac
                     &&
-                    mesh_gp->panels[j]->type == DIFFRAC_PANEL_CODE
+                    mesh_gp->panels[j]->type == PanelTypeE::DIFFRAC
                 )
             {
                 field_wave_term     = adaptive_quadrature_panel(

@@ -64,7 +64,7 @@ void    calculate_influence_potmat_steady(
             {
                 // Compute steady and wave terms over the panel
                 if ( 
-                        mesh_gp->source_nodes[i]->panel->type == DIFFRAC_PANEL_CODE
+                        mesh_gp->source_nodes[i]->panel->type == PanelTypeE::DIFFRAC
                         &&
                         mesh_gp->source_nodes[j]->panel->type == LID_PANEL_CODE
                     )
@@ -168,9 +168,9 @@ void    calculate_influence_potmat_steady(
                 
                 // Compute steady and wave terms over the panel
                 if ( 
-                        mesh_gp->source_nodes[i]->panel->type == DIFFRAC_PANEL_CODE
+                        mesh_gp->source_nodes[i]->panel->type == PanelTypeE::DIFFRAC
                         &&
-                        mesh_gp->source_nodes[j]->panel->type == DIFFRAC_PANEL_CODE
+                        mesh_gp->source_nodes[j]->panel->type == PanelTypeE::DIFFRAC
                     )
                 {
                     pot_steady_term = adaptive_quadrature_panel(
@@ -223,9 +223,9 @@ void    calculate_influence_potmat_steady(
             
 //             // Compute steady and wave terms over the panel
 //             if ( 
-//                     mesh_gp->panels[i]->type == DIFFRAC_PANEL_CODE
+//                     mesh_gp->panels[i]->type == PanelTypeE::DIFFRAC
 //                     &&
-//                     mesh_gp->panels[j]->type == DIFFRAC_PANEL_CODE
+//                     mesh_gp->panels[j]->type == PanelTypeE::DIFFRAC
 //                 )
 //             {
 //                 pot_wave_term           = adaptive_quadrature_panel(
@@ -327,9 +327,9 @@ void    calculate_potpanel_raddif_nlin(
         for ( int j=0; j<mesh_gp->source_nodes_tnp; j++ )
         {
             if ( 
-                    mesh_gp->panels[i]->type == DIFFRAC_PANEL_CODE
+                    mesh_gp->panels[i]->type == PanelTypeE::DIFFRAC
                     &&
-                    mesh_gp->source_nodes[j]->panel->type == DIFFRAC_PANEL_CODE
+                    mesh_gp->source_nodes[j]->panel->type == PanelTypeE::DIFFRAC
                 )
             {
                 // Set current source value

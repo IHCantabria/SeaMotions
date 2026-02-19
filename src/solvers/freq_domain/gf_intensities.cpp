@@ -80,7 +80,7 @@ void    calculate_gf_intensity_sysmat(
             // Integrate green function normal derivative along the current panel
             if ( i == j )
             {
-                if ( panel_j->type == DIFFRAC_PANEL_CODE )
+                if ( panel_j->type == PanelTypeE::DIFFRAC )
                 {
                     int_value   =   -cuscomplex( 0.5, 0.0 );
                 }
@@ -136,7 +136,7 @@ void    calculate_gf_intensity_sysmat(
         for ( int j=scl->start_row_0; j<scl->end_row_0; j++ )
         {
             panel_j = mesh_gp->source_nodes[j]->panel;
-            if ( panel_j->type == DIFFRAC_PANEL_CODE )
+            if ( panel_j->type == PanelTypeE::DIFFRAC )
             {
                 sources_int[count] = ( 
                                             mesh_gp->source_nodes[j]->normal_vec[i]
@@ -167,7 +167,7 @@ void    calculate_gf_intensity_sysmat(
         for ( int j=scl->start_row_0; j<scl->end_row_0; j++ )
         {
             panel_j = mesh_gp->source_nodes[j]->panel;
-            if ( panel_j->type == DIFFRAC_PANEL_CODE )
+            if ( panel_j->type == PanelTypeE::DIFFRAC )
             {
                 // Get wave potential derivatives for the panel
                 wave_dx             =   wave_potential_fo_space_dx(
