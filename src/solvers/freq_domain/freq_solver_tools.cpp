@@ -107,7 +107,7 @@ void    calculate_influence_potmat_steady(
         {
             // // Compute steady and wave terms over the panel
             // if ( 
-            //         mesh_gp->source_nodes[i]->panel->type == DIFFRAC_PANEL_CODE
+            //         mesh_gp->source_nodes[i]->panel->type == PanelTypeE::DIFFRAC
             //         ||
             //         mesh_gp->source_nodes[j]->panel->type == LID_PANEL_CODE
             //     )
@@ -315,20 +315,23 @@ void    calculate_global_hydstiffness(
     int index   = 0;
     for ( int i=0; i<input->bodies_np; i++ )
     {
-        for ( int j=0; j<input->dofs_np; j++ )
+        if ( !( input->bodies[i]->is_fix ) )
         {
-            for ( int k=0; k<input->dofs_np; k++ )
+            for ( int j=0; j<input->dofs_np; j++ )
             {
-                index               =   (
-                                            i * input->bodies_np *  pow2s( input->dofs_np ) 
-                                            + 
-                                            i * input->dofs_np 
-                                            + 
-                                            j * input->dofs_np * input->bodies_np
-                                            +
-                                            k
-                                        );
-                hydstiffness[index] = hydrostatics[i]->hydstiffmat[j*input->dofs_np+k];
+                for ( int k=0; k<input->dofs_np; k++ )
+                {
+                    index               =   (
+                                                i * input->bodies_np *  pow2s( input->dofs_np ) 
+                                                + 
+                                                i * input->dofs_np 
+                                                + 
+                                                j * input->dofs_np * input->bodies_np
+                                                +
+                                                k
+                                            );
+                    hydstiffness[index] = hydrostatics[i]->hydstiffmat[j*input->dofs_np+k];
+                }
             }
         }
     }
@@ -343,7 +346,8 @@ void    calculate_global_structural_mass(
     // Allocate space for the body ith structural mass
     // matrix
     cusfloat*   body_mass   = generate_empty_vector<cusfloat>( pow2s( input->dofs_np ) );
-    int index = 0;
+    int         index       = 0;
+    cusfloat    is_move     = static_cast<cusfloat>( !( input->bodies[0]->is_fix ) );
     for ( int i=0; i<input->bodies_np; i++ )
     {
         // Clear body matrix to not get spurious data from 
@@ -363,15 +367,15 @@ void    calculate_global_structural_mass(
         }
         else
         {
-            body_mass[21] = input->bodies[i]->inertia[0]; // Roll
-            body_mass[22] = input->bodies[i]->inertia[1]; // Roll - Pitch
-            body_mass[23] = input->bodies[i]->inertia[2]; // Roll - Yaw
-            body_mass[27] = input->bodies[i]->inertia[1]; // Pitch - Roll
-            body_mass[28] = input->bodies[i]->inertia[3]; // Pitch
-            body_mass[29] = input->bodies[i]->inertia[4]; // Pitch - Yaw
-            body_mass[33] = input->bodies[i]->inertia[2]; // Yaw - Roll
-            body_mass[34] = input->bodies[i]->inertia[4]; // Yaw - Pitch-
-            body_mass[35] = input->bodies[i]->inertia[5]; // Yaw
+            body_mass[21] = input->bodies[i]->inertia[0]          ; // Roll
+            body_mass[22] = input->bodies[i]->inertia[1] * is_move; // Roll - Pitch
+            body_mass[23] = input->bodies[i]->inertia[2] * is_move; // Roll - Yaw
+            body_mass[27] = input->bodies[i]->inertia[1] * is_move; // Pitch - Roll
+            body_mass[28] = input->bodies[i]->inertia[3]          ; // Pitch
+            body_mass[29] = input->bodies[i]->inertia[4] * is_move; // Pitch - Yaw
+            body_mass[33] = input->bodies[i]->inertia[2] * is_move; // Yaw - Roll
+            body_mass[34] = input->bodies[i]->inertia[4] * is_move; // Yaw - Pitch-
+            body_mass[35] = input->bodies[i]->inertia[5]          ; // Yaw
         }
 
         // Copy ith body structural mass matrix to the global matrix assembly
