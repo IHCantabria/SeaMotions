@@ -194,6 +194,73 @@ inline void write_hdf5_dataset_compressed(
 
 
 template<typename T>
+inline void write_hdf5_dataset_mpi( 
+                                            hid_t                   file,
+                                    const   std::string&            path,
+                                            hid_t                   dtype,
+                                    const   std::vector<hsize_t>&   dims,
+                                    const   std::vector<hsize_t>&   offset,
+                                    const   std::vector<hsize_t>&   chunk_dims,
+                                    const   T*                      data
+                                )
+{
+    // Create global dataspace
+    hid_t space     = H5Screate_simple(
+                                            dims.size( ), 
+                                            dims.data( ), 
+                                            nullptr
+                                        );
+
+    // Create datasets for points and connectivity
+    hid_t dset      = H5Dcreate(
+                                    file, 
+                                    path.c_str( ), 
+                                    dtype,
+                                    space, 
+                                    H5P_DEFAULT, 
+                                    H5P_DEFAULT, 
+                                    H5P_DEFAULT
+                                );
+
+    // Select hyperslab for this rank
+    // hsize_t start[2]    = {0, 0};
+    // hsize_t count[2]    = {this->_mesh->nodes_np, 3};
+
+    H5Sselect_hyperslab( 
+                            space, 
+                            H5S_SELECT_SET,
+                            offset.data( ), 
+                            nullptr,
+                            chunk_dims.data( ), 
+                            nullptr
+                        );
+
+    // Select memory space
+    hid_t memspace      = H5Screate_simple( dims.size( ), chunk_dims.data(), nullptr );
+
+    hid_t dxpl          = H5Pcreate( H5P_DATASET_XFER );
+    H5Pset_dxpl_mpio( dxpl, H5FD_MPIO_COLLECTIVE );
+
+    // Write data to the selected hyperslab
+    H5Dwrite( 
+                dset, 
+                dtype, 
+                memspace, 
+                space, 
+                dxpl, 
+                data 
+            );
+    
+    // Close dataset, property list and dataspace
+    H5Pclose( dxpl      );
+    H5Sclose( memspace  );
+    H5Dclose( dset      );
+    H5Sclose( space     );
+
+}
+
+
+template<typename T>
 inline void write_hdf5_scalar_attribute( 
                                                     hid_t   loc_id, 
                                             const   char*   name, 
