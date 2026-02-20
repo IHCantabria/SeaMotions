@@ -25,12 +25,13 @@
 #include <vector>
 
 
+template<typename T>
 inline void append_to_hdf5_dataset(
                                                 hid_t                   file,
                                         const   std::string&            path,
                                                 hid_t                   dtype,
                                         const   std::vector<hsize_t>&   count,
-                                        const   void*                   data
+                                        const   T*                      data
                                     )
 {
     // Open dataset
@@ -127,6 +128,44 @@ inline void create_hdf5_extendable_dataset(
     H5Dclose(dset);
     H5Pclose(plist);
     H5Sclose(space);
+}
+
+
+inline void create_hdf5_extendable_dataset_mpi(
+                                                        hid_t                   file,
+                                                const   std::string&            path,
+                                                        hid_t                   dtype,
+                                                const   std::vector<hsize_t>&   dset_dims,
+                                                const   std::vector<hsize_t>&   max_dims,
+                                                const   std::vector<hsize_t>&   chunk_dims
+                                            )
+{
+    // Create simpledataspace to define dataset dimensions
+    hid_t   space   = H5Screate_simple(
+                                            dset_dims.size( ), 
+                                            dset_dims.data( ), 
+                                            max_dims.data( )
+                                        );
+
+    // Create property list for dataset creation and set chunking
+    hid_t plist = H5Pcreate( H5P_DATASET_CREATE );
+    H5Pset_chunk( plist, chunk_dims.size( ), chunk_dims.data( ) );
+
+    // Create dataset
+    hid_t dset = H5Dcreate(
+                                file, 
+                                path.c_str(), 
+                                dtype,
+                                space, 
+                                H5P_DEFAULT, 
+                                plist, 
+                                H5P_DEFAULT
+                            );
+
+    // Close dataset, property list and dataspace
+    H5Pclose(plist);
+    H5Sclose(space);
+    H5Dclose(dset);
 }
 
 
