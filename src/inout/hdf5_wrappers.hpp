@@ -25,6 +25,16 @@
 #include <vector>
 
 
+/**
+ * @brief Append a contiguous block of samples to an extendable dataset.
+ *
+ * @tparam T   Plain-old-data type matching the dataset layout.
+ * @param file Open HDF5 file identifier that owns the dataset.
+ * @param path Absolute dataset path (e.g., "/Fields/Pressure").
+ * @param dtype Memory datatype used to interpret @p data.
+ * @param count Shape of the block to append; first entry corresponds to the time dimension.
+ * @param data  Pointer to the samples to be written.
+ */
 template<typename T>
 inline void append_to_hdf5_dataset(
                                                 hid_t                   file,
@@ -70,6 +80,17 @@ inline void append_to_hdf5_dataset(
 }
 
 
+/**
+ * @brief Append a timestep to a dataset using collective MPI-IO semantics.
+ *
+ * @tparam T        POD type of the values written from each rank.
+ * @param file      Shared file identifier opened with an MPI-enabled access property list.
+ * @param path      Dataset path relative to @p file.
+ * @param data      Pointer to the local rank contribution.
+ * @param local_np  Number of nodes owned by the current rank.
+ * @param offset    Global index of the first node owned by the current rank.
+ * @param components Number of components per node (1 for scalar fields, 3 for vectors, ...).
+ */
 template<typename T>
 void append_to_hdf5_dataset_mpi(
                                             hid_t           file,
@@ -152,13 +173,22 @@ void append_to_hdf5_dataset_mpi(
 }
 
 
+/**
+ * @brief Create a fixed-size dataset with a simple dataspace.
+ *
+ * @param loc_id    Identifier of the parent group or file.
+ * @param name      Dataset name within @p loc_id.
+ * @param rank      Number of dimensions in @p dims.
+ * @param dims      Array describing the extent of each dimension.
+ * @param data_type HDF5 datatype used for storage.
+ */
 inline void create_hdf5_dataset_simple( 
-                                                    hid_t    loc_id, 
-                                            const   char*    name, 
-                                                    hsize_t  rank, 
-                                            const   hsize_t* dims, 
-                                                    hid_t    data_type 
-                                    )
+                                                hid_t    loc_id, 
+                                        const   char*    name, 
+                                                hsize_t  rank, 
+                                        const   hsize_t* dims, 
+                                                hid_t    data_type 
+                                        )
 {
     // Create simple dataspace to define dataset dimensions
     hid_t dataspace = H5Screate_simple( 
@@ -184,13 +214,22 @@ inline void create_hdf5_dataset_simple(
 }
 
 
+/**
+ * @brief Create an extendable chunked dataset with optional compression.
+ *
+ * @param file     File identifier that will host the dataset.
+ * @param path     Full dataset path.
+ * @param dtype    Storage datatype.
+ * @param initial  Initial dataspace dimensions (first entry usually zero for time).
+ * @param maxdims  Maximum allowed extent per dimension (use H5S_UNLIMITED for unlimited growth).
+ */
 inline void create_hdf5_extendable_dataset(
                                                     hid_t                   file,
                                             const   std::string&            path,
                                                     hid_t                   dtype,
                                             const   std::vector<hsize_t>&   initial,
                                             const   std::vector<hsize_t>&   maxdims
-                                        )
+                                            )
 {
     hid_t space = H5Screate_simple(initial.size(), initial.data(), maxdims.data());
 
@@ -213,14 +252,24 @@ inline void create_hdf5_extendable_dataset(
 }
 
 
+/**
+ * @brief Create an extendable dataset intended to be accessed collectively through MPI-IO.
+ *
+ * @param file       Shared file identifier opened with MPI capabilities.
+ * @param path       Dataset path relative to the file root.
+ * @param dtype      Storage datatype.
+ * @param dset_dims  Initial dataspace dimensions.
+ * @param max_dims   Maximum extent for each dimension.
+ * @param chunk_dims Chunking strategy used by the storage layout.
+ */
 inline void create_hdf5_extendable_dataset_mpi(
-                                                        hid_t                   file,
-                                                const   std::string&            path,
-                                                        hid_t                   dtype,
-                                                const   std::vector<hsize_t>&   dset_dims,
-                                                const   std::vector<hsize_t>&   max_dims,
-                                                const   std::vector<hsize_t>&   chunk_dims
-                                            )
+                                                            hid_t                   file,
+                                                    const   std::string&            path,
+                                                            hid_t                   dtype,
+                                                    const   std::vector<hsize_t>&   dset_dims,
+                                                    const   std::vector<hsize_t>&   max_dims,
+                                                    const   std::vector<hsize_t>&   chunk_dims
+                                                )
 {
     // Create simpledataspace to define dataset dimensions
     hid_t   space   = H5Screate_simple(
@@ -251,6 +300,18 @@ inline void create_hdf5_extendable_dataset_mpi(
 }
 
 
+/**
+ * @brief Write a contiguous chunk into an existing dataset.
+ *
+ * @param loc_id        Parent group or file that contains the dataset.
+ * @param name          Dataset name relative to @p loc_id.
+ * @param rank          Number of dimensions in the hyperslab.
+ * @param dataset_shape (Unused) Full dataset shape, provided for symmetry.
+ * @param chunk_shape   Size of the block being written.
+ * @param offset        Starting indices of the hyperslab.
+ * @param data          Pointer to the data to copy into the file.
+ * @param data_type     Memory datatype describing @p data.
+ */
 inline void write_hdf5_dataset_chunk(
                                                 hid_t     loc_id,
                                         const   char*     name,
@@ -283,6 +344,16 @@ inline void write_hdf5_dataset_chunk(
 }
 
 
+/**
+ * @brief Create and populate a chunked dataset with optional zlib compression.
+ *
+ * @param file        File identifier where the dataset will be stored.
+ * @param path        Full dataset path.
+ * @param dtype       Storage datatype.
+ * @param dims        Dataspace dimensions.
+ * @param data        Pointer to the full dataset contents.
+ * @param compression Deflate level (0 disables compression).
+ */
 inline void write_hdf5_dataset_compressed(
                                                     hid_t                   file,
                                             const   std::string&            path,
@@ -314,15 +385,27 @@ inline void write_hdf5_dataset_compressed(
 }
 
 
+/**
+ * @brief Create a dataset and populate it through a single collective write.
+ *
+ * @tparam T         POD type stored in the dataset.
+ * @param file       File identifier opened with an MPI-IO access property list.
+ * @param path       Dataset path relative to the file root.
+ * @param dtype      Storage datatype.
+ * @param dims       Global dimensions of the dataset.
+ * @param offset     Starting indices of the subsection handled by the current rank.
+ * @param chunk_dims Size of the contiguous block provided by the current rank.
+ * @param data       Pointer to the local data buffer.
+ */
 template<typename T>
 inline void write_hdf5_dataset_mpi( 
-                                            hid_t                   file,
-                                    const   std::string&            path,
-                                            hid_t                   dtype,
-                                    const   std::vector<hsize_t>&   dims,
-                                    const   std::vector<hsize_t>&   offset,
-                                    const   std::vector<hsize_t>&   chunk_dims,
-                                    const   T*                      data
+                                                hid_t                   file,
+                                        const   std::string&            path,
+                                                hid_t                   dtype,
+                                        const   std::vector<hsize_t>&   dims,
+                                        const   std::vector<hsize_t>&   offset,
+                                        const   std::vector<hsize_t>&   chunk_dims,
+                                        const   T*                      data
                                 )
 {
     // Create global dataspace
@@ -381,12 +464,21 @@ inline void write_hdf5_dataset_mpi(
 }
 
 
+/**
+ * @brief Attach a scalar attribute to a dataset or group.
+ *
+ * @tparam T       C++ scalar type compatible with @p data_type.
+ * @param loc_id   Identifier of the object receiving the attribute.
+ * @param name     Attribute name.
+ * @param data_type HDF5 datatype describing @p value.
+ * @param value    Attribute payload.
+ */
 template<typename T>
 inline void write_hdf5_scalar_attribute( 
-                                                    hid_t   loc_id, 
-                                            const   char*   name, 
-                                                    hid_t   data_type, 
-                                                    T       value 
+                                                hid_t   loc_id, 
+                                        const   char*   name, 
+                                                hid_t   data_type, 
+                                                T       value 
                                         )
 {
     // Create simple dataspace for scalar attribute
