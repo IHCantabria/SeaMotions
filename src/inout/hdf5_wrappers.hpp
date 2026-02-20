@@ -70,6 +70,88 @@ inline void append_to_hdf5_dataset(
 }
 
 
+template<typename T>
+void append_to_hdf5_dataset_mpi(
+                                            hid_t           file,
+                                    const   std::string&    path,
+                                    const   T*              data,
+                                    const   hsize_t         local_np,
+                                    const   hsize_t         offset,
+                                    const   hsize_t         components
+                                )
+{
+    // Open dataset
+    hid_t dset = H5Dopen( 
+                            file, 
+                            path.c_str(), 
+                            H5P_DEFAULT 
+                        );
+
+    // Get current dataset dimensions
+    hid_t filespace = H5Dget_space( dset );
+
+    // Extend dataset by one timestep
+    hsize_t dims[3];
+    H5Sget_simple_extent_dims( filespace, dims, nullptr );
+    dims[0] += 1;
+    H5Dset_extent( dset, dims );
+
+    // Close and reopen filespace to reflect the new dataset dimensions
+    H5Sclose( filespace );
+    filespace = H5Dget_space( dset );
+
+    // Select hyperslab for the new timestep
+    hsize_t start[3] = { dims[0] - 1,      offset,          0 };
+    hsize_t count[3] = {           1,    local_np, components };
+    hid_t   memspace = H5I_INVALID_HID;
+
+    if ( local_np == 0 )
+    {
+        hsize_t dummy_dims[3] = { 1, 1, components };
+        memspace = H5Screate_simple(3, dummy_dims, nullptr);
+        H5Sselect_none(filespace);
+        H5Sselect_none(memspace);
+    }
+    else
+    {
+        H5Sselect_hyperslab(
+                                filespace, 
+                                H5S_SELECT_SET, 
+                                start, 
+                                nullptr, 
+                                count, 
+                                nullptr
+                            );
+
+        memspace    = H5Screate_simple( 3, count, nullptr );
+    }
+
+    // Write data to the selected hyperslab collectively
+    hid_t dxpl  = H5Pcreate( H5P_DATASET_XFER );
+
+    H5Pset_dxpl_mpio( 
+                        dxpl, 
+                        H5FD_MPIO_COLLECTIVE 
+                    );
+
+    H5Dwrite( 
+                dset, 
+                cusfloat_h5, 
+                memspace, 
+                filespace, 
+                dxpl, 
+                data 
+            );
+
+    // Close property list, memory space, file space and dataset
+    H5Pclose( dxpl      );
+    H5Sclose( memspace  );
+    H5Sclose( filespace );
+    H5Dclose( dset      );
+
+}
+
+
 inline void create_hdf5_dataset_simple( 
                                                     hid_t    loc_id, 
                                             const   char*    name, 
