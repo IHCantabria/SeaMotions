@@ -25,12 +25,16 @@
 
 void HDF5TimeSeriesExporter::add_field( 
                                             std::string             field_name,
-                                            std::vector<hsize_t>    field_dims
+                                            hsize_t                 comps_np
                                         )
 {
-    // Create max dimensions for extendable dataset (first dimension is time, set to unlimited)
-    std::vector<hsize_t> max_dims = field_dims;
-    max_dims[0] = H5S_UNLIMITED;
+    // Convert number of nodes to hsize_t for HDF5 API
+    hsize_t nodes_hsize = static_cast<hsize_t>( this->_mesh->nodes_np );
+
+    // Define dataset shapes (time, nodes, components)
+    std::vector<hsize_t> initial_dims   = {0, nodes_hsize, comps_np};
+    std::vector<hsize_t> max_dims       = {H5S_UNLIMITED, nodes_hsize, comps_np};
+    std::vector<hsize_t> write_dims     = {1, nodes_hsize, comps_np};
 
     // Create fields file
     hid_t file = H5Fopen(
@@ -44,7 +48,7 @@ void HDF5TimeSeriesExporter::add_field(
                                     file, 
                                     "/Fields/" + field_name,
                                     cusfloat_h5,
-                                    field_dims,
+                                    initial_dims,
                                     max_dims
                                 );
 
@@ -53,7 +57,7 @@ void HDF5TimeSeriesExporter::add_field(
 
     // Storage field names for later use in XDMF writing
     this->_field_names.push_back( field_name );
-    this->_field_dims[field_name] = field_dims;
+    this->_field_dims[field_name] = write_dims;
 }
 
 
@@ -211,10 +215,15 @@ void HDF5TimeSeriesExporter::write_mesh( void )
 
 void HDF5TimeSeriesExporter::write_xdmf( void )
 {
+    // Define auxiliary variables
+    std::string attr_type;
+
+    // Open file unit for XDMF writing (rank 0 only in MPI context)
     std::ofstream x( this->_xdmf_file );
 
+    // Write XDMF header and domain
     x << "<?xml version=\"1.0\" ?>\n";
-    x << "<Xdmf Version=\"3.0\">\n";
+    x << "<Xdmf Version=\"2.0\">\n";
     x << "  <Domain>\n";
     x << "    <Grid Name=\"TimeSeries\" GridType=\"Collection\" CollectionType=\"Temporal\">\n";
 
@@ -249,27 +258,34 @@ void HDF5TimeSeriesExporter::write_xdmf( void )
         }
 
         // Hyperslab selection in XDMF
-        x << "        <Attribute Name=\"Pressure\" AttributeType=\"Scalar\" Center=\"Node\">\n";
-        x << "          <DataItem ItemType=\"HyperSlab\" Dimensions=\"" << this->_mesh->nodes_np << "\">\n";
-        x << "            <DataItem Dimensions=\"3 2\" Format=\"XML\">\n";
-        x << "              " << t << " 0   1 1   1 " << this->_mesh->nodes_np << "\n";
-        x << "            </DataItem>\n";
-        x << "            <DataItem Format=\"HDF\" Dimensions=\"" << this->_steps << " " << this->_mesh->nodes_np << "\">\n";
-        x << "              fields.h5:/Fields/Pressure\n";
-        x << "            </DataItem>\n";
-        x << "          </DataItem>\n";
-        x << "        </Attribute>\n";
-
-        x << "        <Attribute Name=\"Velocity\" AttributeType=\"Vector\" Center=\"Node\">\n";
-        x << "          <DataItem ItemType=\"HyperSlab\" Dimensions=\"" << this->_mesh->nodes_np << " 3\">\n";
-        x << "            <DataItem Dimensions=\"3 3\" Format=\"XML\">\n";
-        x << "              " << t << " 0 0   1 1 1   1 " << this->_mesh->nodes_np << " 3\n";
-        x << "            </DataItem>\n";
-        x << "            <DataItem Format=\"HDF\" Dimensions=\"" << this->_steps << " " << this->_mesh->nodes_np << " 3\">\n";
-        x << "              fields.h5:/Fields/Velocity\n";
-        x << "            </DataItem>\n";
-        x << "          </DataItem>\n";
-        x << "        </Attribute>\n";
+        for ( auto &c : this->_field_dims )
+        {
+            // Determine attribute type based on number of components
+            if ( c.second[2] == 1 )
+            {
+                attr_type = "Scalar";
+            }
+            else if ( c.second[2] == 3 )
+            {
+                attr_type = "Vector";
+            }
+            else
+            {
+                throw std::runtime_error( "Unsupported number of components in field '" + c.first + "'. Only scalar (1) and vector (3) fields are supported." );
+            }
+            
+            // Write attribute section
+            x << "        <Attribute Name=\"" << c.first << "\" AttributeType=\"" << attr_type << "\" Center=\"Node\">\n";
+            x << "          <DataItem ItemType=\"HyperSlab\" Dimensions=\"" << this->_mesh->nodes_np << " " << c.second[2] << "\">\n";
+            x << "            <DataItem Dimensions=\"3 3\" Format=\"XML\">\n";
+            x << "              " << t << " 0 0   1 1 1   1 " << this->_mesh->nodes_np << " " << c.second[2] << "\n";
+            x << "            </DataItem>\n";
+            x << "            <DataItem Format=\"HDF\" Dimensions=\"" << this->_steps << " " << this->_mesh->nodes_np << " " << c.second[2] << "\">\n";
+            x << "              fields.h5:/Fields/" + c.first + "\n";
+            x << "            </DataItem>\n";
+            x << "          </DataItem>\n";
+            x << "        </Attribute>\n";
+        }
 
         x << "      </Grid>\n";
     }
@@ -308,8 +324,8 @@ inline void example_hdf5_time_series_exporter( void )
     
 
     // Add required fields to exporter (dataset names and dimensions must match the data passed to append_step())
-    exporter.add_field( "Pressure", {1, static_cast<std::size_t>( mesh.nodes_np )}      );
-    exporter.add_field( "Velocity", {1, static_cast<std::size_t>( mesh.nodes_np ), 3}   );
+    exporter.add_field( "Pressure", 1 );
+    exporter.add_field( "Velocity", 3 );
 
     // Create auxiliary variables for synthetic solution
     const int nSteps    = 5;

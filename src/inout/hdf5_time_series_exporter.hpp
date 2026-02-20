@@ -83,12 +83,12 @@ public:
     /**
      * @brief Declare a new field dataset to be tracked along time.
      * @param field_name HDF5 dataset name stored under /Fields.
-     * @param field_dims Initial dataset dimensions; the first entry must be 1 to represent a single timestep.
+     * @param comps_np Number of components in the field (e.g., 1 for scalar, 3 for vector).
      * @details The first dimension is promoted to unlimited so append_step() can extend it at each timestep.
      */
     void add_field( 
                         std::string             field_name,
-                        std::vector<hsize_t>    field_dims
+                        hsize_t                 comps_np
                     );
 
     /**
