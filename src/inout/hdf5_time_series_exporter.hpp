@@ -20,18 +20,9 @@
 
 #pragma once
 
-// Include general usage libraries
-#include <hdf5.h>
-#include <vector>
-#include <string>
-#include <fstream>
-#include <iostream>
-#include <iomanip>
-#include <sstream>
-#include <unordered_map>
+#include "hdf5_time_series_exporter_interface.hpp"
 
 // Include local modules
-#include "../../src/config.hpp"
 #include "../../src/inout/hdf5_wrappers.hpp"
 #include "../../src/math/custensor/custensor.hpp"
 #include "../../src/math/math_tools.hpp"
@@ -44,26 +35,11 @@
  *          and synchronised XDMF descriptions so the generated files can be explored directly in ParaView.
  *          Typical usage creates the exporter with a mesh, registers each field via add_field(), then appends
  *          time steps with append_time() and append_step(). Finally write_xdmf() writes the companion XML file.
+ *          The class leverages HDF5TimeSeriesExporterBase to reuse the mesh/XDMF bookkeeping shared with the
+ *          MPI-capable exporter counterpart.
  */
-class HDF5TimeSeriesExporter
+class HDF5TimeSeriesExporter final : public HDF5TimeSeriesExporterBase
 {
-private:
-    /*** Declare local alias ***/
-    using dict_sst = std::unordered_map<std::string, std::vector<hsize_t>>;
-
-    /*** Declare private variables ***/
-    Mesh*                               _mesh       = nullptr;  // Pointer to mesh object
-    std::string                         _field_file ;           // Path to field data HDF5 file
-    std::vector<std::string>            _field_names;           // List of field names (dataset names in HDF5 file)
-    dict_sst                            _field_dims;            // List of field dimensions (dataset dimensions in HDF5 file)
-    std::string                         _folder_path;           // Path to output folder where XDMF and HDF5 files will be written
-    std::string                         _mesh_file  ;           // Path to mesh data HDF5 file
-    std::size_t                         _quads_np   = 0;        // Number of quadrilateral elements in the mesh to be written in the XDMF file (used for mixed topology)
-    std::size_t                         _steps      = 0;        // Number of timesteps written (used for XDMF time series)
-    std::vector<cusfloat>               _time       ;           // Time values for each timestep (used for XDMF time series)
-    std::size_t                         _tri_np     = 0;        // Number of triangular elements in the mesh to be written in the XDMF file (used for mixed topology)
-    std::string                         _xdmf_file  ;           // Path to XDMF file
-
 public:
     /*** Declare class constructors  ***/
 
@@ -73,8 +49,8 @@ public:
      * @param mesh Pointer to the mesh whose geometry/topology are written once at construction.
      */
     HDF5TimeSeriesExporter(
-                                std::string&    folder_path,
-                                Mesh*           mesh
+                                const   std::string&    folder_path,
+                                        Mesh*           mesh
                             );
 
 
@@ -89,7 +65,7 @@ public:
     void add_field( 
                         std::string             field_name,
                         hsize_t                 comps_np
-                    );
+                    ) override;
 
     /**
      * @brief Append a tensor snapshot for a previously registered field.
@@ -100,31 +76,31 @@ public:
     void append_step(
                         std::string                 field_name,
                         cut::CusTensor<cusfloat>*   field_data
-                    );
+                    ) override;
 
     /**
      * @brief Record the physical time corresponding to the next append_step() call.
      * @param append_value Time value in seconds (or consistent units) to store in the XDMF timeline.
      */
-    void append_time( cusfloat append_value );
+    void append_time( cusfloat append_value ) override;
 
     /**
      * @brief Create the HDF5 container that will hold extendable field datasets.
      * @details Called during construction to ensure /Fields exists before any field registrations occur.
      */
-    void initialize_time_series(  );
+    void initialize_time_series(  ) override;
 
     /**
      * @brief Serialize the static mesh geometry and mixed topology once.
      * @details Writes /Mesh/Points and /Mesh/MixedCells datasets so the XDMF file can reference them for all timesteps.
      */
-    void write_mesh( void );
+    void write_mesh( void ) override;
 
     /**
      * @brief Emit the XDMF companion file describing the mesh and field time series.
      * @details References the HDF5 datasets via HyperSlab selections so ParaView can stream the results without duplication.
      */
-    void write_xdmf( void );
+    void write_xdmf( void ) override;
 
 };
 
