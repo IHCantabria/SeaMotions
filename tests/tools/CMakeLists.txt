@@ -463,3 +463,46 @@ add_test(
             NAME test_custensor
             COMMAND test_custensor_cmd
         )
+
+
+set(    
+        test_hdf5_paraview_src
+        test_hdf5_paraview.cpp
+        "../../src/config.hpp"
+        ${containers_module_files}
+        ${green_module_files}
+        ${interfaces_module_files}
+        ${hydrostatic_module_files}
+        ${inout_module_files}
+        ${math_module_files}
+        ${mesh_module_files}
+        ${tools_module_files}
+        ${waves_module_files}
+        ${version_module_files}
+    )
+
+add_executable( test_hdf5_paraview_cmd ${test_hdf5_paraview_src} )
+set_mkl_lib_target( test_hdf5_paraview_cmd )
+set_hdf5_target( test_hdf5_paraview_cmd )
+
+
+set(    
+        test_hdf5_paraview_mpi_src
+        test_hdf5_paraview_mpi.cpp
+        "../../src/config.hpp"
+        ${containers_module_files}
+        ${green_module_files}
+        ${interfaces_module_files}
+        ${hydrostatic_module_files}
+        ${inout_module_files}
+        ${math_module_files}
+        ${mesh_module_files}
+        ${tools_module_files}
+        ${waves_module_files}
+        ${version_module_files}
+    )
+
+add_executable( test_hdf5_paraview_mpi_cmd ${test_hdf5_paraview_mpi_src} )
+set_mkl_lib_target( test_hdf5_paraview_mpi_cmd )
+set_hdf5_target( test_hdf5_paraview_mpi_cmd )
+set_mpi_target( test_hdf5_paraview_mpi_cmd )
