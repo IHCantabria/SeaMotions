@@ -35,6 +35,12 @@ a new one inside `buildPresets` section inside file CMakePresets.json
     ]
 }
 ```
+in the case of linux compilation it may be necessary to force the name of the compilers by adding these entries in `cacheVariables` subdictionary:
+```
+"CMAKE_C_COMPILER": "icx",
+"CMAKE_CXX_COMPILER": "icpx",
+"CMAKE_Fortran_COMPILER": "ifort"
+```
 a new one inside `testPresets` in CMakePresets.json file:
 ```bash
 {
@@ -74,7 +80,7 @@ setenvars.sh
 ```
 3. Configure build by using CMake presets:
 ```bash
-cmake --presets ci-StdShar-IntelMPI --fresh
+cmake -G "Unix Makefiles" --presets ci-StdShar-IntelMPI --fresh
 ```
 4. Move one level above with the terminal where it should be located a folder with name `build114` if you are trying to compile `HDF5-1.14.X`
 5. Move into build folder and compile
