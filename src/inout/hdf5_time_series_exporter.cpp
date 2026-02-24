@@ -220,10 +220,11 @@
 
 void HDF5TimeSeriesExporter::add_field(
                                             std::string             field_name,
-                                            hsize_t                 comps_np
+                                            hsize_t                 samples_multiplier,
+                                            hsize_t                 components_np
                                         )
 {
-    const auto write_dims = this->register_field_metadata( field_name, comps_np );
+    const auto write_dims = this->register_field_metadata( field_name, samples_multiplier, components_np );
     std::vector<hsize_t> initial_dims = { 0, write_dims[1], write_dims[2] };
     std::vector<hsize_t> max_dims     = { H5S_UNLIMITED, write_dims[1], write_dims[2] };
 
@@ -333,8 +334,8 @@ inline void example_hdf5_time_series_exporter( void )
     
 
     // Add required fields to exporter (dataset names and dimensions must match the data passed to append_step())
-    exporter.add_field( "Pressure", 1 );
-    exporter.add_field( "Velocity", 3 );
+    exporter.add_field( "Pressure", 1, 1 );
+    exporter.add_field( "Velocity", 1, 3 );
 
     // Create auxiliary variables for synthetic solution
     const int nSteps    = 5;

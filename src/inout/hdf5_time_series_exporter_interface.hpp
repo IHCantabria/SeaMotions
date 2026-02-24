@@ -51,7 +51,7 @@ public:
     virtual ~HDF5TimeSeriesExporterBase() = default;
 
     /** @brief Register a field dataset to be grown along time. */
-    virtual void add_field(std::string field_name, hsize_t comps_np) = 0;
+    virtual void add_field(std::string field_name, hsize_t samples_multiplier, hsize_t components_np) = 0;
     /** @brief Append the latest timestep data for a specific field. */
     virtual void append_step(std::string field_name, cut::CusTensor<cusfloat>* field_data) = 0;
     /** @brief Record the simulation time corresponding to the next append_step invocation. */
@@ -74,10 +74,11 @@ protected:
     /**
      * @brief Store metadata for a newly declared field and return its dataset dimensions.
      * @param field_name Dataset identifier (stored under /Fields in the HDF5 file).
-     * @param comps_np Number of components per node (1 for scalars, 3 for vectors, ...).
+    * @param samples_multiplier Number of per-node samples to export (1 for standard node fields, >1 when flattening headings or dofs).
+    * @param components_np Components per sample (1 for scalar, 3 for vector, ...).
      * @return Vector describing the hyperslab being appended at each timestep (time, nodes, components).
      */
-    FieldDimensions register_field_metadata(const std::string& field_name, hsize_t comps_np);
+    FieldDimensions register_field_metadata(const std::string& field_name, hsize_t samples_multiplier, hsize_t components_np);
 
     /**
      * @brief Append a simulation time entry and advance the internal step counter.

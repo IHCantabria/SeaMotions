@@ -50,10 +50,11 @@ HDF5TimeSeriesExporterMPI::HDF5TimeSeriesExporterMPI(
 
 void HDF5TimeSeriesExporterMPI::add_field(
                                             std::string             field_name,
-                                            hsize_t                 comps_np
+                                            hsize_t                 samples_multiplier,
+                                            hsize_t                 components_np
                                         )
 {
-    const auto write_dims = this->register_field_metadata( field_name, comps_np );
+    const auto write_dims = this->register_field_metadata( field_name, samples_multiplier, components_np );
 
     // Prepare collective file access via MPI-IO
     hid_t plist = H5Pcreate( H5P_FILE_ACCESS );

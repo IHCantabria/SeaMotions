@@ -58,7 +58,8 @@ public:
     /** @copydoc HDF5TimeSeriesExporterBase::add_field */
     void add_field(
                         std::string             field_name,
-                        hsize_t                 comps_np
+                        hsize_t                 samples_multiplier,
+                        hsize_t                 components_np
                     ) override;
 
     /** @copydoc HDF5TimeSeriesExporterBase::write_mesh */

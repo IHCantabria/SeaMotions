@@ -59,12 +59,14 @@ public:
     /**
      * @brief Declare a new field dataset to be tracked along time.
      * @param field_name HDF5 dataset name stored under /Fields.
-     * @param comps_np Number of components in the field (e.g., 1 for scalar, 3 for vector).
+     * @param samples_multiplier Number of samples stored per mesh node (1 for classical node fields).
+     * @param components_np Number of components in each sample (e.g., 1 for scalar, 3 for vector).
      * @details The first dimension is promoted to unlimited so append_step() can extend it at each timestep.
      */
     void add_field( 
                         std::string             field_name,
-                        hsize_t                 comps_np
+                        hsize_t                 samples_multiplier,
+                        hsize_t                 components_np
                     ) override;
 
     /**

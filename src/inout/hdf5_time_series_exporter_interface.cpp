@@ -46,10 +46,11 @@ std::size_t HDF5TimeSeriesExporterBase::nodes_count() const noexcept
 HDF5TimeSeriesExporterBase::FieldDimensions
 HDF5TimeSeriesExporterBase::register_field_metadata(
                                                         const   std::string&    field_name,
-                                                                hsize_t         comps_np
+                                                                hsize_t         samples_multiplier,
+                                                                hsize_t         components_np
                                                     )
 {
-    FieldDimensions dims = { 1, this->nodes_count(), comps_np };
+    FieldDimensions dims = { 1, this->nodes_count() * samples_multiplier, components_np };
     this->_field_names.push_back( field_name );
     this->_field_dims[field_name] = dims;
     return dims;
