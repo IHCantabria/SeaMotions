@@ -142,3 +142,22 @@ enum class QTFTypeE: int
     QTF_DIFF_CODE      = 0,    // QTF difference term
     QTF_SUM_CODE       = 1     // QTF sum term
 };
+
+// Field types enum. Used to classify the physical field type to be calculated.
+enum class FieldTypeE: int
+{
+    POTENTIAL,      // Potential field type
+    PRESSURE,       // Pressure field type
+    VELOCITY,       // Velocity field type
+    WAVE_ELEVATION  // Wave elevation field type
+};
+
+// Field component enum. Used to classify the field component to be calculated.
+enum class FieldComponentE: int
+{
+    DIFFRACTED,     // Diffracted field component
+    INCIDENT,       // Incident field component
+    RADIATED,       // Radiated field component
+    SCATTERED,      // Scattered field component
+    TOTAL           // Total field component
+};
