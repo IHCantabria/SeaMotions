@@ -122,7 +122,7 @@ function( set_mpi_target target )
 endfunction( )
 
 # Find HDF5
-find_package(HDF5 CONFIG REQUIRED COMPONENTS CXX HL)
+find_package(HDF5 CONFIG REQUIRED COMPONENTS C HL)
 
 function( set_hdf5_target target )
     target_compile_options( ${target} PRIVATE "-D_HDF5_BUILD" )
