@@ -24,6 +24,9 @@
 #include "hdf5.h"
 #include <vector>
 
+// Include local modules
+#include "../config.hpp"
+
 
 /**
  * @brief Append a contiguous block of samples to an extendable dataset.
