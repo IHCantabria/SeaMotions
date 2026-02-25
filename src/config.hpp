@@ -146,10 +146,14 @@ enum class QTFTypeE: int
 // Field types enum. Used to classify the physical field type to be calculated.
 enum class FieldTypeE: int
 {
-    POTENTIAL,      // Potential field type
-    PRESSURE,       // Pressure field type
-    VELOCITY,       // Velocity field type
-    WAVE_ELEVATION  // Wave elevation field type
+    POTENTIAL,                  // Potential field type
+    PRESSURE,                   // Pressure field type
+    RELATIVE_WAVE_ELEVATION,    // Relative wave elevation field type
+    VELOCITY,                   // Velocity field type
+    VELOCITY_X,                 // Velocity X field type
+    VELOCITY_Y,                 // Velocity Y field type
+    VELOCITY_Z,                 // Velocity Z field type
+    WAVE_ELEVATION              // Wave elevation field type
 };
 
 // Field component enum. Used to classify the field component to be calculated.
