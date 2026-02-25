@@ -1114,10 +1114,11 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
                                                             )
 {
     /*** Get template parameters from Config ***/
-    static constexpr int mode_comp = RDDConfig::mode_comp;
-    static constexpr int mode_f    = RDDConfig::mode_f;
-    static constexpr int mode_dfdn = RDDConfig::mode_dfdn;
-    static constexpr int mode_dfdc = RDDConfig::mode_dfdc;
+    static constexpr int mode_comp      = RDDConfig::mode_comp;
+    static constexpr int mode_f         = RDDConfig::mode_f;
+    static constexpr int mode_dfdn      = RDDConfig::mode_dfdn;
+    static constexpr int mode_dfdc      = RDDConfig::mode_dfdc;
+    static constexpr int store_freqs    = RDDConfig::store_freqs;
 
     // Declare local auxiliary variables
     std::size_t                         body_id             = 0;
@@ -1199,7 +1200,7 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
             // Calculate incident wave field at the field point
             for ( std::size_t idh=0; idh<heads_np; idh++ )
             {
-                index_fd = freq_index * ( heads_np * fp_np ) + idh * fp_np + j;
+                index_fd = store_freqs * freq_index * ( heads_np * fp_np ) + idh * fp_np + j;
                 STATIC_COND( 
                                 ONLY_FCN,   
                                 panel_rdd->pot_total[index_fd]      = wave_potential_fo_space(
@@ -1357,7 +1358,7 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
                 {
                     // Get indexes to locate and to storage data
                     index_sc    = ( dofs_np + idh ) * sources_np + k;
-                    index_fd    = freq_index * ( heads_np * fp_np ) + idh * fp_np + j;
+                    index_fd    = store_freqs * freq_index * ( heads_np * fp_np ) + idh * fp_np + j;
 
                     // Get source value for the current position
                     source_val  = this->_sf_gp->field_values[index_sc];
@@ -1399,7 +1400,6 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
 
                         // Get current RAO value
                         rao_val     = raos[ index_ax ];
-                        // std::cout << "IDD: " << idd << " - rao_val: " << rao_val << " - source: " << std::abs( source_val ) << std::endl;
 
                         // Calculate field contributions
                         STATIC_COND( ONLY_FCN,   pot_aux    = cuscomplex(0.0, -ang_freq) * pot_term     * rao_val * source_val;   )
@@ -1427,20 +1427,15 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
                 }
             }
         
-            // std::cout << std::endl;
-            // std::cout << std::endl;
-            // std::cout << "Pot vals at field point " << j << ": " << std::endl;
             // Calculate raddiation and diffraction fields completed
             for ( std::size_t idh=0; idh<heads_np; idh++ )
             {
                 // Get indexes to locate and to storage data
-                index_fd    = freq_index * ( heads_np * fp_np ) + idh * fp_np + j;
+                index_fd    = store_freqs * freq_index * ( heads_np * fp_np ) + idh * fp_np + j;
                 index_sc    = ( dofs_np + idh ) * sources_np + i;
 
                 // Add incident wave velocity potential to total field
                 STATIC_COND( ONLY_FCN,   panel_rdd->pot_total_2[index_fd]   += this->_pot_gp->field_values[index_sc];      )
-
-                // std::cout << "Head " << idh << ": " << pot_vals[this->_input->dofs_np + idh] << " - " << this->_pot_gp->field_values[index_sc] << std::endl;
 
                 for ( std::size_t idd=0; idd<dofs_np; idd++ )
                 {
@@ -1451,8 +1446,6 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
                     // Get source value for the current position
                     source_val  = this->_sf_gp->field_values[index_sc];
 
-                    // std::cout << "DOF " << idd << ": " << pot_vals[idd] << " - " << this->_pot_gp->field_values[index_sc] << std::endl;
-
                     // Get current RAO value
                     rao_val     = raos[ index_ax ];
 
@@ -1462,23 +1455,28 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
 
             }
 
-            // std::cout << "------------------------" << std::endl;
-
             // Calculate total pressure field
             for ( std::size_t idh=0; idh<heads_np; idh++ )
             {
-                index_fd = freq_index * ( heads_np * fp_np ) + idh * fp_np + j;
+                index_fd = store_freqs * freq_index * ( heads_np * fp_np ) + idh * fp_np + j;
 
                 STATIC_COND(  
                                 ONLY_FCN, 
                                 panel_rdd->press_total[index_fd] = cuscomplex( 0.0, rhow * ang_freq ) * panel_rdd->pot_total[index_fd];
                             )
+
+                if constexpr( USE_COMP )
+                {
+                    panel_rdd->press_incident[index_fd] = cuscomplex( 0.0, rhow * ang_freq ) * panel_rdd->pot_incident[index_fd];
+                    panel_rdd->press_diff[index_fd]     = cuscomplex( 0.0, rhow * ang_freq ) * panel_rdd->pot_diff[index_fd];
+                    panel_rdd->press_rad[index_fd]      = cuscomplex( 0.0, rhow * ang_freq ) * panel_rdd->pot_rad[index_fd];
+                }
             }
 
             // Calculate wave elevation field
             for ( std::size_t idh=0; idh<heads_np; idh++ )
             {
-                index_fd = freq_index * ( heads_np * fp_np ) + idh * fp_np + j;
+                index_fd = store_freqs * freq_index * ( heads_np * fp_np ) + idh * fp_np + j;
 
                 STATIC_COND(  
                                 ONLY_FCN, 
