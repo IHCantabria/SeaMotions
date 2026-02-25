@@ -30,10 +30,11 @@ template<typename T, typename Config>
 struct PanelData
 {
     /*** Template parameters from Config ***/
-    static constexpr int mode_comp = Config::mode_comp;
-    static constexpr int mode_f    = Config::mode_f;
-    static constexpr int mode_dfdn = Config::mode_dfdn;
-    static constexpr int mode_dfdc = Config::mode_dfdc;
+    static constexpr int mode_comp      = Config::mode_comp;
+    static constexpr int mode_f         = Config::mode_f;
+    static constexpr int mode_dfdn      = Config::mode_dfdn;
+    static constexpr int mode_dfdc      = Config::mode_dfdc;
+    static constexpr int store_freqs    = Config::store_freqs;
 
 private:
     // Define private variables
@@ -66,6 +67,9 @@ public:
     cut::CusTensor<T>               pot_diff        ;           // Store wave diffracted potential value                         [frequencies, headings, field_points]
     cut::CusTensor<T>               pot_total       ;           // Store wave total potential value                              [frequencies, headings, field_points]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
     cut::CusTensor<T>               pot_total_2     ;           // Store wave total potential value                              [frequencies, headings, field_points]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
+    cut::CusTensor<T>               press_incident  ;           // Store incident pressure value                                    [frequencies, headings, field_points]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
+    cut::CusTensor<T>               press_rad       ;           // Store radiated pressure value                                    [frequencies, headings, field_points]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
+    cut::CusTensor<T>               press_diff      ;           // Store diffracted pressure value                                    [frequencies, headings, field_points]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
     cut::CusTensor<T>               press_total     ;           // Store total pressure value                                    [frequencies, headings, field_points]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
     cut::CusTensor<T>               vel_dn_incident ;           // Store wave incident normal velocity derivative value          [frequencies, headings, field_points]
     cut::CusTensor<T>               vel_dn_rad      ;           // Store radiated normal velocity derivative values              [frequencies, headings, field_points]
@@ -92,6 +96,7 @@ public:
 
     PanelData( 
                 std::size_t field_points_np_,
+                cusfloat*   field_points_,
                 std::size_t freqs_np_,
                 std::size_t headings_np_,
                 std::size_t dofs_np_
@@ -108,6 +113,9 @@ public:
 
     /* Declare public methods */
     void clear_data( void );
+
+    template<FieldTypeE field_type, FieldComponentE field_component>
+    const cusfloat* get_field_data( void ) const;
 
 };
 

@@ -32,18 +32,21 @@ template<typename T, typename Config>
 struct RadDiffData
 {
     /*** Template parameters from Config ***/
-    static constexpr int mode_comp = Config::mode_comp;
-    static constexpr int mode_f    = Config::mode_f;
-    static constexpr int mode_dfdn = Config::mode_dfdn;
-    static constexpr int mode_dfdc = Config::mode_dfdc;
+    static constexpr int mode_comp      = Config::mode_comp;
+    static constexpr int mode_f         = Config::mode_f;
+    static constexpr int mode_dfdn      = Config::mode_dfdn;
+    static constexpr int mode_dfdc      = Config::mode_dfdc;
+    static constexpr int store_freqs    = Config::store_freqs;
 
 private:
     // Declare private variables
     std::size_t                     _end_pos        = 0;        // End position along field points for the current process
+    cusfloat*                       _field_data     = nullptr;  // Pointer to the local data chunk to storage the field points values for the differen degrees of freedom and headings
     bool                            _is_heap        = false;    // Flag to indicate if memory is allocated on heap
     MpiConfig*                      _mpi_config     = nullptr;  // Pointer to MPI configuration
-    std::size_t                     _size_global    = 0;        // Total number of field points all across processes
-    std::size_t                     _size_local     = 0;        // Total number of field points for the current process
+    std::size_t                     _size_global    = 0;        // Total number of panel all across processes
+    std::size_t                     _size_local     = 0;        // Total number of panel for the current process
+    std::size_t                     _size_local_fp  = 0;        // Total number of field points for the current process
     std::size_t                     _start_pos      = 0;        // Start position along field points for the current process
     
 public:
@@ -55,11 +58,12 @@ public:
 
     RadDiffData( 
                     MpiConfig*      mpi_config_,
-                    std::size_t     panels_np_,
-                    std::size_t     field_points_np_,
+                    Mesh*           mesh_,
                     std::size_t     freqs_np_,
                     std::size_t     headings_np_,
-                    std::size_t     dofs_np_
+                    std::size_t     dofs_np_,
+                    bool            use_mesh_nodes_,
+                    bool            use_waterline_ = false
                 );
 
     RadDiffData( 
@@ -71,14 +75,21 @@ public:
                     bool            use_waterline_ = false
                 );
 
+    ~RadDiffData( );
+
     /* Declare public methods */
-    std::size_t get_end_pos( void ) const;
+    std::size_t         get_end_pos( void ) const;
+    
+    template<FieldTypeE field_type, FieldComponentE field_component>
+    const cusfloat*     get_field_data( std::size_t heading_index ) const;
 
-    std::size_t get_size_global( void ) const;
+    std::size_t         get_size_global( void ) const;
 
-    std::size_t get_size_local( void ) const;
+    std::size_t         get_size_local( void ) const;
 
-    std::size_t get_start_pos( void ) const;
+    std::size_t         get_size_local_fp( void ) const;
+
+    std::size_t         get_start_pos( void ) const;
     
 };
 

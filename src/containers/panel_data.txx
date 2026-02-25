@@ -41,48 +41,48 @@ void    PanelData<T, Config>::_allocate_memory(
     // Set number of field points
     this->dofs_np           = dofs_np_;
     this->field_points_np   = field_points_np_;
-    this->freqs_np          = freqs_np_;
+    this->freqs_np          = ( store_freqs == ON ) ? freqs_np_ : 1;
     this->headings_np       = headings_np_;
 
     // Define vector shape sizes for fields
-    std::size_t field_len   = freqs_np_ * headings_np_ * field_points_np_;
+    std::size_t field_len   = this->freqs_np * this->headings_np * this->field_points_np;
 
     // Allocate memory on heap for field points
     this->field_points.resize( 3 * field_points_np_ );
 
     // Allocate memory on heap for potential fields
-    STATIC_COND( ONLY_FCN && USE_COMP,   this->pot_incident.resize( field_len ); )
-    STATIC_COND( ONLY_FCN && USE_COMP,   this->pot_rad.resize( field_len ); )
-    STATIC_COND( ONLY_FCN && USE_COMP,   this->pot_diff.resize( field_len ); )
-    STATIC_COND( ONLY_FCN            ,   this->pot_total.resize( field_len ); )
-    STATIC_COND( ONLY_FCN            ,   this->pot_total_2.resize( field_len ); )
+    STATIC_COND( ONLY_FCN && USE_COMP,   this->pot_incident.resize( field_len );    )
+    STATIC_COND( ONLY_FCN && USE_COMP,   this->pot_rad.resize( field_len );         )
+    STATIC_COND( ONLY_FCN && USE_COMP,   this->pot_diff.resize( field_len );        )
+    STATIC_COND( ONLY_FCN            ,   this->pot_total.resize( field_len );       )
+    STATIC_COND( ONLY_FCN            ,   this->pot_total_2.resize( field_len );     )
 
     // Allocate memory on heap for pressure field
-    STATIC_COND( ONLY_FCN,               this->press_total.resize( field_len ); )
+    STATIC_COND( ONLY_FCN,               this->press_total.resize( field_len );     )
 
     // Allocate memory on heap for normal velocity derivative fields
     STATIC_COND( ONLY_FCNDN && USE_COMP, this->vel_dn_incident.resize( field_len ); )
-    STATIC_COND( ONLY_FCNDN && USE_COMP, this->vel_dn_rad.resize( field_len ); )
-    STATIC_COND( ONLY_FCNDN && USE_COMP, this->vel_dn_diff.resize( field_len ); )
-    STATIC_COND( ONLY_FCNDN,             this->vel_dn_total.resize( field_len ); )
+    STATIC_COND( ONLY_FCNDN && USE_COMP, this->vel_dn_rad.resize( field_len );      )
+    STATIC_COND( ONLY_FCNDN && USE_COMP, this->vel_dn_diff.resize( field_len );     )
+    STATIC_COND( ONLY_FCNDN,             this->vel_dn_total.resize( field_len );    )
 
     // Allocate memory on heap for velocity components fields
-    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_x_incident.resize( field_len ); )
-    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_y_incident.resize( field_len ); )
-    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_z_incident.resize( field_len ); )
-    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_x_rad.resize( field_len ); )
-    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_y_rad.resize( field_len ); )
-    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_z_rad.resize( field_len ); )
-    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_x_diff.resize( field_len ); )
-    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_y_diff.resize( field_len ); )
-    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_z_diff.resize( field_len ); )
-    STATIC_COND( ONLY_FCNDC,             this->vel_x_total.resize( field_len ); )
-    STATIC_COND( ONLY_FCNDC,             this->vel_y_total.resize( field_len ); )
-    STATIC_COND( ONLY_FCNDC,             this->vel_z_total.resize( field_len ); )
+    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_x_incident.resize( field_len );  )
+    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_y_incident.resize( field_len );  )
+    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_z_incident.resize( field_len );  )
+    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_x_rad.resize( field_len );       )
+    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_y_rad.resize( field_len );       )
+    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_z_rad.resize( field_len );       )
+    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_x_diff.resize( field_len );      )
+    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_y_diff.resize( field_len );      )
+    STATIC_COND( ONLY_FCNDC && USE_COMP, this->vel_z_diff.resize( field_len );      )
+    STATIC_COND( ONLY_FCNDC,             this->vel_x_total.resize( field_len );     )
+    STATIC_COND( ONLY_FCNDC,             this->vel_y_total.resize( field_len );     )
+    STATIC_COND( ONLY_FCNDC,             this->vel_z_total.resize( field_len );     )
 
     // Allocate memory on heap for wave elevation fields
-    STATIC_COND( ONLY_FCN,               this->wev_total.resize( field_len ); )
-    STATIC_COND( ONLY_FCN,               this->wev_rel_total.resize( field_len ); )
+    STATIC_COND( ONLY_FCN,               this->wev_total.resize( field_len );       )
+    STATIC_COND( ONLY_FCN,               this->wev_rel_total.resize( field_len );   )
 
     // Set flag to indicate that memory is allocated on heap
     this->_is_heap        = true;
@@ -90,6 +90,82 @@ void    PanelData<T, Config>::_allocate_memory(
 }
 
 
+template<typename T, typename Config>
+template<FieldTypeE field_type, FieldComponentE field_component>
+const cusfloat* PanelData<T, Config>::get_field_data( void ) const
+{
+    if constexpr ( field_type == FieldTypeE::POTENTIAL )
+    {
+        if constexpr ( ( mode_comp == ON ) && ( field_component == FieldComponentE::INCIDENT ) )
+            return this->pot_incident.data( );
+        else if constexpr ( ( mode_comp == ON ) && ( field_component == FieldComponentE::RADIATED ) )
+            return this->pot_rad.data( );
+        else if constexpr ( ( mode_comp == ON ) && ( field_component == FieldComponentE::DIFFRACTED ) )
+            return this->pot_diff.data( );
+        else if constexpr ( ( mode_f == ON ) && ( field_component == FieldComponentE::TOTAL ) )
+            return this->pot_total.data( );
+    }
+    else if constexpr ( field_type == FieldTypeE::PRESSURE )
+    {
+        if constexpr ( ( mode_f == ON ) && ( field_component == FieldComponentE::TOTAL ) )
+            return this->press_total.data( );
+    }
+    else if constexpr ( field_type == FieldTypeE::VELOCITY_DN )
+    {
+        if constexpr ( ( mode_comp == ON ) && ( field_component == FieldComponentE::INCIDENT ) )
+            return this->vel_dn_incident.data( );
+        else if constexpr ( ( mode_comp == ON ) && ( field_component == FieldComponentE::RADIATED ) )
+            return this->vel_dn_rad.data( );
+        else if constexpr ( ( mode_comp == ON ) && ( field_component == FieldComponentE::DIFFRACTED ) )
+            return this->vel_dn_diff.data( );
+        else if constexpr ( ( mode_f == ON ) && ( field_component == FieldComponentE::TOTAL ) )
+            return this->vel_dn_total.data( );
+    }
+    else if constexpr ( field_type == FieldTypeE::VELOCITY_X )
+    {
+        if constexpr ( ( mode_comp == ON ) && (  field_component == FieldComponentE::INCIDENT ) )
+            return this->vel_x_incident.data( );
+        else if constexpr ( ( mode_comp == ON ) && ( field_component == FieldComponentE::RADIATED ) )
+            return this->vel_x_rad.data( );
+        else if constexpr ( ( mode_comp == ON ) && ( field_component == FieldComponentE::DIFFRACTED ) )
+            return this->vel_x_diff.data( );
+        else if constexpr ( ( mode_f == ON ) && ( field_component == FieldComponentE::TOTAL ) )
+            return this->vel_x_total.data( );
+    }
+    else if constexpr ( field_type == FieldTypeE::VELOCITY_Y )
+    {
+        if constexpr ( ( mode_comp == ON ) && ( field_component == FieldComponentE::INCIDENT ) )
+            return this->vel_y_incident.data( );
+        else if constexpr ( ( mode_comp == ON ) && ( field_component == FieldComponentE::RADIATED ) )
+            return this->vel_y_rad.data( );
+        else if constexpr ( ( mode_comp == ON ) && ( field_component == FieldComponentE::DIFFRACTED ) )
+            return this->vel_y_diff.data( );
+        else if constexpr ( ( mode_f == ON ) && ( field_component == FieldComponentE::TOTAL ) )
+            return this->vel_y_total.data( );
+    }
+    else if constexpr ( field_type == FieldTypeE::VELOCITY_Z )
+    {
+        if constexpr ( ( mode_comp == ON ) && ( field_component == FieldComponentE::INCIDENT ) )
+            return this->vel_z_incident.data( );
+        else if constexpr ( ( mode_comp == ON ) && ( field_component == FieldComponentE::RADIATED ) )
+            return this->vel_z_rad.data( );
+        else if constexpr ( ( mode_comp == ON ) && ( field_component == FieldComponentE::DIFFRACTED ) )
+            return this->vel_z_diff.data( );
+        else if constexpr ( ( mode_f == ON ) && ( field_component == FieldComponentE::TOTAL ) )
+            return this->vel_z_total.data( );
+    }
+    else if constexpr ( field_type == FieldTypeE::WAVE_ELEVATION )
+    {
+        if constexpr ( ( mode_f == ON ) && ( field_component == FieldComponentE::TOTAL ) )
+            return this->wev_total.data( );
+    }
+    else if constexpr ( field_type == FieldTypeE::RELATIVE_WAVE_ELEVATION )
+    {
+        if constexpr ( ( mode_f == ON ) && ( field_component == FieldComponentE::TOTAL ) )
+            return this->wev_rel_total.data( );
+    }
+    return nullptr;
+}
 
 template<typename T, typename Config>
 void    PanelData<T, Config>::_load_field_points( 
@@ -142,6 +218,12 @@ void PanelData<T, Config>::clear_data( void )
     STATIC_COND( ONLY_FCN,                  LOOP_DEF( hfnp,  this->pot_total[i]         = 0.0; ) )
     STATIC_COND( ONLY_FCN,                  LOOP_DEF( hfnp,  this->pot_total_2[i]       = 0.0; ) )
 
+    // Clear pressure fields data
+    STATIC_COND( ONLY_FCN && USE_COMP,      LOOP_DEF( hfnp,  this->press_incident[i]    = 0.0; ) )
+    STATIC_COND( ONLY_FCN && USE_COMP,      LOOP_DEF( hfnp,  this->press_rad[i]         = 0.0; ) )
+    STATIC_COND( ONLY_FCN && USE_COMP,      LOOP_DEF( hfnp,  this->press_diff[i]        = 0.0; ) )
+    STATIC_COND( ONLY_FCN,                  LOOP_DEF( hfnp,  this->press_total[i]       = 0.0; ) )
+
     // Clear normal velocity derivative fields data
     STATIC_COND( ONLY_FCNDN && USE_COMP,    LOOP_DEF( hfnp,  this->vel_dn_incident[i]   = 0.0; ) )
     STATIC_COND( ONLY_FCNDN && USE_COMP,    LOOP_DEF( hfnp,  this->vel_dn_rad[i]        = 0.0; ) )
@@ -170,11 +252,12 @@ void PanelData<T, Config>::clear_data( void )
 
 template<typename T, typename Config>
 PanelData<T, Config>::PanelData( 
-                                std::size_t field_points_np_,
-                                std::size_t freqs_np_,
-                                std::size_t headings_np_,
-                                std::size_t dofs_np_
-                            )
+                                    std::size_t field_points_np_,
+                                    cusfloat*   field_points_,
+                                    std::size_t freqs_np_,
+                                    std::size_t headings_np_,
+                                    std::size_t dofs_np_
+                                )
 {
     // Allocate space for fields data
     this->_allocate_memory( 
@@ -183,6 +266,12 @@ PanelData<T, Config>::PanelData(
                                 headings_np_,
                                 dofs_np_ 
                             );
+
+    // Copy field points coordinates from input array
+    for (  std::size_t i = 0; i < 3 * field_points_np_; ++i )
+    {
+        this->field_points[i] = field_points_[i];
+    }
 }
 
 
