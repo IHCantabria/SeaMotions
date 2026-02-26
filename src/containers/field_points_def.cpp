@@ -39,7 +39,6 @@ void FieldPointsDef::_load_mesh(
     namespace fs = std::filesystem;
 
     // Load mesh for the current body
-    std::vector<Mesh*> _mesh_total;
     fs::path mesh_foname_( std::string( "mesh" ) );
     fs::path mesh_finame_( this->mesh_finame );
     fs::path mesh_fipath_ = fopath / mesh_foname_ / mesh_finame_;
