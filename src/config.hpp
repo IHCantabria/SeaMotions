@@ -122,7 +122,8 @@ enum class PanelTypeE: int
     DIFFRAC,        // Diffraction-Radation panel. Used as BC type for floating bodies
     INT_LID,        // Internal lid panel. Used as BC type for internal free surface in floating bodies to suppress spurious irregular frequencies.
     EXT_LID,        // External lid panel. Used as BC type for external free surface zones where it is necessary damp stationary waves that arise due to the lack of viscosity in the potential flow model.
-    QTF_LID         // QTF lid panel. Used as BC type to impose additional equations in the near field region of the floating bodies so it is possible to solve the second order potential.
+    QTF_LID,        // QTF lid panel. Used as BC type to impose additional equations in the near field region of the floating bodies so it is possible to solve the second order potential.
+    FIELD_POINT     // Field point panel. Used as type for field points where the potential and its derivatives are calculated.
 };
 
 // Free regime enum. Used to classify the frequency regime
