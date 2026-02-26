@@ -1265,6 +1265,55 @@ Mesh::Mesh(
 }
 
 
+Mesh::Mesh( 
+                                        std::string file_path,
+                                        std::string body_name,
+                                        PanelTypeE  panel_type
+            )
+{
+    // Storage the required input attributes
+    this->_is_move_f    = 0.0;
+    this->name          = body_name;
+
+    // Load mesh
+    std::string file_ext = get_fipath_extension( file_path );
+
+    if ( file_ext.compare( ".poly" ) == 0 )
+    {
+        this->_load_poly_mesh( file_path, body_name );
+    }
+    else if ( file_ext.compare( ".msh" ) == 0 )
+    {
+        this->_load_gmsh_mesh( file_path, body_name );
+    }
+    else if ( file_ext.compare( ".symplymesh.dat" ) == 0 )
+    {
+        this->_load_simply_mesh( file_path, body_name );
+    }
+    else
+    {
+        std::cerr << "ERROR - Mesh file extension: " << file_ext << " is not valid." << std::endl; 
+        throw std::runtime_error( "Mesh file extension is not valid." );
+    }
+
+    // Detect elements type
+    this->set_elements_type( );
+
+    // Generate vector with the panels type
+    this->set_all_panels_type( panel_type );
+
+    // Calculate bounding box of the mesh
+    this->_calculate_bounding_box( );
+
+    // Create panels for each element
+    this->_create_panels( panel_type, false, this->_cog_dummy );
+
+    // Check mesh properties
+    this->_check_mesh_properties( );
+
+}
+
+
 Mesh::Mesh(
                                         std::string         name,
                                         std::vector<Mesh*>  meshes,

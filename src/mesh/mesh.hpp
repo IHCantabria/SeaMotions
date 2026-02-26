@@ -44,6 +44,7 @@ struct Mesh
 {
 protected:
     // Define class attributes
+    cusfloat    _cog_dummy[3]       = { 0.0, 0.0, 0.0 };
     cusfloat    _fs_centre_x        = 0.0;
     cusfloat    _fs_centre_y        = 0.0;
     cusfloat    _fs_radius          = 0.0;
@@ -137,6 +138,12 @@ public:
                                                 bool                is_fix,
                                                 PanelTypeE          panel_type,
                                                 bool                auto_force_type=true
+                );
+
+            Mesh( 
+                                                std::string         file_path,
+                                                std::string         body_name,
+                                                PanelTypeE          panel_type
                 );
 
             Mesh(
