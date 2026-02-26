@@ -27,7 +27,7 @@
 #include "../../containers/mpi_timer.hpp"
 #include "frequency_solver.hpp"
 #include "../../cli_header_banner.hpp"
-#include "../../inout/reader.hpp"
+#include "../../inout/input.hpp"
 #include "../../tools.hpp"
 #include "../../version.hpp"
 
@@ -77,7 +77,7 @@ int main( int argc, char* argv[] )
     /************ Read Input data ************/
     /*****************************************/
     Input input;
-    read_input_files( &input, case_fopath );
+    input.load( case_fopath );
     
 
     /*****************************************/

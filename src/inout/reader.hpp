@@ -24,9 +24,10 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <vector>
 
 // Include local modules
-#include "input.hpp"
+#include "../config.hpp"
 
 
 #define CHECK_SIGNAL_NAME( signal_name, signal_name_ref, file_name, line_num ) do {         \
@@ -47,18 +48,6 @@
     line_num++;                                                                             \
 } while (0)
 
-
-                                void            read_body(
-                                                                            Input*                          input,
-                                                                            std::string                     folder_path,
-                                                                            std::string                     target_file,
-                                                                            BodyDef*                        body
-                                                        );
-
-                                void            read_bodies( 
-                                                                            std::string folder_path,
-                                                                            Input*      input
-                                                            );
 
 template<typename T>    inline  void            read_channel_list( 
                                                                             std::ifstream&                  infile,
@@ -95,15 +84,6 @@ template<typename T>    inline  void            read_compact_list(
                                                                             std::string                     item,
                                                                             std::vector<T>&                 container
                                                                     );
-
-                                Input*          read_input_files( 
-                                                                            std::string                     folder_path
-                                                                );
-
-                                void            read_input_files( 
-                                                                            Input*                          input,
-                                                                            std::string                     folder_path
-                                                                );
 
 template<typename T>    inline  void    read_table_row_header(
                                                                             std::ifstream&                  infile,

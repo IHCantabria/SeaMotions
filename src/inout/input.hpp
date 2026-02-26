@@ -23,6 +23,7 @@
 // Include general usage libraries
 #include <iostream>
 #include <string>
+#include <vector>
 
 // Import local modules
 #include "../config.hpp"
@@ -85,12 +86,18 @@ public:
     cusfloat                    wl_det_prec         = 0.0;
 
     // Define class constructors and destructors
+    Input( ) = default;
+    explicit Input( const std::string& folder_path );
     ~Input( void );
 
     // Define class methods
     void    configure( 
                                     void
                     );
+
+    void    load(
+                                    const std::string& folder_path
+                );
 
     int     gauss_np_factor_1d( 
                                     void
@@ -102,6 +109,21 @@ public:
 
     void    print(     
                                     void 
+                );
+
+private:
+    void    read_case(
+                                    const std::string& folder_path
+                );
+
+    void    read_bodies(
+                                    const std::string& folder_path
+                );
+
+    void    read_body(
+                                    const std::string& folder_path,
+                                    const std::string& target_file,
+                                    BodyDef* body
                 );
 
 };
