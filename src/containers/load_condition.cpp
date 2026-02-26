@@ -25,6 +25,7 @@
 // Include local modules
 #include "../inout/reader.hpp"
 #include "load_condition.hpp"
+#include "../math/math_tools.hpp"
 #include "../tools.hpp"
 #include "../version.hpp"
 
