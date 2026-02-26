@@ -26,6 +26,7 @@
 
 // Include local modules
 #include "../mesh/mesh.hpp"
+#include "field_mesh_data_config.hpp"
 
 
 struct FieldPointsDef
@@ -61,5 +62,8 @@ public:
                 );
     
     ~FieldPointsDef( void );
+
+    /*** Declare class public methods ***/
+    FieldMeshDataConfig get_config( void ) const;
 
 };

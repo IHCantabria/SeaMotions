@@ -31,6 +31,21 @@
 #include "../version.hpp"
 
 
+FieldMeshDataConfig FieldPointsDef::get_config( void ) const
+{
+    FieldMeshDataConfig config;
+    config.mesh_file_path  = this->mesh_finame;
+    config.body_name       = this->mesh_body_name;
+    config.out_components  = this->out_components;
+    config.out_potential   = this->out_potential;
+    config.out_pressure    = this->out_pressure;
+    config.out_velocity    = this->out_velocity;
+
+    return config;
+
+}
+
+
 void FieldPointsDef::_load_mesh( 
                                     std::string fopath
                                 )
