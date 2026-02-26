@@ -6,6 +6,8 @@ set(
         ${CMAKE_SOURCE_DIR}/src/containers/containers.hpp
         ${CMAKE_SOURCE_DIR}/src/containers/field_mesh_data.hpp
         ${CMAKE_SOURCE_DIR}/src/containers/field_mesh_data.txx
+        ${CMAKE_SOURCE_DIR}/src/containers/field_points_def.hpp
+        ${CMAKE_SOURCE_DIR}/src/containers/field_points_def.cpp
         ${CMAKE_SOURCE_DIR}/src/containers/load_condition.hpp
         ${CMAKE_SOURCE_DIR}/src/containers/load_condition.cpp
         ${CMAKE_SOURCE_DIR}/src/containers/logger.hpp
