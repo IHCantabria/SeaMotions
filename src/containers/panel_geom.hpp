@@ -50,6 +50,14 @@ private:
                                     cusfloat*   z_in
                                 );
 
+    void    _copy_trivial_from(
+                                    const PanelGeom& other
+                                );
+
+    void    _release_source_nodes(
+                                    void
+                                );
+
 public:
     // Define class attributes
     cusfloat                        area                    = 0.0;
@@ -120,6 +128,22 @@ public:
                                         cusfloat*   cog,
                                         bool        force_auto_type=true
                 );
+    
+    PanelGeom(
+                                        const PanelGeom& other
+                );
+
+    PanelGeom(
+                                        PanelGeom&&     other
+                ) noexcept;
+
+    PanelGeom& operator=(
+                                        const PanelGeom& other
+                        );
+
+    PanelGeom& operator=(
+                                        PanelGeom&&     other
+                        ) noexcept;
     
     ~PanelGeom( 
                                         void 

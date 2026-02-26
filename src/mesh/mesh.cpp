@@ -19,8 +19,11 @@
  */
 
 // Include general usage libraries
+#include <algorithm>
 #include <cassert>
+#include <cstddef>
 #include <filesystem>
+#include <unordered_map>
 
 // Include local modules
 #include "./gmsh_reader/read_gmsh.hpp"
@@ -1344,6 +1347,41 @@ Mesh::Mesh(
 }
 
 
+Mesh::Mesh( const Mesh& other )
+{
+    this->_copy_from( other );
+}
+
+
+Mesh::Mesh( Mesh&& other ) noexcept
+{
+    this->_swap( other );
+}
+
+
+Mesh& Mesh::operator=( const Mesh& other )
+{
+    if ( this != &other )
+    {
+        Mesh tmp( other );
+        this->_swap( tmp );
+    }
+
+    return *this;
+}
+
+
+Mesh& Mesh::operator=( Mesh&& other ) noexcept
+{
+    if ( this != &other )
+    {
+        this->_swap( other );
+    }
+
+    return *this;
+}
+
+
 Mesh::~Mesh( 
                                         void 
             )
@@ -1478,4 +1516,216 @@ void        Mesh::write(
                                     this->elems_type
                                 );
     }
+}
+
+
+void        Mesh::_copy_from(
+                                        const Mesh& other
+                            )
+{
+    std::copy_n( other._cog_dummy, 3, this->_cog_dummy );
+    this->_fs_centre_x        = other._fs_centre_x;
+    this->_fs_centre_y        = other._fs_centre_y;
+    this->_fs_radius          = other._fs_radius;
+    this->_is_bouding_box     = other._is_bouding_box;
+    this->_is_fs_centre       = other._is_fs_centre;
+    this->_is_fs_radius       = other._is_fs_radius;
+    this->_is_move_f          = other._is_move_f;
+    this->_is_source_nodes    = other._is_source_nodes;
+    this->_valid_elem_type_np = other._valid_elem_type_np;
+    std::copy_n( other._valid_elem_type, 2, this->_valid_elem_type );
+
+    this->bodies_np       = other.bodies_np;
+    this->elems_np        = other.elems_np;
+    this->enrl            = other.enrl;
+    this->mnpe            = other.mnpe;
+    this->name            = other.name;
+    this->nodes_np        = other.nodes_np;
+    this->panels_type     = other.panels_type;
+    this->panels_wl_np    = other.panels_wl_np;
+    this->source_nodes_np = other.source_nodes_np;
+    this->x_max           = other.x_max;
+    this->x_min           = other.x_min;
+    this->y_max           = other.y_max;
+    this->y_min           = other.y_min;
+    this->z_max           = other.z_max;
+    this->z_min           = other.z_min;
+
+    this->elems        = nullptr;
+    this->elems_type   = nullptr;
+    this->panels       = nullptr;
+    this->panels_wl    = nullptr;
+    this->source_nodes = nullptr;
+    this->x            = nullptr;
+    this->y            = nullptr;
+    this->z            = nullptr;
+
+    if ( other.elems != nullptr && this->elems_np > 0 && this->enrl > 0 )
+    {
+        const int entries = this->elems_np * this->enrl;
+        this->elems = generate_empty_vector<int>( entries );
+        std::copy( other.elems, other.elems + entries, this->elems );
+    }
+
+    if ( other.elems_type != nullptr && this->elems_np > 0 )
+    {
+        this->elems_type = generate_empty_vector<int>( this->elems_np );
+        std::copy( other.elems_type, other.elems_type + this->elems_np, this->elems_type );
+    }
+
+    if ( other.x != nullptr && this->nodes_np > 0 )
+    {
+        this->x = generate_empty_vector<cusfloat>( this->nodes_np );
+        std::copy( other.x, other.x + this->nodes_np, this->x );
+    }
+
+    if ( other.y != nullptr && this->nodes_np > 0 )
+    {
+        this->y = generate_empty_vector<cusfloat>( this->nodes_np );
+        std::copy( other.y, other.y + this->nodes_np, this->y );
+    }
+
+    if ( other.z != nullptr && this->nodes_np > 0 )
+    {
+        this->z = generate_empty_vector<cusfloat>( this->nodes_np );
+        std::copy( other.z, other.z + this->nodes_np, this->z );
+    }
+
+    if ( other.panels != nullptr && this->elems_np > 0 )
+    {
+        this->panels = new PanelGeom*[ this->elems_np ];
+        for ( int i=0; i<this->elems_np; i++ )
+        {
+            this->panels[i] = new PanelGeom( *( other.panels[i] ) );
+        }
+    }
+
+    std::unordered_map<const PanelGeom*, PanelGeom*> panel_map;
+    if ( this->panels != nullptr )
+    {
+        panel_map.reserve( static_cast<std::size_t>( this->elems_np ) );
+        for ( int i=0; i<this->elems_np; i++ )
+        {
+            panel_map.emplace( other.panels[i], this->panels[i] );
+        }
+    }
+
+    if ( other.panels_wl != nullptr && this->panels_wl_np > 0 && this->panels != nullptr )
+    {
+        this->panels_wl = new PanelGeom*[ this->panels_wl_np ];
+        for ( int i=0; i<this->panels_wl_np; i++ )
+        {
+            auto it = panel_map.find( other.panels_wl[i] );
+            this->panels_wl[i] = ( it != panel_map.end( ) ) ? it->second : nullptr;
+        }
+    }
+
+    if ( this->_is_source_nodes && other.source_nodes != nullptr && this->source_nodes_np > 0 )
+    {
+        if ( panel_map.empty( ) )
+        {
+            throw std::runtime_error( "Mesh source nodes cannot be copied without panels." );
+        }
+
+        this->source_nodes = new SourceNode*[ this->source_nodes_np ];
+        for ( int i=0; i<this->source_nodes_np; i++ )
+        {
+            const SourceNode* src_node = other.source_nodes[i];
+            auto map_it = panel_map.find( src_node->panel );
+            if ( map_it == panel_map.end( ) )
+            {
+                throw std::runtime_error( "Mesh source node references unknown panel during copy." );
+            }
+
+            PanelGeom* new_panel = map_it->second;
+
+            cusfloat* old_pos_base  = nullptr;
+            cusfloat* old_norm_base = nullptr;
+            src_node->panel->get_source_nodes_data( old_pos_base, old_norm_base );
+
+            cusfloat* new_pos_base  = nullptr;
+            cusfloat* new_norm_base = nullptr;
+            new_panel->get_source_nodes_data( new_pos_base, new_norm_base );
+
+            cusfloat* new_pos_ptr  = new_pos_base;
+            cusfloat* new_norm_ptr = new_norm_base;
+
+            if ( old_pos_base != nullptr && new_pos_base != nullptr )
+            {
+                const std::ptrdiff_t offset = src_node->position - old_pos_base;
+                new_pos_ptr = new_pos_base + offset;
+            }
+
+            if ( old_norm_base != nullptr && new_norm_base != nullptr )
+            {
+                const std::ptrdiff_t offset = src_node->normal_vec - old_norm_base;
+                new_norm_ptr = new_norm_base + offset;
+            }
+
+            this->source_nodes[i] = new SourceNode(
+                                                    new_panel,
+                                                    src_node->poly_oder,
+                                                    src_node->p_order,
+                                                    src_node->q_order,
+                                                    new_pos_ptr,
+                                                    new_norm_ptr
+                                                );
+        }
+    }
+    else if ( this->_is_source_nodes && this->source_nodes_np > 0 )
+    {
+        throw std::runtime_error( "Mesh indicates source nodes but none are available to copy." );
+    }
+}
+
+
+void        Mesh::_swap(
+                                        Mesh& other
+                    ) noexcept
+{
+    using std::swap;
+
+    for ( int i=0; i<3; i++ )
+    {
+        swap( this->_cog_dummy[i], other._cog_dummy[i] );
+    }
+
+    for ( int i=0; i<2; i++ )
+    {
+        swap( this->_valid_elem_type[i], other._valid_elem_type[i] );
+    }
+
+    swap( this->_fs_centre_x,        other._fs_centre_x );
+    swap( this->_fs_centre_y,        other._fs_centre_y );
+    swap( this->_fs_radius,          other._fs_radius );
+    swap( this->_is_bouding_box,     other._is_bouding_box );
+    swap( this->_is_fs_centre,       other._is_fs_centre );
+    swap( this->_is_fs_radius,       other._is_fs_radius );
+    swap( this->_is_move_f,          other._is_move_f );
+    swap( this->_is_source_nodes,    other._is_source_nodes );
+    swap( this->_valid_elem_type_np, other._valid_elem_type_np );
+
+    swap( this->bodies_np,       other.bodies_np );
+    swap( this->elems,           other.elems );
+    swap( this->elems_type,      other.elems_type );
+    swap( this->elems_np,        other.elems_np );
+    swap( this->enrl,            other.enrl );
+    swap( this->mnpe,            other.mnpe );
+    swap( this->name,            other.name );
+    swap( this->nodes_np,        other.nodes_np );
+    swap( this->panels,          other.panels );
+    swap( this->panels_wl,       other.panels_wl );
+    swap( this->panels_wl_np,    other.panels_wl_np );
+    swap( this->panels_type,     other.panels_type );
+    swap( this->source_nodes,    other.source_nodes );
+    swap( this->source_nodes_np, other.source_nodes_np );
+    swap( this->x,               other.x );
+    swap( this->x_max,           other.x_max );
+    swap( this->x_min,           other.x_min );
+    swap( this->y,               other.y );
+    swap( this->y_max,           other.y_max );
+    swap( this->y_min,           other.y_min );
+    swap( this->z,               other.z );
+    swap( this->z_max,           other.z_max );
+    swap( this->z_min,           other.z_min );
 }

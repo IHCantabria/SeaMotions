@@ -102,6 +102,14 @@ protected:
                                         cusfloat*           cog
                                     );
 
+        void    _copy_from(
+                                                                                const Mesh&         other
+                                                );
+
+        void    _swap(
+                                                                                Mesh&               other
+                                        ) noexcept;
+
 public:
     // Define class attributes
     int                         bodies_np       = 1;
@@ -129,34 +137,50 @@ public:
     cusfloat                    z_min           = 0.0;
 
     // Define class constructor and destructor
-            Mesh( ) = default;
+    Mesh( ) = default;
 
-            Mesh( 
-                                                std::string         file_path,
-                                                std::string         body_name,
-                                                cusfloat*           cog,
-                                                bool                is_fix,
-                                                PanelTypeE          panel_type,
-                                                bool                auto_force_type=true
-                );
+    Mesh( 
+                                        std::string         file_path,
+                                        std::string         body_name,
+                                        cusfloat*           cog,
+                                        bool                is_fix,
+                                        PanelTypeE          panel_type,
+                                        bool                auto_force_type=true
+        );
 
-            Mesh( 
-                                                std::string         file_path,
-                                                std::string         body_name,
-                                                PanelTypeE          panel_type
-                );
+    Mesh( 
+                                        std::string         file_path,
+                                        std::string         body_name,
+                                        PanelTypeE          panel_type
+        );
 
-            Mesh(
-                                                std::string         name,
-                                                std::vector<Mesh*>  meshes,
-                                                cusfloat*           cog,
-                                                bool                is_fix,
-                                                bool                auto_force_type=true
+    Mesh(
+                                        std::string         name,
+                                        std::vector<Mesh*>  meshes,
+                                        cusfloat*           cog,
+                                        bool                is_fix,
+                                        bool                auto_force_type=true
 
-                );
+        );
+
+    Mesh(
+                                        const Mesh&         other
+            );
+
+    Mesh(
+                                        Mesh&&              other
+            ) noexcept;
+
+    Mesh&   operator=(
+                                        const Mesh&         other
+                    );
+
+    Mesh&   operator=(
+                                        Mesh&&              other
+                    ) noexcept;
 
     virtual ~Mesh( 
-                                                void 
+                                        void 
                 );
 
     // Define class methods

@@ -19,6 +19,7 @@
  */
 
 // Include general usage libraries
+#include <algorithm>
 #include <cassert>
 #include <fstream>
 
@@ -29,6 +30,150 @@
 #include "../math/shape_functions.hpp"
 #include "../math/topology.hpp"
 #include "panel_geom.hpp"
+
+
+void PanelGeom::_release_source_nodes( void )
+{
+    if ( this->_is_source_nodes )
+    {
+        mkl_free( this->_source_positions );
+        mkl_free( this->_source_normal_vec );
+        this->_source_positions    = nullptr;
+        this->_source_normal_vec   = nullptr;
+        this->_is_source_nodes     = false;
+    }
+}
+
+
+void PanelGeom::_copy_trivial_from( const PanelGeom& other )
+{
+    constexpr std::size_t GAUSS_POINTS_COUNT = PanelGeom::gauss_points_np * PanelGeom::gauss_points_np;
+
+    auto copy_vals = []( auto* dst, const auto* src, std::size_t count )
+    {
+        if ( count > 0 )
+        {
+            std::copy_n( src, count, dst );
+        }
+    };
+
+    this->area                 = other.area;
+    this->free_surface_log_int = other.free_surface_log_int;
+    this->is_move_f            = other.is_move_f;
+    this->is_wl_boundary       = other.is_wl_boundary;
+    this->len_wl               = other.len_wl;
+    this->length               = other.length;
+    this->location_zone        = other.location_zone;
+    this->num_nodes            = other.num_nodes;
+    this->type                 = other.type;
+
+    copy_vals( this->body_cog,            other.body_cog,            3 );
+    copy_vals( this->center,              other.center,              3 );
+    copy_vals( this->center_wl,           other.center_wl,           3 );
+    copy_vals( this->global_to_local_mat, other.global_to_local_mat, 9 );
+    copy_vals( this->local_to_global_mat, other.local_to_global_mat, 9 );
+    copy_vals( this->gauss_points_global_x, other.gauss_points_global_x, GAUSS_POINTS_COUNT );
+    copy_vals( this->gauss_points_global_y, other.gauss_points_global_y, GAUSS_POINTS_COUNT );
+    copy_vals( this->gauss_points_global_z, other.gauss_points_global_z, GAUSS_POINTS_COUNT );
+    copy_vals( this->jac_det_gauss_points, other.jac_det_gauss_points, GAUSS_POINTS_COUNT );
+    copy_vals( this->moments_fo,          other.moments_fo,          3 );
+    copy_vals( this->moments_so,          other.moments_so,          3 );
+    copy_vals( this->nodes_pos,           other.nodes_pos,           PanelGeom::MAX_PANEL_NODES );
+    copy_vals( this->normal_vec,          other.normal_vec,          6 );
+    copy_vals( this->normal_vec_wl,       other.normal_vec_wl,       6 );
+    copy_vals( this->sysref_centre,       other.sysref_centre,       3 );
+    copy_vals( this->wl_nodes,            other.wl_nodes,            2 );
+    copy_vals( this->x,                   other.x,                   PanelGeom::MAX_PANEL_NODES );
+    copy_vals( this->x_wl,                other.x_wl,                2 );
+    copy_vals( this->xl,                  other.xl,                  PanelGeom::MAX_PANEL_NODES );
+    copy_vals( this->xlc,                 other.xlc,                 PanelGeom::MAX_PANEL_NODES );
+    copy_vals( this->y,                   other.y,                   PanelGeom::MAX_PANEL_NODES );
+    copy_vals( this->y_wl,                other.y_wl,                2 );
+    copy_vals( this->yl,                  other.yl,                  PanelGeom::MAX_PANEL_NODES );
+    copy_vals( this->ylc,                 other.ylc,                 PanelGeom::MAX_PANEL_NODES );
+    copy_vals( this->z,                   other.z,                   PanelGeom::MAX_PANEL_NODES );
+    copy_vals( this->z_wl,                other.z_wl,                2 );
+    copy_vals( this->zl,                  other.zl,                  PanelGeom::MAX_PANEL_NODES );
+    copy_vals( this->zlc,                 other.zlc,                 PanelGeom::MAX_PANEL_NODES );
+    copy_vals( this->_x2d,                other._x2d,                3 );
+    copy_vals( this->_global_pos,         other._global_pos,         3 );
+}
+
+
+PanelGeom::PanelGeom( const PanelGeom& other )
+{
+    this->_copy_trivial_from( other );
+
+    if ( other._is_source_nodes )
+    {
+        this->_source_positions     = generate_empty_vector<cusfloat>( 3 );
+        this->_source_normal_vec    = generate_empty_vector<cusfloat>( 6 );
+        copy_vector( 3, other._source_positions, this->_source_positions );
+        copy_vector( 6, other._source_normal_vec, this->_source_normal_vec );
+        this->_is_source_nodes = true;
+    }
+    else
+    {
+        this->_source_positions     = nullptr;
+        this->_source_normal_vec    = nullptr;
+        this->_is_source_nodes      = false;
+    }
+}
+
+
+PanelGeom::PanelGeom( PanelGeom&& other ) noexcept
+{
+    this->_copy_trivial_from( other );
+
+    this->_source_positions     = other._source_positions;
+    this->_source_normal_vec    = other._source_normal_vec;
+    this->_is_source_nodes      = other._is_source_nodes;
+
+    other._source_positions     = nullptr;
+    other._source_normal_vec    = nullptr;
+    other._is_source_nodes      = false;
+}
+
+
+PanelGeom& PanelGeom::operator=( const PanelGeom& other )
+{
+    if ( this != &other )
+    {
+        this->_release_source_nodes( );
+        this->_copy_trivial_from( other );
+
+        if ( other._is_source_nodes )
+        {
+            this->_source_positions     = generate_empty_vector<cusfloat>( 3 );
+            this->_source_normal_vec    = generate_empty_vector<cusfloat>( 6 );
+            copy_vector( 3, other._source_positions, this->_source_positions );
+            copy_vector( 6, other._source_normal_vec, this->_source_normal_vec );
+            this->_is_source_nodes = true;
+        }
+    }
+
+    return *this;
+}
+
+
+PanelGeom& PanelGeom::operator=( PanelGeom&& other ) noexcept
+{
+    if ( this != &other )
+    {
+        this->_release_source_nodes( );
+        this->_copy_trivial_from( other );
+
+        this->_source_positions     = other._source_positions;
+        this->_source_normal_vec    = other._source_normal_vec;
+        this->_is_source_nodes      = other._is_source_nodes;
+
+        other._source_positions     = nullptr;
+        other._source_normal_vec    = nullptr;
+        other._is_source_nodes      = false;
+    }
+
+    return *this;
+}
 
 
 void PanelGeom::calcualte_free_surface_singularity( void )
@@ -750,11 +895,7 @@ PanelGeom::~PanelGeom(
                         void
                     )
 {
-    if ( this->_is_source_nodes )
-    {
-        mkl_free( this->_source_positions );
-        mkl_free( this->_source_normal_vec );
-    }
+    this->_release_source_nodes( );
 }
 
 
