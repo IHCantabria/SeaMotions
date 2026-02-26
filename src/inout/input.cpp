@@ -50,13 +50,16 @@ void Input::load( const std::string& folder_path )
     this->folder_path = folder_path;
 
     // Read case.input.dat file
-    read_case( folder_path );
+    this->read_case( folder_path );
 
     // Read bodies
-    read_bodies( folder_path );
+    this->read_bodies( folder_path );
+
+    // Read field points
+    this->read_field_points( folder_path );
 
     // Configure inputs
-    configure( );
+    this->configure( );
 }
 
 
@@ -394,6 +397,35 @@ void Input::read_case( const std::string& folder_path )
     this->bodies_np = this->bodies_finame.size( );
 
     //////////////////////////////////////////////
+    /********* Field Points Definition **********/
+    //////////////////////////////////////////////
+
+    // Skip header
+    skip_header( infile, line_count, 3 );
+
+    // Read water line points detection precision
+    target_signal   = "UseFP";
+    read_signal     = read_channel_value( infile, this->use_field_points );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read bodies name definition
+    target_signal = "FieldPN";
+    read_channel_list(
+                            infile,
+                            target_file,
+                            target_signal,
+                            line_count,
+                            this->field_points_finame
+                        );
+
+    if ( !this->use_field_points )
+    {
+        this->field_points_finame.clear( );
+    }
+
+    this->field_points_np = this->field_points_finame.size( );
+
+    //////////////////////////////////////////////
     /************** Output Channels *************/
     //////////////////////////////////////////////
 
@@ -538,6 +570,25 @@ void Input::read_case( const std::string& folder_path )
     infile.close();
 }
 
+void Input::read_field_points( 
+                                    const std::string& folder_path 
+                                )
+{
+    // Loop over field points definitions to load them
+    this->field_points.reserve( this->field_points_np );
+    for ( std::size_t i=0; i<this->field_points_np; i++ )
+    {
+        // Create new field points instance
+        this->field_points.emplace_back( 
+                                            FieldPointsDef(
+                                                                folder_path,
+                                                                this->field_points_finame[i]
+                                                            ) 
+                                        );
+
+    }
+    
+}
 
 void Input::configure( void )
 {
