@@ -19,8 +19,6 @@
  */
 
 
-#pragma once
-
 // Include general usage libraries
 #include <filesystem>
 #include <fstream>
@@ -30,11 +28,11 @@
 #include "field_points_def.hpp"
 #include "../inout/reader.hpp"
 #include "../tools.hpp"
+#include "../version.hpp"
 
 
 void FieldPointsDef::_load_mesh( 
-                                    std::string fopath,
-                                    std::string finame
+                                    std::string fopath
                                 )
 {
     // Alias namespaces
@@ -65,8 +63,8 @@ FieldPointsDef::FieldPointsDef(
     this->_parse_input_file( fopath, finame );
 
     // Load mesh
-    this->_load_mesh( fopath, finame );
-        
+    this->_load_mesh( fopath );
+
 }
 
 

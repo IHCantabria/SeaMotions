@@ -36,8 +36,7 @@ private:
 
     /*** Declare class private methods  ***/
     void _load_mesh( 
-                                std::string fopath,
-                                std::string finame
+                                std::string fopath
                     );
 
     void _parse_input_file( 
