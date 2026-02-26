@@ -145,6 +145,17 @@ void FrequencySolver<N, mode_pf>::_calculate_field_points_values(
                                                                 this->_qtf_wl_fields
                                                             );
     }
+
+    for ( std::size_t i=0; i<this->input->field_points_np; i++ )
+    {
+        // Calculate field points values for radiation and diffraction calculations
+        this->kernel->template compute_fields<RDDFDConfig>( 
+                                                                freq_index,
+                                                                ang_freq,
+                                                                this->sim_data->raos,
+                                                                this->_field_points[i]
+                                                            );
+    }
 }
 
 
@@ -1273,6 +1284,12 @@ FrequencySolver<N, mode_pf>::~FrequencySolver( void )
         }
 
     }
+
+    for ( std::size_t i=0; i<this->input->field_points_np; i++ )
+    {
+        delete this->_field_points[i];
+    }
+
     // Delete simulation data
     delete this->sim_data;
 
@@ -1322,15 +1339,31 @@ void FrequencySolver<N, mode_pf>::_initialize_field_data( void )
                                                                             );
 
         this->_qtf_wl_fields    = new RadDiffData<cuscomplex, RDDQTFConfig>(
-                                                                        this->mpi_config,
-                                                                        this->mesh_gp,
-                                                                        this->input->angfreqs_np,
-                                                                        this->input->heads_np,
-                                                                        this->input->dofs_np,
-                                                                        true
-                                                                );
+                                                                                    this->mpi_config,
+                                                                                    this->mesh_gp,
+                                                                                    this->input->angfreqs_np,
+                                                                                    this->input->heads_np,
+                                                                                    this->input->dofs_np,
+                                                                                    true
+                                                                            );
         
         
+    }
+
+    // Load field points data
+    this->_field_points.reserve( this->input->field_points_np );
+    for ( std::size_t i=0; i<this->input->field_points_np; i++ )
+    {
+        this->_field_points.emplace_back( 
+                                                new RadDiffData<cuscomplex, RDDFDConfig>(
+                                                                                            this->mpi_config,
+                                                                                            this->input->field_points[i].mesh,
+                                                                                            this->input->angfreqs_np,
+                                                                                            this->input->heads_np,
+                                                                                            this->input->dofs_np,
+                                                                                            false
+                                                                                        )
+                                            );
     }
 
     LOG_TASK_TIME( fields, fields_timer )

@@ -60,9 +60,14 @@ template<std::size_t N, int mode_pf>
 class FrequencySolver
 {
 private:
+    /*** Declare local type aliases ***/
+    using RDDFC = RadDiffData<cuscomplex, RDDFDConfig>;
+    using RDDQC = RadDiffData<cuscomplex, RDDQTFConfig>;
+
     /**** Declare class private attributes ****/
-    RadDiffData<cuscomplex, RDDQTFConfig>*  _qtf_wl_fields     = nullptr;  // Storage of waterline field points for QTF calculations
-    RadDiffData<cuscomplex, RDDQTFConfig>*  _qtf_bern_fields   = nullptr;  // Storage of velocity field for the calculation of bernoulli term in QTFs
+    std::vector<RDDFC*>   _field_points       ;            // Storage of field points for radiation and diffraction calculations
+    RDDQC*                _qtf_wl_fields      = nullptr;   // Storage of waterline field points for QTF calculations
+    RDDQC*                _qtf_bern_fields    = nullptr;   // Storage of velocity field for the calculation of bernoulli term in QTFs
 
     /**** Declare class private methods ****/
     void _calculate_field_points_values( 
