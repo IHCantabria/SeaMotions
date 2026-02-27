@@ -33,6 +33,7 @@ struct FieldMeshData
 {
 private:
     /*** Declare private class attributes ***/
+    FieldMeshDataConfig             _config             ;           // Configuration for field mesh data
     int                             _compresion_level   = 0;        // Compression level for output files (0-9, where 0 is no compression and 9 is maximum compression). Not used if MPI is enabled.
     cusfloat*                       _data_scalar_r      = nullptr;  // Pointer to the scalar data storaged in the root process
     cusfloat*                       _data_vector        = nullptr;  // Pointer to the vector data
@@ -59,7 +60,7 @@ public:
     /*** Declare class constructor ***/
     FieldMeshData( ) = default;
 
-    FieldMeshData( FieldMeshDataConfig& config, MpiConfig* mpi_config );
+    FieldMeshData( FieldMeshDataConfig config, MpiConfig* mpi_config );
 
     ~FieldMeshData( );
 
@@ -71,6 +72,8 @@ public:
 
     template<FieldTypeE field_type, FieldComponentE field_comp>
     const cusfloat* get_field_data_vector( std::size_t heading_index ) const;
+
+    RadDiffData<T, ModeComp>* get_rdd( void ) const;
 
 };
 

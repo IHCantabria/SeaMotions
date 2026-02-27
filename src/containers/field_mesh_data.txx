@@ -24,6 +24,7 @@
 
 // Include local modules
 #include "field_mesh_data.hpp"
+#include "../inout/hdf5_time_series_exporter.hpp"
 
 
 inline std::string compose_field_name( const std::string& field_base_name, const cusfloat heading )
@@ -163,7 +164,7 @@ void FieldMeshData<T, ModeComp>::_configure_exporter( void )
             }
         }
 
-        if ( this->_config.out_potential )
+        if ( this->_config.out_pressure )
         {
             // Add total potential field dataset
             this->_exporter->add_field( compose_field_name( "pressure", this->_rdd->headings[i] ), hdnp, 1 );
@@ -260,8 +261,15 @@ const cusfloat* FieldMeshData<T, ModeComp>::get_field_data_vector( std::size_t h
 
 
 template<typename T, typename ModeComp>
+RadDiffData<T, ModeComp>* FieldMeshData<T, ModeComp>::get_rdd( void ) const
+{
+    return this->_rdd;
+}
+
+
+template<typename T, typename ModeComp>
 FieldMeshData<T, ModeComp>::FieldMeshData( 
-                                            FieldMeshDataConfig&    config,
+                                            FieldMeshDataConfig     config,
                                             MpiConfig*              mpi_config
                                         )
 {
@@ -270,7 +278,11 @@ FieldMeshData<T, ModeComp>::FieldMeshData(
     this->_mpi_config       = mpi_config;
 
     // Create mesh pointer
-    this->_mesh             = new Mesh( config.mesh_file_path, config.body_name );
+    this->_mesh             = new Mesh( 
+                                            config.mesh_file_path, 
+                                            config.body_name,
+                                            PanelTypeE::FIELD_POINT
+                                        );
     this->_is_heap_mesh     = true;
 
     // Create radiation and diffraction data pointer
