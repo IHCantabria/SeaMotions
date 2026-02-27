@@ -22,6 +22,7 @@
 
 // Include local modules
 #include "../../config.hpp"
+#include "../../containers/field_mesh_data.hpp"
 #include "../../containers/mpi_config.hpp"
 #include "../../containers/rad_diff_data.hpp"
 #include "../../containers/simulation_data.hpp"
@@ -61,13 +62,15 @@ class FrequencySolver
 {
 private:
     /*** Declare local type aliases ***/
-    using RDDFC = RadDiffData<cuscomplex, RDDFDConfig>;
-    using RDDQC = RadDiffData<cuscomplex, RDDQTFConfig>;
+    using RDDFC     = RadDiffData<cuscomplex, RDDFDConfig>;
+    using RDDQC     = RadDiffData<cuscomplex, RDDQTFConfig>;
+    using FMD       = FieldMeshData<cuscomplex, RDDFC>;
+    using vec_fmd   = std::vector<FMD>;
 
     /**** Declare class private attributes ****/
-    std::vector<RDDFC*>   _field_points       ;            // Storage of field points for radiation and diffraction calculations
-    RDDQC*                _qtf_wl_fields      = nullptr;   // Storage of waterline field points for QTF calculations
-    RDDQC*                _qtf_bern_fields    = nullptr;   // Storage of velocity field for the calculation of bernoulli term in QTFs
+    vec_fmd     _field_points       ;            // Storage of field points for radiation and diffraction calculations
+    RDDQC*      _qtf_wl_fields      = nullptr;   // Storage of waterline field points for QTF calculations
+    RDDQC*      _qtf_bern_fields    = nullptr;   // Storage of velocity field for the calculation of bernoulli term in QTFs
 
     /**** Declare class private methods ****/
     void _calculate_field_points_values( 
@@ -104,6 +107,8 @@ private:
     void _initialize_mesh_groups( );
 
     void _initialize_output_system( );
+
+    void _prepare_results_folder( );
 
 public:
     // Declare public attributes

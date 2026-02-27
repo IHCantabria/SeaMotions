@@ -153,7 +153,7 @@ void FrequencySolver<N, mode_pf>::_calculate_field_points_values(
                                                                 freq_index,
                                                                 ang_freq,
                                                                 this->sim_data->raos,
-                                                                this->_field_points[i]
+                                                                this->_field_points[i].get_rdd( )
                                                             );
     }
 }
@@ -1235,6 +1235,9 @@ FrequencySolver<N, mode_pf>::FrequencySolver( Input* input_in, MpiConfig* mpi_co
     // Create MPI environment configuration
     this->mpi_config = mpi_config_in;
 
+    // Prepare folder for output files
+    this->_prepare_results_folder( );
+
     // Calculate hydrostatics
     this->_calculate_hydrostatics( );
 
@@ -1355,14 +1358,10 @@ void FrequencySolver<N, mode_pf>::_initialize_field_data( void )
     for ( std::size_t i=0; i<this->input->field_points_np; i++ )
     {
         this->_field_points.emplace_back( 
-                                                new RadDiffData<cuscomplex, RDDFDConfig>(
-                                                                                            this->mpi_config,
-                                                                                            this->input->field_points[i].mesh,
-                                                                                            this->input->angfreqs_np,
-                                                                                            this->input->heads_np,
-                                                                                            this->input->dofs_np,
-                                                                                            false
-                                                                                        )
+                                                new FMD(
+                                                            this->input->field_points[i].get_config( ),
+                                                            this->mpi_config
+                                                        )
                                             );
     }
 
@@ -1471,4 +1470,38 @@ void FrequencySolver<N, mode_pf>::_initialize_output_system( void )
 
     LOG_TASK_TIME( output, output_timer )
 
+}
+
+
+template<std::size_t N, int mode_pf>
+void FrequencySolver<N, mode_pf>::_prepare_results_folder( void )
+{
+    if ( this->mpi_config->is_root( ) )
+    {
+        namespace fs = std::filesystem;
+
+        // Check if results folder exist and create if not
+        fs::path results_foname_( std::string( "1_results" ) );
+        fs::path results_mesh_fipath_ = folder_path_ / results_foname_;
+        if ( !fs::exists( results_mesh_fipath_) )
+        {
+            fs::create_directory( results_mesh_fipath_ );
+        }
+
+        // Check if mesh folder exist and create if not
+        fs::path mesh_foname_1_( std::string( "0_mesh" ) );
+        fs::path plot_mesh_fipath_ = results_mesh_fipath_ / mesh_foname_1_;
+        if ( !fs::exists( plot_mesh_fipath_) )
+        {
+            fs::create_directory( plot_mesh_fipath_ );
+        }
+
+        // Check if field points folder exist and create if not
+        fs::path field_points_foname_( std::string( "1_field_points" ) );
+        fs::path plot_field_points_fipath_ = results_mesh_fipath_ / field_points_foname_;
+        if ( !fs::exists( plot_field_points_fipath_) )
+        {
+            fs::create_directory( plot_field_points_fipath_ );
+        }
+    }
 }
