@@ -38,6 +38,7 @@ struct FieldMeshDataConfig
     std::string             mesh_file_path          ;           // Path to the mesh file containing the field points
     std::string             body_name               ;           // Name of the body to extract from the mesh file
     bool                    out_components          = false;    // Flag to indicate if field components data should be outputted
+    std::string             out_folder_path         ;           // Path to the output folder where field data files will be stored
     bool                    out_parallel            = false;    // Flag to indicate if output files should be written in parallel using MPI. If true, compression_level is ignored and no compression is applied.
     bool                    out_potential           = false;    // Flag to indicate if potential field data should be outputted
     bool                    out_pressure            = false;    // Flag to indicate if pressure field data should be outputted
