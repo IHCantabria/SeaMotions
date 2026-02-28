@@ -42,7 +42,7 @@ const cut::CusTensor<cusfloat>* RadDiffData<T, Config>::get_field_data( std::siz
         {
             if constexpr ( std::is_same<T, cuscomplex>::value )
             {
-                out_data[ count ] = static_cast<cusfloat>( std::abs( field_data_ptr[ offset + k ] ) );
+                out_data[ count ] = static_cast<cusfloat>( field_data_ptr[ offset + k ].real( ) );
             }
             else
             {
