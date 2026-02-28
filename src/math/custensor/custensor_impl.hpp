@@ -368,6 +368,11 @@ namespace cut
         {
             return this->_data;
         }
+
+        const T* data( void ) const
+        {
+            return this->_data;
+        }
         
         void free( void )
         {
