@@ -240,8 +240,8 @@ void Input::read_body(
 
     // Load mesh for the current body
     std::vector<Mesh*> _mesh_total;
-    fs::path mesh_foname_( std::string( "mesh" ) );
-    fs::path mesh_finame_( body->mesh_finame );
+    fs::path mesh_foname_{ MESH_FOLDER_NAME };
+    fs::path mesh_finame_{ body->mesh_finame };
     fs::path mesh_fipath_ = folder_path_ / mesh_foname_ / mesh_finame_;
     body->mesh          = new   Mesh( 
                                         mesh_fipath_.string( ),
@@ -255,8 +255,8 @@ void Input::read_body(
     _mesh_total.push_back( body->mesh );
     
     // Write mesh
-    fs::path mesh_foname_1_( std::string( "0_mesh" ) );
-    fs::path results_foname_( std::string( "1_results" ) );
+    fs::path mesh_foname_1_{ RESULTS_MESH_FOLDER_NAME };
+    fs::path results_foname_{ RESULTS_FOLDER_NAME };
     fs::path results_mesh_fipath_ = folder_path_ / results_foname_;
     fs::path plot_mesh_fipath_ = results_mesh_fipath_ / mesh_foname_1_;
     
