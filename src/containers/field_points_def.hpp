@@ -26,7 +26,6 @@
 
 // Include local modules
 #include "../mesh/mesh.hpp"
-#include "field_mesh_data_config.hpp"
 
 
 struct FieldPointsDef
@@ -50,6 +49,7 @@ public:
     Mesh*           mesh            = nullptr;
     std::string     mesh_body_name  = "";
     std::string     mesh_finame     = "";
+    std::string     name            = "";
     bool            out_components  = false;
     bool            out_potential   = false;
     bool            out_pressure    = false;
@@ -62,8 +62,5 @@ public:
                 );
     
     ~FieldPointsDef( void );
-
-    /*** Declare class public methods ***/
-    FieldMeshDataConfig get_config( void ) const;
 
 };
