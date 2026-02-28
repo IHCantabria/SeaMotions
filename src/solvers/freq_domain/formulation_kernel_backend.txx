@@ -1380,11 +1380,11 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
 
                     if constexpr( USE_COMP )
                     {
-                        STATIC_COND( ONLY_FCN,   panel_rdd->pot_diff[index_fd]      = pot_aux;      )
-                        STATIC_COND( ONLY_FCNDN, panel_rdd->vel_dn_diff[index_fd]   = vel_dn_aux;   )
-                        STATIC_COND( ONLY_FCNDC, panel_rdd->vel_x_diff[index_fd]    = vel_aux[0];   )
-                        STATIC_COND( ONLY_FCNDC, panel_rdd->vel_y_diff[index_fd]    = vel_aux[1];   )
-                        STATIC_COND( ONLY_FCNDC, panel_rdd->vel_z_diff[index_fd]    = vel_aux[2];   )
+                        STATIC_COND( ONLY_FCN,   panel_rdd->pot_diff[index_fd]      += pot_aux;      )
+                        STATIC_COND( ONLY_FCNDN, panel_rdd->vel_dn_diff[index_fd]   += vel_dn_aux;   )
+                        STATIC_COND( ONLY_FCNDC, panel_rdd->vel_x_diff[index_fd]    += vel_aux[0];   )
+                        STATIC_COND( ONLY_FCNDC, panel_rdd->vel_y_diff[index_fd]    += vel_aux[1];   )
+                        STATIC_COND( ONLY_FCNDC, panel_rdd->vel_z_diff[index_fd]    += vel_aux[2];   )
                     }
 
                     for ( std::size_t idd=0; idd<dofs_np; idd++ )
