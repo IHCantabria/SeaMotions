@@ -252,10 +252,6 @@ void HDF5TimeSeriesExporter::append_step(
                             H5P_DEFAULT
                         );
 
-    std::cout << "Appending field '" << field_name << "' for step " << this->_steps << " with dimensions: ";
-    for ( auto& d : this->_field_dims[field_name] ) std::cout << d << " ";
-    std::cout << std::endl;
-
     // Append field for current timestep
     append_to_hdf5_dataset(
                                 file, 
