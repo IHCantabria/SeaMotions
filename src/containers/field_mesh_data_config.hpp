@@ -26,10 +26,14 @@
 
 // Include local modules
 #include "../config.hpp"
+#include "../containers/field_mesh_data_config.hpp"
+#include "../containers/field_points_def.hpp"
+#include "../inout/input.hpp"
 
 
 struct FieldMeshDataConfig
 {
+    /*** Declare public attributes ***/
     int                     compression_level       = 0;        // Compression level for output files (0-9, where 0 is no compression and 9 is maximum compression). Not used if MPI is enabled.
     std::size_t             dofs_np                 = 0;        // Number of degrees of freedom for the field data (e.g., 1 for scalar fields, 3 for vector fields, etc.)
     std::size_t             freqs_np                = 0;        // Number of frequencies for the field data
@@ -43,4 +47,13 @@ struct FieldMeshDataConfig
     bool                    out_potential           = false;    // Flag to indicate if potential field data should be outputted
     bool                    out_pressure            = false;    // Flag to indicate if pressure field data should be outputted
     bool                    out_velocity            = false;    // Flag to indicate if velocity field data should be outputted
+
+    /*** Declare class constructor ***/
+    FieldMeshDataConfig( ) = default;
+
+    FieldMeshDataConfig( 
+                            Input*          input,
+                            FieldPointsDef* field_points_def
+                        );
+
 };
