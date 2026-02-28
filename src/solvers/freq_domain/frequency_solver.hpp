@@ -64,8 +64,8 @@ private:
     /*** Declare local type aliases ***/
     using RDDFC     = RadDiffData<cuscomplex, RDDFDConfig>;
     using RDDQC     = RadDiffData<cuscomplex, RDDQTFConfig>;
-    using FMD       = FieldMeshData<cuscomplex, RDDFC>;
-    using vec_fmd   = std::vector<FMD>;
+    using FMD       = FieldMeshData<cuscomplex, RDDFDConfig>;
+    using vec_fmd   = std::vector<FMD*>;
 
     /**** Declare class private attributes ****/
     vec_fmd     _field_points       ;            // Storage of field points for radiation and diffraction calculations

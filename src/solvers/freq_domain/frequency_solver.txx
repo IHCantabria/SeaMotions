@@ -19,6 +19,7 @@
  */
 
 // Include general usage libraries
+#include <filesystem>
 #include <iomanip>
 
 // Include local module
@@ -153,8 +154,12 @@ void FrequencySolver<N, mode_pf>::_calculate_field_points_values(
                                                                 freq_index,
                                                                 ang_freq,
                                                                 this->sim_data->raos,
-                                                                this->_field_points[i].get_rdd( )
+                                                                this->_field_points[i]->get_rdd( )
                                                             );
+
+        // Append new step data to exporter interface
+        this->_field_points[i]->add_step( ang_freq );
+
     }
 }
 
@@ -1354,12 +1359,26 @@ void FrequencySolver<N, mode_pf>::_initialize_field_data( void )
     }
 
     // Load field points data
+    namespace   fs                      = std::filesystem;
+    fs::path    case_fopath_            = fs::path( this->input->case_fopath );
+    fs::path    field_points_foname_    = fs::path( RESULTS_FOLDER_NAME ) / fs::path( RESULTS_FIELD_POINTS_FOLDER_NAME );
+
     this->_field_points.reserve( this->input->field_points_np );
     for ( std::size_t i=0; i<this->input->field_points_np; i++ )
     {
+        // Define field points output folder path and create if not exist
+        fs::path fd_out_fopath_ = case_fopath_ / field_points_foname_ / fs::path( this->input->field_points[i].name );
+        if ( !fs::exists( fd_out_fopath_ ) )
+        {
+            fs::create_directories( fd_out_fopath_ );
+        }
+
+        // Create new field point object and store in the vector
         this->_field_points.emplace_back( 
                                                 new FMD(
-                                                            this->input->field_points[i].get_config( ),
+                                                            this->input,
+                                                            &(this->input->field_points[i]),
+                                                            fd_out_fopath_.string( ),
                                                             this->mpi_config
                                                         )
                                             );
@@ -1480,8 +1499,11 @@ void FrequencySolver<N, mode_pf>::_prepare_results_folder( void )
     {
         namespace fs = std::filesystem;
 
+        // Define folder path
+        fs::path folder_path_( std::string( this->input->case_fopath ) );
+
         // Check if results folder exist and create if not
-        fs::path results_foname_( std::string( "1_results" ) );
+        fs::path results_foname_{ std::string( RESULTS_FOLDER_NAME ) };
         fs::path results_mesh_fipath_ = folder_path_ / results_foname_;
         if ( !fs::exists( results_mesh_fipath_) )
         {
@@ -1489,7 +1511,7 @@ void FrequencySolver<N, mode_pf>::_prepare_results_folder( void )
         }
 
         // Check if mesh folder exist and create if not
-        fs::path mesh_foname_1_( std::string( "0_mesh" ) );
+        fs::path mesh_foname_1_{ std::string( RESULTS_MESH_FOLDER_NAME ) };
         fs::path plot_mesh_fipath_ = results_mesh_fipath_ / mesh_foname_1_;
         if ( !fs::exists( plot_mesh_fipath_) )
         {
@@ -1497,7 +1519,7 @@ void FrequencySolver<N, mode_pf>::_prepare_results_folder( void )
         }
 
         // Check if field points folder exist and create if not
-        fs::path field_points_foname_( std::string( "1_field_points" ) );
+        fs::path field_points_foname_{ std::string( RESULTS_FIELD_POINTS_FOLDER_NAME ) };
         fs::path plot_field_points_fipath_ = results_mesh_fipath_ / field_points_foname_;
         if ( !fs::exists( plot_field_points_fipath_) )
         {
