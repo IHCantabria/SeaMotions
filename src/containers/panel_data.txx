@@ -58,6 +58,9 @@ void    PanelData<T, Config>::_allocate_memory(
     STATIC_COND( ONLY_FCN            ,   this->pot_total_2.resize( field_len );     )
 
     // Allocate memory on heap for pressure field
+    STATIC_COND( ONLY_FCN && USE_COMP,   this->press_incident.resize( field_len );  )
+    STATIC_COND( ONLY_FCN && USE_COMP,   this->press_rad.resize( field_len );       )
+    STATIC_COND( ONLY_FCN && USE_COMP,   this->press_diff.resize( field_len );      )
     STATIC_COND( ONLY_FCN,               this->press_total.resize( field_len );     )
 
     // Allocate memory on heap for normal velocity derivative fields
@@ -92,77 +95,83 @@ void    PanelData<T, Config>::_allocate_memory(
 
 template<typename T, typename Config>
 template<FieldTypeE field_type, FieldComponentE field_component>
-const cusfloat* PanelData<T, Config>::get_field_data( void ) const
+const cut::CusTensor<T>* PanelData<T, Config>::get_field_data( void ) const
 {
     if constexpr ( field_type == FieldTypeE::POTENTIAL )
     {
         if constexpr ( ( mode_comp == ON ) && ( field_component == FieldComponentE::INCIDENT ) )
-            return this->pot_incident.data( );
+            return &(this->pot_incident);
         else if constexpr ( ( mode_comp == ON ) && ( field_component == FieldComponentE::RADIATED ) )
-            return this->pot_rad.data( );
-        else if constexpr ( ( mode_comp == ON ) && ( field_component == FieldComponentE::DIFFRACTED ) )
-            return this->pot_diff.data( );
+            return &(this->pot_rad);
+        else if constexpr ( ( mode_comp == ON ) && ( field_component == FieldComponentE::SCATTERED ) )
+            return &(this->pot_diff);
         else if constexpr ( ( mode_f == ON ) && ( field_component == FieldComponentE::TOTAL ) )
-            return this->pot_total.data( );
+            return &(this->pot_total);
     }
     else if constexpr ( field_type == FieldTypeE::PRESSURE )
     {
-        if constexpr ( ( mode_f == ON ) && ( field_component == FieldComponentE::TOTAL ) )
-            return this->press_total.data( );
+        if constexpr ( ( mode_f == ON ) && ( field_component == FieldComponentE::INCIDENT ) )
+            return &(this->press_incident);
+        else if constexpr ( ( mode_f == ON ) && ( field_component == FieldComponentE::RADIATED ) )
+            return &(this->press_rad);
+        else if constexpr ( ( mode_f == ON ) && ( field_component == FieldComponentE::SCATTERED ) )
+            return &(this->press_diff);
+        else if constexpr ( ( mode_f == ON ) && ( field_component == FieldComponentE::TOTAL ) )
+            return &(this->press_total);
     }
     else if constexpr ( field_type == FieldTypeE::VELOCITY_DN )
     {
         if constexpr ( ( mode_comp == ON ) && ( field_component == FieldComponentE::INCIDENT ) )
-            return this->vel_dn_incident.data( );
+            return &(this->vel_dn_incident);
         else if constexpr ( ( mode_comp == ON ) && ( field_component == FieldComponentE::RADIATED ) )
-            return this->vel_dn_rad.data( );
-        else if constexpr ( ( mode_comp == ON ) && ( field_component == FieldComponentE::DIFFRACTED ) )
-            return this->vel_dn_diff.data( );
+            return &(this->vel_dn_rad);
+        else if constexpr ( ( mode_comp == ON ) && ( field_component == FieldComponentE::SCATTERED ) )
+            return &(this->vel_dn_diff);
         else if constexpr ( ( mode_f == ON ) && ( field_component == FieldComponentE::TOTAL ) )
-            return this->vel_dn_total.data( );
+            return &(this->vel_dn_total);
     }
     else if constexpr ( field_type == FieldTypeE::VELOCITY_X )
     {
         if constexpr ( ( mode_comp == ON ) && (  field_component == FieldComponentE::INCIDENT ) )
-            return this->vel_x_incident.data( );
+            return &(this->vel_x_incident);
         else if constexpr ( ( mode_comp == ON ) && ( field_component == FieldComponentE::RADIATED ) )
-            return this->vel_x_rad.data( );
-        else if constexpr ( ( mode_comp == ON ) && ( field_component == FieldComponentE::DIFFRACTED ) )
-            return this->vel_x_diff.data( );
+            return &(this->vel_x_rad);
+        else if constexpr ( ( mode_comp == ON ) && ( field_component == FieldComponentE::SCATTERED ) )
+            return &(this->vel_x_diff);
         else if constexpr ( ( mode_f == ON ) && ( field_component == FieldComponentE::TOTAL ) )
-            return this->vel_x_total.data( );
+            return &(this->vel_x_total);
     }
     else if constexpr ( field_type == FieldTypeE::VELOCITY_Y )
     {
         if constexpr ( ( mode_comp == ON ) && ( field_component == FieldComponentE::INCIDENT ) )
-            return this->vel_y_incident.data( );
+            return &(this->vel_y_incident);
         else if constexpr ( ( mode_comp == ON ) && ( field_component == FieldComponentE::RADIATED ) )
-            return this->vel_y_rad.data( );
-        else if constexpr ( ( mode_comp == ON ) && ( field_component == FieldComponentE::DIFFRACTED ) )
-            return this->vel_y_diff.data( );
+            return &(this->vel_y_rad);
+        else if constexpr ( ( mode_comp == ON ) && ( field_component == FieldComponentE::SCATTERED ) )
+            return &(this->vel_y_diff);
         else if constexpr ( ( mode_f == ON ) && ( field_component == FieldComponentE::TOTAL ) )
-            return this->vel_y_total.data( );
+            return &(this->vel_y_total);
     }
     else if constexpr ( field_type == FieldTypeE::VELOCITY_Z )
     {
         if constexpr ( ( mode_comp == ON ) && ( field_component == FieldComponentE::INCIDENT ) )
-            return this->vel_z_incident.data( );
+            return &(this->vel_z_incident);
         else if constexpr ( ( mode_comp == ON ) && ( field_component == FieldComponentE::RADIATED ) )
-            return this->vel_z_rad.data( );
-        else if constexpr ( ( mode_comp == ON ) && ( field_component == FieldComponentE::DIFFRACTED ) )
-            return this->vel_z_diff.data( );
+            return &(this->vel_z_rad);
+        else if constexpr ( ( mode_comp == ON ) && ( field_component == FieldComponentE::SCATTERED ) )
+            return &(this->vel_z_diff);
         else if constexpr ( ( mode_f == ON ) && ( field_component == FieldComponentE::TOTAL ) )
-            return this->vel_z_total.data( );
+            return &(this->vel_z_total);
     }
     else if constexpr ( field_type == FieldTypeE::WAVE_ELEVATION )
     {
         if constexpr ( ( mode_f == ON ) && ( field_component == FieldComponentE::TOTAL ) )
-            return this->wev_total.data( );
+            return &(this->wev_total);
     }
     else if constexpr ( field_type == FieldTypeE::RELATIVE_WAVE_ELEVATION )
     {
         if constexpr ( ( mode_f == ON ) && ( field_component == FieldComponentE::TOTAL ) )
-            return this->wev_rel_total.data( );
+            return &(this->wev_rel_total);
     }
     return nullptr;
 }

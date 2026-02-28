@@ -43,92 +43,93 @@ void FieldMeshData<T, ModeComp>::add_step( cusfloat freq )
     this->_exporter->append_time( freq );
 
     // Retrive field data for the current step and append it to the exporter interface
-    std::string field_name  = "";
-    cusfloat*   field_data  = nullptr;
+    std::string                 field_name  = "";
+    cut::CusTensor<cusfloat>*   field_data  = nullptr;
 
-    for ( std::size_t i=0; i<this->_rdd->headings_np; i++ )
+    const std::size_t heads_np = static_cast<std::size_t>( this->_input->heads_np );
+    for ( std::size_t i=0; i<heads_np; i++ )
     {
-        if ( this->_config.out_potential )
+        if ( this->_field_points_def->out_potential )
         {
             // Add total potential field dataset
-            field_name  = compose_field_name( "potential", this->_rdd->headings[i] );
-            field_data  = this->get_field_data_scalar< FieldTypeE::POTENTIAL, FieldComponentE::TOTAL >( i );
+            field_name  = compose_field_name( "potential", this->_input->heads[i] );
+            field_data  = this->template get_field_data_scalar< FieldTypeE::POTENTIAL, FieldComponentE::TOTAL >( i );
             if ( this->_mpi_config->is_root( ) )
                 this->_exporter->append_step( field_name, field_data );
 
-            if ( this->_config.out_components )
+            if ( this->_field_points_def->out_components )
             {
                 // Add potential field components dataset
-                field_name = compose_field_name( "potential_incident", this->_rdd->headings[i] );
-                field_data = this->get_field_data_scalar< FieldTypeE::POTENTIAL, FieldComponentE::INCIDENT >( i );
+                field_name = compose_field_name( "potential_incident", this->_input->heads[i] );
+                field_data = this->template get_field_data_scalar< FieldTypeE::POTENTIAL, FieldComponentE::INCIDENT >( i );
                 if ( this->_mpi_config->is_root( ) )
                     this->_exporter->append_step( field_name, field_data );
 
-                field_name = compose_field_name( "potential_scatter", this->_rdd->headings[i] );
-                field_data = this->get_field_data_scalar< FieldTypeE::POTENTIAL, FieldComponentE::SCATTERED >( i );
+                field_name = compose_field_name( "potential_scatter", this->_input->heads[i] );
+                field_data = this->template get_field_data_scalar< FieldTypeE::POTENTIAL, FieldComponentE::SCATTERED >( i );
                 if ( this->_mpi_config->is_root( ) )
                     this->_exporter->append_step( field_name, field_data );
 
-                field_name = compose_field_name( "potential_radiation", this->_rdd->headings[i] );
-                field_data = this->get_field_data_scalar< FieldTypeE::POTENTIAL, FieldComponentE::RADIATED >( i );
-                if ( this->_mpi_config->is_root( ) )
-                    this->_exporter->append_step( field_name, field_data );
-                
-            }
-        }
-
-        if ( this->_config.out_pressure )
-        {
-            // Add total pressure field dataset
-            field_name  = compose_field_name( "pressure", this->_rdd->headings[i] );
-            field_data  = this->get_field_data_scalar< FieldTypeE::PRESSURE, FieldComponentE::TOTAL >( i );
-            if ( this->_mpi_config->is_root( ) )
-                this->_exporter->append_step( field_name, field_data );
-
-            if ( this->_config.out_components )
-            {
-                // Add pressure field components dataset
-                field_name = compose_field_name( "pressure_incident", this->_rdd->headings[i] );
-                field_data = this->get_field_data_scalar< FieldTypeE::PRESSURE, FieldComponentE::INCIDENT >( i );
-                if ( this->_mpi_config->is_root( ) )
-                    this->_exporter->append_step( field_name, field_data );
-
-                field_name = compose_field_name( "pressure_scatter", this->_rdd->headings[i] );
-                field_data = this->get_field_data_scalar< FieldTypeE::PRESSURE, FieldComponentE::SCATTERED >( i );
-                if ( this->_mpi_config->is_root( ) )
-                    this->_exporter->append_step( field_name, field_data );
-
-                field_name = compose_field_name( "pressure_radiation", this->_rdd->headings[i] );
-                field_data = this->get_field_data_scalar< FieldTypeE::PRESSURE, FieldComponentE::RADIATED >( i );
+                field_name = compose_field_name( "potential_radiation", this->_input->heads[i] );
+                field_data = this->template get_field_data_scalar< FieldTypeE::POTENTIAL, FieldComponentE::RADIATED >( i );
                 if ( this->_mpi_config->is_root( ) )
                     this->_exporter->append_step( field_name, field_data );
                 
             }
         }
 
-        if ( this->_config.out_velocity )
+        if ( this->_field_points_def->out_pressure )
         {
             // Add total pressure field dataset
-            field_name  = compose_field_name( "velocity", this->_rdd->headings[i] );
-            field_data  = this->get_field_data_vector< FieldTypeE::VELOCITY, FieldComponentE::TOTAL >( i );
+            field_name  = compose_field_name( "pressure", this->_input->heads[i] );
+            field_data  = this->template get_field_data_scalar< FieldTypeE::PRESSURE, FieldComponentE::TOTAL >( i );
             if ( this->_mpi_config->is_root( ) )
                 this->_exporter->append_step( field_name, field_data );
 
-            if ( this->_config.out_components )
+            if ( this->_field_points_def->out_components )
             {
                 // Add pressure field components dataset
-                field_name = compose_field_name( "velocity_incident", this->_rdd->headings[i] );
-                field_data = this->get_field_data_vector< FieldTypeE::VELOCITY, FieldComponentE::INCIDENT >( i );
+                field_name = compose_field_name( "pressure_incident", this->_input->heads[i] );
+                field_data = this->template get_field_data_scalar< FieldTypeE::PRESSURE, FieldComponentE::INCIDENT >( i );
                 if ( this->_mpi_config->is_root( ) )
                     this->_exporter->append_step( field_name, field_data );
 
-                field_name = compose_field_name( "velocity_scatter", this->_rdd->headings[i] );
-                field_data = this->get_field_data_vector< FieldTypeE::VELOCITY, FieldComponentE::SCATTERED >( i );
+                field_name = compose_field_name( "pressure_scatter", this->_input->heads[i] );
+                field_data = this->template get_field_data_scalar< FieldTypeE::PRESSURE, FieldComponentE::SCATTERED >( i );
                 if ( this->_mpi_config->is_root( ) )
                     this->_exporter->append_step( field_name, field_data );
 
-                field_name = compose_field_name( "velocity_radiation", this->_rdd->headings[i] );
-                field_data = this->get_field_data_vector< FieldTypeE::VELOCITY, FieldComponentE::RADIATED >( i );
+                field_name = compose_field_name( "pressure_radiation", this->_input->heads[i] );
+                field_data = this->template get_field_data_scalar< FieldTypeE::PRESSURE, FieldComponentE::RADIATED >( i );
+                if ( this->_mpi_config->is_root( ) )
+                    this->_exporter->append_step( field_name, field_data );
+                
+            }
+        }
+
+        if ( this->_field_points_def->out_velocity )
+        {
+            // Add total pressure field dataset
+            field_name  = compose_field_name( "velocity", this->_input->heads[i] );
+            field_data  = this->template get_field_data_vector< FieldTypeE::VELOCITY, FieldComponentE::TOTAL >( i );
+            if ( this->_mpi_config->is_root( ) )
+                this->_exporter->append_step( field_name, field_data );
+
+            if ( this->_field_points_def->out_components )
+            {
+                // Add pressure field components dataset
+                field_name = compose_field_name( "velocity_incident", this->_input->heads[i] );
+                field_data = this->template get_field_data_vector< FieldTypeE::VELOCITY, FieldComponentE::INCIDENT >( i );
+                if ( this->_mpi_config->is_root( ) )
+                    this->_exporter->append_step( field_name, field_data );
+
+                field_name = compose_field_name( "velocity_scatter", this->_input->heads[i] );
+                field_data = this->template get_field_data_vector< FieldTypeE::VELOCITY, FieldComponentE::SCATTERED >( i );
+                if ( this->_mpi_config->is_root( ) )
+                    this->_exporter->append_step( field_name, field_data );
+
+                field_name = compose_field_name( "velocity_radiation", this->_input->heads[i] );
+                field_data = this->template get_field_data_vector< FieldTypeE::VELOCITY, FieldComponentE::RADIATED >( i );
                 if ( this->_mpi_config->is_root( ) )
                     this->_exporter->append_step( field_name, field_data );
                 
@@ -148,47 +149,48 @@ void FieldMeshData<T, ModeComp>::_configure_exporter( void )
 {
     std::size_t hdnp = 1;
 
-    for ( std::size_t i=0; i<this->_rdd->headings_np; i++ )
+    const std::size_t heads_np = static_cast<std::size_t>( this->_input->heads_np );
+    for ( std::size_t i=0; i<heads_np; i++ )
     {
-        if ( this->_config.out_potential )
+        if ( this->_field_points_def->out_potential )
         {
             // Add total potential field dataset
-            this->_exporter->add_field( compose_field_name( "potential", this->_rdd->headings[i] ), hdnp, 1 );
+            this->_exporter->add_field( compose_field_name( "potential", this->_input->heads[i] ), hdnp, 1 );
 
-            if ( this->_config.out_components )
+            if ( this->_field_points_def->out_components )
             {
                 // Add potential field components dataset
-                this->_exporter->add_field( compose_field_name( "potential_incident", this->_rdd->headings[i] ),  hdnp, 1 );
-                this->_exporter->add_field( compose_field_name( "potential_scatter", this->_rdd->headings[i] ),   hdnp, 1 );
-                this->_exporter->add_field( compose_field_name( "potential_radiation", this->_rdd->headings[i] ), hdnp, 1 );
+                this->_exporter->add_field( compose_field_name( "potential_incident", this->_input->heads[i] ),  hdnp, 1 );
+                this->_exporter->add_field( compose_field_name( "potential_scatter", this->_input->heads[i] ),   hdnp, 1 );
+                this->_exporter->add_field( compose_field_name( "potential_radiation", this->_input->heads[i] ), hdnp, 1 );
             }
         }
 
-        if ( this->_config.out_pressure )
+        if ( this->_field_points_def->out_pressure )
         {
             // Add total potential field dataset
-            this->_exporter->add_field( compose_field_name( "pressure", this->_rdd->headings[i] ), hdnp, 1 );
+            this->_exporter->add_field( compose_field_name( "pressure", this->_input->heads[i] ), hdnp, 1 );
 
-            if ( this->_config.out_components )
+            if ( this->_field_points_def->out_components )
             {
                 // Add potential field components dataset
-                this->_exporter->add_field( compose_field_name( "pressure_incident", this->_rdd->headings[i] ),  hdnp, 1 );
-                this->_exporter->add_field( compose_field_name( "pressure_scatter", this->_rdd->headings[i] ),   hdnp, 1 );
-                this->_exporter->add_field( compose_field_name( "pressure_radiation", this->_rdd->headings[i] ), hdnp, 1 );
+                this->_exporter->add_field( compose_field_name( "pressure_incident", this->_input->heads[i] ),  hdnp, 1 );
+                this->_exporter->add_field( compose_field_name( "pressure_scatter", this->_input->heads[i] ),   hdnp, 1 );
+                this->_exporter->add_field( compose_field_name( "pressure_radiation", this->_input->heads[i] ), hdnp, 1 );
             }
         }
 
-        if ( this->_config.out_velocity )
+        if ( this->_field_points_def->out_velocity )
         {
             // Add total potential field dataset
-            this->_exporter->add_field( compose_field_name( "velocity", this->_rdd->headings[i] ), hdnp, 3 );
+            this->_exporter->add_field( compose_field_name( "velocity", this->_input->heads[i] ), hdnp, 3 );
 
-            if ( this->_config.out_components )
+            if ( this->_field_points_def->out_components )
             {
                 // Add potential field components dataset
-                this->_exporter->add_field( compose_field_name( "velocity_incident", this->_rdd->headings[i] ),  hdnp, 3 );
-                this->_exporter->add_field( compose_field_name( "velocity_scatter", this->_rdd->headings[i] ),   hdnp, 3 );
-                this->_exporter->add_field( compose_field_name( "velocity_radiation", this->_rdd->headings[i] ), hdnp, 3 );
+                this->_exporter->add_field( compose_field_name( "velocity_incident", this->_input->heads[i] ),  hdnp, 3 );
+                this->_exporter->add_field( compose_field_name( "velocity_scatter", this->_input->heads[i] ),   hdnp, 3 );
+                this->_exporter->add_field( compose_field_name( "velocity_radiation", this->_input->heads[i] ), hdnp, 3 );
             }
         }
     }
@@ -197,17 +199,18 @@ void FieldMeshData<T, ModeComp>::_configure_exporter( void )
 
 template<typename T, typename ModeComp>
 template<FieldTypeE field_type, FieldComponentE field_comp>
-const cusfloat* FieldMeshData<T, ModeComp>::get_field_data_scalar( std::size_t heading_index ) const
+cut::CusTensor<cusfloat>* FieldMeshData<T, ModeComp>::get_field_data_scalar( std::size_t heading_index )
 {
     // Get field data from radiation and diffraction data container
-    cusfloat* field_temp = this->_rdd->get_field_data<field_type, field_comp>( heading_index );
+    const cut::CusTensor<cusfloat>* field_temp = this->_rdd->template get_field_data<field_type, field_comp>( heading_index );
 
     // MPI Gather field data to root process
+    cusfloat* recv_buf = this->_mpi_config->is_root( ) ? this->_data_scalar_r.data( ) : nullptr;
     MPI_Gather( 
-                    field_temp, 
+                    field_temp->data( ), 
                     this->_rdd->get_size_local_fp( ), 
                     mpi_cusfloat, 
-                    this->_data_scalar_r, 
+                    recv_buf, 
                     this->_rdd->get_size_local_fp( ), 
                     mpi_cusfloat, 
                     0, 
@@ -216,38 +219,51 @@ const cusfloat* FieldMeshData<T, ModeComp>::get_field_data_scalar( std::size_t h
 
     MPI_Barrier( this->_mpi_config->mpi_comm );
 
-    return this->_data_scalar_r;
+    return &(this->_data_scalar_r);
 }
 
 
 template<typename T, typename ModeComp>
 template<FieldTypeE field_type, FieldComponentE field_comp>
-const cusfloat* FieldMeshData<T, ModeComp>::get_field_data_vector( std::size_t heading_index ) const
+cut::CusTensor<cusfloat>* FieldMeshData<T, ModeComp>::get_field_data_vector( std::size_t heading_index )
 {
     // Get field data from radiation and diffraction data container
     std::size_t ndim = 0;
     if constexpr( field_type == FieldTypeE::VELOCITY )
     {
+        // Set field dimenstions for velocity vector field
         ndim = 3;
-        cusfloat* vel_x = this->_rdd->get_field_data<FieldTypeE::VELOCITY_X, field_comp>( heading_index );
-        cusfloat* vel_y = this->_rdd->get_field_data<FieldTypeE::VELOCITY_Y, field_comp>( heading_index );
-        cusfloat* vel_z = this->_rdd->get_field_data<FieldTypeE::VELOCITY_Z, field_comp>( heading_index );
-
+        
+        // Get velocity X field data
+        const cut::CusTensor<cusfloat>* vel_x = this->_rdd->template get_field_data<FieldTypeE::VELOCITY_X, field_comp>( heading_index );
         for ( std::size_t i=0; i<this->_rdd->get_size_local_fp( ); i++ )
         {
-            this->_data_vector[ 3*i ]     = vel_x[i];
-            this->_data_vector[ 3*i + 1 ] = vel_y[i];
-            this->_data_vector[ 3*i + 2 ] = vel_z[i];
+            this->_data_vector[ 3*i ]     = vel_x->data( )[i];
+        }
+
+        // Get velocity Y field data
+        const cut::CusTensor<cusfloat>* vel_y = this->_rdd->template get_field_data<FieldTypeE::VELOCITY_Y, field_comp>( heading_index );
+        for ( std::size_t i=0; i<this->_rdd->get_size_local_fp( ); i++ )
+        {
+            this->_data_vector[ 3*i + 1 ] = vel_y->data( )[i];
+        }
+
+        // Get velocity Z field data
+        const cut::CusTensor<cusfloat>* vel_z = this->_rdd->template get_field_data<FieldTypeE::VELOCITY_Z, field_comp>( heading_index );
+        for ( std::size_t i=0; i<this->_rdd->get_size_local_fp( ); i++ )
+        {
+            this->_data_vector[ 3*i + 2 ] = vel_z->data( )[i];
         }
 
     }
 
     // MPI Gather field data to root process
+    cusfloat* recv_buf = this->_mpi_config->is_root( ) ? this->_data_vector_r.data( ) : nullptr;
     MPI_Gather( 
-                    this->_data_vector, 
+                    this->_data_vector.data( ), 
                     this->_rdd->get_size_local_fp( ) * ndim, 
                     mpi_cusfloat, 
-                    this->_data_vector_r, 
+                    recv_buf, 
                     this->_rdd->get_size_local_fp( ) * ndim, 
                     mpi_cusfloat, 
                     0, 
@@ -256,7 +272,7 @@ const cusfloat* FieldMeshData<T, ModeComp>::get_field_data_vector( std::size_t h
 
     MPI_Barrier( this->_mpi_config->mpi_comm );
 
-    return this->_data_vector_r;
+    return &(this->_data_vector_r);
 }
 
 
@@ -269,18 +285,26 @@ RadDiffData<T, ModeComp>* FieldMeshData<T, ModeComp>::get_rdd( void ) const
 
 template<typename T, typename ModeComp>
 FieldMeshData<T, ModeComp>::FieldMeshData( 
-                                            FieldMeshDataConfig     config,
-                                            MpiConfig*              mpi_config
+                                            Input*          input,
+                                            FieldPointsDef* field_points_def,
+                                            std::string     out_folder_path,
+                                            MpiConfig*      mpi_config 
                                         )
 {
     // Get a local copy of the configuration
-    this->_config           = config;
+    this->_input            = input;
+    this->_field_points_def = field_points_def;
     this->_mpi_config       = mpi_config;
+
+    // Compose mesh file path
+    namespace fs            = std::filesystem;
+    fs::path mesh_fopath    = fs::path( this->_input->folder_path ) / fs::path( std::string( MESH_FOLDER_NAME ) );
+    fs::path mesh_fipath    = mesh_fopath / fs::path( field_points_def->mesh_finame );
 
     // Create mesh pointer
     this->_mesh             = new Mesh( 
-                                            config.mesh_file_path, 
-                                            config.body_name,
+                                            mesh_fipath.string( ), 
+                                            field_points_def->mesh_body_name,
                                             PanelTypeE::FIELD_POINT
                                         );
     this->_is_heap_mesh     = true;
@@ -289,27 +313,26 @@ FieldMeshData<T, ModeComp>::FieldMeshData(
     this->_rdd              = new RadDiffData<T, ModeComp>( 
                                                                 mpi_config,
                                                                 this->_mesh,
-                                                                config.freqs_np,
-                                                                config.headings_np,
-                                                                config.dofs_np,
+                                                                input->angfreqs_np,
+                                                                input->heads_np,
+                                                                input->dofs_np,
                                                                 true
                                                             );
     this->_is_heap_rdd      = true;
 
     // Allocate memory for root data if parallel output is enabled
-    this->_data_vector  = generate_empty_vector<cusfloat>( this->_rdd->get_size_local_fp( ) * 3 );
+    this->_data_vector.resize( this->_rdd->get_size_local_fp( ) * 3 );
     if ( mpi_config->is_root( ) )
     {
-        this->_data_scalar_r = generate_empty_vector<cusfloat>( this->_mesh->nodes_np );
-        this->_data_vector_r = generate_empty_vector<cusfloat>( this->_mesh->nodes_np * 3 );
+        this->_data_scalar_r.resize( this->_mesh->nodes_np );
+        this->_data_vector_r.resize( this->_mesh->nodes_np * 3 );
     }
-    this->_is_data_heap = true;
 
     // Generate HDF5 exporter interface
     if ( mpi_config->is_root( ) )
     {
         this->_exporter         = new HDF5TimeSeriesExporter( 
-                                                                this->_config.out_folder_path, 
+                                                                out_folder_path, 
                                                                 this->_mesh 
                                                             );
         this->_is_heap_exporter = true;
@@ -337,22 +360,6 @@ FieldMeshData<T, ModeComp>::~FieldMeshData( void )
     {
         delete this->_rdd;
         this->_rdd = nullptr;
-    }
-
-    // Delete root scalar data array if allocated on heap
-    if ( this->_mpi_config->is_root( ) && this->_is_data_heap && this->_data_scalar_r != nullptr )
-    {
-        mkl_free( this->_data_scalar_r );
-        this->_data_scalar_r = nullptr;
-    }
-
-    // Delete root vector data array if allocated on heap
-    mkl_free( this->_data_vector );
-    this->_data_vector = nullptr;
-    if ( this->_mpi_config->is_root( ) && this->_is_data_heap && this->_data_vector_r != nullptr )
-    {
-        mkl_free( this->_data_vector_r );
-        this->_data_vector_r = nullptr;
     }
 
     // Delete HDF5 exporter interface if allocated on heap

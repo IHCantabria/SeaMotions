@@ -41,7 +41,7 @@ struct RadDiffData
 private:
     // Declare private variables
     std::size_t                     _end_pos        = 0;        // End position along field points for the current process
-    cusfloat*                       _field_data     = nullptr;  // Pointer to the local data chunk to storage the field points values for the differen degrees of freedom and headings
+    mutable cut::CusTensor<cusfloat> _field_data;               // Local data chunk for field points values
     bool                            _is_heap        = false;    // Flag to indicate if memory is allocated on heap
     MpiConfig*                      _mpi_config     = nullptr;  // Pointer to MPI configuration
     std::size_t                     _size_global    = 0;        // Total number of panel all across processes
@@ -81,7 +81,7 @@ public:
     std::size_t         get_end_pos( void ) const;
     
     template<FieldTypeE field_type, FieldComponentE field_component>
-    const cusfloat*     get_field_data( std::size_t heading_index ) const;
+        const cut::CusTensor<cusfloat>* get_field_data( std::size_t heading_index ) const;
 
     std::size_t         get_size_global( void ) const;
 

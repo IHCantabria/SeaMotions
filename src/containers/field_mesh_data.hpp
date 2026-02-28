@@ -26,6 +26,7 @@
 #include "../containers/field_mesh_data_config.hpp"
 #include "../inout/hdf5_time_series_exporter_interface.hpp"
 #include "../mesh/mesh.hpp"
+#include "../math/custensor/custensor.hpp"
 
 
 template<typename T, typename ModeComp>
@@ -33,13 +34,13 @@ struct FieldMeshData
 {
 private:
     /*** Declare private class attributes ***/
-    FieldMeshDataConfig             _config             ;           // Configuration for field mesh data
     int                             _compresion_level   = 0;        // Compression level for output files (0-9, where 0 is no compression and 9 is maximum compression). Not used if MPI is enabled.
-    cusfloat*                       _data_scalar_r      = nullptr;  // Pointer to the scalar data storaged in the root process
-    cusfloat*                       _data_vector        = nullptr;  // Pointer to the vector data
-    cusfloat*                       _data_vector_r      = nullptr;  // Pointer to the vector data storaged in the root process
+    cut::CusTensor<cusfloat>        _data_scalar_r;                 // Scalar data stored in the root process
+    cut::CusTensor<cusfloat>        _data_vector;                   // Vector data buffer for local packing
+    cut::CusTensor<cusfloat>        _data_vector_r;                 // Vector data stored in the root process
     HDF5TimeSeriesExporterBase*     _exporter           = nullptr;  // Pointer to the HDF5 exporter interface for writing mesh and field data
-    bool                            _is_data_heap       = false;    // Flag to indicate if memory is allocated on heap for the root data
+    FieldPointsDef*                 _field_points_def   = nullptr;  // Pointer to the field points definition
+    Input*                          _input              = nullptr;  // Pointer to the input data
     bool                            _is_heap_exporter   = false;    // Flag to indicate if memory is allocated on heap for the exporter interface
     bool                            _is_heap_mesh       = false;    // Flag to indicate if memory is allocated on heap               
     bool                            _is_heap_rdd        = false;    // Flag to indicate if memory is allocated on heap               
@@ -60,7 +61,12 @@ public:
     /*** Declare class constructor ***/
     FieldMeshData( ) = default;
 
-    FieldMeshData( FieldMeshDataConfig config, MpiConfig* mpi_config );
+    FieldMeshData( 
+                        Input*          input,
+                        FieldPointsDef* field_points_def,
+                        std::string     out_folder_path,
+                        MpiConfig*      mpi_config 
+                    );
 
     ~FieldMeshData( );
 
@@ -68,10 +74,10 @@ public:
     void add_step( cusfloat freq );
 
     template<FieldTypeE field_type, FieldComponentE field_comp>
-    const cusfloat* get_field_data_scalar( std::size_t heading_index ) const;
+    cut::CusTensor<cusfloat>* get_field_data_scalar( std::size_t heading_index );
 
     template<FieldTypeE field_type, FieldComponentE field_comp>
-    const cusfloat* get_field_data_vector( std::size_t heading_index ) const;
+    cut::CusTensor<cusfloat>* get_field_data_vector( std::size_t heading_index );
 
     RadDiffData<T, ModeComp>* get_rdd( void ) const;
 

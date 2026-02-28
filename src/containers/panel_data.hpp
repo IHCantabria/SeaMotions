@@ -115,7 +115,7 @@ public:
     void clear_data( void );
 
     template<FieldTypeE field_type, FieldComponentE field_component>
-    const cusfloat* get_field_data( void ) const;
+    const cut::CusTensor<T>* get_field_data( void ) const;
 
 };
 

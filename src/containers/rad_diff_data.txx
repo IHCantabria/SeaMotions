@@ -21,27 +21,38 @@
 // Include local modules
 #include "rad_diff_data.hpp"
 #include "../mesh/panel_set_view.hpp"
+#include <complex>
+#include <type_traits>
 
 
 template<typename T, typename Config>
 template<FieldTypeE field_type, FieldComponentE field_component>
-const cusfloat* RadDiffData<T, Config>::get_field_data( std::size_t heading_index ) const
+const cut::CusTensor<cusfloat>* RadDiffData<T, Config>::get_field_data( std::size_t heading_index ) const
 {
     std::size_t count           = 0;
     std::size_t offset          = 0;
-    cusfloat*   field_data_l    = nullptr;
+    const cut::CusTensor<T>*    field_data_l    = nullptr;
+    cusfloat* out_data = this->_field_data.data( );
     for ( std::size_t j=0; j<this->_size_local; j++ )
     {
         offset          = heading_index * this->panel_data[j].field_points_np;
-        field_data_l    = this->panel_data[j].get_field_data<field_type, field_component>( );
+        field_data_l    = this->panel_data[j].template get_field_data<field_type, field_component>( );
+        const T* field_data_ptr = field_data_l->data( );
         for ( std::size_t k=0; k<this->panel_data[j].field_points_np; k++ )
         {
-            this->_field_data[ count ] = field_data_l[ offset + k ];
+            if constexpr ( std::is_same<T, cuscomplex>::value )
+            {
+                out_data[ count ] = static_cast<cusfloat>( std::abs( field_data_ptr[ offset + k ] ) );
+            }
+            else
+            {
+                out_data[ count ] = static_cast<cusfloat>( field_data_ptr[ offset + k ] );
+            }
             count++;
         }
     }
 
-    return this->_field_data;
+    return &(this->_field_data);
 }
 
 template<typename T, typename Config>
@@ -109,7 +120,7 @@ RadDiffData<T, Config>::RadDiffData(
         this->_size_local_fp    = this->_size_local;
 
         // Allocate local data chunk to storage the field points values for the differen degrees of freedom and headings
-        this->_field_data       = generate_empty_vector<cusfloat>( this->_size_local_fp );
+        this->_field_data.resize( this->_size_local_fp );
         this->_is_heap          = true;
 
         // Generate temporary array to store field points coordinates according to the current process distribution along field points
@@ -190,7 +201,7 @@ RadDiffData<T, Config>::RadDiffData(
         }
 
         // Allocate local data chunk to storage the field points values for the differen degrees of freedom and headings
-        this->_field_data = generate_empty_vector<cusfloat>( this->_size_local_fp );
+        this->_field_data.resize( this->_size_local_fp );
         this->_is_heap    = true;
     }
 }
@@ -264,7 +275,7 @@ RadDiffData<T, Config>::RadDiffData(
     }
 
     // Allocate local data chunk to storage the field points values for the differen degrees of freedom and headings
-    this->_field_data = generate_empty_vector<cusfloat>( this->_size_local_fp );
+    this->_field_data.resize( this->_size_local_fp );
     this->_is_heap    = true;
 }
 
@@ -272,10 +283,4 @@ RadDiffData<T, Config>::RadDiffData(
 template<typename T, typename Config>
 RadDiffData<T, Config>::~RadDiffData( )
 {
-    if ( this->_is_heap )
-    {
-        mkl_free( this->_field_data );
-        this->_field_data   = nullptr;
-        this->_is_heap      = false;
-    }
 }
