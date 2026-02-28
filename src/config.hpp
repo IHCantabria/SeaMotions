@@ -109,6 +109,12 @@ constexpr cusfloat  W_ASYMPT_HIGH           = 100.0;            // High frequenc
 constexpr cusfloat  W_ASYMPT_LOW            = 0.0001;           // Low frequency asymptotic regime threshold
 constexpr cusfloat  ZEROTH_EPS              = 1E-14;
 
+// Common folder names used across the codebase
+constexpr const char* MESH_FOLDER_NAME                  = "mesh";
+constexpr const char* RESULTS_FOLDER_NAME               = "1_results";
+constexpr const char* RESULTS_MESH_FOLDER_NAME          = "0_mesh";
+constexpr const char* RESULTS_FIELD_POINTS_FOLDER_NAME  = "1_field_points";
+
 
 /************************************************************/
 /****** Define class enums to be used along the code  *******/
@@ -151,6 +157,7 @@ enum class FieldTypeE: int
     PRESSURE,                   // Pressure field type
     RELATIVE_WAVE_ELEVATION,    // Relative wave elevation field type
     VELOCITY,                   // Velocity field type
+    VELOCITY_DN,                // Velocity normal derivative field type
     VELOCITY_X,                 // Velocity X field type
     VELOCITY_Y,                 // Velocity Y field type
     VELOCITY_Z,                 // Velocity Z field type
