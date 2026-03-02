@@ -65,6 +65,7 @@ public:
     cusfloat                        center[3]               = {0.0, 0.0, 0.0};
     cusfloat                        center_wl[3]            = {0.0, 0.0, 0.0};
     cusfloat                        free_surface_log_int    = 0.0;
+    cusfloat                        ext_lid_damp_f          = 0.0;
     cusfloat                        global_to_local_mat[9];
     cusfloat                        gauss_points_global_x[NUM_GP2];
     cusfloat                        gauss_points_global_y[NUM_GP2];
@@ -223,6 +224,10 @@ public:
                                                     cusfloat    eta,
                                                     cusfloat*   global_pos
                                );
+
+    void    set_ext_lid_damp_f(
+                                                    cusfloat    damp_f
+                            );
 
     void    set_new_properties(
                                                     int         npe,

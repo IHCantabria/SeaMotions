@@ -678,8 +678,9 @@ void        Mesh::_joint_meshes(
     }
 
     // Allocate space for the full elements and nodes lists
-    this->elems         = generate_empty_vector<int>( this->elems_np * this->enrl );
-    this->panels_type   = std::vector<PanelTypeE>( this->elems_np, PanelTypeE::NONE );
+    this->elems             = generate_empty_vector<int>( this->elems_np * this->enrl );
+    this->panels_type       = std::vector<PanelTypeE>( this->elems_np, PanelTypeE::NONE );
+    this->ext_lid_damp_f    = std::vector<cusfloat>( this->elems_np, 0.0 );
     this->x             = generate_empty_vector<cusfloat>(  this->nodes_np );
     this->y             = generate_empty_vector<cusfloat>(  this->nodes_np );
     this->z             = generate_empty_vector<cusfloat>(  this->nodes_np );
@@ -695,6 +696,7 @@ void        Mesh::_joint_meshes(
             local_index                         = meshes[i]->enrl * j;
             this->elems[count_elems*this->enrl] = meshes[i]->elems[local_index];
             this->panels_type[count_elems]      = meshes[i]->panels_type[j];
+            this->ext_lid_damp_f[count_elems]   = meshes[i]->panels[j]->ext_lid_damp_f;
 
             for ( int k=0; k<meshes[i]->elems[local_index]; k++ )
             {
@@ -1336,10 +1338,24 @@ Mesh::Mesh(
     this->_calculate_bounding_box( );
 
     // Create panels for each element
-    this->_create_panels( PanelTypeE::DIFFRAC, auto_force_type, cog );
+    this->_create_panels( PanelTypeE::NONE, auto_force_type, cog );
 
     // Set Elements type
     this->set_elements_type( );
+
+    // Overwrite panels type to the one defined in the input meshes
+    // This is required to use the same interface create_panels in all
+    // the constructors, but to keep the panels type defined in the input meshes
+    for ( std::size_t i=0; i<static_cast<std::size_t>(this->elems_np); i++ )
+    {
+        this->panels[i]->type = this->panels_type[i];
+    }
+
+    // Overwrite ext lid damping coefficient value to the defined in the input panels.
+    for ( std::size_t i=0; i<static_cast<std::size_t>(this->elems_np); i++ )
+    {
+        this->panels[i]->set_ext_lid_damp_f( this->ext_lid_damp_f[i] );
+    }
 
     // Check mesh properties
     this->_check_mesh_properties( );

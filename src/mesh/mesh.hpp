@@ -117,6 +117,7 @@ public:
     int*                        elems_type      = nullptr;
     int                         elems_np        = 0;
     int                         enrl            = 0;
+    std::vector<cusfloat>       ext_lid_damp_f  ;
     int                         mnpe            = 0;
     std::string                 name            = "NoName";
     int                         nodes_np        = 0;

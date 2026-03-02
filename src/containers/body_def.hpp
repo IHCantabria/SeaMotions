@@ -33,6 +33,7 @@ struct BodyDef
 public:
     // Define class attributes
     cusfloat        cog[3]          = { 0.0, 0.0, 0.0 };
+    cusfloat        ext_lid_damp_f  = 0.0;
     cusfloat        inertia[6]      = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
     bool            interia_by_rad  = false;
     bool            is_fix          = false;
@@ -44,12 +45,14 @@ public:
     cusfloat        mass            = 0.0;
     Mesh*           mesh            = nullptr;
     std::string     mesh_body_name  = "";
+    Mesh*           mesh_ext_lid    = nullptr;
     std::string     mesh_finame     = "";
     Mesh*           mesh_fs_qtf     = nullptr;
     Mesh*           mesh_int_lid    = nullptr;
     int             mesh_items_np   = 0;
     Mesh*           mesh_total      = nullptr;
     cusfloat        rad_inertia[3]  = { 0.0, 0.0, 0.0 };
+    bool            use_ext_lid     = false;
 
     // Define class constructor and destructor
     ~BodyDef( void );

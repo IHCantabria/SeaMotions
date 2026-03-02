@@ -40,6 +40,13 @@ BodyDef::~BodyDef( void )
         delete this->mesh_int_lid; 
     }
 
+    if ( this->use_ext_lid )
+    {
+        delete this->mesh_ext_lid;
+        this->mesh_ext_lid  = nullptr;
+        this->use_ext_lid   = false;
+    }
+
     if ( this->is_mesh_total )
     {
         delete this->mesh_total;

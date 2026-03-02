@@ -238,6 +238,16 @@ void Input::read_body(
     read_signal     = read_channel_value( infile, body->lid_type );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
+    // Read usage of external lid
+    target_signal   = "UseExtLid";
+    read_signal     = read_channel_value( infile, body->use_ext_lid );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read external lid damping factor
+    target_signal   = "ExtLidDF";
+    read_signal     = read_channel_value( infile, body->ext_lid_damp_f );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
     // Load mesh for the current body
     std::vector<Mesh*> _mesh_total;
     fs::path mesh_foname_{ MESH_FOLDER_NAME };
@@ -291,6 +301,33 @@ void Input::read_body(
         body->mesh_items_np++;
         _mesh_total.push_back( body->mesh_int_lid );
 
+    }
+
+    // Load external lid if it is required by the user
+    if ( body->use_ext_lid )
+    {
+        // Define lid name
+        std::stringstream sse;
+        sse << body->mesh_body_name << "_ext_lid";
+        
+        // Load lid mesh
+        body->mesh_ext_lid  = new Mesh(
+                                            mesh_fipath_.string( ),
+                                            sse.str( ),
+                                            body->cog,
+                                            body->is_fix,
+                                            PanelTypeE::EXT_LID
+                                        );
+        body->mesh_items_np++;
+
+        // Apply external lid damping factor
+        for ( std::size_t i=0; i<static_cast<std::size_t>( body->mesh_ext_lid->elems_np ); i++ )
+        {
+            body->mesh_ext_lid->panels[i]->set_ext_lid_damp_f( body->ext_lid_damp_f );
+        }
+
+        // Append to total mesh vector
+        _mesh_total.push_back( body->mesh_ext_lid );
     }
 
     // Load QTF free surface

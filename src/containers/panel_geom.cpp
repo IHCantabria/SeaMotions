@@ -621,7 +621,11 @@ void PanelGeom::initialize(
     this->calculate_integration_properties<NUM_GP>( );
 
     // Calculate free surface singularity if necessary
-    if ( this->type == PanelTypeE::INT_LID )
+    if ( 
+            this->type == PanelTypeE::INT_LID 
+            ||
+            this->type == PanelTypeE::EXT_LID
+        )
     {
         this->calcualte_free_surface_singularity( );
     }
@@ -956,6 +960,14 @@ void PanelGeom::_read_node_list_mask(
     }
 
 }
+
+
+void PanelGeom::set_ext_lid_damp_f(
+                                        cusfloat    damp_f_in
+                                    )
+{
+    this->ext_lid_damp_f = damp_f_in;
+}   
 
 
 void PanelGeom::set_new_properties(
