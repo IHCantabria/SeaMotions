@@ -729,17 +729,17 @@ void FormulationKernelBackend<N, mode_pf>::_build_rhs(
                     for ( int id=0; id<this->_input->heads_np; id++ )
                     {
                         // Get wave potential derivatives for the panel
-                        wave_pot     =   wave_potential_fo(
-                                                                1.0,
-                                                                w,
-                                                                k,
-                                                                this->_input->water_depth,
-                                                                this->_input->grav_acc,
-                                                                source_i->panel->center[0],
-                                                                source_i->panel->center[1],
-                                                                source_i->panel->center[2],
-                                                                this->_input->heads[id]
-                                                            );
+                        wave_pot     =   wave_potential_fo_space(
+                                                                    1.0,
+                                                                    w,
+                                                                    k,
+                                                                    this->_input->water_depth,
+                                                                    this->_input->grav_acc,
+                                                                    source_i->panel->center[0],
+                                                                    source_i->panel->center[1],
+                                                                    source_i->panel->center[2],
+                                                                    this->_input->heads[id]
+                                                                );
                         
                         // Calculate normal derivative of the wave flow velocities for the jth panel
                         index                   = dofs_offset + id * this->_pf_gp->sysmat_nrows + j; 
@@ -863,17 +863,17 @@ void FormulationKernelBackend<N, mode_pf>::_build_rhs(
             else if ( panel_j->type == PanelTypeE::EXT_LID )
             {
                 // Get wave potential derivatives for the panel
-                wave_pot    =   wave_potential_fo(
-                                                        1.0,
-                                                        w,
-                                                        k,
-                                                        this->_input->water_depth,
-                                                        this->_input->grav_acc,
-                                                        this->_mesh_gp->source_nodes[j]->panel->center[0],
-                                                        this->_mesh_gp->source_nodes[j]->panel->center[1],
-                                                        this->_mesh_gp->source_nodes[j]->panel->center[2],
-                                                        this->_input->heads[i]
-                                                    );
+                wave_pot    =   wave_potential_fo_space(
+                                                            1.0,
+                                                            w,
+                                                            k,
+                                                            this->_input->water_depth,
+                                                            this->_input->grav_acc,
+                                                            this->_mesh_gp->source_nodes[j]->panel->center[0],
+                                                            this->_mesh_gp->source_nodes[j]->panel->center[1],
+                                                            this->_mesh_gp->source_nodes[j]->panel->center[2],
+                                                            this->_input->heads[i]
+                                                        );
                 
                 // Calculate normal derivative of the wave flow velocities for the jth panel
                 this->_sf_gp->field_values[index]  = -(
