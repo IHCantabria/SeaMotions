@@ -20,6 +20,7 @@
 
 
 // Include general usage libraries
+#include <filesystem>
 #include <sstream>
 
 // Include local modules
