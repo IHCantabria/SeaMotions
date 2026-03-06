@@ -200,7 +200,7 @@ RadDiffData<T, Config>::RadDiffData(
             this->_size_local_fp += this->panel_data[i].field_points_np;
         }
 
-        // Allocate local data chunk to storage the field points values for the differen degrees of freedom and headings
+        // Allocate local data chunk to storage the field points values for the different degrees of freedom and headings
         this->_field_data.resize( this->_size_local_fp );
         this->_is_heap    = true;
     }
