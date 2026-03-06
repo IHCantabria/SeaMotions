@@ -42,16 +42,18 @@ void Hydrostatics::_calculate(
     
     // Loop over panels to calculate total hydrostatic force
     // over the floating object
-    cusfloat _volume        = 0.0;
-    cusfloat _volume_mx     = 0.0;
-    cusfloat _volume_my     = 0.0;
-    cusfloat _volume_mz     = 0.0;
-    cusfloat _area_wl       = 0.0;
-    cusfloat _area_wl_mx    = 0.0;
-    cusfloat _area_wl_my    = 0.0;
-    cusfloat _area_wl_ixx   = 0.0;
-    cusfloat _area_wl_ixy   = 0.0;
-    cusfloat _area_wl_iyy   = 0.0;
+    cusfloat _volume            = 0.0;
+    cusfloat _volume_mx         = 0.0;
+    cusfloat _volume_my         = 0.0;
+    cusfloat _volume_mz         = 0.0;
+    cusfloat _area_wl           = 0.0;
+    cusfloat _area_wl_mx        = 0.0;
+    cusfloat _area_wl_mx_cog    = 0.0;
+    cusfloat _area_wl_my        = 0.0;
+    cusfloat _area_wl_my_cog    = 0.0;
+    cusfloat _area_wl_ixx       = 0.0;
+    cusfloat _area_wl_ixy       = 0.0;
+    cusfloat _area_wl_iyy       = 0.0;
 
 
     #ifndef MPI_BUILD
@@ -92,7 +94,7 @@ void Hydrostatics::_calculate(
                                         };
 
             gauss2d_loop<NUM_GP>(
-                                    _area_wl_mx,
+                                    _area_wl_mx_cog,
                                     area_wl_mx_fcn,
                                     paneli
                                 );
@@ -101,6 +103,96 @@ void Hydrostatics::_calculate(
                                         { 
                                             return (
                                                         paneli->gauss_points_global_x[i]
+                                                        *
+                                                        paneli->normal_vec[2]
+                                                    ); 
+                                        };
+
+            gauss2d_loop<NUM_GP>(
+                                    _area_wl_my_cog,
+                                    area_wl_my_fcn,
+                                    paneli
+                                );
+        }
+    }
+
+    #ifdef MPI_BUILD
+    // Sum all the area
+    MPI_Allreduce(
+                    MPI_IN_PLACE,
+                    &_area_wl,
+                    1,
+                    mpi_cusfloat,
+                    MPI_SUM,
+                    MPI_COMM_WORLD
+                );
+
+    // Sum all the area X moments
+    MPI_Allreduce(
+                    MPI_IN_PLACE,
+                    &_area_wl_mx_cog,
+                    1,
+                    mpi_cusfloat,
+                    MPI_SUM,
+                    MPI_COMM_WORLD
+                );
+
+    // Sum all the area Y moments
+    MPI_Allreduce(
+                    MPI_IN_PLACE,
+                    &_area_wl_my_cog,
+                    1,
+                    mpi_cusfloat,
+                    MPI_SUM,
+                    MPI_COMM_WORLD
+                );
+
+    #endif
+
+    // Storage area properties
+    this->wl_area        = _area_wl;
+
+    // Calculate water line area centre of gravity
+    this->wl_area_cog[0] = _area_wl_my_cog / this->wl_area;
+    this->wl_area_cog[1] = _area_wl_mx_cog / this->wl_area;
+    this->wl_area_cog[2] = 0.0;
+
+    // Loop over panels to calculate remaining geometric properties
+    for ( int i=start_elem; i<last_elem; i++ )
+    {
+        // Get current panel
+        PanelGeom* paneli   = mesh->panels[i];
+
+        if ( paneli->type == PanelTypeE::DIFFRAC )
+        {
+            // Calculate water plane area first order moments
+            auto    area_wl_mx_fcn  =   [&]( int i )
+                                        { 
+                                            return (
+                                                        (
+                                                            paneli->gauss_points_global_y[i]
+                                                            -
+                                                            this->wl_area_cog[1]
+                                                        )
+                                                        *
+                                                        paneli->normal_vec[2]
+                                                    ); 
+                                        };
+
+            gauss2d_loop<NUM_GP>(
+                                    _area_wl_mx,
+                                    area_wl_mx_fcn,
+                                    paneli
+                                );
+
+            auto    area_wl_my_fcn  =   [&]( int i )
+                                        { 
+                                            return (
+                                                        (
+                                                            paneli->gauss_points_global_x[i]
+                                                            -
+                                                            this->wl_area_cog[0]
+                                                        )
                                                         *
                                                         paneli->normal_vec[2]
                                                     ); 
@@ -116,7 +208,11 @@ void Hydrostatics::_calculate(
             auto    area_wl_ixx_fcn  =   [&]( int i )
                                         { 
                                             return (
-                                                        pow2s( paneli->gauss_points_global_y[i] )
+                                                        pow2s( 
+                                                                paneli->gauss_points_global_y[i]
+                                                                -
+                                                                this->wl_area_cog[1]
+                                                            )
                                                         *
                                                         paneli->normal_vec[2]
                                                     ); 
@@ -131,7 +227,11 @@ void Hydrostatics::_calculate(
             auto    area_wl_iyy_fcn  =   [&]( int i )
                                         { 
                                             return (
-                                                        pow2s( paneli->gauss_points_global_x[i] )
+                                                        pow2s( 
+                                                                paneli->gauss_points_global_x[i]
+                                                                - 
+                                                                this->wl_area_cog[0] 
+                                                            )
                                                         *
                                                         paneli->normal_vec[2]
                                                     ); 
@@ -140,6 +240,23 @@ void Hydrostatics::_calculate(
             gauss2d_loop<NUM_GP>(
                                     _area_wl_iyy,
                                     area_wl_iyy_fcn,
+                                    paneli
+                                );
+
+            auto    area_wl_ixy_fcn  =   [&]( int i )
+                                        { 
+                                            return (
+                                                        ( paneli->gauss_points_global_x[i] - this->wl_area_cog[0] )
+                                                        *
+                                                        ( paneli->gauss_points_global_y[i] - this->wl_area_cog[1] )
+                                                        *
+                                                        paneli->normal_vec[2]
+                                                    ); 
+                                        };
+
+            gauss2d_loop<NUM_GP>(
+                                    _area_wl_ixy,
+                                    area_wl_ixy_fcn,
                                     paneli
                                 );
 
@@ -165,7 +282,7 @@ void Hydrostatics::_calculate(
                                             return (
                                                         -paneli->gauss_points_global_z[i] 
                                                         *  
-                                                        paneli->gauss_points_global_x[i]
+                                                        paneli->gauss_points_global_y[i]
                                                         * 
                                                         paneli->normal_vec[2] 
                                                     ); 
@@ -182,7 +299,7 @@ void Hydrostatics::_calculate(
                                             return (
                                                         -paneli->gauss_points_global_z[i] 
                                                         *  
-                                                        paneli->gauss_points_global_y[i]
+                                                        paneli->gauss_points_global_x[i]
                                                         * 
                                                         paneli->normal_vec[2] 
                                                     ); 
@@ -254,16 +371,6 @@ void Hydrostatics::_calculate(
                     MPI_COMM_WORLD
                 );
 
-    // Sum all the area
-    MPI_Allreduce(
-                    MPI_IN_PLACE,
-                    &_area_wl,
-                    1,
-                    mpi_cusfloat,
-                    MPI_SUM,
-                    MPI_COMM_WORLD
-                );
-
     // Sum all the area X moments
     MPI_Allreduce(
                     MPI_IN_PLACE,
@@ -321,13 +428,12 @@ void Hydrostatics::_calculate(
     this->displacement  = _volume * rho_water;
 
     // Calculate KB
-    this->cob[0]        = _volume_mx / volume;
-    this->cob[1]        = _volume_my / volume;
+    this->cob[0]        = _volume_my / volume;
+    this->cob[1]        = _volume_mx / volume;
     this->cob[2]        = _volume_mz / volume;
     this->kb            = this->cob[2] - mesh->z_min;
 
     // Storage area properties
-    this->wl_area       = _area_wl;
     this->wl_area_mx    = _area_wl_mx;
     this->wl_area_my    = _area_wl_my;
     this->wl_area_ixx   = _area_wl_ixx;
@@ -335,8 +441,8 @@ void Hydrostatics::_calculate(
     this->wl_area_iyy   = _area_wl_iyy;
 
     // Calculate water line area centre of gravity
-    this->wl_area_cog[0] = this->wl_area_mx / this->wl_area;
-    this->wl_area_cog[1] = this->wl_area_my / this->wl_area;
+    this->wl_area_cog[0] = this->wl_area_my / this->wl_area;
+    this->wl_area_cog[1] = this->wl_area_mx / this->wl_area;
     this->wl_area_cog[2] = 0.0;
 
     /*********************************************/
