@@ -52,7 +52,8 @@ public:
     void    get_1d_bounds(
                             int     np,
                             int&    start_pos,
-                            int&    end_pos
+                            int&    end_pos,
+                            bool    override_check = false
                         );
 
     bool    is_root(    

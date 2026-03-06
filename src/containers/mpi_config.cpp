@@ -32,34 +32,26 @@
 void    MpiConfig::get_1d_bounds(
                                     int     np,
                                     int&    start_pos,
-                                    int&    end_pos
+                                    int&    end_pos,
+                                    bool    override_check
                                 )
 {
     if ( this->_is_parallel )
     {
         // Check if there is more processors than data
-        if ( this->procs_total > np )
+        if ( ( this->procs_total > np ) && ( !override_check ) )
         {
             std::cerr << "There is more processes available than ";
             std::cerr << "data to distribute over them." << std::endl;
             throw std::runtime_error( "" );
         }
 
-        // Divide data in chunks
-        int chunk_size = static_cast<int>( 
-                                            std::ceil( 
-                                                        static_cast<cusfloat>( np ) 
-                                                        / 
-                                                        static_cast<cusfloat>( this->procs_total ) 
-                                                    ) 
-                                        ) ;
+        const int P = this->procs_total;
+        const int r = this->proc_rank;
 
-        // Set interval bounds
-        start_pos   = this->proc_rank * chunk_size;
-        end_pos     = ( this->proc_rank + 1 ) * chunk_size;
-
-        // Set limits to the upper bound
-        end_pos     = ( end_pos > np ) ? np : end_pos;
+        // Balanced partitioning
+        start_pos = ( r * np ) / P;
+        end_pos   = ( ( r + 1 ) * np ) / P;
     }
     else
     {
