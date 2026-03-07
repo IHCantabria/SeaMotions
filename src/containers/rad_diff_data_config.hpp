@@ -40,6 +40,20 @@ struct RDDFDConfig
 
 
 /**
+ * @struct RDDMorisonConfig
+ * @brief Configuration struct for field data in Morison element calculations.
+ */
+struct RDDMorisonConfig 
+{
+    static constexpr int mode_comp      = OFF;
+    static constexpr int mode_f         = G_ON;
+    static constexpr int mode_dfdn      = G_OFF;
+    static constexpr int mode_dfdc      = G_OFF;
+    static constexpr int store_freqs    = OFF;
+};
+
+
+/**
  * @struct RDDQTFConfig
  * @brief Configuration struct for field data in QTF calculations.
  */
