@@ -28,6 +28,50 @@
 #include "mkl_scalapack.h"
 
 
+// Interface for dfdNewTask1D - Interpolation task creation
+template<typename T>
+inline const auto& dfNewTask1D          = dfsNewTask1D;
+
+template<>
+inline const auto& dfNewTask1D<float>   = dfsNewTask1D;
+
+template<>
+inline const auto& dfNewTask1D<double>  = dfdNewTask1D;
+
+
+// Interface for dfdEditPPSpline1D - Edit task parameters for natural cubic spline construction
+template<typename T>
+inline const auto& dfEditPPSpline1D          = dfsEditPPSpline1D;
+
+template<>
+inline const auto& dfEditPPSpline1D<float>   = dfsEditPPSpline1D;
+
+template<>
+inline const auto& dfEditPPSpline1D<double>  = dfdEditPPSpline1D;
+
+
+// Interface for dfdConstruct1D - Construct natural cubic spline using STD method
+template<typename T>
+inline const auto& dfConstruct1D          = dfsConstruct1D;
+
+template<>
+inline const auto& dfConstruct1D<float>   = dfsConstruct1D;
+
+template<>
+inline const auto& dfConstruct1D<double>  = dfdConstruct1D;
+
+
+// Interface for dfdInterpolate1D - Interpolate using the constructed spline
+template<typename T>
+inline const auto& dfInterpolate1D          = dfsInterpolate1D;
+
+template<>
+inline const auto& dfInterpolate1D<float>   = dfsInterpolate1D;
+
+template<>
+inline const auto& dfInterpolate1D<double>  = dfdInterpolate1D;
+
+
 // Interface for vAdd - Vector addition
 template<typename T>
 inline const auto& lv_add = vsAdd;
