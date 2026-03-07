@@ -93,6 +93,62 @@ std::size_t RadDiffData<T, Config>::get_start_pos( void ) const
 template<typename T, typename Config>
 RadDiffData<T, Config>::RadDiffData( 
                                         MpiConfig*      mpi_config_,
+                                        cusfloat*       field_points_,
+                                        std::size_t     field_points_np_,
+                                        std::size_t     freqs_np_,
+                                        std::size_t     headings_np_,
+                                        std::size_t     dofs_np_
+                                    )
+{
+    // Store number of field points
+    this->_size_global      = field_points_np_;
+    this->_mpi_config       = mpi_config_;
+
+    // Calculate start and end positions for the current process
+    this->_mpi_config->get_1d_bounds(
+                                        static_cast<int>( this->_size_global ),
+                                        reinterpret_cast<int&>( this->_start_pos ),
+                                        reinterpret_cast<int&>( this->_end_pos )
+                                    );
+
+    // Determine size of the local panel set for the current process
+    this->_size_local       = this->_end_pos - this->_start_pos;
+
+    // Allocate PanelData
+    this->panel_data.reserve( this->_size_local );
+
+    std::size_t field_points_np  = 1; // Dummy value since field points will be loaded from input array
+    for ( std::size_t i=0; i<this->_size_local; i++ )
+    {
+        // Create new panel data
+        this->panel_data.emplace_back( 
+                                            PanelData<T, Config>(
+                                                                    field_points_np,
+                                                                    &(field_points_[3*i]),
+                                                                    freqs_np_,
+                                                                    headings_np_,
+                                                                    dofs_np_
+                                                                ) 
+                                    );
+    }
+
+    // Determine size of the local data chunk to storage the field points values for the differen degrees of freedom and headings
+    this->_size_local_fp = 0;
+    for ( std::size_t i=0; i<this->_size_local; i++ )
+    {
+        this->_size_local_fp += this->panel_data[i].field_points_np;
+    }
+
+    // Allocate local data chunk to storage the field points values for the different degrees of freedom and headings
+    this->_field_data.resize( this->_size_local_fp );
+    this->_is_heap    = true;
+
+}
+
+
+template<typename T, typename Config>
+RadDiffData<T, Config>::RadDiffData( 
+                                        MpiConfig*      mpi_config_,
                                         Mesh*           mesh_,
                                         std::size_t     freqs_np_,
                                         std::size_t     headings_np_,

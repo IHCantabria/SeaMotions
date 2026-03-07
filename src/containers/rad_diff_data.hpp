@@ -58,6 +58,15 @@ public:
 
     RadDiffData( 
                     MpiConfig*      mpi_config_,
+                    cusfloat*       field_points_,
+                    std::size_t     field_points_np_,
+                    std::size_t     freqs_np_,
+                    std::size_t     headings_np_,
+                    std::size_t     dofs_np_
+                );
+
+    RadDiffData( 
+                    MpiConfig*      mpi_config_,
                     Mesh*           mesh_,
                     std::size_t     freqs_np_,
                     std::size_t     headings_np_,
