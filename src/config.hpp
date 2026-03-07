@@ -120,16 +120,13 @@ constexpr const char* RESULTS_FIELD_POINTS_FOLDER_NAME  = "1_field_points";
 /****** Define class enums to be used along the code  *******/
 /************************************************************/
 
-// Panel Type enum. Used to classify panel types according to its 
-// functionality
-enum class PanelTypeE: int
+// Data type enum. Used to classify the data type to be calculated.
+enum class ComplexDataTypeE: int
 {
-    NONE,           // No type. Used for default empty states.
-    DIFFRAC,        // Diffraction-Radation panel. Used as BC type for floating bodies
-    INT_LID,        // Internal lid panel. Used as BC type for internal free surface in floating bodies to suppress spurious irregular frequencies.
-    EXT_LID,        // External lid panel. Used as BC type for external free surface zones where it is necessary damp stationary waves that arise due to the lack of viscosity in the potential flow model.
-    QTF_LID,        // QTF lid panel. Used as BC type to impose additional equations in the near field region of the floating bodies so it is possible to solve the second order potential.
-    FIELD_POINT     // Field point panel. Used as type for field points where the potential and its derivatives are calculated.
+    IMAGINARY,      // Imaginary part of the data type
+    MAGNITUDE,      // Magnitude of the data type
+    PHASE,          // Phase of the data type
+    REAL,           // Real part of the data type
 };
 
 // Free regime enum. Used to classify the frequency regime
@@ -141,14 +138,6 @@ enum class FreqRegimeE: int
     ASYMPT_HIGH     // High frequency asymptotic regime
 };
 
-
-// QTF type enum. Used to classify the type of QTF
-// term to be calculated.
-enum class QTFTypeE: int
-{
-    QTF_DIFF_CODE      = 0,    // QTF difference term
-    QTF_SUM_CODE       = 1     // QTF sum term
-};
 
 // Field types enum. Used to classify the physical field type to be calculated.
 enum class FieldTypeE: int
@@ -172,4 +161,26 @@ enum class FieldComponentE: int
     RADIATED,       // Radiated field component
     SCATTERED,      // Scattered field component
     TOTAL           // Total field component
+};
+
+
+// Panel Type enum. Used to classify panel types according to its 
+// functionality
+enum class PanelTypeE: int
+{
+    NONE,           // No type. Used for default empty states.
+    DIFFRAC,        // Diffraction-Radation panel. Used as BC type for floating bodies
+    INT_LID,        // Internal lid panel. Used as BC type for internal free surface in floating bodies to suppress spurious irregular frequencies.
+    EXT_LID,        // External lid panel. Used as BC type for external free surface zones where it is necessary damp stationary waves that arise due to the lack of viscosity in the potential flow model.
+    QTF_LID,        // QTF lid panel. Used as BC type to impose additional equations in the near field region of the floating bodies so it is possible to solve the second order potential.
+    FIELD_POINT     // Field point panel. Used as type for field points where the potential and its derivatives are calculated.
+};
+
+
+// QTF type enum. Used to classify the type of QTF
+// term to be calculated.
+enum class QTFTypeE: int
+{
+    QTF_DIFF_CODE      = 0,    // QTF difference term
+    QTF_SUM_CODE       = 1     // QTF sum term
 };
