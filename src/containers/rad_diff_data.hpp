@@ -20,6 +20,9 @@
 
 #pragma once
 
+// Include general usage libraries
+#include <type_traits>
+
 // Include local modules
 #include "../math/custensor/custensor.hpp"
 #include "../mesh/mesh_group.hpp"
@@ -49,6 +52,10 @@ private:
     std::size_t                         _size_local     = 0;        // Total number of panel for the current process
     std::size_t                         _size_local_fp  = 0;        // Total number of field points for the current process
     std::size_t                         _start_pos      = 0;        // Start position along field points for the current process
+
+    /*** Declare private methods ***/
+    template<FieldTypeE field_type, FieldComponentE field_component, ComplexDataTypeE complex_data_type, typename OutT>
+    const cut::CusTensor<OutT>* _get_field_data_impl( std::size_t heading_index ) const;
     
 public:
     // Declare public variables
@@ -90,11 +97,13 @@ public:
     /* Declare public methods */
     std::size_t         get_end_pos( void ) const;
     
-    template<FieldTypeE field_type, FieldComponentE field_component, ComplexDataTypeE complex_data_type>
-    const cut::CusTensor<cusfloat>* get_field_data( std::size_t heading_index ) const;
+    template<FieldTypeE field_type, FieldComponentE field_component, ComplexDataTypeE complex_data_type = ComplexDataTypeE::COMPLEX,
+             typename std::enable_if_t<complex_data_type == ComplexDataTypeE::COMPLEX && std::is_same<T, cuscomplex>::value, int> = 0>
+    const cut::CusTensor<T>* get_field_data( std::size_t heading_index ) const;
 
-    template<FieldTypeE field_type, FieldComponentE field_component>
-    const cut::CusTensor<cusfloat>* get_field_data_raw( std::size_t heading_index ) const;
+    template<FieldTypeE field_type, FieldComponentE field_component, ComplexDataTypeE complex_data_type = ComplexDataTypeE::COMPLEX,
+             typename std::enable_if_t<complex_data_type != ComplexDataTypeE::COMPLEX || !std::is_same<T, cuscomplex>::value, int> = 0>
+    const cut::CusTensor<cusfloat>* get_field_data( std::size_t heading_index ) const;
 
     std::size_t         get_size_global( void ) const;
 
