@@ -20,6 +20,9 @@
 
 #pragma once
 
+// Include general usage libraries
+#include <array>
+
 // Include local modules
 #include "../containers/morison_coeff_curve.hpp"
 #include "../containers/morison_element_def.hpp"
@@ -32,12 +35,14 @@ class MorisonElement
 {
 private:
     /*** Define private class attributes ***/
-    cusfloat                                    _area_axial         = 0.0;      // Area of the axial component of the Morison element
-    cusfloat                                    _area_trans         = 0.0;      // Area of the transverse component of the Morison element
-    cusfloat                                    _area_vert          = 0.0;      // Area of the
+    cusfloat                                    _area_axial_ca      = 0.0;      // Area of the axial component of the Morison element used for inertial forces calculation
+    cusfloat                                    _area_axial_cd      = 0.0;      // Area of the axial component of the Morison element used for drag calculation
+    cusfloat                                    _area_trans_cd      = 0.0;      // Area of the transverse component of the Morison element used for drag calculation
+    cusfloat                                    _area_vert_cd       = 0.0;      // Area of the vertical component of the Morison element used for drag calculation
     MorisonCoeffCurve*                          _ca_axial           = nullptr;  // Added mass coefficient for the axial component of the Morison element
     MorisonCoeffCurve*                          _ca_trans           = nullptr;  // Added mass coefficient for the transverse component of the Morison element
     MorisonCoeffCurve*                          _ca_vert            = nullptr;  // Added mass coefficient for the vertical component of the Morison element
+    cusfloat                                    _div_len            = 0.0;      // Length of the division segments of the Morison element
     cut::CusTensor<cusfloat>                    _field_points_l     ;           // Field points values where to evaluate the Morison element contribution (local coordinates referred to the COG)
     cut::CusTensor<cusfloat>                    _field_points_g     ;           // Field points values where to evaluate the Morison element contribution (global coordinates)
     std::size_t                                 _field_points_np    = 0;        // Number of field points
@@ -47,9 +52,9 @@ private:
     MorisonCoeffCurve*                          _cd_axial           = nullptr;  // Drag coefficient for the axial component of the Morison element
     MorisonCoeffCurve*                          _cd_trans           = nullptr;  // Drag coefficient for the transverse component of the Morison element
     MorisonCoeffCurve*                          _cd_vert            = nullptr;  // Drag coefficient for the vertical component of the Morison element
-    cut::CusTensor<cusfloat>                    _x_axis_l           ;           // Local x axis of the Morison element
-    cut::CusTensor<cusfloat>                    _y_axis_l           ;           // Local y axis of the Morison element
-    cut::CusTensor<cusfloat>                    _z_axis_l           ;           // Local z axis of the Morison element
+    std::array<cusfloat, 3>                     _x_axis_l           ;           // Local x axis of the Morison element
+    std::array<cusfloat, 3>                     _y_axis_l           ;           // Local y axis of the Morison element
+    std::array<cusfloat, 3>                     _z_axis_l           ;           // Local z axis of the Morison element
 
 
     /*** Define private class methods ***/
