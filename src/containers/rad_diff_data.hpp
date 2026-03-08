@@ -40,14 +40,15 @@ struct RadDiffData
 
 private:
     // Declare private variables
-    std::size_t                     _end_pos        = 0;        // End position along field points for the current process
-    mutable cut::CusTensor<cusfloat> _field_data;               // Local data chunk for field points values
-    bool                            _is_heap        = false;    // Flag to indicate if memory is allocated on heap
-    MpiConfig*                      _mpi_config     = nullptr;  // Pointer to MPI configuration
-    std::size_t                     _size_global    = 0;        // Total number of panel all across processes
-    std::size_t                     _size_local     = 0;        // Total number of panel for the current process
-    std::size_t                     _size_local_fp  = 0;        // Total number of field points for the current process
-    std::size_t                     _start_pos      = 0;        // Start position along field points for the current process
+    std::size_t                         _end_pos        = 0;        // End position along field points for the current process
+    mutable cut::CusTensor<cusfloat>    _field_data     ;           // Local data chunk for field points values
+    mutable cut::CusTensor<T>           _field_data_r   ;           // Local data chunk for field points values with raw data type
+    bool                                _is_heap        = false;    // Flag to indicate if memory is allocated on heap
+    MpiConfig*                          _mpi_config     = nullptr;  // Pointer to MPI configuration
+    std::size_t                         _size_global    = 0;        // Total number of panel all across processes
+    std::size_t                         _size_local     = 0;        // Total number of panel for the current process
+    std::size_t                         _size_local_fp  = 0;        // Total number of field points for the current process
+    std::size_t                         _start_pos      = 0;        // Start position along field points for the current process
     
 public:
     // Declare public variables
@@ -89,8 +90,11 @@ public:
     /* Declare public methods */
     std::size_t         get_end_pos( void ) const;
     
+    template<FieldTypeE field_type, FieldComponentE field_component, ComplexDataTypeE complex_data_type>
+    const cut::CusTensor<cusfloat>* get_field_data( std::size_t heading_index ) const;
+
     template<FieldTypeE field_type, FieldComponentE field_component>
-        const cut::CusTensor<cusfloat>* get_field_data( std::size_t heading_index ) const;
+    const cut::CusTensor<cusfloat>* get_field_data_raw( std::size_t heading_index ) const;
 
     std::size_t         get_size_global( void ) const;
 

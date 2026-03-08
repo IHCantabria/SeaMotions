@@ -73,10 +73,10 @@ public:
     /*** Declare public methods ***/
     void add_step( cusfloat freq );
 
-    template<FieldTypeE field_type, FieldComponentE field_comp>
+    template<FieldTypeE field_type, FieldComponentE field_comp, ComplexDataTypeE complex_data_type>
     cut::CusTensor<cusfloat>* get_field_data_scalar( std::size_t heading_index );
 
-    template<FieldTypeE field_type, FieldComponentE field_comp>
+    template<FieldTypeE field_type, FieldComponentE field_comp, ComplexDataTypeE complex_data_type>
     cut::CusTensor<cusfloat>* get_field_data_vector( std::size_t heading_index );
 
     RadDiffData<T, ModeComp>* get_rdd( void ) const;

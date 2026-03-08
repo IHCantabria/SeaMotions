@@ -26,7 +26,7 @@
 
 
 template<typename T, typename Config>
-template<FieldTypeE field_type, FieldComponentE field_component>
+template<FieldTypeE field_type, FieldComponentE field_component, ComplexDataTypeE complex_data_type>
 const cut::CusTensor<cusfloat>* RadDiffData<T, Config>::get_field_data( std::size_t heading_index ) const
 {
     std::size_t count           = 0;
@@ -42,7 +42,22 @@ const cut::CusTensor<cusfloat>* RadDiffData<T, Config>::get_field_data( std::siz
         {
             if constexpr ( std::is_same<T, cuscomplex>::value )
             {
-                out_data[ count ] = static_cast<cusfloat>( field_data_ptr[ offset + k ].real( ) );
+                if constexpr( complex_data_type == ComplexDataTypeE::MAGNITUDE )
+                {
+                    out_data[ count ] = static_cast<cusfloat>( std::abs( field_data_ptr[ offset + k ] ) );
+                }
+                else if constexpr( complex_data_type == ComplexDataTypeE::PHASE )
+                {
+                    out_data[ count ] = static_cast<cusfloat>( std::arg( field_data_ptr[ offset + k ] ) );
+                }
+                else if constexpr( complex_data_type == ComplexDataTypeE::REAL )
+                {
+                    out_data[ count ] = static_cast<cusfloat>( field_data_ptr[ offset + k ].real( ) );
+                }
+                else if constexpr( complex_data_type == ComplexDataTypeE::IMAGINARY )
+                {
+                    out_data[ count ] = static_cast<cusfloat>( field_data_ptr[ offset + k ].imag( ) );
+                }
             }
             else
             {
@@ -54,6 +69,31 @@ const cut::CusTensor<cusfloat>* RadDiffData<T, Config>::get_field_data( std::siz
 
     return &(this->_field_data);
 }
+
+
+template<typename T, typename Config>
+template<FieldTypeE field_type, FieldComponentE field_component>
+const cut::CusTensor<cusfloat>* RadDiffData<T, Config>::get_field_data_raw( std::size_t heading_index ) const
+{
+    std::size_t                 count           = 0;
+    std::size_t                 offset          = 0;
+    const cut::CusTensor<T>*    field_data_l    = nullptr;
+    T*                          out_data        = this->_field_data_r.data( );
+    for ( std::size_t j=0; j<this->_size_local; j++ )
+    {
+        offset                  = heading_index * this->panel_data[j].field_points_np;
+        field_data_l            = this->panel_data[j].template get_field_data<field_type, field_component>( );
+        const T* field_data_ptr = field_data_l->data( );
+        for ( std::size_t k=0; k<this->panel_data[j].field_points_np; k++ )
+        {
+            out_data[ count ] = field_data_ptr[ offset + k ];
+            count++;
+        }
+    }
+
+    return &(this->_field_data_r);
+}
+
 
 template<typename T, typename Config>
 std::size_t RadDiffData<T, Config>::get_end_pos( void ) const

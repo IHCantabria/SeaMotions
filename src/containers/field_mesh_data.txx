@@ -54,7 +54,7 @@ void FieldMeshData<T, ModeComp>::add_step( cusfloat freq )
         {
             // Add total potential field dataset
             field_name  = compose_field_name( "potential", this->_input->heads[i] );
-            field_data  = this->template get_field_data_scalar< FieldTypeE::POTENTIAL, FieldComponentE::TOTAL >( i );
+            field_data  = this->template get_field_data_scalar< FieldTypeE::POTENTIAL, FieldComponentE::TOTAL, ComplexDataTypeE::REAL >( i );
             if ( this->_mpi_config->is_root( ) )
                 this->_exporter->append_step( field_name, field_data );
 
@@ -62,17 +62,17 @@ void FieldMeshData<T, ModeComp>::add_step( cusfloat freq )
             {
                 // Add potential field components dataset
                 field_name = compose_field_name( "potential_incident", this->_input->heads[i] );
-                field_data = this->template get_field_data_scalar< FieldTypeE::POTENTIAL, FieldComponentE::INCIDENT >( i );
+                field_data = this->template get_field_data_scalar< FieldTypeE::POTENTIAL, FieldComponentE::INCIDENT, ComplexDataTypeE::REAL >( i );
                 if ( this->_mpi_config->is_root( ) )
                     this->_exporter->append_step( field_name, field_data );
 
                 field_name = compose_field_name( "potential_scatter", this->_input->heads[i] );
-                field_data = this->template get_field_data_scalar< FieldTypeE::POTENTIAL, FieldComponentE::SCATTERED >( i );
+                field_data = this->template get_field_data_scalar< FieldTypeE::POTENTIAL, FieldComponentE::SCATTERED, ComplexDataTypeE::REAL >( i );
                 if ( this->_mpi_config->is_root( ) )
                     this->_exporter->append_step( field_name, field_data );
 
                 field_name = compose_field_name( "potential_radiation", this->_input->heads[i] );
-                field_data = this->template get_field_data_scalar< FieldTypeE::POTENTIAL, FieldComponentE::RADIATED >( i );
+                field_data = this->template get_field_data_scalar< FieldTypeE::POTENTIAL, FieldComponentE::RADIATED, ComplexDataTypeE::REAL >( i );
                 if ( this->_mpi_config->is_root( ) )
                     this->_exporter->append_step( field_name, field_data );
                 
@@ -83,7 +83,7 @@ void FieldMeshData<T, ModeComp>::add_step( cusfloat freq )
         {
             // Add total pressure field dataset
             field_name  = compose_field_name( "pressure", this->_input->heads[i] );
-            field_data  = this->template get_field_data_scalar< FieldTypeE::PRESSURE, FieldComponentE::TOTAL >( i );
+            field_data  = this->template get_field_data_scalar< FieldTypeE::PRESSURE, FieldComponentE::TOTAL, ComplexDataTypeE::REAL >( i );
             if ( this->_mpi_config->is_root( ) )
                 this->_exporter->append_step( field_name, field_data );
 
@@ -91,17 +91,17 @@ void FieldMeshData<T, ModeComp>::add_step( cusfloat freq )
             {
                 // Add pressure field components dataset
                 field_name = compose_field_name( "pressure_incident", this->_input->heads[i] );
-                field_data = this->template get_field_data_scalar< FieldTypeE::PRESSURE, FieldComponentE::INCIDENT >( i );
+                field_data = this->template get_field_data_scalar< FieldTypeE::PRESSURE, FieldComponentE::INCIDENT, ComplexDataTypeE::REAL >( i );
                 if ( this->_mpi_config->is_root( ) )
                     this->_exporter->append_step( field_name, field_data );
 
                 field_name = compose_field_name( "pressure_scatter", this->_input->heads[i] );
-                field_data = this->template get_field_data_scalar< FieldTypeE::PRESSURE, FieldComponentE::SCATTERED >( i );
+                field_data = this->template get_field_data_scalar< FieldTypeE::PRESSURE, FieldComponentE::SCATTERED, ComplexDataTypeE::REAL >( i );
                 if ( this->_mpi_config->is_root( ) )
                     this->_exporter->append_step( field_name, field_data );
 
                 field_name = compose_field_name( "pressure_radiation", this->_input->heads[i] );
-                field_data = this->template get_field_data_scalar< FieldTypeE::PRESSURE, FieldComponentE::RADIATED >( i );
+                field_data = this->template get_field_data_scalar< FieldTypeE::PRESSURE, FieldComponentE::RADIATED, ComplexDataTypeE::REAL >( i );
                 if ( this->_mpi_config->is_root( ) )
                     this->_exporter->append_step( field_name, field_data );
                 
@@ -112,7 +112,7 @@ void FieldMeshData<T, ModeComp>::add_step( cusfloat freq )
         {
             // Add total pressure field dataset
             field_name  = compose_field_name( "velocity", this->_input->heads[i] );
-            field_data  = this->template get_field_data_vector< FieldTypeE::VELOCITY, FieldComponentE::TOTAL >( i );
+            field_data  = this->template get_field_data_vector< FieldTypeE::VELOCITY, FieldComponentE::TOTAL, ComplexDataTypeE::REAL >( i );
             if ( this->_mpi_config->is_root( ) )
                 this->_exporter->append_step( field_name, field_data );
 
@@ -120,17 +120,17 @@ void FieldMeshData<T, ModeComp>::add_step( cusfloat freq )
             {
                 // Add pressure field components dataset
                 field_name = compose_field_name( "velocity_incident", this->_input->heads[i] );
-                field_data = this->template get_field_data_vector< FieldTypeE::VELOCITY, FieldComponentE::INCIDENT >( i );
+                field_data = this->template get_field_data_vector< FieldTypeE::VELOCITY, FieldComponentE::INCIDENT, ComplexDataTypeE::REAL >( i );
                 if ( this->_mpi_config->is_root( ) )
                     this->_exporter->append_step( field_name, field_data );
 
                 field_name = compose_field_name( "velocity_scatter", this->_input->heads[i] );
-                field_data = this->template get_field_data_vector< FieldTypeE::VELOCITY, FieldComponentE::SCATTERED >( i );
+                field_data = this->template get_field_data_vector< FieldTypeE::VELOCITY, FieldComponentE::SCATTERED, ComplexDataTypeE::REAL >( i );
                 if ( this->_mpi_config->is_root( ) )
                     this->_exporter->append_step( field_name, field_data );
 
                 field_name = compose_field_name( "velocity_radiation", this->_input->heads[i] );
-                field_data = this->template get_field_data_vector< FieldTypeE::VELOCITY, FieldComponentE::RADIATED >( i );
+                field_data = this->template get_field_data_vector< FieldTypeE::VELOCITY, FieldComponentE::RADIATED, ComplexDataTypeE::REAL >( i );
                 if ( this->_mpi_config->is_root( ) )
                     this->_exporter->append_step( field_name, field_data );
                 
@@ -199,11 +199,11 @@ void FieldMeshData<T, ModeComp>::_configure_exporter( void )
 
 
 template<typename T, typename ModeComp>
-template<FieldTypeE field_type, FieldComponentE field_comp>
+template<FieldTypeE field_type, FieldComponentE field_comp, ComplexDataTypeE complex_data_type>
 cut::CusTensor<cusfloat>* FieldMeshData<T, ModeComp>::get_field_data_scalar( std::size_t heading_index )
 {
     // Get field data from radiation and diffraction data container
-    const cut::CusTensor<cusfloat>* field_temp = this->_rdd->template get_field_data<field_type, field_comp>( heading_index );
+    const cut::CusTensor<cusfloat>* field_temp = this->_rdd->template get_field_data<field_type, field_comp, complex_data_type>( heading_index );
 
     // MPI Gather field data to root process
     cusfloat* recv_buf = this->_mpi_config->is_root( ) ? this->_data_scalar_r.data( ) : nullptr;
@@ -225,7 +225,7 @@ cut::CusTensor<cusfloat>* FieldMeshData<T, ModeComp>::get_field_data_scalar( std
 
 
 template<typename T, typename ModeComp>
-template<FieldTypeE field_type, FieldComponentE field_comp>
+template<FieldTypeE field_type, FieldComponentE field_comp, ComplexDataTypeE complex_data_type>
 cut::CusTensor<cusfloat>* FieldMeshData<T, ModeComp>::get_field_data_vector( std::size_t heading_index )
 {
     // Get field data from radiation and diffraction data container
@@ -236,21 +236,21 @@ cut::CusTensor<cusfloat>* FieldMeshData<T, ModeComp>::get_field_data_vector( std
         ndim = 3;
         
         // Get velocity X field data
-        const cut::CusTensor<cusfloat>* vel_x = this->_rdd->template get_field_data<FieldTypeE::VELOCITY_X, field_comp>( heading_index );
+        const cut::CusTensor<cusfloat>* vel_x = this->_rdd->template get_field_data<FieldTypeE::VELOCITY_X, field_comp, complex_data_type>( heading_index );
         for ( std::size_t i=0; i<this->_rdd->get_size_local_fp( ); i++ )
         {
             this->_data_vector[ 3*i ]     = vel_x->data( )[i];
         }
 
         // Get velocity Y field data
-        const cut::CusTensor<cusfloat>* vel_y = this->_rdd->template get_field_data<FieldTypeE::VELOCITY_Y, field_comp>( heading_index );
+        const cut::CusTensor<cusfloat>* vel_y = this->_rdd->template get_field_data<FieldTypeE::VELOCITY_Y, field_comp, complex_data_type>( heading_index );
         for ( std::size_t i=0; i<this->_rdd->get_size_local_fp( ); i++ )
         {
             this->_data_vector[ 3*i + 1 ] = vel_y->data( )[i];
         }
 
         // Get velocity Z field data
-        const cut::CusTensor<cusfloat>* vel_z = this->_rdd->template get_field_data<FieldTypeE::VELOCITY_Z, field_comp>( heading_index );
+        const cut::CusTensor<cusfloat>* vel_z = this->_rdd->template get_field_data<FieldTypeE::VELOCITY_Z, field_comp, complex_data_type>( heading_index );
         for ( std::size_t i=0; i<this->_rdd->get_size_local_fp( ); i++ )
         {
             this->_data_vector[ 3*i + 2 ] = vel_z->data( )[i];
