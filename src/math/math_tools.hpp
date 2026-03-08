@@ -171,9 +171,9 @@ template<typename T, std::size_t N> inline  void        copy_vector(
                                                                         );
 
 template<typename T>                inline  void        cross(
-                                                                                    T* u, 
-                                                                                    T* v, 
-                                                                                    T* w
+                                                                                    const T* u, 
+                                                                                    const T* v, 
+                                                                                          T* w
                                                             );
 
                                             cusfloat    deg_to_rad(    

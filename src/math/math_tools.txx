@@ -250,7 +250,7 @@ void  copy_vector( T* reference_vector, T* target_vector )
 
 
 template<typename T>
-inline void cross( T* u, T* v, T* w )
+inline void cross( const T* u, const T* v, T* w )
 {
     w[0] = u[1]*v[2] - u[2]*v[1];
     w[1] = u[2]*v[0] - u[0]*v[2];
