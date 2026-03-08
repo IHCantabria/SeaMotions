@@ -64,14 +64,17 @@ void MorisonElementDef::_parse_input_file(
     // Read Keulegan-Carpenter characteristic length
     file >> this->kc_length;
 
-    // Read axial area
-    file >> this->area_axial;
+    // Read axial area for inertial forces calculation
+    file >> this->area_axial_ca;
 
-    // Read transversal area
-    file >> this->area_transversal;
+    // Read axial area for drag calculation
+    file >> this->area_axial_cd;
 
-    // Read vertical area
-    file >> this->area_vertical;
+    // Read transversal area for drag calculation
+    file >> this->area_transversal_cd;
+
+    // Read vertical area for drag calculation
+    file >> this->area_vertical_cd;
 
     // Read axis added mass coefficient file name
     file >> this->axis_added_mass_coeff_file;

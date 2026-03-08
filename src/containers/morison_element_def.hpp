@@ -40,9 +40,10 @@ private:
                             );
 public:
     /*** Declare class public attributes ***/
-    cusfloat                area_axial                          = 0.0;                  // Axial reference area
-    cusfloat                area_transversal                    = 0.0;                  // Transversal reference area
-    cusfloat                area_vertical                       = 0.0;                  // Vertical reference area
+    cusfloat                area_axial_ca                       = 0.0;                  // Axial reference area for inertial forces calculation
+    cusfloat                area_axial_cd                       = 0.0;                  // Axial reference area for drag calculation
+    cusfloat                area_transversal_cd                 = 0.0;                  // Transversal reference area for drag calculation
+    cusfloat                area_vertical_cd                    = 0.0;                  // Vertical reference area for drag calculation
     std::string             axis_added_mass_coeff_file          ;                       // Axial added-mass coefficient file
     std::string             axis_drag_coeff_file                ;                       // Axial drag coefficient file
     cusfloat                azimuth_angle                       = 0.0;                  // Azimuth angle (rad)
