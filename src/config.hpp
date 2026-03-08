@@ -123,10 +123,11 @@ constexpr const char* RESULTS_FIELD_POINTS_FOLDER_NAME  = "1_field_points";
 // Data type enum. Used to classify the data type to be calculated.
 enum class ComplexDataTypeE: int
 {
+    COMPLEX,        // Complex data type
     IMAGINARY,      // Imaginary part of the data type
     MAGNITUDE,      // Magnitude of the data type
     PHASE,          // Phase of the data type
-    REAL,           // Real part of the data type
+    REAL            // Real part of the data type
 };
 
 // Free regime enum. Used to classify the frequency regime
