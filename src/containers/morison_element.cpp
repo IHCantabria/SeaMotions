@@ -106,7 +106,7 @@ void    MorisonElement::calculate_hydrodynamic_forces(
     std::array<cuscomplex, 3>   rel_vel_l           = { 0.0, 0.0, 0.0 };            // Relative velocity at the field point in local coordinates
     cusfloat                    rhow                = this->_input->water_density;  // Water density (local copy for faster access and clear notation)
 
-    for ( std::size_t ih = 0; ih < this->_input->heads_np; ih++ )
+    for ( std::size_t ih = 0; ih < static_cast<std::size_t>( this->_input->heads_np ); ih++ )
     {
         // Get field point velocities
         const cut::CusTensor<cuscomplex>* vel_x = this->_rdd_morison->template get_field_data<FieldTypeE::VELOCITY_X, FieldComponentE::TOTAL, ComplexDataTypeE::COMPLEX>( ih );
