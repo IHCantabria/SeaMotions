@@ -176,6 +176,18 @@ template<typename T>                inline  void        cross(
                                                                                           T* w
                                                             );
 
+                                    inline  void        cross(
+                                                                                    const cusfloat*   u,
+                                                                                    const cuscomplex* v,
+                                                                                    cuscomplex*       w
+                                                                    );
+                                    
+                                    inline  void        cross(
+                                                                                    const cuscomplex* u,
+                                                                                    const cusfloat*   v,
+                                                                                    cuscomplex*       w
+                                                            );
+
                                             cusfloat    deg_to_rad(    
                                                                                     cusfloat deg 
                                                                     );

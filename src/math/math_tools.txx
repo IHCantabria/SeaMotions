@@ -257,6 +257,20 @@ inline void cross( const T* u, const T* v, T* w )
     w[2] = u[0]*v[1] - u[1]*v[0];
 }
 
+inline void cross( const cusfloat* u, const cuscomplex* v, cuscomplex* w )
+{
+    w[0] = u[1] * v[2] - u[2] * v[1];
+    w[1] = u[2] * v[0] - u[0] * v[2];
+    w[2] = u[0] * v[1] - u[1] * v[0];
+}
+
+inline void cross( const cuscomplex* u, const cusfloat* v, cuscomplex* w )
+{
+    w[0] = u[1] * v[2] - u[2] * v[1];
+    w[1] = u[2] * v[0] - u[0] * v[2];
+    w[2] = u[0] * v[1] - u[1] * v[0];
+}
+
 
 template<typename T>
 inline T eucledian_dist( int np, T* v0, T* v1 )
