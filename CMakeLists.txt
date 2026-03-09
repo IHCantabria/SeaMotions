@@ -216,20 +216,34 @@ set_mpi_target( seamotions_stab )
 set_hdf5_target( seamotions_stab )
 
 if ( WIN32 )
-    # install(
-    #         TARGETS seamotions_freq
-    #         CONFIGURATIONS Release
-    #         RUNTIME_DEPENDENCIES
-    #         DIRECTORIES ${DEPENDENCY_PATHS}
-    #         PRE_EXCLUDE_REGEXES "api-ms-" "ext-ms-" "hdf5" "mkl" "libmmd" "libomp" "svml" "libmpi" "impi" "AzureAttestManager.*" "AzureAttestManager.*" "wpaxholder.*"
-    #         POST_EXCLUDE_REGEXES "AzureAttestManager.*" "AzureAttestManager.*"
-    #         DESTINATION ${INSTALL_BIN_PATH}
-    #         )
     install(
-        TARGETS seamotions_freq seamotions_stab
-        CONFIGURATIONS Release
-        RUNTIME DESTINATION ${INSTALL_BIN_PATH}
-    )
+            TARGETS seamotions_freq
+            CONFIGURATIONS Release
+            DESTINATION ${INSTALL_BIN_PATH}
+            )
+
+    install(CODE "
+                    set(install_bin_path \"${INSTALL_BIN_PATH}\")
+                    set(seamotions_freq_exe \"${INSTALL_BIN_PATH}/seamotions_freq.exe\")
+                    file(GET_RUNTIME_DEPENDENCIES
+                        EXECUTABLES \"${INSTALL_BIN_PATH}/seamotions_freq.exe\"
+                        RESOLVED_DEPENDENCIES_VAR deps
+                        UNRESOLVED_DEPENDENCIES_VAR deps_unresolved
+                        PRE_EXCLUDE_REGEXES \"api-ms-\" \"ext-ms-\" \"hdf5\" \"mkl\" \"libmmd\" \"libomp\" \"svml\" \"libmpi\" \"impi\" \"wpaxholder.*\" \".*AzureAttestManager\\\\.dll\" \".*AzureAttestNormal\\\\.dll\"
+                        POST_EXCLUDE_REGEXES \".*AzureAttestManager\\\\.dll\" \".*AzureAttestNormal\\\\.dll\"
+                    )
+                    foreach(dep IN LISTS deps)
+                        file(INSTALL DESTINATION \"${INSTALL_BIN_PATH}\" TYPE SHARED_LIBRARY FILES \"\${dep}\")
+                    endforeach()
+                    if(deps_unresolved)
+                        message(STATUS \"Unresolved runtime dependencies (ignored): \${deps_unresolved}\")
+                    endif()
+            ")
+    # install(
+    #     TARGETS seamotions_freq seamotions_stab
+    #     CONFIGURATIONS Release
+    #     RUNTIME DESTINATION ${INSTALL_BIN_PATH}
+    # )
 
     # Copy known runtime DLLs
     install(
