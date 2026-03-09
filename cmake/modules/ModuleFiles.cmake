@@ -15,6 +15,12 @@ set(
         ${CMAKE_SOURCE_DIR}/src/containers/logger.hpp
         ${CMAKE_SOURCE_DIR}/src/containers/logger.cpp
         ${CMAKE_SOURCE_DIR}/src/containers/matlin_group.hpp
+        ${CMAKE_SOURCE_DIR}/src/containers/morison_coeff_curve.hpp
+        ${CMAKE_SOURCE_DIR}/src/containers/morison_coeff_curve.cpp
+        ${CMAKE_SOURCE_DIR}/src/containers/morison_element_def.hpp
+        ${CMAKE_SOURCE_DIR}/src/containers/morison_element_def.cpp
+        ${CMAKE_SOURCE_DIR}/src/containers/morison_element.hpp
+        ${CMAKE_SOURCE_DIR}/src/containers/morison_element.cpp
         ${CMAKE_SOURCE_DIR}/src/containers/mpi_config.hpp
         ${CMAKE_SOURCE_DIR}/src/containers/mpi_config.cpp
         ${CMAKE_SOURCE_DIR}/src/containers/mpi_timer.hpp
@@ -285,6 +291,13 @@ set(
 set(
         mpiint_module_files
         ${CMAKE_SOURCE_DIR}/src/mpi_interface.hpp
+    )
+
+# Pack raos module
+set(
+        raos_module_files
+        ${CMAKE_SOURCE_DIR}/src/raos.hpp
+        ${CMAKE_SOURCE_DIR}/src/raos.cpp
     )
 
 # Pack solvers files
