@@ -202,15 +202,15 @@
 } while(0)
 
 
-#define _THROW_CLASS_ERROR( message ) {                                      \
+#define _THROW_CLASS_ERROR( message ) {                                     \
     std::cerr << std::endl;                                                 \
     std::cerr << "ERROR - " << message << std::endl;                        \
     if ( _DEBUG_BUILD )                                                     \
     {                                                                       \
         std::cerr << " - Error location: " << std::endl;                    \
-        std::cerr << "      -> Class: " << __METHOD_NAME__ << std::endl;    \
-        std::cerr << "      -> FILE:  " << __FILE__ << std::endl;           \
-        std::cerr << "      -> LINE:  " << __LINE__ << std::endl;           \
+        std::cerr << "      -> Function: " << __func__ << std::endl;        \
+        std::cerr << "      -> FILE:     " << __FILE__ << std::endl;        \
+        std::cerr << "      -> LINE:     " << __LINE__ << std::endl;        \
     }                                                                       \
     exit( 1 );                                                              \
 }
