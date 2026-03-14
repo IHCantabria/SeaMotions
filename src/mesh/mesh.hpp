@@ -231,6 +231,12 @@ public:
                                                 void
                                         );
 
+            void        check_quality(
+                                                cusfloat        min_wavelength,
+                                                cusfloat        max_wave_number,
+                                                std::ostream&   report
+                                        ) const;
+
     
             void        write( 
                                                 std::string         fipath,

@@ -1232,6 +1232,38 @@ void FrequencySolver<N, mode_pf>::calculate_second_order( void )
 
 
 template<std::size_t N, int mode_pf>
+void FrequencySolver<N, mode_pf>::_check_system_mesh( void )
+{
+    if ( this->mpi_config->is_root( ) )
+    {
+        namespace fs = std::filesystem;
+        fs::path report_path = fs::path( this->input->case_fopath ) / "mesh_quality_report.txt";
+        std::ofstream report_file( report_path.string( ) );
+        if ( report_file.is_open( ) )
+        {
+            cusfloat min_lambda = 0.0;
+            cusfloat max_k = 0.0;
+            this->input->get_wave_quality_params( min_lambda, max_k );
+            report_file << "SeaMotions mesh quality report\n\n";
+            for ( int i=0; i<this->input->bodies_np; i++ )
+            {
+                if ( this->input->bodies[i]->mesh_total != nullptr )
+                {
+                    this->input->bodies[i]->mesh_total->check_quality( min_lambda, max_k, report_file );
+                }
+            }
+            report_file.close( );
+        }
+        else
+        {
+            Logger warn_logger( this->mpi_config->is_root( ) );
+            warn_logger.warn( "Could not write mesh quality report to: " + report_path.string( ) );
+        }
+    }
+}
+
+
+template<std::size_t N, int mode_pf>
 FrequencySolver<N, mode_pf>::FrequencySolver( Input* input_in, MpiConfig* mpi_config_in )
 {
     // Storage input sytem pointer
@@ -1252,6 +1284,9 @@ FrequencySolver<N, mode_pf>::FrequencySolver( Input* input_in, MpiConfig* mpi_co
     // Create mesh group
     this->_initialize_mesh_groups( );
 
+    // Check mesh quality and compatibility with the system
+    this->_check_system_mesh( );
+
     // Allocate space for the simulation data
     this->sim_data  = new SimulationData(
                                             this->input,
@@ -1271,6 +1306,9 @@ FrequencySolver<N, mode_pf>::FrequencySolver( Input* input_in, MpiConfig* mpi_co
 
     // Initialize field data containers if any
     this->_initialize_field_data( );
+
+    // Initialize Morison elements if any
+    this->_initialize_morison_elements( );
 
 }
 
@@ -1443,6 +1481,27 @@ void FrequencySolver<N, mode_pf>::_initialize_mesh_groups( void )
 
     LOG_TASK_TIME( mesh, mesh_timer )
 
+}
+
+
+template<std::size_t N, int mode_pf>
+void FrequencySolver<N, mode_pf>::_initialize_morison_elements( void )
+{
+    // LOG_TASK_SS( morison, "Initialize Morison elements..." )
+    // MpiTimer morison_timer;
+
+    // // Initialize Morison elements
+    // this->_morison_elements.reserve( this->input->morison_elements_np );
+    // for ( std::size_t i=0; i<this->input->morison_elements_np; i++ )
+    // {
+    //     this->_morison_elements.emplace_back( 
+    //                                             new MorisonElement(
+    //                                                                     this->input->morison_elements[i]
+    //                                                                 )
+    //                                         );
+    // }
+
+    // LOG_TASK_TIME( morison, morison_timer )
 }
 
 

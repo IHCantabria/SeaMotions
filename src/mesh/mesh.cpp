@@ -23,6 +23,7 @@
 #include <cassert>
 #include <cstddef>
 #include <filesystem>
+#include <iomanip>
 #include <unordered_map>
 
 // Include local modules
@@ -31,6 +32,7 @@
 #include "mesh.hpp"
 #include "../tools.hpp"
 #include "../inout/vtu.hpp"
+#include "../containers/logger.hpp"
 
 
 void        Mesh::_calculate_bounding_box(
@@ -1744,4 +1746,206 @@ void        Mesh::_swap(
     swap( this->z,               other.z );
     swap( this->z_max,           other.z_max );
     swap( this->z_min,           other.z_min );
+}
+
+
+void Mesh::check_quality(
+                cusfloat        min_wavelength,
+                cusfloat        max_wave_number,
+                std::ostream&   report
+            ) const
+{
+    if ( this->elems_np <= 0 || this->panels == nullptr )
+    {
+        report << "Mesh quality check skipped: empty mesh.\n";
+        return;
+    }
+
+    if ( !this->_is_bouding_box )
+    {
+        const_cast<Mesh*>(this)->_calculate_bounding_box();
+    }
+
+    const cusfloat dx = this->x_max - this->x_min;
+    const cusfloat dy = this->y_max - this->y_min;
+    const cusfloat dz = this->z_max - this->z_min;
+    const cusfloat bbox_diag = std::sqrt( dx*dx + dy*dy + dz*dz );
+
+    const cusfloat min_area = ( bbox_diag > 0.0 ) ? ( 1e-8 * bbox_diag * bbox_diag ) : 1e-12;
+    const cusfloat wl_tol = std::max( static_cast<cusfloat>(1e-6), static_cast<cusfloat>(1e-4) * bbox_diag );
+
+    const cusfloat max_aspect_ratio = 8.0;
+    const cusfloat min_angle_deg_thr = 20.0;
+    const cusfloat max_skew_deg_thr = 45.0;
+
+    int bad_area = 0;
+    int bad_aspect = 0;
+    int bad_angle = 0;
+    int bad_skew = 0;
+    int bad_wl = 0;
+    int bad_normal = 0;
+
+    cusfloat max_panel_size = 0.0;
+    cusfloat worst_aspect = 0.0;
+    cusfloat worst_min_angle = 180.0;
+    cusfloat worst_skew = 0.0;
+
+    for ( int i = 0; i < this->elems_np; i++ )
+    {
+        const PanelGeom* panel = this->panels[i];
+        if ( panel == nullptr )
+        {
+            continue;
+        }
+
+        const int n = panel->num_nodes;
+        if ( n < 3 )
+        {
+            continue;
+        }
+
+        // Edge lengths
+        cusfloat max_edge = 0.0;
+        cusfloat min_edge = 1e30;
+        for ( int j = 0; j < n; j++ )
+        {
+            const int j1 = ( j + 1 ) % n;
+            cusfloat a[3] = { panel->x[j], panel->y[j], panel->z[j] };
+            cusfloat b[3] = { panel->x[j1], panel->y[j1], panel->z[j1] };
+            const cusfloat len = distance_3d( a, b );
+            if ( len > max_edge ) { max_edge = len; }
+            if ( len < min_edge ) { min_edge = len; }
+        }
+
+        cusfloat panel_size = max_edge;
+        if ( n == 4 )
+        {
+            cusfloat n0[3] = { panel->x[0], panel->y[0], panel->z[0] };
+            cusfloat n1[3] = { panel->x[1], panel->y[1], panel->z[1] };
+            cusfloat n2[3] = { panel->x[2], panel->y[2], panel->z[2] };
+            cusfloat n3[3] = { panel->x[3], panel->y[3], panel->z[3] };
+            const cusfloat d0 = distance_3d( n0, n2 );
+            const cusfloat d1 = distance_3d( n1, n3 );
+            panel_size = std::max( d0, d1 );
+        }
+
+        if ( panel_size > max_panel_size )
+        {
+            max_panel_size = panel_size;
+        }
+
+        if ( panel->area <= min_area )
+        {
+            bad_area++;
+        }
+
+        if ( min_edge > 0.0 )
+        {
+            const cusfloat aspect = max_edge / min_edge;
+            if ( aspect > max_aspect_ratio )
+            {
+                bad_aspect++;
+            }
+            if ( aspect > worst_aspect )
+            {
+                worst_aspect = aspect;
+            }
+        }
+
+        // Angle-based metrics
+        cusfloat min_angle = 180.0;
+        cusfloat max_skew = 0.0;
+        const cusfloat ideal = ( n == 3 ) ? 60.0 : 90.0;
+        for ( int j = 0; j < n; j++ )
+        {
+            const int jm1 = ( j + n - 1 ) % n;
+            const int jp1 = ( j + 1 ) % n;
+            cusfloat v1[3] = { panel->x[jm1] - panel->x[j], panel->y[jm1] - panel->y[j], panel->z[jm1] - panel->z[j] };
+            cusfloat v2[3] = { panel->x[jp1] - panel->x[j], panel->y[jp1] - panel->y[j], panel->z[jp1] - panel->z[j] };
+            const cusfloat ang = angle_deg( v1, v2 );
+            if ( ang < min_angle ) { min_angle = ang; }
+            const cusfloat skew = std::abs( ang - ideal );
+            if ( skew > max_skew ) { max_skew = skew; }
+        }
+
+        if ( min_angle < min_angle_deg_thr )
+        {
+            bad_angle++;
+        }
+        if ( max_skew > max_skew_deg_thr )
+        {
+            bad_skew++;
+        }
+
+        if ( min_angle < worst_min_angle ) { worst_min_angle = min_angle; }
+        if ( max_skew > worst_skew ) { worst_skew = max_skew; }
+
+        // Waterline planarity
+        if ( panel->is_wl_boundary || panel->type == PanelTypeE::INT_LID || panel->type == PanelTypeE::EXT_LID )
+        {
+            for ( int j = 0; j < n; j++ )
+            {
+                if ( std::abs( panel->z[j] ) > wl_tol )
+                {
+                    bad_wl++;
+                    break;
+                }
+            }
+        }
+
+        // Normal consistency
+        const cusfloat vcx = panel->center[0] - panel->body_cog[0];
+        const cusfloat vcy = panel->center[1] - panel->body_cog[1];
+        const cusfloat vcz = panel->center[2] - panel->body_cog[2];
+        const cusfloat dotn = panel->normal_vec[0] * vcx + panel->normal_vec[1] * vcy + panel->normal_vec[2] * vcz;
+        if ( dotn < 0.0 )
+        {
+            bad_normal++;
+        }
+    }
+
+    // Frequency-based checks
+    cusfloat min_lambda = min_wavelength;
+    cusfloat worst_k_size = max_wave_number * max_panel_size;
+
+    report << "Mesh quality report for: " << this->name << "\n";
+    report << "  Panels: " << this->elems_np << "\n";
+    report << "  Bounding box diag: " << bbox_diag << "\n";
+    report << "  Max panel size: " << max_panel_size << "\n";
+    report << "  Worst aspect ratio: " << worst_aspect << " (limit " << max_aspect_ratio << ")\n";
+    report << "  Worst min angle (deg): " << worst_min_angle << " (limit " << min_angle_deg_thr << ")\n";
+    report << "  Worst skew (deg): " << worst_skew << " (limit " << max_skew_deg_thr << ")\n";
+    report << "  Panels below min area: " << bad_area << " (min_area " << min_area << ")\n";
+    report << "  Panels over aspect ratio: " << bad_aspect << "\n";
+    report << "  Panels below min angle: " << bad_angle << "\n";
+    report << "  Panels over skew: " << bad_skew << "\n";
+    report << "  Waterline planarity warnings: " << bad_wl << " (tol " << wl_tol << ")\n";
+    report << "  Normal consistency warnings: " << bad_normal << "\n";
+
+    if ( min_lambda > 0.0 )
+    {
+        report << "  Min wavelength: " << min_lambda << "\n";
+        report << "  Max panel size vs min_lambda/6: " << max_panel_size << " vs " << ( min_lambda / 6.0 ) << "\n";
+        report << "  Max k*panel_size: " << worst_k_size << " (limit 1.0)\n";
+    }
+
+    report << "\n";
+
+    Logger warn_logger;
+    if ( bad_area || bad_aspect || bad_angle || bad_skew || bad_wl || bad_normal )
+    {
+        warn_logger.warn( "Mesh quality issues detected for mesh: " + this->name );
+    }
+
+    if ( min_lambda > 0.0 )
+    {
+        if ( max_panel_size > ( min_lambda / 6.0 ) )
+        {
+            warn_logger.warn( "Max panel size exceeds min wavelength/6 for mesh: " + this->name );
+        }
+        if ( worst_k_size > 1.0 )
+        {
+            warn_logger.warn( "Max k*panel_size exceeds 1.0 for mesh: " + this->name );
+        }
+    }
 }
