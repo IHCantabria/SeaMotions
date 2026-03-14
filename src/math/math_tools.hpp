@@ -192,6 +192,16 @@ template<typename T>                inline  void        cross(
                                                                                     cusfloat deg 
                                                                     );
 
+                                            cusfloat    distance_3d(
+                                                                                    const cusfloat* a,
+                                                                                    const cusfloat* b
+                                                                    );
+
+                                            cusfloat    angle_deg(
+                                                                                    const cusfloat* v1,
+                                                                                    const cusfloat* v2
+                                                                    );
+
 template<typename T>                inline  T           eucledian_dist(
                                                                                     int     np,
                                                                                     T*      v0,

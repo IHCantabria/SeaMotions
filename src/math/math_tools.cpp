@@ -49,6 +49,21 @@ cusfloat    angfreq_to_period(
 }
 
 
+cusfloat angle_deg(const cusfloat* v1, const cusfloat* v2)
+{
+    const cusfloat n1 = std::sqrt( pow2s( v1[0] ) + pow2s( v1[1] ) + pow2s( v1[2] ) );
+    const cusfloat n2 = std::sqrt( pow2s( v2[0] ) + pow2s( v2[1] ) + pow2s( v2[2] ) );
+    if ( n1 <= 0.0 || n2 <= 0.0 )
+    {
+        return 0.0;
+    }
+    cusfloat cosv = ( v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2] ) / ( n1 * n2 );
+    if ( cosv > 1.0 ) { cosv = 1.0; }
+    if ( cosv < -1.0 ) { cosv = -1.0; }
+    return std::acos( cosv ) * 180.0 / PI;
+}
+
+
 int assert_complex_equality(
                                 cuscomplex u, 
                                 cuscomplex v, 
@@ -307,6 +322,18 @@ cusfloat    cossin2_int_0_2PI(
 cusfloat    deg_to_rad(  cusfloat deg )
 {
     return deg*PI/180.0;
+}
+
+
+cusfloat distance_3d(const cusfloat* a, const cusfloat* b)
+{
+    return std::sqrt(
+                        pow2s( a[0] - b[0] )
+                        +
+                        pow2s( a[1] - b[1] )
+                        +
+                        pow2s( a[2] - b[2] )
+                    );
 }
 
 
