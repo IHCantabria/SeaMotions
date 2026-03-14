@@ -51,6 +51,12 @@ inline  void    read_channel_list(
 
         // Check if reading a heder line
         std::getline( infile, line );
+
+        if ( !infile )
+        {
+            break;
+        }
+        
         int pos = line.find( "/***" );
         infile.seekg( read_pos );
         if ( !( pos < 0 ) )
