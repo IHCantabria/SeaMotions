@@ -116,6 +116,11 @@ public:
                                     void 
                 );
 
+    void    get_wave_quality_params(
+                                    cusfloat& min_wavelength,
+                                    cusfloat& max_wave_number
+                ) const;
+
 private:
     void    read_case(
                                     const std::string& folder_path

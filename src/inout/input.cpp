@@ -32,6 +32,7 @@
 #include "../math/math_tools.hpp"
 #include "../tools.hpp"
 #include "../version.hpp"
+#include "../waves/wave_dispersion_base_fo.hpp"
 
 // Manage namespaces
 namespace fs = std::filesystem;
@@ -904,4 +905,44 @@ void Input::print( void )
     std::cout << "ANGULAR FREQUENCIES: " << std::endl;
     print_vector( this->angfreqs_np, this->angfreqs.data( ), 1, 6 );
     std::cout << std::endl;
+}
+
+
+void Input::get_wave_quality_params(
+                                        cusfloat& min_wavelength,
+                                        cusfloat& max_wave_number
+                                    ) const
+{
+    min_wavelength = 0.0;
+    max_wave_number = 0.0;
+
+    if ( this->angfreqs_np <= 0 || this->water_depth <= 0.0 || this->grav_acc <= 0.0 )
+    {
+        return;
+    }
+
+    cusfloat min_lambda = 1e30;
+    cusfloat max_k = 0.0;
+    for ( int i = 0; i < this->angfreqs_np; i++ )
+    {
+        const cusfloat k = w2k( this->angfreqs[i], this->water_depth, this->grav_acc );
+        if ( k > 0.0 )
+        {
+            const cusfloat lambda = 2.0 * PI / k;
+            if ( lambda < min_lambda )
+            {
+                min_lambda = lambda;
+            }
+            if ( k > max_k )
+            {
+                max_k = k;
+            }
+        }
+    }
+
+    if ( min_lambda < 1e29 )
+    {
+        min_wavelength = min_lambda;
+    }
+    max_wave_number = max_k;
 }
