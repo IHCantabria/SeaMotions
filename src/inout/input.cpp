@@ -248,6 +248,48 @@ void Input::read_body(
     read_signal     = read_channel_value( infile, body->ext_lid_damp_f );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
+    //////////////////////////////////////////////
+    /********** Morison Coefficients ************/
+    //////////////////////////////////////////////
+
+    // Skip header
+    skip_header( infile, line_count, 3 );
+
+    // Read water line points detection precision
+    target_signal   = "UseMC";
+    read_signal     = read_channel_value( infile, body->use_morison_elements );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read bodies name definition
+    target_signal   = "FileMC";
+    read_channel_list(
+                            infile,
+                            target_file,
+                            target_signal,
+                            line_count,
+                            body->morison_elements_names
+                        );
+
+    if ( !body->use_morison_elements )
+    {
+        body->morison_elements_names.clear( );
+    }
+
+    body->morison_elements_np = body->morison_elements_names.size( );
+
+    // Load morison elements
+    body->morison_elements.reserve( body->morison_elements_np );
+    for ( std::size_t i=0; i<body->morison_elements_np; i++ )
+    {
+        // Generate morison element file name
+        std::stringstream ss;
+        ss << body->mesh_body_name << "_" << body->morison_elements_names[i] << "_mc.input.dat";
+        std::string morison_element_file = ss.str( );
+
+        // Load morison element
+        body->morison_elements.emplace_back( MorisonElementDef( infile, body->cog ) );
+    }
+
     // Load mesh for the current body
     std::vector<Mesh*> _mesh_total;
     fs::path mesh_foname_{ MESH_FOLDER_NAME };
