@@ -92,15 +92,23 @@ Logger::Logger( bool is_root, int time_colum )
 
 std::string Logger::_prefix( Level level ) const 
 {
+    std::string prefix;
     switch ( level ) 
     {
-        case Level::INFO:    return "[INFO]: ";
-        case Level::WARNING: return "[WARNING]: ";
-        case Level::ERROR:   return "[ERROR]: ";
-        case Level::TASK:    return "[TASK]: ";
+        case Level::INFO:    prefix = "[INFO]:";    break;
+        case Level::WARNING: prefix = "[WARNING]:"; break;
+        case Level::ERROR:   prefix = "[ERROR]:";   break;
+        case Level::TASK:    prefix = "[TASK]:";    break;
     }
 
-    return "";
+    if ( prefix.empty( ) )
+    {
+        return "";
+    }
+
+    std::ostringstream ss;
+    ss << std::left << std::setw( _prefix_width ) << prefix;
+    return ss.str( );
 }
 
 

@@ -81,10 +81,11 @@ class Logger
 {
 private:
     /* Declare private attributes */
-    bool                _is_root     = true;
-    std::string         _last_msg;
-    int                 _time_column = 40;
-    std::mutex          _mutex;
+    bool                _is_root        = true;
+    std::string         _last_msg       ;
+    int                 _time_column    = 40;
+    std::mutex          _mutex          ;
+    static constexpr int _prefix_width  = 11;
 
     /* Declare private class methods */
     const char*     _color( Level level ) const;
