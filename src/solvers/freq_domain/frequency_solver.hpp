@@ -24,6 +24,7 @@
 #include "../../config.hpp"
 #include "../../containers/field_mesh_data.hpp"
 #include "../../containers/mpi_config.hpp"
+#include "../../containers/morison_element.hpp"
 #include "../../containers/rad_diff_data.hpp"
 #include "../../containers/simulation_data.hpp"
 #include "formulation_kernel_backend.hpp"
@@ -66,11 +67,15 @@ private:
     using RDDQC     = RadDiffData<cuscomplex, RDDQTFConfig>;
     using FMD       = FieldMeshData<cuscomplex, RDDFDConfig>;
     using vec_fmd   = std::vector<FMD*>;
+    using vec_med   = std::vector<MorisonElement*>;
 
     /**** Declare class private attributes ****/
-    vec_fmd     _field_points       ;            // Storage of field points for radiation and diffraction calculations
-    RDDQC*      _qtf_wl_fields      = nullptr;   // Storage of waterline field points for QTF calculations
-    RDDQC*      _qtf_bern_fields    = nullptr;   // Storage of velocity field for the calculation of bernoulli term in QTFs
+    cut::CusTensor<cuscomplex>      _drag_force_aux     ;            // Auxiliary storage for the calculation of drag forces in slender elements
+    vec_fmd                         _field_points       ;            // Storage of field points for radiation and diffraction calculations
+    cut::CusTensor<cuscomplex>      _inertial_force_aux ;            // Auxiliary storage for the calculation of inertial forces in slender elements
+    std::vector<vec_med>            _morison_elements   ;            // Storage of Morison elements for the calculation of inertial and drag forces in slender elements
+    RDDQC*                          _qtf_wl_fields      = nullptr;   // Storage of waterline field points for QTF calculations
+    RDDQC*                          _qtf_bern_fields    = nullptr;   // Storage of velocity field for the calculation of bernoulli term in QTFs
 
     /**** Declare class private methods ****/
     void _calculate_field_points_values( 
@@ -89,6 +94,10 @@ private:
                                                     bool        is_multi_head 
                                 );
 
+    void _calculate_morison_forces( 
+                                                    cusfloat    ang_freq 
+                                    );
+
     void _calculate_global_static_matrixes( );
 
     void _calculate_hydrostatics( );
@@ -100,11 +109,18 @@ private:
                                                     bool        is_multi_head
                                     );
 
+
+    void _check_system_mesh(  
+                                                    void 
+                                    );
+
     void _generate_formulation_kernel( );
 
     void _initialize_field_data( );
 
     void _initialize_mesh_groups( );
+
+    void _initialize_morison_elements( );
 
     void _initialize_output_system( );
 

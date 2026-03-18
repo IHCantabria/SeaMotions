@@ -161,6 +161,25 @@ void FrequencySolver<N, mode_pf>::_calculate_field_points_values(
         this->_field_points[i]->add_step( ang_freq );
 
     }
+
+    // Loop over bodies
+    for ( std::size_t i=0; i<static_cast<std::size_t>( this->input->bodies_np ); i++ )
+    {
+        if ( this->input->bodies[i]->use_morison_elements )
+        {
+            // Loop over morison elements of the current body
+            for ( std::size_t j=0; j<static_cast<std::size_t>( this->input->bodies[i]->morison_elements_names.size( ) ); j++ )
+            {
+                // Calculate field values over morison element field points
+                this->kernel->template compute_fields<RDDMorisonConfig>( 
+                                                                            freq_index,
+                                                                            ang_freq,
+                                                                            this->sim_data->raos,
+                                                                            this->_morison_elements[i][j]->get_rdd( )
+                                                                        );
+            }
+        }
+    }
 }
 
 
@@ -191,6 +210,9 @@ void FrequencySolver<N, mode_pf>::calculate_first_order( void )
 
         // Calculate second order coefficients given by first order potential solution
         this->_calculate_mean_drift( i, false );
+
+        // Calculate morison coefficients and forces for slender elements
+        this->_calculate_morison_forces( input->angfreqs[i] );
         
         // Print out execution times
         LOG_TASK_TIME( freq, freq_timer )
@@ -312,6 +334,8 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
                             this->sim_data->hydrostiff_p0,
                             this->sim_data->wave_diffrac_p0,
                             this->sim_data->froude_krylov_p0,
+                            this->sim_data->morison_drag_force_p0,
+                            this->sim_data->morison_inertial_force_p0,
                             ang_freq,
                             this->sim_data->raos
                         );
@@ -496,6 +520,21 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
             }   
         }
 
+        if ( this->input->out_morison )
+        {
+            this->output->save_wave_exciting_format(
+                                                        freq_index,
+                                                        _DN_MORISON_DRAG,
+                                                        this->sim_data->morison_drag_force_p0
+                                                    );
+
+            this->output->save_wave_exciting_format(
+                                                        freq_index,
+                                                        _DN_MORISON_INERTIAL,
+                                                        this->sim_data->morison_inertial_force_p0
+                                                    );
+        }
+
         if ( this->input->out_raos && freq_regime == FreqRegimeE::REGULAR )
         {
             this->output->save_wave_exciting_format(
@@ -591,6 +630,47 @@ void FrequencySolver<N, mode_pf>::_calculate_mean_drift(
             }
         }
     }
+}
+
+
+template<std::size_t N, int mode_pf>
+void FrequencySolver<N, mode_pf>::_calculate_morison_forces( cusfloat ang_freq )
+{
+    // Clear morison forces vector buffer
+    clear_vector( this->input->heads_np * this->input->dofs_np * this->input->bodies_np, this->sim_data->morison_drag_force         );
+    clear_vector( this->input->heads_np * this->input->dofs_np * this->input->bodies_np, this->sim_data->morison_inertial_force     );
+
+    // Loop over bodies
+    for ( std::size_t i=0; i<static_cast<std::size_t>( this->input->bodies_np ); i++ )
+    {
+        // Loop over morison elements of the current body
+        for ( std::size_t j=0; j<static_cast<std::size_t>( this->input->bodies[i]->morison_elements_names.size( ) ); j++ )
+        {
+            // Calculate hydrodynamic morison forces for the current element
+            this->_morison_elements[i][j]->calculate_hydrodynamic_forces( 
+                                                                                ang_freq,
+                                                                                &(this->sim_data->raos[ 6*i ]),
+                                                                                this->_inertial_force_aux,
+                                                                                this->_drag_force_aux
+                                                                            );
+            
+            // Add inertial and drag forces to body total morison forces
+            for ( std::size_t ih=0; ih<static_cast<std::size_t>( this->input->heads_np ); ih++ )
+            {
+                std::size_t offset = ih * ( this->input->dofs_np * this->input->bodies_np ) + i * this->input->dofs_np;
+                for ( std::size_t id=0; id<static_cast<std::size_t>( this->input->dofs_np ); id++ )
+                {
+                    std::size_t idx = ih * this->input->dofs_np + id;
+                    this->sim_data->morison_drag_force[ offset + id ]       += this->_drag_force_aux[idx];
+                    this->sim_data->morison_inertial_force[ offset + id ]   += this->_inertial_force_aux[idx];
+                }
+            }
+        }
+    }
+
+    // Reduce Morison forces into the root processor variable
+    REDUCE_FO_ROOT( morison_drag_force, wave_exc, cuscomplex )
+    REDUCE_FO_ROOT( morison_inertial_force, wave_exc, cuscomplex )
 }
 
 
@@ -1316,6 +1396,18 @@ FrequencySolver<N, mode_pf>::FrequencySolver( Input* input_in, MpiConfig* mpi_co
 template<std::size_t N, int mode_pf>
 FrequencySolver<N, mode_pf>::~FrequencySolver( void )
 {
+    // Delete Morison elements if any
+    for ( std::size_t i=0; i<static_cast<std::size_t>( this->input->bodies_np ); i++ )
+    {
+        if ( this->input->bodies[i]->use_morison_elements )
+        {
+            for ( std::size_t j=0; j<this->input->bodies[i]->morison_elements_np; j++ )
+            {
+                delete this->_morison_elements[i][j];
+            }
+        }
+    }
+
     // Delete field data if any
     if ( this->input->is_calc_mdrift )
     {
@@ -1487,21 +1579,31 @@ void FrequencySolver<N, mode_pf>::_initialize_mesh_groups( void )
 template<std::size_t N, int mode_pf>
 void FrequencySolver<N, mode_pf>::_initialize_morison_elements( void )
 {
-    // LOG_TASK_SS( morison, "Initialize Morison elements..." )
-    // MpiTimer morison_timer;
+    LOG_TASK_SS( morison, "Initialize Morison elements..." )
+    MpiTimer morison_timer;
 
-    // // Initialize Morison elements
-    // this->_morison_elements.reserve( this->input->morison_elements_np );
-    // for ( std::size_t i=0; i<this->input->morison_elements_np; i++ )
-    // {
-    //     this->_morison_elements.emplace_back( 
-    //                                             new MorisonElement(
-    //                                                                     this->input->morison_elements[i]
-    //                                                                 )
-    //                                         );
-    // }
+    // Initialize Morison elements
+    this->_morison_elements.reserve( this->input->bodies_np );
+    for ( std::size_t i=0; i<static_cast<std::size_t>( this->input->bodies_np ); i++ )
+    {
+        this->_morison_elements.emplace_back( );
+        for ( std::size_t j=0; j<this->input->bodies[i]->morison_elements_np; j++ )
+        {
+            this->_morison_elements[i].emplace_back( 
+                                                        new MorisonElement(
+                                                                                this->mpi_config,
+                                                                                this->input,
+                                                                                &(this->input->bodies[i]->morison_elements[j])
+                                                                    )
+                                            );
+        }
+    }
 
-    // LOG_TASK_TIME( morison, morison_timer )
+    // Reserve memory for auxiliary Morison elements forces
+    this->_drag_force_aux       = cut::CusTensor<cuscomplex>( { this->input->heads_np, this->input->dofs_np } );
+    this->_inertial_force_aux   = cut::CusTensor<cuscomplex>( { this->input->heads_np, this->input->dofs_np } );
+
+    LOG_TASK_TIME( morison, morison_timer )
 }
 
 
