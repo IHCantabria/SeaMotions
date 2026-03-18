@@ -72,6 +72,7 @@ public:
     bool                            out_pressure        = false;
     bool                            out_mdrift          = false;
     bool                            out_mesh            = false;
+    bool                            out_morison         = false;
     bool                            out_qtf             = false;
     bool                            out_qtf_comp        = false;
     int                             out_qtf_so_model    = 0;

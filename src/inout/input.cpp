@@ -20,6 +20,7 @@
 
 
 // Include general usage libraries
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -261,34 +262,59 @@ void Input::read_body(
     read_signal     = read_channel_value( infile, body->use_morison_elements );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
-    // Read bodies name definition
-    target_signal   = "FileMC";
-    read_channel_list(
-                            infile,
-                            target_file,
-                            target_signal,
-                            line_count,
-                            body->morison_elements_names
-                        );
-
+    // Loop over morison elements files in the morison_elements folder and 
+    // load them if the user has defined the use of morison elements
     if ( !body->use_morison_elements )
     {
         body->morison_elements_names.clear( );
+        body->morison_elements_np = 0;
     }
-
-    body->morison_elements_np = body->morison_elements_names.size( );
-
-    // Load morison elements
-    body->morison_elements.reserve( body->morison_elements_np );
-    for ( std::size_t i=0; i<body->morison_elements_np; i++ )
+    else
     {
-        // Generate morison element file name
-        std::stringstream ss;
-        ss << body->mesh_body_name << "_" << body->morison_elements_names[i] << "_mc.input.dat";
-        std::string morison_element_file = ss.str( );
+        body->morison_elements_names.clear( );
+        fs::path morison_dir = folder_path_ / "morison_elements";
 
-        // Load morison element
-        body->morison_elements.emplace_back( MorisonElementDef( infile, body->cog ) );
+        auto has_me_extension = []( const std::string& name )
+        {
+            const std::string ext = ".me.dat";
+            if ( name.size( ) < ext.size( ) )
+            {
+                return false;
+            }
+            return name.compare( name.size( ) - ext.size( ), ext.size( ), ext ) == 0;
+        };
+
+        if ( fs::exists( morison_dir ) && fs::is_directory( morison_dir ) )
+        {
+            for ( const auto& entry : fs::directory_iterator( morison_dir ) )
+            {
+                if ( !entry.is_regular_file( ) )
+                {
+                    continue;
+                }
+                const std::string filename = entry.path( ).filename( ).string( );
+                if ( has_me_extension( filename ) )
+                {
+                    body->morison_elements_names.push_back( filename );
+                }
+            }
+        }
+
+        std::sort( body->morison_elements_names.begin( ), body->morison_elements_names.end( ) );
+        body->morison_elements_np = body->morison_elements_names.size( );
+
+        // Load morison elements
+        body->morison_elements.reserve( body->morison_elements_np );
+        for ( std::size_t i=0; i<body->morison_elements_np; i++ )
+        {
+            body->morison_elements.emplace_back(
+                                                    MorisonElementDef(
+                                                                            morison_dir.string( ),
+                                                                            body->morison_elements_names[i],
+                                                                            body->cog
+                                                                        )
+                                                );
+        }
     }
 
     // Load mesh for the current body
@@ -550,6 +576,11 @@ void Input::read_case( const std::string& folder_path )
     // Read output flag for mesh
     target_signal   = "OutMesh";
     read_signal     = read_channel_value( infile, this->out_mesh );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read output flag for Morison elements forces
+    target_signal   = "OutMorison";
+    read_signal     = read_channel_value( infile, this->out_morison );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read output flag for quadratic transfer functions
