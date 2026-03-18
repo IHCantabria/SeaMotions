@@ -34,6 +34,9 @@
 class MorisonElement
 {
 private:
+    /*** Alias types to shorten declarations ***/
+    using  RDDMorison = RadDiffData<cuscomplex, RDDMorisonConfig>;
+    
     /*** Define private class attributes ***/
     cusfloat                                    _area_axial_ca      = 0.0;      // Area of the axial component of the Morison element used for inertial forces calculation
     cusfloat                                    _area_axial_cd      = 0.0;      // Area of the axial component of the Morison element used for drag calculation
@@ -48,7 +51,7 @@ private:
     std::size_t                                 _field_points_np    = 0;        // Number of field points
     Input*                                      _input              = nullptr;  // Pointer to input data
     cusfloat                                    _kc_length          = 0.0;      // Characteristic length used for the Keulegan-Carpenter number calculation
-    RadDiffData<cuscomplex, RDDMorisonConfig>*  _rdd_morison        ;           // Radiation and diffraction data for Morison element calculations
+    RDDMorison*                                 _rdd_morison        ;           // Radiation and diffraction data for Morison element calculations
     MorisonCoeffCurve*                          _cd_axial           = nullptr;  // Drag coefficient for the axial component of the Morison element
     MorisonCoeffCurve*                          _cd_trans           = nullptr;  // Drag coefficient for the transverse component of the Morison element
     MorisonCoeffCurve*                          _cd_vert            = nullptr;  // Drag coefficient for the vertical component of the Morison element
@@ -94,5 +97,8 @@ public:
                                             cut::CusTensor<cuscomplex>& inertial_force,
                                             cut::CusTensor<cuscomplex>& drag_force
                                         ) const;
+
+
+    RDDMorison* get_rdd( void ) const;
 
 };

@@ -92,19 +92,21 @@ void    MorisonElement::calculate_hydrodynamic_forces(
                                                     ) const
 {
     // Define local variables for the calculation of hydrodynamic forces
-    std::array<cuscomplex, 3>   drag_force_l        = { 0.0, 0.0, 0.0 };            // Drag force at the field point in local coordinates
-    std::array<cuscomplex, 3>   fluid_acc_g         = { 0.0, 0.0, 0.0 };            // Fluid acceleration at the field point in global coordinates
-    std::array<cuscomplex, 3>   fluid_acc_l         = { 0.0, 0.0, 0.0 };            // Fluid acceleration at the field point in local coordinates
-    std::array<cuscomplex, 3>   inertial_force_l    = { 0.0, 0.0, 0.0 };            // Inertial force at the field point in local coordinates
-    cusfloat                    wave_period         = 2.0 * PI / ang_freq;          // Wave period
-    std::array<cuscomplex, 3>   rao_disp_fp         = { 0.0, 0.0, 0.0 };            // RAO displacement at the field point
-    std::array<cuscomplex, 3>   rao_vel_fp          = { 0.0, 0.0, 0.0 };            // RAO velocity at the field point
-    std::array<cuscomplex, 3>   rao_acc_fp          = { 0.0, 0.0, 0.0 };            // RAO acceleration at the field point
-    std::array<cuscomplex, 3>   rel_acc_g           = { 0.0, 0.0, 0.0 };            // Relative acceleration at the field point in global coordinates
-    std::array<cuscomplex, 3>   rel_acc_l           = { 0.0, 0.0, 0.0 };            // Relative acceleration at the field point in local coordinates
-    std::array<cuscomplex, 3>   rel_vel_g           = { 0.0, 0.0, 0.0 };            // Relative velocity at the field point in global coordinates
-    std::array<cuscomplex, 3>   rel_vel_l           = { 0.0, 0.0, 0.0 };            // Relative velocity at the field point in local coordinates
-    cusfloat                    rhow                = this->_input->water_density;  // Water density (local copy for faster access and clear notation)
+    std::array<cuscomplex, 3>   drag_force_l        = { 0.0, 0.0, 0.0 };                // Drag force at the field point in local coordinates
+    std::array<cuscomplex, 6>   drag_force_g        = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }; // Drag force at the field point in global coordinates
+    std::array<cuscomplex, 3>   fluid_acc_g         = { 0.0, 0.0, 0.0 };                // Fluid acceleration at the field point in global coordinates
+    std::array<cuscomplex, 3>   fluid_acc_l         = { 0.0, 0.0, 0.0 };                // Fluid acceleration at the field point in local coordinates
+    std::array<cuscomplex, 3>   inertial_force_l    = { 0.0, 0.0, 0.0 };                // Inertial force at the field point in local coordinates
+    std::array<cuscomplex, 6>   inertial_force_g    = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }; // Inertial force at the field point in global coordinates
+    cusfloat                    wave_period         = 2.0 * PI / ang_freq;              // Wave period
+    std::array<cuscomplex, 3>   rao_disp_fp         = { 0.0, 0.0, 0.0 };                // RAO displacement at the field point
+    std::array<cuscomplex, 3>   rao_vel_fp          = { 0.0, 0.0, 0.0 };                // RAO velocity at the field point
+    std::array<cuscomplex, 3>   rao_acc_fp          = { 0.0, 0.0, 0.0 };                // RAO acceleration at the field point
+    std::array<cuscomplex, 3>   rel_acc_g           = { 0.0, 0.0, 0.0 };                // Relative acceleration at the field point in global coordinates
+    std::array<cuscomplex, 3>   rel_acc_l           = { 0.0, 0.0, 0.0 };                // Relative acceleration at the field point in local coordinates
+    std::array<cuscomplex, 3>   rel_vel_g           = { 0.0, 0.0, 0.0 };                // Relative velocity at the field point in global coordinates
+    std::array<cuscomplex, 3>   rel_vel_l           = { 0.0, 0.0, 0.0 };                // Relative velocity at the field point in local coordinates
+    cusfloat                    rhow                = this->_input->water_density;      // Water density (local copy for faster access and clear notation)
 
     for ( std::size_t ih = 0; ih < static_cast<std::size_t>( this->_input->heads_np ); ih++ )
     {
@@ -113,13 +115,20 @@ void    MorisonElement::calculate_hydrodynamic_forces(
         const cut::CusTensor<cuscomplex>* vel_y = this->_rdd_morison->template get_field_data<FieldTypeE::VELOCITY_Y, FieldComponentE::TOTAL, ComplexDataTypeE::COMPLEX>( ih );
         const cut::CusTensor<cuscomplex>* vel_z = this->_rdd_morison->template get_field_data<FieldTypeE::VELOCITY_Z, FieldComponentE::TOTAL, ComplexDataTypeE::COMPLEX>( ih );
 
+        // Clean up results vectors for the current heading
+        for ( std::size_t j = 0; j < 6; j++ )
+        {
+            drag_force( ih, j )     = 0.0;
+            inertial_force( ih, j ) = 0.0;
+        }
+
         for ( std::size_t i = 0; i < this->_rdd_morison->get_size_local( ); i++ )
         {
             // Calculate RAO displacement at the field point
             calculate_rao_disp( 
                                     raos,
-                                &(this->_field_points_l.data( )[3*i]), 
-                                rao_disp_fp.data( ) 
+                                    &(this->_field_points_l.data( )[3*i]), 
+                                    rao_disp_fp.data( ) 
                             );
 
             // Calculate velocity and acceleration raos at the field point
@@ -176,15 +185,28 @@ void    MorisonElement::calculate_hydrodynamic_forces(
             // Calculate drag and inertial forces at the field point in global coordinates by projecting the local forces onto the global axes of the Morison element
             for ( std::size_t j = 0; j < 3; j++ )
             {
-                drag_force( j, i )     += drag_force_l[0] * this->_x_axis_l[j] + drag_force_l[1] * this->_y_axis_l[j] + drag_force_l[2] * this->_z_axis_l[j];
-                inertial_force( j, i ) += inertial_force_l[0] * this->_x_axis_l[j] + inertial_force_l[1] * this->_y_axis_l[j] + inertial_force_l[2] * this->_z_axis_l[j];
+                drag_force_g[j]     = drag_force_l[0] * this->_x_axis_l[j] + drag_force_l[1] * this->_y_axis_l[j] + drag_force_l[2] * this->_z_axis_l[j];
+                inertial_force_g[j] = inertial_force_l[0] * this->_x_axis_l[j] + inertial_force_l[1] * this->_y_axis_l[j] + inertial_force_l[2] * this->_z_axis_l[j];
             }
 
-            cross( this->_field_points_l.data( ) + 3*i,     drag_force.data( ) + 6*ih,     drag_force.data( ) + 6*ih + 3 );
-            cross( this->_field_points_l.data( ) + 3*i, inertial_force.data( ) + 6*ih, inertial_force.data( ) + 6*ih + 3 );
+            cross( this->_field_points_l.data( ) + 3*i,     drag_force_g.data( ),     drag_force_g.data( ) + 3 );
+            cross( this->_field_points_l.data( ) + 3*i, inertial_force_g.data( ), inertial_force_g.data( ) + 3 );
+
+            // Sum contribution of the field point to the total drag and inertial forces in global coordinates
+            for ( std::size_t j = 0; j < 6; j++ )
+            {
+                drag_force( ih, j )     += drag_force_g[j];
+                inertial_force( ih, j ) += inertial_force_g[j];
+            }
 
         }
     }
+}
+
+
+MorisonElement::RDDMorison* MorisonElement::get_rdd( void ) const
+{
+    return this->_rdd_morison;
 }
 
 
