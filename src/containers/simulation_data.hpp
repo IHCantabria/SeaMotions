@@ -113,6 +113,10 @@ public:
     cuscomplex*     mdrift_wl_vel_y_total               = nullptr;
     cuscomplex*     mdrift_wl_vel_z_total               = nullptr;
     cuscomplex*     mdrift_wl_we                        = nullptr;
+    cuscomplex*     morison_drag_force                  = nullptr;
+    cuscomplex*     morison_drag_force_p0               = nullptr;
+    cuscomplex*     morison_inertial_force              = nullptr;
+    cuscomplex*     morison_inertial_force_p0           = nullptr;
     cuscomplex*     panels_potential                    = nullptr;
     cuscomplex*     panels_potential_p0                 = nullptr;
     cuscomplex*     panels_pressure                     = nullptr;

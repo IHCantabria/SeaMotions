@@ -396,6 +396,12 @@ SimulationData::SimulationData(
     this->panels_pressure   = generate_empty_vector<cuscomplex>( ( dofs_np_in + heads_np_in ) * rows_np );
     this->wave_diffrac      = generate_empty_vector<cuscomplex>( this->wave_exc_np );
 
+    // Allocate space for variables used to storage morison elements forces
+    this->morison_drag_force        = generate_empty_vector<cuscomplex>( this->wave_exc_np );
+    this->morison_drag_force_p0     = generate_empty_vector<cuscomplex>( this->wave_exc_np );
+    this->morison_inertial_force    = generate_empty_vector<cuscomplex>( this->wave_exc_np );
+    this->morison_inertial_force_p0 = generate_empty_vector<cuscomplex>( this->wave_exc_np );
+
     // Storage required variables for second order calculations
     if ( this->_input->is_calc_mdrift || this->_input->out_qtf )
     {
@@ -456,6 +462,11 @@ SimulationData::~SimulationData(
     mkl_free( this->sysmat              );
     mkl_free( this->sysmat_steady       );
     mkl_free( this->wave_diffrac        );
+
+    mkl_free( this->morison_drag_force        );
+    mkl_free( this->morison_drag_force_p0     );
+    mkl_free( this->morison_inertial_force    );
+    mkl_free( this->morison_inertial_force_p0 );
 
     // Storage required variables for second order calculations
     if ( this->_input->is_calc_mdrift || this->_input->out_qtf )
