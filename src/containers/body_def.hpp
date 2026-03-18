@@ -26,33 +26,38 @@
 
 // Include local modules
 #include "../mesh/mesh.hpp"
+#include "morison_element_def.hpp"
 
 
 struct BodyDef
 {
 public:
     // Define class attributes
-    cusfloat        cog[3]          = { 0.0, 0.0, 0.0 };
-    cusfloat        ext_lid_damp_f  = 0.0;
-    cusfloat        inertia[6]      = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
-    bool            interia_by_rad  = false;
-    bool            is_fix          = false;
-    bool            is_mesh         = false;
-    bool            is_mesh_int_lid = false;
-    bool            is_mesh_fs_qtf  = false;
-    bool            is_mesh_total   = false;
-    int             lid_type        = 0;
-    cusfloat        mass            = 0.0;
-    Mesh*           mesh            = nullptr;
-    std::string     mesh_body_name  = "";
-    Mesh*           mesh_ext_lid    = nullptr;
-    std::string     mesh_finame     = "";
-    Mesh*           mesh_fs_qtf     = nullptr;
-    Mesh*           mesh_int_lid    = nullptr;
-    int             mesh_items_np   = 0;
-    Mesh*           mesh_total      = nullptr;
-    cusfloat        rad_inertia[3]  = { 0.0, 0.0, 0.0 };
-    bool            use_ext_lid     = false;
+    cusfloat                        cog[3]                  = { 0.0, 0.0, 0.0 };
+    cusfloat                        ext_lid_damp_f          = 0.0;
+    cusfloat                        inertia[6]              = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+    bool                            interia_by_rad          = false;
+    bool                            is_fix                  = false;
+    bool                            is_mesh                 = false;
+    bool                            is_mesh_int_lid         = false;
+    bool                            is_mesh_fs_qtf          = false;
+    bool                            is_mesh_total           = false;
+    int                             lid_type                = 0;
+    cusfloat                        mass                    = 0.0;
+    Mesh*                           mesh                    = nullptr;
+    std::string                     mesh_body_name          = "";
+    Mesh*                           mesh_ext_lid            = nullptr;
+    std::string                     mesh_finame             = "";
+    Mesh*                           mesh_fs_qtf             = nullptr;
+    Mesh*                           mesh_int_lid            = nullptr;
+    int                             mesh_items_np           = 0;
+    Mesh*                           mesh_total              = nullptr;
+    std::vector<MorisonElementDef>  morison_elements        ;
+    std::vector<std::string>        morison_elements_names  ;
+    std::size_t                     morison_elements_np     = 0;
+    cusfloat                        rad_inertia[3]          = { 0.0, 0.0, 0.0 };
+    bool                            use_ext_lid             = false;
+    bool                            use_morison_elements    = false;
 
     // Define class constructor and destructor
     ~BodyDef( void );
