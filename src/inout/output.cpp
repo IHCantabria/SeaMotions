@@ -394,7 +394,43 @@ Output::Output(
                                         );
         }
     }
-    
+
+    // Create dataset for Morison forces
+    if ( input->out_morison )
+    {
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_MORISON_DRAG_MAG,
+                                        _DS_WX_NP,
+                                        this->_ds_wx,
+                                        cusfloat_h5
+                                    );
+
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_MORISON_DRAG_PHA,
+                                        _DS_WX_NP,
+                                        this->_ds_wx,
+                                        cusfloat_h5
+                                    );
+        
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_MORISON_INERTIAL_MAG,
+                                        _DS_WX_NP,
+                                        this->_ds_wx,
+                                        cusfloat_h5
+                                    );
+
+        create_hdf5_dataset_simple( 
+                                        fid,
+                                        _DN_MORISON_INERTIAL_PHA,
+                                        _DS_WX_NP,
+                                        this->_ds_wx,
+                                        cusfloat_h5
+                                    );
+    }
+
     // Create dataset for panels pressure
     if ( input->out_pressure )
     {
