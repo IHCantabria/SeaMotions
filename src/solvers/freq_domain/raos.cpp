@@ -32,6 +32,8 @@ void    calculate_raos(
                             cusfloat*       hydstiffness,
                             cuscomplex*     wave_diffrac,
                             cuscomplex*     froude_krylov,
+                            cuscomplex*     morison_drag,
+                            cuscomplex*     morison_inertial,
                             cusfloat        ang_freq,
                             cuscomplex*     rao
                         )
@@ -102,7 +104,7 @@ void    calculate_raos(
                             +
                             k
                         );
-                rao[index] = ( wave_diffrac[index] + froude_krylov[index] ) * is_fix_f;
+                rao[index] = ( wave_diffrac[index] + froude_krylov[index] + morison_drag[index] + morison_inertial[index] ) * is_fix_f;
             }
         }
     }

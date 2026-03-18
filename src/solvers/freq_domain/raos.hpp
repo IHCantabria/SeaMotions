@@ -33,6 +33,8 @@ void    calculate_raos(
                             cusfloat*       hydstiffness,
                             cuscomplex*     wave_diffrac,
                             cuscomplex*     froude_krylov,
+                            cuscomplex*     morison_drag,
+                            cuscomplex*     morison_inertial,
                             cusfloat        ang_freq,
                             cuscomplex*     rao
                         );
