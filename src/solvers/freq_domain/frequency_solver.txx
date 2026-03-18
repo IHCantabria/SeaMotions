@@ -1256,50 +1256,23 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
     }
 
     // Sum-up contributions from all processes
-    MPI_Allreduce(
-                        MPI_IN_PLACE,
-                        qtf_values,
-                        qtf_size,
-                        mpi_cuscomplex,
-                        MPI_SUM,
-                        MPI_COMM_WORLD
-                    );
-    
-    MPI_Allreduce(
-                        MPI_IN_PLACE,
-                        qtf_wl,
-                        qtf_size,
-                        mpi_cuscomplex,
-                        MPI_SUM,
-                        MPI_COMM_WORLD
-                    );
-                    
-    MPI_Allreduce(
-                        MPI_IN_PLACE,
-                        qtf_bern,
-                        qtf_size,
-                        mpi_cuscomplex,
-                        MPI_SUM,
-                        MPI_COMM_WORLD
-                    ); 
+    auto reduce_qtf = [qtf_size](cuscomplex* buffer)
+    {
+        MPI_Allreduce(
+                            MPI_IN_PLACE,
+                            buffer,
+                            qtf_size,
+                            mpi_cuscomplex,
+                            MPI_SUM,
+                            MPI_COMM_WORLD
+                        );
+    };
 
-    MPI_Allreduce(
-                        MPI_IN_PLACE,
-                        qtf_acc,
-                        qtf_size,
-                        mpi_cuscomplex,
-                        MPI_SUM,
-                        MPI_COMM_WORLD
-                    );
-
-    MPI_Allreduce(
-                        MPI_IN_PLACE,
-                        qtf_mom,
-                        qtf_size,
-                        mpi_cuscomplex,
-                        MPI_SUM,
-                        MPI_COMM_WORLD
-                    ); 
+    reduce_qtf( qtf_values );
+    reduce_qtf( qtf_wl     );
+    reduce_qtf( qtf_bern   );
+    reduce_qtf( qtf_acc    );
+    reduce_qtf( qtf_mom    );
 
 }
 
