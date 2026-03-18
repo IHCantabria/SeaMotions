@@ -239,7 +239,7 @@ void    calculate_freq_domain_coeffs(
         fs_mesh[0]      = input->bodies[0]->mesh_fs_qtf;
 
         // Create partition circle water line if required
-        if ( input->out_qtf_so_model == 2 )
+        if ( input->out_qtf_so_model == QTFSOModelE::DIRECT )
         {
             fs_mesh[0]->detect_pc_points( input->wl_det_prec );
         }
@@ -563,7 +563,7 @@ void    freq_domain_linear_solver(
 
         // Add data variables storage for the calculation of the second order
         // potential using the indirect method
-        if ( input->out_qtf_so_model == 1 )
+        if ( input->out_qtf_so_model == QTFSOModelE::INDIRECT )
         {
             sim_data->add_qtf_indirect_data(
                                                 mesh_gp->panels_raddif_tnp,
@@ -673,7 +673,7 @@ void    freq_domain_linear_solver(
         }
 
         // Define new fields to storage data for the direct QTF model
-        if ( input->out_qtf_so_model == 2 )
+        if ( input->out_qtf_so_model == QTFSOModelE::DIRECT )
         {
             sim_data->add_qtf_direct_data(
                                                 mesh_gp->panels_raddif_tnp,
@@ -854,7 +854,7 @@ void    freq_domain_linear_solver(
 
     }
 
-    if ( input->out_qtf_so_model == 1 )
+    if ( input->out_qtf_so_model == QTFSOModelE::INDIRECT )
     {
         define_gauss_points_diffrac_panels( 
                                                 input, 
@@ -905,7 +905,7 @@ void    freq_domain_linear_solver(
                                 );
     }
 
-    if ( input->out_qtf_so_model == 2)
+    if ( input->out_qtf_so_model == QTFSOModelE::DIRECT )
     {
         // Define gauss points over the FS
         define_gauss_points_diffrac_panels( 
@@ -2395,7 +2395,7 @@ void    freq_domain_linear_solver(
         delete  vel_z_body_gp;
     }
 
-    if ( input->out_qtf_so_model == 1 )
+    if ( input->out_qtf_so_model == QTFSOModelE::INDIRECT )
     {
         delete qtf_body_pot_gp;
         delete qtf_fs_pot_gp;
@@ -2407,7 +2407,7 @@ void    freq_domain_linear_solver(
         delete qtf_wl_vel_z_gp;
     }
 
-    if ( input->out_qtf_so_model == 1 )
+    if ( input->out_qtf_so_model == QTFSOModelE::INDIRECT )
     {
         delete qtf_fs_pot_gp;
         delete qtf_fs_vel_x_gp;

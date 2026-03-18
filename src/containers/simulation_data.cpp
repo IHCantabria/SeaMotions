@@ -117,7 +117,7 @@ void    SimulationData::add_qtf_data(
         this->qtf_sum_wl                = generate_empty_vector<cuscomplex>( this->qtf_np );
 
         // Define variables used for Indirect method
-        if ( this->_input->out_qtf_so_model == 1 )
+        if ( this->_input->out_qtf_so_model == QTFSOModelE::INDIRECT )
         {
             this->qtf_diff_froude_krylov_fo_p0  = generate_empty_vector<cuscomplex>( this->qtf_np );
             this->qtf_diff_body_force_p0        = generate_empty_vector<cuscomplex>( this->qtf_np );
@@ -146,7 +146,7 @@ void    SimulationData::add_qtf_data(
             this->qtf_sum_wl_freqs              = generate_empty_vector<cuscomplex>( qtf_freq_np );
 
             // Define variables used for Indirect method
-            if ( this->_input->out_qtf_so_model == 1 )
+            if ( this->_input->out_qtf_so_model == QTFSOModelE::INDIRECT )
             {
                 this->qtf_diff_froude_krylov_fo_freqs_p0    = generate_empty_vector<cuscomplex>( qtf_freq_np );
                 this->qtf_diff_body_force_freqs_p0          = generate_empty_vector<cuscomplex>( qtf_freq_np );
@@ -568,7 +568,7 @@ SimulationData::~SimulationData(
             mkl_free( this->qtf_sum_secord_force  );
             mkl_free( this->qtf_sum_wl            );
 
-            if ( this->_input->out_qtf_so_model == 1 )
+            if ( this->_input->out_qtf_so_model == QTFSOModelE::INDIRECT )
             {
                 mkl_free( this->qtf_diff_froude_krylov_fo_p0 );
                 mkl_free( this->qtf_diff_body_force_p0       );
@@ -595,7 +595,7 @@ SimulationData::~SimulationData(
                 mkl_free( this->qtf_sum_secord_force_freqs  );
                 mkl_free( this->qtf_sum_wl_freqs            );
 
-                if ( this->_input->out_qtf_so_model == 1 )
+                if ( this->_input->out_qtf_so_model == QTFSOModelE::INDIRECT )
                 {
                     mkl_free( this->qtf_diff_froude_krylov_fo_freqs_p0 );
                     mkl_free( this->qtf_diff_body_force_freqs_p0       );

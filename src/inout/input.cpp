@@ -400,7 +400,7 @@ void Input::read_body(
     }
 
     // Load QTF free surface
-    if ( this->out_qtf_so_model > 0 )
+    if ( this->out_qtf_so_model == QTFSOModelE::INDIRECT || this->out_qtf_so_model == QTFSOModelE::DIRECT )
     {
         // Define QTF free surface name
         std::stringstream ss;
@@ -726,7 +726,7 @@ void Input::configure( void )
 
     // Check if it is necessary to load the free surface 
     // QTF mesh
-    this->is_fs_qtf = this->out_qtf_so_model > 0 ? true: false;
+    this->is_fs_qtf = ( this->out_qtf_so_model == QTFSOModelE::INDIRECT || this->out_qtf_so_model == QTFSOModelE::DIRECT );
 
     /**********************************************************/
     /************** Check headings input units ****************/
@@ -895,7 +895,7 @@ void Input::print( void )
     std::cout << " - PotRelErr: " << this->pot_rel_err << std::endl;
     std::cout << " - PressAbsErr: " << this->press_abs_err << std::endl;
     std::cout << " - PressRelErr: " << this->press_rel_err << std::endl;
-    std::cout << " - QTFSOModel: " << this->out_qtf_so_model << std::endl;
+    std::cout << " - QTFSOModel: " << static_cast<int>( this->out_qtf_so_model ) << std::endl;
     std::cout << " - WLDetPrec: " << this->wl_det_prec << std::endl;
 
     std::cout << std::endl;

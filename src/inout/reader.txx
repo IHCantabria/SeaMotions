@@ -101,11 +101,18 @@ inline std::string  read_channel_value(
     // Get signal value and name from the line
     // read
     std::istringstream iss(line);
-    if ( typeid( decltype(signal) ) == typeid( bool ) )
+    if constexpr ( std::is_same_v<T, bool> )
     {
         std::string signal_str;
         iss >> signal_str >> signal_name >> aux_str;
         signal = str_to_bool( signal_str );
+    }
+    else if constexpr ( std::is_enum_v<T> )
+    {
+        using UnderT = std::underlying_type_t<T>;
+        UnderT value{};
+        iss >> value >> signal_name >> aux_str;
+        signal = static_cast<T>( value );
     }
     else
     {

@@ -178,6 +178,16 @@ enum class PanelTypeE: int
 };
 
 
+// QTF type enum. Used to classify the type of second order potential to be used
+enum class QTFSOModelE: int
+{
+    NONE        = -1,   // No second order potential model. Used for default empty states.
+    PINKSTER    = 0,    // Second order potential model based on Pinkster's theory.
+    INDIRECT    = 1,    // Second order potential model based on indirect method proposed by X.Chen.
+    DIRECT      = 2     // Second order potential model based on direct method used by J.N.Newman
+};
+
+
 // QTF type enum. Used to classify the type of QTF
 // term to be calculated.
 enum class QTFTypeE: int
