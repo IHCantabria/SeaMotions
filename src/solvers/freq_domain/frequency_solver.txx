@@ -362,44 +362,34 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
 
     
     // Storage results
-    // MpiTimer storage_timer;       
-    if ( this->input->out_sources && freq_regime == FreqRegimeE::REGULAR )
+    // MpiTimer storage_timer;
+    const std::size_t field_count = this->kernel->size( ) * ( this->input->dofs_np + this->input->heads_np );
+    auto reduce_field = [this, field_count](cuscomplex* src, cuscomplex* dst)
     {
         MPI_Reduce(
-                        this->sim_data->intensities,
-                        this->sim_data->intensities_p0,
-                        this->kernel->size( ) * ( this->input->dofs_np + this->input->heads_np ),
+                        src,
+                        dst,
+                        field_count,
                         mpi_cuscomplex,
                         MPI_SUM,
                         this->mpi_config->proc_root,
                         MPI_COMM_WORLD
                     );
+    };
+
+    if ( this->input->out_sources && freq_regime == FreqRegimeE::REGULAR )
+    {
+        reduce_field( this->sim_data->intensities, this->sim_data->intensities_p0 );
     }
 
     if ( this->input->out_potential && freq_regime == FreqRegimeE::REGULAR )
     {
-        MPI_Reduce(
-                        this->sim_data->panels_potential,
-                        this->sim_data->panels_potential_p0,
-                        this->kernel->size( ) * ( this->input->dofs_np + this->input->heads_np ),
-                        mpi_cuscomplex,
-                        MPI_SUM,
-                        this->mpi_config->proc_root,
-                        MPI_COMM_WORLD
-                    );
+        reduce_field( this->sim_data->panels_potential, this->sim_data->panels_potential_p0 );
     }
 
     if ( this->input->out_pressure && freq_regime == FreqRegimeE::REGULAR )
     {
-        MPI_Reduce(
-                        this->sim_data->panels_pressure,
-                        this->sim_data->panels_pressure_p0,
-                        this->kernel->size( ) * ( this->input->dofs_np + this->input->heads_np ),
-                        mpi_cuscomplex,
-                        MPI_SUM,
-                        this->mpi_config->proc_root,
-                        MPI_COMM_WORLD
-                    );
+        reduce_field( this->sim_data->panels_pressure, this->sim_data->panels_pressure_p0 );
     }
     
     if ( this->mpi_config->is_root( ) )
