@@ -38,6 +38,11 @@ private:
     void _parse_input_file( 
                                 std::ifstream& file
                             );
+
+    void _parse_input_file( 
+                                const std::string& fopath,
+                                const std::string& finame
+                            );
 public:
     /*** Declare class public attributes ***/
     cusfloat                area_axial_ca                       = 0.0;                  // Axial reference area for inertial forces calculation
@@ -67,6 +72,11 @@ public:
                             cusfloat*      cog
                         );
 
+    MorisonElementDef(
+                            const std::string& fopath,
+                            const std::string& finame,
+                            cusfloat*          cog
+                        );
 
     /*** Declare class copy and move constructors and assignment operators ***/
     MorisonElementDef( const MorisonElementDef& )            = delete;
