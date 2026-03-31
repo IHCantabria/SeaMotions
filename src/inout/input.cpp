@@ -404,7 +404,7 @@ void Input::read_body(
     {
         // Define QTF free surface name
         std::stringstream ss;
-        ss << body->mesh_body_name << "_fs_qtf";
+        ss << body->mesh_body_name << "_qtflid";
 
         // Load QTF free surface mesh
         body->mesh_fs_qtf       = new Mesh(
