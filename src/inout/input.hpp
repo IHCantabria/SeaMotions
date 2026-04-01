@@ -90,6 +90,8 @@ public:
     cusfloat                        water_depth         = 0.0;
     cusfloat                        wave_amplitude      = 1.0;
     cusfloat                        wl_det_prec         = 0.0;
+    int                             qtf_annuli_np       = 6;
+    int                             qtf_annuli_theta_np = 64;
 
     // Define class constructors and destructors
     Input( ) = default;

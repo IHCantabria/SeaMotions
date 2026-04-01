@@ -479,6 +479,16 @@ void Input::read_case( const std::string& folder_path )
     read_signal     = read_channel_value( infile, this->out_qtf_so_model );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
+    // Read QTF annuli count
+    target_signal   = "QTFAnnuliNP";
+    read_signal     = read_channel_value( infile, this->qtf_annuli_np );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read QTF annuli angular points
+    target_signal   = "QTFAnnuliThetaNP";
+    read_signal     = read_channel_value( infile, this->qtf_annuli_theta_np );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
     // Read water line points detection precision
     target_signal   = "WLDetPrec";
     read_signal     = read_channel_value( infile, this->wl_det_prec );
@@ -897,6 +907,8 @@ void Input::print( void )
     std::cout << " - PressRelErr: " << this->press_rel_err << std::endl;
     std::cout << " - QTFSOModel: " << static_cast<int>( this->out_qtf_so_model ) << std::endl;
     std::cout << " - WLDetPrec: " << this->wl_det_prec << std::endl;
+    std::cout << " - QTFAnnuliNP: " << this->qtf_annuli_np << std::endl;
+    std::cout << " - QTFAnnuliThetaNP: " << this->qtf_annuli_theta_np << std::endl;
 
     std::cout << std::endl;
     std::cout << "BODY DEFINITION: " << std::endl;
