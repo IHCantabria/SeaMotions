@@ -145,6 +145,40 @@ void FrequencySolver<N, mode_pf>::_calculate_field_points_values(
                                                                 this->sim_data->raos,
                                                                 this->_qtf_wl_fields
                                                             );
+
+    }
+
+    if ( this->input->out_qtf_so_model == QTFSOModelE::DIRECT )
+    {
+        if ( this->_qtf_fs_fields != nullptr )
+        {
+            this->kernel->template compute_fields<RDDQTFConfig>(
+                                                                    freq_index,
+                                                                    ang_freq,
+                                                                    this->sim_data->raos,
+                                                                    this->_qtf_fs_fields
+                                                                );
+        }
+
+        if ( this->_qtf_fs_wl_fields != nullptr )
+        {
+            this->kernel->template compute_fields<RDDQTFConfig>(
+                                                                    freq_index,
+                                                                    ang_freq,
+                                                                    this->sim_data->raos,
+                                                                    this->_qtf_fs_wl_fields
+                                                                );
+        }
+
+        for ( auto* annulus_field : this->_qtf_annuli_fields )
+        {
+            this->kernel->template compute_fields<RDDQTFConfig>(
+                                                                    freq_index,
+                                                                    ang_freq,
+                                                                    this->sim_data->raos,
+                                                                    annulus_field
+                                                                );
+        }
     }
 
     for ( std::size_t i=0; i<this->input->field_points_np; i++ )
@@ -255,6 +289,97 @@ void FrequencySolver<N, mode_pf>::calculate_first_order( void )
     // Print out execution times
     LOG_TASK_TIME( freq_hf, freq_high_timer )
 
+}
+
+
+template<std::size_t N, int mode_pf>
+void FrequencySolver<N, mode_pf>::calculate_second_order( void )
+{
+    // Loop over frequencies
+    for ( std::size_t i=0; i<static_cast<std::size_t>(this->input->angfreqs_np); i++ )
+    {
+        for ( std::size_t j=0; j<static_cast<std::size_t>(this->input->angfreqs_np); j++ )
+        {
+            LOG_TASK_SS( freq, "SO - Calculating period: " << std::setw( 10 ) << std::fixed << std::setprecision( 3 ) << angfreq_to_period( this->input->angfreqs[i] ) << " s" )
+
+            // Start time measurement for the current frequency
+            MpiTimer freq_timer;
+
+            // Calculate second order potential contribution
+            if ( i != j )
+            {
+                if ( this->input->out_qtf_so_model == QTFSOModelE::PINKSTER )
+                {
+                    if ( this->mpi_config->is_root( ) )
+                    {
+                        calculate_pinkster(
+                                                this->input,
+                                                this->mpi_config,
+                                                this->mesh_gp,
+                                                this->input->angfreqs[i],
+                                                this->input->angfreqs[j],
+                                                this->sim_data->qtf_diff_secord_force
+                                            );
+                    }
+                }
+                else if ( this->input->out_qtf_so_model == QTFSOModelE::INDIRECT )
+                {
+                    if ( this->mpi_config->is_root( ) )
+                    {
+                        calculate_secord_force_indirect(
+                                                            this->input,
+                                                            this->mesh_gp,
+                                                            this->input->angfreqs[i],
+                                                            this->input->angfreqs[j],
+                                                            QTFTypeE::QTF_DIFF_CODE,
+                                                            this->sim_data->qtf_body_pot_gp,
+                                                            this->sim_data->qtf_fs_pot_gp,
+                                                            this->sim_data->qtf_wl_vel_x_gp,
+                                                            this->sim_data
+                                                        );
+                    }
+                }
+                else if ( this->input->out_qtf_so_model == QTFSOModelE::DIRECT )
+                {
+                    std::cerr << "QTF Direct Method not implemented yet!" << std::endl;
+                }
+
+                MPI_Barrier( MPI_COMM_WORLD );
+
+                // Distribute second order force
+                if ( this->mpi_config->is_root( ) )
+                {
+                    qtf_distribute_matrix_data(
+                                                    this->input,
+                                                    i,
+                                                    j,
+                                                    this->sim_data->qtf_diff_secord_force,
+                                                    this->sim_data->qtf_diff_freqs,
+                                                    1,
+                                                    0
+                                                );
+                    if ( this->input->out_qtf_comp )
+                    {
+                        qtf_distribute_matrix_data(
+                                                    this->input,
+                                                    i,
+                                                    j,
+                                                    this->sim_data->qtf_diff_secord_force,
+                                                    this->sim_data->qtf_diff_secord_force_freqs,
+                                                    1,
+                                                    0
+                                                );
+                    }
+                }
+            }
+
+            this->_calculate_and_distribute_qtf<QTFTypeE::QTF_DIFF_CODE>( i, j );
+            this->_calculate_and_distribute_qtf<QTFTypeE::QTF_SUM_CODE>( i, j );
+
+            // Print out execution times
+            LOG_TASK_TIME( freq, freq_timer )
+        }
+    }
 }
 
 
@@ -1268,9 +1393,46 @@ void FrequencySolver<N, mode_pf>::_calculate_quadratic_terms(
 
 
 template<std::size_t N, int mode_pf>
-void FrequencySolver<N, mode_pf>::calculate_second_order( void )
+template<QTFTypeE qtf_type>
+void FrequencySolver<N, mode_pf>::_calculate_and_distribute_qtf(
+                                                                    std::size_t freq_index_i,
+                                                                    std::size_t freq_index_j
+                                                                )
 {
-    // TO DO: Second order implementation
+    this->_calculate_quadratic_terms<qtf_type>( freq_index_i, freq_index_j, true );
+
+    if ( this->mpi_config->is_root( ) )
+    {
+        auto distribute = [&](cuscomplex* src, cuscomplex* dst, int is_sop, int is_qtf)
+        {
+            qtf_distribute_matrix_data( this->input, freq_index_i, freq_index_j, src, dst, is_sop, is_qtf );
+        };
+
+        if constexpr ( qtf_type == QTFTypeE::QTF_DIFF_CODE )
+        {
+            distribute( this->sim_data->qtf, this->sim_data->qtf_diff_freqs, 0, 1 );
+            if ( input->out_qtf_comp )
+            {
+                distribute( this->sim_data->qtf_diff_wl,   this->sim_data->qtf_diff_wl_freqs,   0, 0 );
+                distribute( this->sim_data->qtf_diff_bern, this->sim_data->qtf_diff_bern_freqs, 0, 0 );
+                distribute( this->sim_data->qtf_diff_acc,  this->sim_data->qtf_diff_acc_freqs,  0, 0 );
+                distribute( this->sim_data->qtf_diff_mom,  this->sim_data->qtf_diff_mom_freqs,  0, 0 );
+            }
+        }
+        else
+        {
+            distribute( this->sim_data->qtf, this->sim_data->qtf_sum_freqs, 0, 1 );
+            if ( this->input->out_qtf_comp )
+            {
+                distribute( this->sim_data->qtf_sum_wl,   this->sim_data->qtf_sum_wl_freqs,   0, 0 );
+                distribute( this->sim_data->qtf_sum_bern, this->sim_data->qtf_sum_bern_freqs, 0, 0 );
+                distribute( this->sim_data->qtf_sum_acc,  this->sim_data->qtf_sum_acc_freqs,  0, 0 );
+                distribute( this->sim_data->qtf_sum_mom,  this->sim_data->qtf_sum_mom_freqs,  0, 0 );
+            }
+        }
+    }
+
+    MPI_Barrier( MPI_COMM_WORLD );
 }
 
 
@@ -1386,6 +1548,30 @@ FrequencySolver<N, mode_pf>::~FrequencySolver( void )
 
     }
 
+    if ( this->_qtf_fs_fields != nullptr )
+    {
+        delete this->_qtf_fs_fields;
+        this->_qtf_fs_fields = nullptr;
+    }
+
+    if ( this->_qtf_fs_wl_fields != nullptr )
+    {
+        delete this->_qtf_fs_wl_fields;
+        this->_qtf_fs_wl_fields = nullptr;
+    }
+
+    for ( auto* annulus_field : this->_qtf_annuli_fields )
+    {
+        delete annulus_field;
+    }
+    this->_qtf_annuli_fields.clear();
+
+    for ( auto* annulus_mesh : this->_qtf_annuli_meshes )
+    {
+        delete annulus_mesh;
+    }
+    this->_qtf_annuli_meshes.clear();
+
     for ( std::size_t i=0; i<this->input->field_points_np; i++ )
     {
         delete this->_field_points[i];
@@ -1449,6 +1635,76 @@ void FrequencySolver<N, mode_pf>::_initialize_field_data( void )
                                                                             );
         
         
+    }
+
+    if ( this->input->out_qtf_so_model == QTFSOModelE::DIRECT )
+    {
+        if ( this->_qtf_fs_fields == nullptr && this->mesh_fs_qtf_gp != nullptr )
+        {
+            this->_qtf_fs_fields = new RadDiffData<cuscomplex, RDDQTFConfig>(
+                                                                                this->mpi_config,
+                                                                                this->mesh_fs_qtf_gp,
+                                                                                this->input->angfreqs_np,
+                                                                                this->input->heads_np,
+                                                                                this->input->dofs_np,
+                                                                                false
+                                                                            );
+        }
+
+        if ( this->_qtf_fs_wl_fields == nullptr && this->mesh_fs_qtf_gp != nullptr )
+        {
+            this->_qtf_fs_wl_fields = new RadDiffData<cuscomplex, RDDQTFConfig>(
+                                                                                    this->mpi_config,
+                                                                                    this->mesh_fs_qtf_gp,
+                                                                                    this->input->angfreqs_np,
+                                                                                    this->input->heads_np,
+                                                                                    this->input->dofs_np,
+                                                                                    true
+                                                                                );
+        }
+
+        this->_qtf_annuli_fields.clear( );
+        this->_qtf_annuli_fields.reserve( this->_qtf_annuli_meshes.size( ) );
+        
+        std::size_t fp_np_max = 0;
+        for ( Mesh* annulus_mesh : this->_qtf_annuli_meshes )
+        {
+            fp_np_max = std::max( fp_np_max, static_cast<std::size_t>( annulus_mesh->nodes_np ) );
+        }
+
+        cusfloat* field_points = nullptr;
+        if ( fp_np_max > 0 )
+        {
+            field_points = generate_empty_vector<cusfloat>( fp_np_max * 3 );
+        }
+
+        for ( Mesh* annulus_mesh : this->_qtf_annuli_meshes )
+        {
+            const std::size_t fp_np = static_cast<std::size_t>( annulus_mesh->nodes_np );
+            for ( std::size_t i=0; i<fp_np; ++i )
+            {
+                field_points[ 3*i + 0 ] = annulus_mesh->x[ i ];
+                field_points[ 3*i + 1 ] = annulus_mesh->y[ i ];
+                field_points[ 3*i + 2 ] = annulus_mesh->z[ i ];
+            }
+
+            this->_qtf_annuli_fields.emplace_back(
+                                                        new RadDiffData<cuscomplex, RDDQTFConfig>(
+                                                                                                    this->mpi_config,
+                                                                                                    field_points,
+                                                                                                    fp_np,
+                                                                                                    this->input->angfreqs_np,
+                                                                                                    this->input->heads_np,
+                                                                                                    this->input->dofs_np,
+                                                                                                    true
+                                                                                                )
+                                                    );
+        }
+
+        if ( field_points != nullptr )
+        {
+            mkl_free( field_points );
+        }
     }
 
     // Load field points data
@@ -1515,7 +1771,7 @@ void FrequencySolver<N, mode_pf>::_initialize_mesh_groups( void )
         fs_mesh[0]      = this->input->bodies[0]->mesh_fs_qtf;
 
         // Create partition circle water line if required
-        if ( this->input->out_qtf_so_model == 2 )
+        if ( this->input->out_qtf_so_model == QTFSOModelE::DIRECT )
         {
             fs_mesh[0]->detect_pc_points( this->input->wl_det_prec );
         }
@@ -1526,6 +1782,36 @@ void FrequencySolver<N, mode_pf>::_initialize_mesh_groups( void )
                                                     1,
                                                     false
                                                 );
+
+        if ( this->input->out_qtf_so_model == QTFSOModelE::DIRECT )
+        {
+            const cusfloat r0 = this->input->bodies[0]->mesh_fs_qtf->get_fs_radius( );
+            const cusfloat r1 = static_cast<cusfloat>( 2.0 ) * r0;
+            int annuli_np = this->input->qtf_annuli_np;
+            if ( annuli_np < 1 )
+            {
+                annuli_np = 1;
+            }
+            const cusfloat dr = ( r1 - r0 ) / static_cast<cusfloat>( annuli_np );
+
+            this->_qtf_annuli_meshes.clear( );
+            this->_qtf_annuli_meshes.reserve( annuli_np );
+            for ( int k=0; k<annuli_np; ++k )
+            {
+                const cusfloat r_in = r0 + static_cast<cusfloat>( k ) * dr;
+                const cusfloat r_out = r_in + dr;
+                AnnulusNodeCloud cloud = create_annulus_nodes_runtime(
+                                            r_in,
+                                            r_out,
+                                            this->input->qtf_annuli_theta_np,
+                                            this->input->gauss_order,
+                                            AngularRule::Trapezoidal
+                                        );
+
+                Mesh annulus_mesh = Mesh::from_annulus_nodes( cloud, "QTFAnnulus" );
+                this->_qtf_annuli_meshes.emplace_back( new Mesh( std::move( annulus_mesh ) ) );
+            }
+        }
     }
 
     this->mesh_gp->define_mirror_panels( );
@@ -1648,6 +1934,83 @@ void FrequencySolver<N, mode_pf>::_prepare_results_folder( void )
         if ( !fs::exists( plot_field_points_fipath_) )
         {
             fs::create_directory( plot_field_points_fipath_ );
+        }
+    }
+}
+
+template<std::size_t N, int mode_pf>
+void FrequencySolver<N, mode_pf>::_save_qtf( void ) const
+{
+    if ( this->mpi_config->is_root( ) )
+    {
+        // Save data into the disk file
+        this->output->save_qtf_format( 
+                                        "qtf_diff",
+                                        this->sim_data->qtf_diff_freqs
+                                    );
+
+        this->output->save_qtf_format(
+                                        "qtf_sum",
+                                        this->sim_data->qtf_sum_freqs
+                                    );
+
+        if ( this->input->out_qtf_comp )
+        {
+            // Storage QTF acceleration term
+            this->output->save_qtf_format(
+                                            "qtf_diff_acc",
+                                            this->sim_data->qtf_diff_acc_freqs
+                                        );
+            
+            this->output->save_qtf_format(
+                                            "qtf_sum_acc",
+                                            sim_data->qtf_sum_acc_freqs
+                                        );
+
+            // Storage QTF bernoulli term
+            this->output->save_qtf_format(
+                                            "qtf_diff_bern",
+                                            sim_data->qtf_diff_bern_freqs
+                                        );
+            
+            this->output->save_qtf_format(
+                                            "qtf_sum_bern",
+                                            sim_data->qtf_sum_bern_freqs
+                                        );
+
+            // Storage QTF momentum term
+            this->output->save_qtf_format(
+                                            "qtf_diff_mom",
+                                            this->sim_data->qtf_diff_mom_freqs
+                                        );
+            
+            this->output->save_qtf_format(
+                                            "qtf_sum_mom",
+                                            this->sim_data->qtf_sum_mom_freqs
+                                        );
+
+            // Storage QTF second order potential term
+            this->output->save_qtf_format(
+                                            "qtf_diff_sop",
+                                            this->sim_data->qtf_diff_secord_force_freqs
+                                        );
+            
+            this->output->save_qtf_format(
+                                            "qtf_sum_sop",
+                                            this->sim_data->qtf_sum_secord_force_freqs
+                                        );
+
+            // Storage QTF wl term
+            this->output->save_qtf_format(
+                                            "qtf_diff_wl",
+                                            this->sim_data->qtf_diff_wl_freqs
+                                        );
+            
+            this->output->save_qtf_format(
+                                            "qtf_sum_wl",
+                                            this->sim_data->qtf_sum_wl_freqs
+                                        );
+            
         }
     }
 }

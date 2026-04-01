@@ -76,6 +76,10 @@ private:
     std::vector<vec_med>            _morison_elements   ;            // Storage of Morison elements for the calculation of inertial and drag forces in slender elements
     RDDQC*                          _qtf_wl_fields      = nullptr;   // Storage of waterline field points for QTF calculations
     RDDQC*                          _qtf_bern_fields    = nullptr;   // Storage of velocity field for the calculation of bernoulli term in QTFs
+    RDDQC*                          _qtf_fs_fields      = nullptr;   // Storage of field points over the QTF free surface lid
+    RDDQC*                          _qtf_fs_wl_fields   = nullptr;   // Storage of field points over the QTF free surface lid perimeter
+    std::vector<Mesh*>              _qtf_annuli_meshes  ;            // Stack of annulus meshes for QTF field sampling
+    std::vector<RDDQC*>             _qtf_annuli_fields  ;            // RadDiffData stack for annulus field points
 
     /**** Declare class private methods ****/
     void _calculate_field_points_values( 
@@ -109,6 +113,12 @@ private:
                                                     bool        is_multi_head
                                     );
 
+    template<QTFTypeE qtf_type>
+    void _calculate_and_distribute_qtf(
+                                                    std::size_t freq_index_i,
+                                                    std::size_t freq_index_j
+                                        );
+
 
     void _check_system_mesh(  
                                                     void 
@@ -125,6 +135,8 @@ private:
     void _initialize_output_system( );
 
     void _prepare_results_folder( );
+
+    void _save_qtf( void ) const;
 
 public:
     // Declare public attributes
