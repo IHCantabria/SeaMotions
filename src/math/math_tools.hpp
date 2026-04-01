@@ -27,16 +27,10 @@
 
 // Include local modules
 #include "../config.hpp"
+#include "math_constants.hpp"
 
 // Define local type to compactify expressions
 typedef signed long long sll_type;
-
-//////////////////////////////////////////////
-////// MATHEMATICAL CONSTANTS BLOCK //////////
-//////////////////////////////////////////////
-const cusfloat PI = 3.141592653589793;
-const cusfloat EULERGAMMA = 0.577215664901533;
-const cusfloat LOG2_GAMMA = std::log( 2.0 ) - EULERGAMMA;
 
 
 //////////////////////////////////////////////

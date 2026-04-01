@@ -240,6 +240,7 @@ set(
         ${CMAKE_SOURCE_DIR}/src/math/integration.hpp
         ${CMAKE_SOURCE_DIR}/src/math/integration.cpp
         ${CMAKE_SOURCE_DIR}/src/math/integration.txx
+        ${CMAKE_SOURCE_DIR}/src/math/math_constants.hpp
         ${CMAKE_SOURCE_DIR}/src/math/math_interface.hpp
         ${CMAKE_SOURCE_DIR}/src/math/math_tools.hpp
         ${CMAKE_SOURCE_DIR}/src/math/math_tools.cpp
