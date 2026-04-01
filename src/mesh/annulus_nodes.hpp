@@ -172,3 +172,42 @@ inline AnnulusNodeCloud create_annulus_nodes(
 
     return cloud;
 }
+
+/**
+ * @brief Runtime-dispatched annulus node generator.
+ *
+ * Selects the Gauss-Legendre order at runtime and forwards to the
+ * corresponding create_annulus_nodes instantiation.
+ */
+inline AnnulusNodeCloud create_annulus_nodes_runtime(
+    cusfloat r0,
+    cusfloat r1,
+    int theta_np,
+    int radial_order,
+    AngularRule rule = AngularRule::Trapezoidal)
+{
+    switch (radial_order)
+    {
+        case 1:  return create_annulus_nodes<1>(r0, r1, theta_np, rule);
+        case 2:  return create_annulus_nodes<2>(r0, r1, theta_np, rule);
+        case 3:  return create_annulus_nodes<3>(r0, r1, theta_np, rule);
+        case 4:  return create_annulus_nodes<4>(r0, r1, theta_np, rule);
+        case 5:  return create_annulus_nodes<5>(r0, r1, theta_np, rule);
+        case 6:  return create_annulus_nodes<6>(r0, r1, theta_np, rule);
+        case 7:  return create_annulus_nodes<7>(r0, r1, theta_np, rule);
+        case 8:  return create_annulus_nodes<8>(r0, r1, theta_np, rule);
+        case 9:  return create_annulus_nodes<9>(r0, r1, theta_np, rule);
+        case 10: return create_annulus_nodes<10>(r0, r1, theta_np, rule);
+        case 11: return create_annulus_nodes<11>(r0, r1, theta_np, rule);
+        case 12: return create_annulus_nodes<12>(r0, r1, theta_np, rule);
+        case 13: return create_annulus_nodes<13>(r0, r1, theta_np, rule);
+        case 14: return create_annulus_nodes<14>(r0, r1, theta_np, rule);
+        case 15: return create_annulus_nodes<15>(r0, r1, theta_np, rule);
+        case 16: return create_annulus_nodes<16>(r0, r1, theta_np, rule);
+        case 17: return create_annulus_nodes<17>(r0, r1, theta_np, rule);
+        case 18: return create_annulus_nodes<18>(r0, r1, theta_np, rule);
+        case 19: return create_annulus_nodes<19>(r0, r1, theta_np, rule);
+        default:
+            return create_annulus_nodes<6>(r0, r1, theta_np, rule);
+    }
+}
