@@ -1434,6 +1434,43 @@ Mesh::~Mesh(
 }
 
 
+Mesh    Mesh::from_annulus_nodes(
+                                    const AnnulusNodeCloud& cloud,
+                                    const std::string& name_in
+                                )
+{
+    Mesh mesh;
+    mesh.name = name_in;
+    mesh.nodes_np = cloud.nodes_np;
+    mesh.elems_np = 0;
+    mesh.enrl = 0;
+    mesh.elems = nullptr;
+    mesh.elems_type = nullptr;
+    mesh.panels = nullptr;
+    mesh.panels_wl = nullptr;
+    mesh.panels_wl_np = 0;
+    mesh.panels_type.clear();
+    mesh.source_nodes = nullptr;
+    mesh.source_nodes_np = 0;
+    mesh._is_source_nodes = false;
+
+    mesh.x = generate_empty_vector<cusfloat>( mesh.nodes_np );
+    mesh.y = generate_empty_vector<cusfloat>( mesh.nodes_np );
+    mesh.z = generate_empty_vector<cusfloat>( mesh.nodes_np );
+
+    for ( int i = 0; i < mesh.nodes_np; ++i )
+    {
+        mesh.x[i] = cloud.x[static_cast<size_t>(i)];
+        mesh.y[i] = cloud.y[static_cast<size_t>(i)];
+        mesh.z[i] = cloud.z[static_cast<size_t>(i)];
+    }
+
+    mesh._calculate_bounding_box( );
+
+    return mesh;
+}
+
+
 void        Mesh::set_all_panels_type(
                                             PanelTypeE  panel_type
                                        )

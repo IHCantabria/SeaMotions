@@ -35,6 +35,7 @@
 #include "../../src/containers/source_node.hpp"
 #include "../../src/math/math_tools.hpp"
 #include "../../src/tools.hpp"
+#include "annulus_nodes.hpp"
 
 // Define panels type
 
@@ -183,6 +184,22 @@ public:
     virtual ~Mesh( 
                                         void 
                 );
+
+        /**
+         * @brief Create a Mesh populated only with nodes from an annulus node cloud.
+         *
+         * The resulting mesh has no elements or panels; only x/y/z arrays are
+         * initialized. This is intended for numerical integration workflows that
+         * only need nodal sampling (e.g., polar quadrature on an annulus).
+         *
+         * @param cloud Annulus node cloud created by create_annulus_nodes.
+         * @param name_in Optional mesh name label.
+         * @return Mesh containing only nodal coordinates.
+         */
+        static Mesh from_annulus_nodes(
+                                                                                const AnnulusNodeCloud& cloud,
+                                                                                const std::string& name_in = "AnnulusNodes"
+                                                                  );
 
     // Define class methods
             void        calculate_fs_radius(
