@@ -159,7 +159,8 @@ RadDiffData<T, Config>::RadDiffData(
                                         std::size_t     field_points_np_,
                                         std::size_t     freqs_np_,
                                         std::size_t     headings_np_,
-                                        std::size_t     dofs_np_
+                                        std::size_t     dofs_np_,
+                                        bool            use_single_panel_
                                     )
 {
     // Store number of field points
@@ -173,32 +174,52 @@ RadDiffData<T, Config>::RadDiffData(
                                         reinterpret_cast<int&>( this->_end_pos )
                                     );
 
-    // Determine size of the local panel set for the current process
-    this->_size_local       = this->_end_pos - this->_start_pos;
+    // Determine size of the local field points chunk for the current process
+    this->_size_local_fp    = this->_end_pos - this->_start_pos;
 
     // Allocate PanelData
-    this->panel_data.reserve( this->_size_local );
-
-    std::size_t field_points_np  = 1; // Dummy value since field points will be loaded from input array
-    for ( std::size_t i=0; i<this->_size_local; i++ )
+    if ( use_single_panel_ )
     {
-        // Create new panel data
-        this->panel_data.emplace_back( 
+        if ( this->_size_local_fp > 0 )
+        {
+            this->_size_local = 1;
+            this->panel_data.reserve( 1 );
+            this->panel_data.emplace_back(
                                             PanelData<T, Config>(
-                                                                    field_points_np,
-                                                                    &(field_points_[3*i]),
+                                                                    this->_size_local_fp,
+                                                                    &(field_points_[3 * this->_start_pos]),
                                                                     freqs_np_,
                                                                     headings_np_,
                                                                     dofs_np_
-                                                                ) 
-                                    );
+                                                                )
+                                        );
+        }
+        else
+        {
+            this->_size_local = 0;
+        }
     }
-
-    // Determine size of the local data chunk to storage the field points values for the differen degrees of freedom and headings
-    this->_size_local_fp = 0;
-    for ( std::size_t i=0; i<this->_size_local; i++ )
+    else
     {
-        this->_size_local_fp += this->panel_data[i].field_points_np;
+        // Determine size of the local panel set for the current process
+        this->_size_local = this->_size_local_fp;
+
+        this->panel_data.reserve( this->_size_local );
+
+        std::size_t field_points_np  = 1; // Dummy value since field points will be loaded from input array
+        for ( std::size_t i=0; i<this->_size_local; i++ )
+        {
+            // Create new panel data
+            this->panel_data.emplace_back( 
+                                                PanelData<T, Config>(
+                                                                        field_points_np,
+                                                                        &(field_points_[3 * ( this->_start_pos + i )]),
+                                                                        freqs_np_,
+                                                                        headings_np_,
+                                                                        dofs_np_
+                                                                    ) 
+                                        );
+        }
     }
 
     // Allocate local data chunk to storage the field points values for the different degrees of freedom and headings

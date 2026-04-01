@@ -70,7 +70,8 @@ public:
                     std::size_t     field_points_np_,
                     std::size_t     freqs_np_,
                     std::size_t     headings_np_,
-                    std::size_t     dofs_np_
+                    std::size_t     dofs_np_,
+                    bool            use_single_panel_ = false
                 );
 
     RadDiffData( 
