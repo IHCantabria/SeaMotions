@@ -250,6 +250,24 @@ add_test(
         )
 
 
+# Add test to check annulus quadrature node weights
+set(
+        test_annulus_nodes_src
+        test_annulus_nodes.cpp
+        ../../src/config.hpp
+        ../../src/math/math_constants.hpp
+        ../../src/mesh/annulus_nodes.hpp
+    )
+
+add_executable( test_annulus_nodes_cmd ${test_annulus_nodes_src} )
+set_mkl_lib_target( test_annulus_nodes_cmd )
+
+add_test(
+            NAME test_annulus_nodes
+            COMMAND test_annulus_nodes_cmd
+        )
+
+
 # Add test to check the bisection method
 set(
         test_nonlinear_1d_solvers_src
