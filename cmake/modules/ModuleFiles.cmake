@@ -267,6 +267,7 @@ set(
 # Pack mesh module files
 set(
         mesh_module_files
+        ${CMAKE_SOURCE_DIR}/src/mesh/annulus_nodes.hpp
         ${CMAKE_SOURCE_DIR}/src/mesh/gmsh_reader/gmsh_binary_tools.hpp
         ${CMAKE_SOURCE_DIR}/src/mesh/gmsh_reader/gmsh_element.hpp
         ${CMAKE_SOURCE_DIR}/src/mesh/gmsh_reader/gmsh_node.hpp
