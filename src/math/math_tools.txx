@@ -273,6 +273,18 @@ inline void cross( const cuscomplex* u, const cusfloat* v, cuscomplex* w )
 
 
 template<typename T>
+inline T dot_product( int n, const T* u, const T* v )
+{
+    T dot_prod = 0.0;
+    for ( int i=0; i<n; i++ )
+    {
+        dot_prod += u[i] * v[i];
+    }
+    return dot_prod;
+}
+
+
+template<typename T>
 inline T eucledian_dist( int np, T* v0, T* v1 )
 {
     T dist = 0.0;

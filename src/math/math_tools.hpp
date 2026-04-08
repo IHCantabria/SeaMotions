@@ -191,6 +191,12 @@ template<typename T>                inline  void        cross(
                                                                                     const cusfloat* b
                                                                     );
 
+template<typename T>                inline  T           dot_product(
+                                                                                    int n,
+                                                                                    const T* u,
+                                                                                    const T* v
+                                                                );
+
                                             cusfloat    angle_deg(
                                                                                     const cusfloat* v1,
                                                                                     const cusfloat* v2
