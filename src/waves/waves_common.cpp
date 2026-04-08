@@ -135,7 +135,7 @@ cuscomplex  wave_potential_so_space(
                                         cusfloat            y,
                                         cusfloat            z,
                                         WaveDispersionSO*   wd,
-                                        int                 qtf_type
+                                        QTFTypeE            qtf_type
                                     )
 {
     // Check if there is difference or summation term
@@ -146,8 +146,8 @@ cuscomplex  wave_potential_so_space(
     cusfloat    w_ds        = 0.0;
     cusfloat    w_k_ds      = 0.0;
 
-    assert( ( ( qtf_type == 0 ) || ( qtf_type == 1 ) ) && "qtf_type should be 0 or 1" );
-    if ( qtf_type == 0 )
+    assert( ( ( qtf_type == QTFTypeE::QTF_DIFF_CODE ) || ( qtf_type == QTFTypeE::QTF_SUM_CODE ) ) && "qtf_type should be QTF_DIFF_CODE or QTF_SUM_CODE" );
+    if ( qtf_type == QTFTypeE::QTF_DIFF_CODE )
     {
         k_ds_mod        = wd->k_diff_mod;
         k_ds_vec[0]     = wd->k_diff_vec[0];
@@ -157,7 +157,7 @@ cuscomplex  wave_potential_so_space(
         w_ds            = wd->w_diff;
         w_k_ds          = wd->w_k_diff;
     }
-    else if ( qtf_type == 1 )
+    else if ( qtf_type == QTFTypeE::QTF_SUM_CODE )
     {
         k_ds_mod        = wd->k_sum_mod;
         k_ds_vec[0]     = wd->k_sum_vec[0];
@@ -219,19 +219,19 @@ cuscomplex  wave_potential_so_space_dx(
                                         cusfloat            y,
                                         cusfloat            z,
                                         WaveDispersionSO*   wd,
-                                        int                 qtf_type
+                                        QTFTypeE            qtf_type
                                     )
 {
     // Check if there is difference or summation term
     cusfloat    k_ds_vec[2] = { 0.0, 0.0 };
 
-    assert( ( ( qtf_type == 0 ) || ( qtf_type == 1 ) ) && "qtf_type should be 0 or 1" );
-    if ( qtf_type == 0 )
+    assert( ( ( qtf_type == QTFTypeE::QTF_DIFF_CODE ) || ( qtf_type == QTFTypeE::QTF_SUM_CODE ) ) && "qtf_type should be QTF_DIFF_CODE or QTF_SUM_CODE" );
+    if ( qtf_type == QTFTypeE::QTF_DIFF_CODE )
     {
         k_ds_vec[0]     = wd->k_diff_vec[0];
         k_ds_vec[1]     = wd->k_diff_vec[1];
     }
-    else if ( qtf_type == 1 )
+    else if ( qtf_type == QTFTypeE::QTF_SUM_CODE )
     {
         k_ds_vec[0]     = wd->k_sum_vec[0];
         k_ds_vec[1]     = wd->k_sum_vec[1];
@@ -255,19 +255,19 @@ cuscomplex  wave_potential_so_space_dy(
                                         cusfloat            y,
                                         cusfloat            z,
                                         WaveDispersionSO*   wd,
-                                        int                 qtf_type
+                                        QTFTypeE            qtf_type
                                     )
 {
     // Check if there is difference or summation term
     cusfloat    k_ds_vec[2] = { 0.0, 0.0 };
 
-    assert( ( ( qtf_type == 0 ) || ( qtf_type == 1 ) ) && "qtf_type should be 0 or 1" );
-    if ( qtf_type == 0 )
+    assert( ( ( qtf_type == QTFTypeE::QTF_DIFF_CODE ) || ( qtf_type == QTFTypeE::QTF_SUM_CODE ) ) && "qtf_type should be QTF_DIFF_CODE or QTF_SUM_CODE" );
+    if ( qtf_type == QTFTypeE::QTF_DIFF_CODE )
     {
         k_ds_vec[0]     = wd->k_diff_vec[0];
         k_ds_vec[1]     = wd->k_diff_vec[1];
     }
-    else if ( qtf_type == 1 )
+    else if ( qtf_type == QTFTypeE::QTF_SUM_CODE )
     {
         k_ds_vec[0]     = wd->k_sum_vec[0];
         k_ds_vec[1]     = wd->k_sum_vec[1];
@@ -291,18 +291,18 @@ cuscomplex  wave_potential_so_space_dz(
                                         cusfloat            y,
                                         cusfloat            z,
                                         WaveDispersionSO*   wd,
-                                        int                 qtf_type
+                                        QTFTypeE            qtf_type
                                     )
 {
     // Check if there is difference or summation term
     cusfloat    k_ds_mod    = 0.0;
 
-    assert( ( ( qtf_type == 0 ) || ( qtf_type == 1 ) ) && "qtf_type should be 0 or 1" );
-    if ( qtf_type == 0 )
+    assert( ( ( qtf_type == QTFTypeE::QTF_DIFF_CODE ) || ( qtf_type == QTFTypeE::QTF_SUM_CODE ) ) && "qtf_type should be QTF_DIFF_CODE or QTF_SUM_CODE" );
+    if ( qtf_type == QTFTypeE::QTF_DIFF_CODE )
     {
         k_ds_mod        = wd->k_diff_mod;
     }
-    else if ( qtf_type == 1 )
+    else if ( qtf_type == QTFTypeE::QTF_SUM_CODE )
     {
         k_ds_mod        = wd->k_sum_mod;
     }
