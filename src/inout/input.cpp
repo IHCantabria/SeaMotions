@@ -691,6 +691,7 @@ void Input::read_case( const std::string& folder_path )
     infile.close();
 }
 
+
 void Input::read_field_points( 
                                     const std::string& folder_path 
                                 )
@@ -868,6 +869,7 @@ int  Input::gauss_np_factor_2d( void )
 
     return gf;
 }
+
 
 Input::~Input( void )
 {
