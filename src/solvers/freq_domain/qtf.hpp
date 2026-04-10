@@ -24,8 +24,10 @@
 #include "../../config.hpp"
 #include "../../containers/simulation_data.hpp"
 #include "../../containers/matlin_group.hpp"
+#include "../../containers/panel_data.hpp"
 #include "../../inout/input.hpp"
 #include "../../mesh/mesh_group.hpp"
+#include "../../waves/wave_dispersion_so.hpp"
 
 // Set module definitions
 // #define QTF_DIFF_CODE   0
@@ -91,3 +93,14 @@ void        qtf_distribute_matrix_data(
                                             int         vector_mode,
                                             int         op_mode
                                         );
+
+
+template<typename Config>
+void        so_potential_qb_rhs(
+                                            std::size_t                     points_np,            
+                                            PanelData<cuscomplex, Config>*  panel_data,
+                                            cuscomplex*                     G,
+                                            cuscomplex*                     dG_dx,
+                                            cuscomplex*                     dG_dy,
+                                            cuscomplex*                     dG_dz
+                                );
