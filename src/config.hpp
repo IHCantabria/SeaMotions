@@ -120,6 +120,14 @@ constexpr const char* RESULTS_FIELD_POINTS_FOLDER_NAME  = "1_field_points";
 /****** Define class enums to be used along the code  *******/
 /************************************************************/
 
+// Data type enum. Used to classify the boundary subtypes to be calculated
+enum class BoundarySubtypeE: int
+{
+    DIFFRAC,    // Diffraction: referring to the active zones for the analysis that are submerged and not in the free surface
+    WL,         // Waterline: referring to the zone of the floating body that is on the intersection between the submerged part and the free surface
+    PC          // Partition Circle: referring to the zone of the floating body that is the outside boundary of the free surface circle partition used for second order potential calculation.
+};
+
 // Data type enum. Used to classify the data type to be calculated.
 enum class ComplexDataTypeE: int
 {
