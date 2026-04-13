@@ -281,6 +281,38 @@ add_executable(
                 )
 set_mkl_lib_target( test_wave_term_fin_depth_consistency_panels_cmd )
 
+
+# Add test to compare full finite-depth wave integration against split wave plus exact steady terms
+set(
+        test_wave_term_panel_full_vs_split_src
+        test_wave_term_panel_full_vs_split.cpp
+    ../../src/containers/panel_geom.cpp
+    ../../src/green/common.cpp
+    ../../src/green/dipole.cpp
+    ../../src/green/source.cpp
+    ../../src/math/chebyshev.cpp
+    ../../src/math/gauss.cpp
+    ../../src/math/integration.cpp
+    ../../src/math/math_tools.cpp
+    ../../src/math/shape_functions.cpp
+    ../../src/math/special_math.cpp
+    ../../src/math/topology.cpp
+    ../../src/tools.cpp
+    ../../src/waves/wave_dispersion_base_fo.cpp
+    ../../src/waves/wave_dispersion_so.cpp
+    ../../src/waves/waves_common.cpp
+    )
+
+add_executable(
+                    test_wave_term_panel_full_vs_split_cmd
+                    ${test_wave_term_panel_full_vs_split_src}
+                )
+set_mkl_lib_target( test_wave_term_panel_full_vs_split_cmd )
+add_test(
+            NAME test_wave_term_panel_full_vs_split
+            COMMAND test_wave_term_panel_full_vs_split_cmd
+        )
+
 # Add test to check the finite water depth 
 # wave term
 set(
