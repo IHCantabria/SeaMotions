@@ -43,8 +43,15 @@ template<std::size_t N, int mode_pf>
 struct FormulationKernelBackend
 {
 private:
+    /*** Declare local type aliases ***/
+    using RDDQC = RadDiffData<cuscomplex, RDDQTFConfig>;
+
     /* Declare private variables */
-    GWFcnsInterfaceT<N*N>   _gwfcns_interf;                     // Wave part functor interface used for the integration over the panel by using Gauss Points
+    GWFcnsInterfaceT<N*N>   _gwfcns_interf;                     // Wave part functor interface used for the integration over the panel by using Gauss Points (first order potential evaluation)
+    GWFcnsInterfaceT<N*N>   _gwfcns_interf_qb;                  // Wave part functor interface used for the integration over the panel by using Gauss Points (second order potential evaluation, Qb term)
+    GWFcnsInterfaceT<N*N>   _gwfcns_interf_qf;                  // Wave part functor interface used for the integration over the panel by using Gauss Points (second order potential evaluation, Qf term)
+    GWFcnsInterfaceT<1>     _gwfcns_interf_qfa;                 // Wave part functor interface used for the integration over the panel by using Gauss Points (second order potential evaluation, Qf term annuli)
+    GWFcnsInterfaceT<N>     _gwfcns_interf_wl;                  // Wave part functor interface used for the integration over the panel by using Gauss Points (second order potential evaluation for waterline points)
     Input*                  _input                  = nullptr;  // Input system to have access to the case configuration
     int                     _is_condition_number    = false;    // Switch to enable or disable the computation of the Condition number of the system matrixes for all the available formulations
     MeshGroup*              _mesh_gp                = nullptr;  // Mesh group describing the target case topology
@@ -66,6 +73,18 @@ private:
                                     cusfloat w
                     );
 
+    void _build_rhs_so( 
+                        QTFTypeE            qtf_type,
+                        std::size_t         freq_i,
+                        std::size_t         freq_j,
+                        cuscomplex          raos_hist,
+                        RDDQC*              qtf_body_fields,
+                        RDDQC*              qtf_body_fields_wl,
+                        RDDQC*              qtf_fs_fields,
+                        RDDQC*              qtf_fs_fields_wl,
+                        WaveDispersionSO*   wd
+                    );
+
     template<FreqRegimeE freq_regime>
     void _build_wave_matrixes( 
                                     cusfloat w
@@ -74,6 +93,33 @@ private:
     template<FreqRegimeE freq_regime>
     void _build_wave_matrixes_2( 
                                     cusfloat w
+                                );
+
+    template<FreqRegimeE freq_regime>
+    void _build_wave_matrixes_so( 
+                                    QTFTypeE            qtf_type,
+                                    std::size_t         freq_i,
+                                    std::size_t         freq_j,
+                                    cuscomplex          raos_hist,
+                                    RDDQC*              qtf_body_fields,
+                                    RDDQC*              qtf_body_fields_wl,
+                                    RDDQC*              qtf_fs_fields,
+                                    RDDQC*              qtf_fs_fields_wl,
+                                    WaveDispersionSO*   wd
+                                );
+
+    template<int GP, typename GwfInterf, typename RhsFunc, typename IntegrateFunc>
+    void _process_qtf_rhs_panels(
+                                    RDDQC*          panel_fields,
+                                    GwfInterf&      gwf_interf_local,
+                                    RhsFunc&&       rhs_func,
+                                    IntegrateFunc&& integrate,
+                                    bool            mode_wl,
+                                    cusfloat*       field_points_d,
+                                    cusfloat*       field_points_x,
+                                    cusfloat*       field_points_y,
+                                    cusfloat*       field_points_z,
+                                    cuscomplex*     qb_rhs
                                 );
 
     void _initialize(                

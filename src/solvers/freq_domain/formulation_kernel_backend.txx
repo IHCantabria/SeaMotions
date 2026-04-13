@@ -898,6 +898,238 @@ void FormulationKernelBackend<N, mode_pf>::_build_rhs(
 
 
 template<std::size_t N, int mode_pf>
+template<int GP, typename GwfInterf, typename RhsFunc, typename IntegrateFunc>
+void FormulationKernelBackend<N, mode_pf>::_process_qtf_rhs_panels(
+                                                                        RDDQC*          panel_fields,
+                                                                        GwfInterf&      gwf_interf_local,
+                                                                        RhsFunc&&       rhs_func,
+                                                                        IntegrateFunc&& integrate,
+                                                                        bool            mode_wl,
+                                                                        cusfloat*       field_points_d,
+                                                                        cusfloat*       field_points_x,
+                                                                        cusfloat*       field_points_y,
+                                                                        cusfloat*       field_points_z,
+                                                                        cuscomplex*     qb_rhs
+                                                                    )
+{
+    int         body_id         = 0;
+    int         col_count       = 0;
+    int         global_index    = 0;
+    std::size_t heads_offset    = 0;
+    cuscomplex  int_result      = cuscomplex( 0.0, 0.0 );
+    PanelGeom*  panel_j         = nullptr;
+    std::size_t rhs_pos         = 0;
+    int         row_count       = 0;
+    SourceNode  source_i        = SourceNode( );
+
+    for ( std::size_t i=0; i<panel_fields->panel_data.size( ); i++ )
+    {
+        global_index = i + panel_fields->get_start_pos( );
+
+        source_i.normal_vec[0] = panel_fields->panel_data[i]->normal_vec[0];
+        source_i.normal_vec[1] = panel_fields->panel_data[i]->normal_vec[1];
+        source_i.normal_vec[2] = panel_fields->panel_data[i]->normal_vec[2];
+
+        gwf_interf_local.set_source_i( source_i, 1.0 );
+
+        assert( panel_fields->panel_data[i]->field_points_np == NUM_GP2 );
+        for ( std::size_t id=0; id<panel_fields->panel_data[i]->field_points_np; id++ )
+        {
+            field_points_x[id]   = panel_fields->panel_data[i]->field_points_x[id];
+            field_points_y[id]   = panel_fields->panel_data[i]->field_points_y[id];
+            field_points_z[id]   = panel_fields->panel_data[i]->field_points_z[id];
+        }
+
+        body_id     = this->_mesh_gp->get_body_id( global_index );
+        row_count   = 0;
+
+        for ( std::size_t j=this->_solver->start_row_0; j<this->_solver->end_row_0; j++ )
+        {
+            panel_j = this->_mesh_gp->source_nodes[j]->panel;
+            gwf_interf_local.set_source_j( this->_mesh_gp->source_nodes[j] );
+
+            gwf_interf_local.template operator()<GWFcnsInterfaceT<GP>>(
+                                                                            field_points_d,
+                                                                            field_points_d,
+                                                                            field_points_x,
+                                                                            field_points_y,
+                                                                            field_points_z
+                                                                        );
+
+            if ( global_index == static_cast<int>( j ) )
+            {
+                for ( std::size_t id=0; id<panel_fields->panel_data[i]->field_points_np; id++ )
+                {
+                    gwf_interf_local.dG_dx[id] = 0.0;
+                    gwf_interf_local.dG_dy[id] = 0.0;
+                    gwf_interf_local.dG_dz[id] = -0.5;
+                }
+            }
+
+            rhs_func( panel_fields->panel_data[i], panel_j, gwf_interf_local, mode_wl, body_id );
+
+            for ( std::size_t ih1=0; ih1<this->_input->heads_np; ih1++ )
+            {
+                for ( std::size_t ih2=0; ih2<this->_heads_np; ih2++ )
+                {
+                    heads_offset = ( ih1 * this->_heads_np + ih2 ) * panel_fields->panel_data[i]->field_points_np;
+                    integrate( int_result, heads_offset, panel_fields->panel_data[i]->panel_geom );
+
+                    rhs_pos                   = ( ih1 * this->_heads_np + ih2 ) * this->_pf_gp->sysmat_nrows + j;
+                    this->_ppf_rhs[rhs_pos]  += int_result;
+                }
+            }
+
+            row_count++;
+        }
+
+        col_count++;
+    }
+}
+
+template<std::size_t N, int mode_pf>
+void FormulationKernelBackend<N, mode_pf>::_build_rhs_so( 
+                                                            QTFTypeE            qtf_type,
+                                                            std::size_t         freq_i,
+                                                            std::size_t         freq_j,
+                                                            cuscomplex          raos_hist,
+                                                            RDDQC*              qtf_body_fields,
+                                                            RDDQC*              qtf_body_fields_wl,
+                                                            RDDQC*              qtf_fs_fields,
+                                                            RDDQC*              qtf_fs_fields_wl,
+                                                            WaveDispersionSO*   wd
+                                                        )
+{
+    // Declare local variables
+    cusfloat    field_points_d[NUM_GP2];
+    cusfloat    field_points_x[NUM_GP2];
+    cusfloat    field_points_y[NUM_GP2];
+    cusfloat    field_points_z[NUM_GP2];
+
+    // Allocate space for intermediate variables for the body rhs calculation
+    std::size_t qb_size = this->_input->heads_np * this->_heads_np * qtf_body_fields->panel_data[0]->field_points_np;
+    cuscomplex* qb_rhs  = generate_empty_vector<cuscomplex>( qb_size );
+
+    // Clean rhs vector
+    // Clear potential rhs to avoid spurious valures
+    STATIC_COND( ONLY_PF, clear_vector( this->_pf_gp->sysmat_nrows * this->_pf_gp->fields_np, this->_ppf_rhs ); )
+
+    auto qb_rhs_func = [&](auto* panel_data, PanelGeom* panel_geom, auto& gwf_interf_local, bool mode_wl, int rhs_body_id)
+    {
+        so_potential_qb_rhs(
+                                qtf_type,
+                                this->_input,
+                                freq_i,
+                                freq_j,
+                                raos_hist,
+                                rhs_body_id,
+                                panel_geom->body_cog,
+                                panel_data,
+                                gwf_interf_local.G,
+                                gwf_interf_local.dG_dx,
+                                gwf_interf_local.dG_dy,
+                                gwf_interf_local.dG_dz,
+                                wd,
+                                mode_wl,
+                                qb_rhs
+                            );
+    };
+
+    auto qf_rhs_func = [&](auto* panel_data, PanelGeom* panel_geom, auto& gwf_interf_local, bool mode_wl, int rhs_body_id)
+    {
+        so_potential_qf_rhs(
+                                qtf_type,
+                                this->_input,
+                                freq_i,
+                                freq_j,
+                                raos_hist,
+                                rhs_body_id,
+                                panel_geom->body_cog,
+                                panel_data,
+                                gwf_interf_local.G,
+                                gwf_interf_local.dG_dx,
+                                gwf_interf_local.dG_dy,
+                                gwf_interf_local.dG_dz,
+                                wd,
+                                mode_wl ? BoundarySubtypeE::WL : BoundarySubtypeE::DIFFRAC,
+                                qb_rhs
+                            );
+    };
+
+    auto integrate_2d = [&](cuscomplex& int_out, std::size_t offset, PanelGeom* panel_geom)
+    {
+        gauss2d_loop<NGP>(
+                                int_out,
+                                [&](int idf){ return qb_rhs[offset + idf]; },
+                                panel_geom
+                            );
+    };
+
+    auto integrate_1d = [&](cuscomplex& int_out, std::size_t offset, PanelGeom* panel_geom)
+    {
+        gauss1d_loop<NGP>(
+                                int_out,
+                                [&](int idf){ return qb_rhs[offset + idf]; },
+                                panel_geom->len_wl
+                            );
+    };
+
+    this->_process_qtf_rhs_panels<NUM_GP2>(
+                                                qtf_body_fields,
+                                                this->_gwfcns_interf_qb,
+                                                qb_rhs_func,
+                                                integrate_2d,
+                                                false,
+                                                field_points_d,
+                                                field_points_x,
+                                                field_points_y,
+                                                field_points_z,
+                                                qb_rhs
+                                        );
+    MPI_Barrier( MPI_COMM_WORLD );
+    this->_process_qtf_rhs_panels<NUM_GP>(
+                                                qtf_body_fields_wl,
+                                                this->_gwfcns_interf_qb_wl,
+                                                qb_rhs_func,
+                                                integrate_1d,
+                                                true,
+                                                field_points_d,
+                                                field_points_x,
+                                                field_points_y,
+                                                field_points_z,
+                                                qb_rhs
+                                        );
+    this->_process_qtf_rhs_panels<NUM_GP2>(
+                                                qtf_fs_fields,
+                                                this->_gwfcns_interf_qf,
+                                                qf_rhs_func,
+                                                integrate_2d,
+                                                false,
+                                                field_points_d,
+                                                field_points_x,
+                                                field_points_y,
+                                                field_points_z,
+                                                qb_rhs
+                                        );
+    this->_process_qtf_rhs_panels<NUM_GP>(
+                                                qtf_fs_fields_wl,
+                                                this->_gwfcns_interf_qf_wl,
+                                                qf_rhs_func,
+                                                integrate_1d,
+                                                true,
+                                                field_points_d,
+                                                field_points_x,
+                                                field_points_y,
+                                                field_points_z,
+                                                qb_rhs
+                                        );
+
+    // Deallocate local heap variables
+    mkl_free( qb_rhs );
+}
+
+
+template<std::size_t N, int mode_pf>
 template<FreqRegimeE freq_regime>
 void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes( 
                                                                     cusfloat w
@@ -1219,6 +1451,171 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes_2(
 
     }
     MPI_Barrier( MPI_COMM_WORLD );
+
+}
+
+
+template<std::size_t N, int mode_pf>
+template<FreqRegimeE freq_regime>
+void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes_so( 
+                                                                        QTFTypeE            qtf_type,
+                                                                        std::size_t         freq_i,
+                                                                        std::size_t         freq_j,
+                                                                        cuscomplex          raos_hist,
+                                                                        RDDQC*              qtf_body_fields,
+                                                                        RDDQC*              qtf_body_fields_wl,
+                                                                        RDDQC*              qtf_fs_fields,
+                                                                        RDDQC*              qtf_fs_fields_wl,
+                                                                        WaveDispersionSO*   wd
+                                                                    )
+{
+    // Clean system matrixes
+                            this->_sf_gp->clear_sysmat( );
+    STATIC_COND( ONLY_PF,   this->_pf_gp->clear_sysmat( ); )
+                            this->_pot_gp->clear_sysmat( );
+                            this->_pot_gp->clear_field_values( );
+    
+    // Declare local variables
+    int         body_id                 = 0;
+    int         col_count               = 0;
+    auto        gwf_interf              = this->_gwfcns_interf;
+    int         index_cm                = 0;
+    int         index_rm                = 0;
+    cuscomplex  int_dn_sf_st            = cuscomplex( 0.0, 0.0 );
+    cuscomplex  int_dn_sf_wv            = cuscomplex( 0.0, 0.0 );
+    cuscomplex  int_dn_pf_st            = cuscomplex( 0.0, 0.0 );
+    cuscomplex  int_dn_pf_wv            = cuscomplex( 0.0, 0.0 );
+    cuscomplex  int_scale_f             = cuscomplex( 1.0, 0.0 );
+    bool        is_john                 = false;
+    cusfloat    log_sing_val            = 0.0;
+    PanelGeom*  panel_j                 = nullptr;
+    cuscomplex  pot_term                = cuscomplex( 0.0, 0.0 );
+    cuscomplex  pot_term_st             = cuscomplex( 0.0, 0.0 );
+    cuscomplex  pot_term_wv             = cuscomplex( 0.0, 0.0 );
+    int         qtf_sign                = ( qtf_type == QTFTypeE::QTF_DIFF_CODE ) ? -1 : 1;
+    int         row_count               = 0;
+    SourceNode* source_i                = nullptr;
+    cuscomplex  vel_total[3]            ;
+    cuscomplex  vel_total_st[3]         ;
+    cuscomplex  vel_total_wv[3]         ;
+    cusfloat    wi                      = this->_input->frequencies[freq_i];
+    cusfloat    wj                      = this->_input->frequencies[freq_j];
+    cusfloat    wi_wj                   = wi * qtf_sign * wj;
+    cuscomplex  wave_fcn_value          = cuscomplex( 0.0, 0.0 );
+    cuscomplex  wave_fcn_dn_sf_value    = cuscomplex( 0.0, 0.0 );
+    cuscomplex  wave_fcn_dn_pf_value    = cuscomplex( 0.0, 0.0 );
+    cuscomplex  wave_fcn_dx_value       = cuscomplex( 0.0, 0.0 );
+    cuscomplex  wave_fcn_dy_value       = cuscomplex( 0.0, 0.0 );
+    cuscomplex  wave_fcn_dz_value       = cuscomplex( 0.0, 0.0 );
+    
+    // Calculate wave dependent parameters
+    cusfloat    nu                      = pow2s( wi_wj ) / this->_input->grav_acc;
+
+    // Allocate space for intermediate variables for the body rhs calculation
+    std::size_t qb_size = this->_input->heads_np * this->_heads_np * qtf_body_fields->panel_data[0]->field_points_np;
+    cuscomplex* qb_rhs  = generate_empty_vector<cuscomplex>( qb_size );
+
+    // Clean rhs vector
+    // Clear potential rhs to avoid spurious valures
+    STATIC_COND( ONLY_PF, clear_vector( this->_pf_gp->sysmat_nrows * this->_pf_gp->fields_np, this->_ppf_rhs ); )
+    
+    for ( int i=this->_solver->start_col_0; i<this->_solver->end_col_0; i++ )
+    {
+        // Get memory address of the ith panel
+        source_i = this->_mesh_gp->source_nodes[i];
+        gwf_interf.set_source_i( source_i, 1.0 );
+
+        // Get current body id for the columns panels
+        body_id = this->_mesh_gp->get_body_id( i );
+
+        // Loop over rows to calcualte the influence of the panel
+        // over each collocation point
+        row_count = 0;
+        for ( int j=this->_solver->start_row_0; j<this->_solver->end_row_0; j++ )
+        {
+            // Get memory address of the panel jth
+            panel_j = this->_mesh_gp->source_nodes[j]->panel;
+            gwf_interf.set_source_j( this->_mesh_gp->source_nodes[j] );
+            
+            // Calculate steady contribution
+            _formulation_kernel_steady<
+                                            mode_pf,
+                                            freq_regime
+                                        >
+                                        (
+                                            i == j,
+                                            this->_mesh_gp->panels[i],
+                                            this->_mesh_gp->panels_mirror[i],
+                                            this->_mesh_gp->panels[j],
+                                            this->_input->water_depth,
+                                            pot_term_st,
+                                            int_dn_pf_st,
+                                            int_dn_sf_st,
+                                            vel_total_st
+                                        );
+
+            // Calculate wave contribution
+            _formulation_kernel_wave<
+                                        mode_pf,
+                                        freq_regime
+                                    >
+                                    ( 
+                                        i == j,
+                                        this->_mesh_gp->source_nodes[i],
+                                        this->_mesh_gp->source_nodes[j],
+                                        this->_gwfcns_interf,
+                                        this->_input->water_depth,
+                                        nu,
+                                        is_john,
+                                        pot_term_wv,
+                                        int_dn_pf_wv,
+                                        int_dn_sf_wv,
+                                        vel_total_wv
+                                    );
+
+            // Apply the integral value accordingly
+            COL_MAJOR_INDEX( index_cm, row_count, col_count, this->_solver->num_rows_local )
+            ROW_MAJOR_INDEX( index_rm, row_count, col_count, this->_solver->num_cols_local )
+
+            if ( source_i->panel->type != PanelTypeE::EXT_LID )
+            {
+                int_scale_f = cuscomplex( 1.0, 0.0 );
+            }
+            else
+            {
+                int_scale_f = cuscomplex( 0.0, - source_i->panel->ext_lid_damp_f );
+            }
+
+            if ( is_john && freq_regime == FreqRegimeE::REGULAR )
+            {
+                this->_pot_gp->sysmat[index_rm] = int_scale_f * pot_term_wv;
+                this->_sf_gp->sysmat[index_cm]  = int_scale_f * int_dn_sf_wv;
+
+                STATIC_COND( ONLY_PF, this->_pf_gp->sysmat[index_cm]  = int_scale_f * int_dn_pf_wv; )
+            }
+            else
+            {
+                this->_pot_gp->sysmat[index_rm] = int_scale_f * ( pot_term_st + pot_term_wv );
+                this->_sf_gp->sysmat[index_cm]  = int_scale_f * ( int_dn_sf_st + int_dn_sf_wv );
+
+                STATIC_COND( ONLY_PF, this->_pf_gp->sysmat[index_cm]  = int_scale_f * ( int_dn_pf_st + int_dn_pf_wv ); )
+            }
+
+            // Advance row count
+            row_count++;
+
+        }
+        
+        // Advance column count
+        col_count++;
+
+    }
+    MPI_Barrier( MPI_COMM_WORLD );
+
+    // Calculate Qb WL RHS calculation
+
+    // Deallocate local heap variables
+    mkl_free( qb_rhs );
 
 }
 
@@ -1777,13 +2174,16 @@ FormulationKernelBackend<N, mode_pf>::FormulationKernelBackend(
                                             true
                                         );
 
+    std::size_t  fo_len = this->_input->dofs_np + this->_input->heads_np;
+    std::size_t  so_len = this->_input->heads_np * this->_input->heads_np;
+    std::size_t  pf_len = ( ( mode_pf > 0 ) && ( so_len > fo_len ) ) ? so_len : fo_len;
     STATIC_COND( 
                     ONLY_PF,
                     this->_pf_gp        = new   MLGCmpx(
                                                             this->_mesh_gp->panels_tnp,
                                                             this->ipm_cols_np,
                                                             this->_mesh_gp->meshes_np,
-                                                            ( this->_input->dofs_np + this->_input->heads_np ),
+                                                            pf_len,
                                                             0,
                                                             this->_mesh_gp->panels_tnp-1,
                                                             this->ipm_sc,
@@ -1799,8 +2199,40 @@ FormulationKernelBackend<N, mode_pf>::FormulationKernelBackend(
     this->_gwfcns_interf.initialize(
                                         this->_input->angfreqs[0],
                                         this->_input->water_depth,
-                                        this->_input->grav_acc
+                                        this->_input->grav_acc,
+                                        false
                                     );
+
+    if ( this->_input->out_qtf_so_model == QTFSOModelE::DIRECT )
+    {
+        this->_gwfcns_interf_qb.initialize(
+                                                this->_input->angfreqs[0],
+                                                this->_input->water_depth,
+                                                this->_input->grav_acc,
+                                                true
+                                            );
+
+        this->_gwfcns_interf_qf.initialize(
+                                                this->_input->angfreqs[0],
+                                                this->_input->water_depth,
+                                                this->_input->grav_acc,
+                                                true
+                                            );
+
+        this->_gwfcns_interf_qfa.initialize(
+                                                this->_input->angfreqs[0],
+                                                this->_input->water_depth,
+                                                this->_input->grav_acc,
+                                                true
+                                            );
+
+        this->_gwfcns_interf_wl.initialize(
+                                                this->_input->angfreqs[0],
+                                                this->_input->water_depth,
+                                                this->_input->grav_acc,
+                                                true
+                                            );
+    }
     
     // Launch object initialization
     this->_initialize( );
