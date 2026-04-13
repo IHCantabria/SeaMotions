@@ -65,6 +65,37 @@ add_test(
         )
 
 
+# Add test to compare Newman integration vs Gauss rule over quadrilateral
+set(
+        test_gauss_source_quad_src
+        test_gauss_source_quadrilateral.cpp
+        "../../src/config.hpp"
+        ${containers_module_files}
+        ${green_module_files}
+        ${interfaces_module_files}
+        ${hydrostatic_module_files}
+        ${inout_module_files}
+        ${math_module_files}
+        ${mesh_module_files}
+        ${raos_module_files}
+        ${tools_module_files}
+        ${waves_module_files}
+        ${version_module_files}
+    )
+
+add_executable(
+                    test_gauss_source_quadrilateral_cmd
+                    ${test_gauss_source_quad_src}
+                )
+set_mkl_lib_target( test_gauss_source_quadrilateral_cmd )
+set_mpi_target( test_gauss_source_quadrilateral_cmd )
+set_hdf5_target( test_gauss_source_quadrilateral_cmd )
+add_test(
+            NAME test_gauss_source_quadrilateral
+            COMMAND test_gauss_source_quadrilateral_cmd
+        )
+
+
 # Configure source performance test Hess vs Newman
 set(    
         performance_source_newman_hess_src  
