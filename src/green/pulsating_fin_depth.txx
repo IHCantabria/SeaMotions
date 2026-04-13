@@ -1247,7 +1247,8 @@ void        wave_term_integral(
                                                 cuscomplex*                 G,
                                                 cuscomplex*                 G_dr,
                                                 cuscomplex*                 G_dz,
-                                                cuscomplex*                 G_dzeta
+                                                cuscomplex*                 G_dzeta,
+                                                bool                        is_full
                                         )
 {
     /**
@@ -1529,6 +1530,52 @@ void        wave_term_integral(
         STATIC_COND( ONLY_FCNDZ,    G_dz[i]    = cuscomplex( G_dz_real[i],         -k0nu * expsum_dz[i] * j0_vec[i] * k0       ); )
         STATIC_COND( ONLY_FCNDZ,    G_dzeta[i] = cuscomplex( G_dzeta_real[i],      -k0nu * expsum_dzeta[i] * j0_vec[i] * k0    ); )
     }
+
+    // Add inverse radiual terms for full green function if required
+    if ( is_full )
+    {
+        cusfloat R2     = 0.0;
+        cusfloat r0inv  = 0.0;
+        cusfloat r1inv  = 0.0;
+        cusfloat r2inv  = 0.0;
+        cusfloat r3inv  = 0.0;
+        cusfloat r4inv  = 0.0;
+        cusfloat r5inv  = 0.0;
+        cusfloat r0inv3 = 0.0;
+        cusfloat r1inv3 = 0.0;
+        cusfloat r2inv3 = 0.0;
+        cusfloat r3inv3 = 0.0;
+        cusfloat r4inv3 = 0.0;
+        cusfloat r5inv3 = 0.0;
+
+        for ( std::size_t i=0; i<N; i++ )
+        {
+            R2      = R[i] * R[i];
+            r0inv   = 1.0 / sqrt( R2 + v0[i] * v0[i] );
+            r1inv   = 1.0 / sqrt( R2 + v1[i] * v1[i] );
+            r2inv   = 1.0 / sqrt( R2 + v2[i] * v2[i] );
+            r3inv   = 1.0 / sqrt( R2 + v3[i] * v3[i] );
+            r4inv   = 1.0 / sqrt( R2 + v4[i] * v4[i] );
+            r5inv   = 1.0 / sqrt( R2 + v5[i] * v5[i] );
+
+            if constexpr( ONLY_FCNDR || ONLY_FCNDZ )
+            {
+                r0inv3 = pow3s( r0inv );
+                r1inv3 = pow3s( r1inv );
+                r2inv3 = pow3s( r2inv );
+                r3inv3 = pow3s( r3inv );
+                r4inv3 = pow3s( r4inv );
+                r5inv3 = pow3s( r5inv );
+            }
+
+            STATIC_COND( ONLY_FCN,      G[i]       +=  r0inv + r1inv + r2inv + r3inv + r4inv + r5inv;                                                                               )
+            STATIC_COND( ONLY_FCNDR,    G_dr[i]    +=  -R[i] * ( r0inv3 + r1inv3 + r2inv3 + r3inv3 + r4inv3 + r5inv3 ) ;                                                            )
+            STATIC_COND( ONLY_FCNDZ,    G_dz[i]    -=  ( sg_z_m_zeta[i] * v0[i] * r0inv3 + v1[i] * r1inv3 - v2[i] * r2inv3 + v3[i] * r3inv3 - v4[i] * r4inv3 + v5[i] * r5inv3 );    )
+            STATIC_COND( ONLY_FCNDZ,    G_dzeta[i] -=  ( -sg_z_m_zeta[i] * v0[i] * r0inv3 + v1[i] * r1inv3 - v2[i] * r2inv3 - v3[i] * r3inv3 + v4[i] * r4inv3 + v5[i] * r5inv3);    )
+        }
+    }
+
+    
 
 }
 

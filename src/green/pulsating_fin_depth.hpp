@@ -214,7 +214,8 @@ template<
                                                                         cuscomplex*                 G,
                                                                         cuscomplex*                 G_dr,
                                                                         cuscomplex*                 G_dz,
-                                                                        cuscomplex*                 G_dzeta
+                                                                        cuscomplex*                 G_dzeta,
+                                                                        bool                        is_full = false
                                                                     );
 
 
