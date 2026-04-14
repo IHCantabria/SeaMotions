@@ -162,6 +162,31 @@ RadDiffData<T, Config>::RadDiffData(
                                         std::size_t     dofs_np_,
                                         bool            use_single_panel_
                                     )
+    : RadDiffData<T, Config>(
+                                mpi_config_,
+                                field_points_,
+                                nullptr,
+                                field_points_np_,
+                                freqs_np_,
+                                headings_np_,
+                                dofs_np_,
+                                use_single_panel_
+                            )
+{
+}
+
+
+template<typename T, typename Config>
+RadDiffData<T, Config>::RadDiffData( 
+                                        MpiConfig*      mpi_config_,
+                                        cusfloat*       field_points_,
+                                        cusfloat*       field_weights_,
+                                        std::size_t     field_points_np_,
+                                        std::size_t     freqs_np_,
+                                        std::size_t     headings_np_,
+                                        std::size_t     dofs_np_,
+                                        bool            use_single_panel_
+                                    )
 {
     // Store number of field points
     this->_size_global      = field_points_np_;
@@ -224,7 +249,17 @@ RadDiffData<T, Config>::RadDiffData(
 
     // Allocate local data chunk to storage the field points values for the different degrees of freedom and headings
     this->_field_data.resize( this->_size_local_fp );
+    this->_field_weights.resize( this->_size_local_fp );
     this->_is_heap    = true;
+    this->_has_field_weights = ( field_weights_ != nullptr );
+
+    if ( this->_has_field_weights )
+    {
+        for ( std::size_t i=0; i<this->_size_local_fp; i++ )
+        {
+            this->_field_weights[i] = field_weights_[ this->_start_pos + i ];
+        }
+    }
 
 }
 
@@ -422,4 +457,18 @@ RadDiffData<T, Config>::RadDiffData(
 template<typename T, typename Config>
 RadDiffData<T, Config>::~RadDiffData( )
 {
+}
+
+
+template<typename T, typename Config>
+const cusfloat* RadDiffData<T, Config>::get_field_weights( void ) const
+{
+    return ( this->_has_field_weights ) ? this->_field_weights.data( ) : nullptr;
+}
+
+
+template<typename T, typename Config>
+bool RadDiffData<T, Config>::has_field_weights( void ) const
+{
+    return this->_has_field_weights;
 }

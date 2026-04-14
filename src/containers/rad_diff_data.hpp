@@ -52,6 +52,8 @@ private:
     std::size_t                         _size_local     = 0;        // Total number of panel for the current process
     std::size_t                         _size_local_fp  = 0;        // Total number of field points for the current process
     std::size_t                         _start_pos      = 0;        // Start position along field points for the current process
+    mutable cut::CusTensor<cusfloat>    _field_weights ;           // Local data chunk for field points weights
+    bool                                _has_field_weights = false; // Flag to indicate if field weights are available
 
     /*** Declare private methods ***/
     template<FieldTypeE field_type, FieldComponentE field_component, ComplexDataTypeE complex_data_type, typename OutT>
@@ -67,6 +69,17 @@ public:
     RadDiffData( 
                     MpiConfig*      mpi_config_,
                     cusfloat*       field_points_,
+                    std::size_t     field_points_np_,
+                    std::size_t     freqs_np_,
+                    std::size_t     headings_np_,
+                    std::size_t     dofs_np_,
+                    bool            use_single_panel_ = false
+                );
+
+    RadDiffData( 
+                    MpiConfig*      mpi_config_,
+                    cusfloat*       field_points_,
+                    cusfloat*       field_weights_,
                     std::size_t     field_points_np_,
                     std::size_t     freqs_np_,
                     std::size_t     headings_np_,
@@ -113,6 +126,10 @@ public:
     std::size_t         get_size_local_fp( void ) const;
 
     std::size_t         get_start_pos( void ) const;
+
+    const cusfloat*     get_field_weights( void ) const;
+
+    bool                has_field_weights( void ) const;
     
 };
 
