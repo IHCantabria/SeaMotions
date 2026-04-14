@@ -38,6 +38,8 @@ public:
     
 
     // Define class constructors and destructor
+    SourceNode( ) = default;
+    
     SourceNode(
                     PanelGeom*  panel_in,
                     int         poly_order_in,
