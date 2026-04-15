@@ -819,6 +819,15 @@ void Input::configure( void )
     }
 
     /**********************************************************/
+    /********** Create a vector for wave numbers **************/
+    /**********************************************************/
+    this->wave_numbers.resize( this->angfreqs_np );
+    for ( int i=0; i<this->angfreqs_np; i++ )
+    {
+        this->wave_numbers[i] = w2k( this->angfreqs[i], this->water_depth, this->grav_acc );
+    }
+
+    /**********************************************************/
     /********** Detect points over the free surface ***********/
     /**********************************************************/
     this->is_wl_points = this->is_calc_mdrift;
@@ -949,6 +958,9 @@ void Input::print( void )
     std::cout << std::endl;
     std::cout << "ANGULAR FREQUENCIES: " << std::endl;
     print_vector( this->angfreqs_np, this->angfreqs.data( ), 1, 6 );
+    std::cout << std::endl;
+    std::cout << "WAVE NUMBERS: " << std::endl;
+    print_vector( this->angfreqs_np, this->wave_numbers.data( ), 1, 6 );
     std::cout << std::endl;
 }
 

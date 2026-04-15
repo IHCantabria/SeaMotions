@@ -38,6 +38,7 @@ public:
     // Define class attributes
     std::vector<cusfloat>           angfreqs            ;
     int                             angfreqs_np         = 0;
+    std::vector<cusfloat>           wave_numbers        ;
     BodyDef**                       bodies              = nullptr;
     std::vector<std::string>        bodies_finame       ;
     int                             bodies_np           = 0;
