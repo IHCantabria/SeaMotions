@@ -68,5 +68,9 @@ public:
     void    define_mirror_panels(
                                     void
                                 );
+
+    int     get_body_id(  
+                                    int panel_id
+                                );
     
 };

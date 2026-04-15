@@ -60,6 +60,24 @@ void    MeshGroup::define_mirror_panels(
 }
 
 
+int     MeshGroup::get_body_id(  
+                                            int panel_id
+                                )
+{
+    // Loop over meshes to find the one that contains the panel
+    for ( int i=0; i<this->meshes_np; i++ )
+    {
+        if ( panel_id >= this->panels_cnp[i] && panel_id < this->panels_cnp[i+1] )
+        {
+            return i;
+        }
+    }
+
+    // If no mesh is found, return an error value
+    return static_cast<int>(-1);
+}
+
+
         MeshGroup::MeshGroup(
                                             Mesh**  meshes_in,
                                             int     meshes_np_in,
