@@ -987,18 +987,151 @@ void FormulationKernelBackend<N, mode_pf>::_process_qtf_rhs_panels(
     }
 }
 
+
+template<std::size_t N, int mode_pf>
+template<typename RhsFunc>
+void FormulationKernelBackend<N, mode_pf>::_process_qtf_rhs_annuli(
+                                                                        RDDQC*                  annulus_fields,
+                                                                        const cusfloat*         field_weights,
+                                                                        GWFcnsInterfaceT<1>&    gwf_interf_local,
+                                                                        RhsFunc&&               rhs_func,
+                                                                        cusfloat*               field_points_d,
+                                                                        cusfloat*               field_points_x,
+                                                                        cusfloat*               field_points_y,
+                                                                        cusfloat*               field_points_z,
+                                                                        cuscomplex*             qb_rhs
+                                                                    )
+{
+    if ( annulus_fields == nullptr || field_weights == nullptr )
+    {
+        return;
+    }
+
+    const std::size_t local_panels = annulus_fields->get_size_local( );
+    if ( local_panels == 0 )
+    {
+        return;
+    }
+
+    const std::size_t heads_np   = this->_input->heads_np;
+    const std::size_t heads_np2  = heads_np * heads_np;
+    const std::size_t rows_local = static_cast<std::size_t>( this->_solver->num_rows_local );
+    const std::size_t acc_size   = heads_np2 * rows_local;
+
+    cuscomplex* annuli_acc = generate_empty_vector<cuscomplex>( acc_size );
+    clear_vector( acc_size, annuli_acc );
+
+    cusfloat annulus_normal[3] = { 0.0, 0.0, 1.0 };
+    PanelGeom annulus_panel_geom;
+    annulus_panel_geom.normal_vec[0] = annulus_normal[0];
+    annulus_panel_geom.normal_vec[1] = annulus_normal[1];
+    annulus_panel_geom.normal_vec[2] = annulus_normal[2];
+
+    SourceNode source_i;
+    source_i.normal_vec = annulus_panel_geom.normal_vec;
+
+    gwf_interf_local.set_source_i( &source_i, 1.0 );
+
+    for ( std::size_t i=0; i<local_panels; i++ )
+    {
+        PanelData<cuscomplex, RDDQTFConfig>* panel_data = &(annulus_fields->panel_data[i]);
+        panel_data->panel_geom = &annulus_panel_geom;
+
+        field_points_x[0] = panel_data->field_points[0];
+        field_points_y[0] = panel_data->field_points[1];
+        field_points_z[0] = panel_data->field_points[2];
+        field_points_d[0] = 0.0;
+
+        const cusfloat weight = field_weights[i];
+
+        for ( int j=this->_solver->start_row_0; j<this->_solver->end_row_0; j++ )
+        {
+            PanelGeom* panel_j = this->_mesh_gp->source_nodes[j]->panel;
+            gwf_interf_local.set_source_j( this->_mesh_gp->source_nodes[j] );
+
+            gwf_interf_local.template operator()<GWFcnsInterfaceT<1>>(
+                                                                            field_points_d,
+                                                                            field_points_d,
+                                                                            field_points_x,
+                                                                            field_points_y,
+                                                                            field_points_z
+                                                                        );
+
+            rhs_func( panel_data, panel_j, gwf_interf_local, false, 0 );
+
+            const std::size_t row_local = static_cast<std::size_t>( j - this->_solver->start_row_0 );
+            for ( std::size_t ih1=0; ih1<heads_np; ih1++ )
+            {
+                for ( std::size_t ih2=0; ih2<heads_np; ih2++ )
+                {
+                    const std::size_t heads_offset = ih1 * heads_np + ih2;
+                    annuli_acc[ heads_offset * rows_local + row_local ] += qb_rhs[heads_offset] * weight;
+                }
+            }
+        }
+    }
+
+    MPI_Allreduce( MPI_IN_PLACE, annuli_acc, acc_size, mpi_cuscomplex, MPI_SUM, MPI_COMM_WORLD );
+
+    for ( std::size_t ih1=0; ih1<heads_np; ih1++ )
+    {
+        for ( std::size_t ih2=0; ih2<heads_np; ih2++ )
+        {
+            const std::size_t heads_offset = ih1 * heads_np + ih2;
+            for ( std::size_t jr=0; jr<rows_local; jr++ )
+            {
+                const std::size_t rhs_pos = heads_offset * this->_pf_gp->sysmat_nrows
+                                            + static_cast<std::size_t>( this->_solver->start_row_0 )
+                                            + jr;
+                this->_ppf_rhs[rhs_pos]  += annuli_acc[ heads_offset * rows_local + jr ];
+            }
+        }
+    }
+
+    mkl_free( annuli_acc );
+}
+
 template<std::size_t N, int mode_pf>
 void FormulationKernelBackend<N, mode_pf>::_build_rhs_so( 
-                                                            QTFTypeE            qtf_type,
-                                                            std::size_t         freq_i,
-                                                            std::size_t         freq_j,
-                                                            cuscomplex          raos_hist,
-                                                            RDDQC*              qtf_body_fields,
-                                                            RDDQC*              qtf_body_fields_wl,
-                                                            RDDQC*              qtf_fs_fields,
-                                                            RDDQC*              qtf_fs_fields_wl,
-                                                            WaveDispersionSO*   wd
+                                                            QTFTypeE                        qtf_type,
+                                                            std::size_t                     freq_i,
+                                                            std::size_t                     freq_j,
+                                                            cuscomplex                      raos_hist,
+                                                            RDDQC*                          qtf_body_fields,
+                                                            RDDQC*                          qtf_body_fields_wl,
+                                                            RDDQC*                          qtf_fs_fields,
+                                                            RDDQC*                          qtf_fs_fields_wl,
+                                                            WaveDispersionSO*               wd
                                                         )
+{
+    this->_build_rhs_so(
+                            qtf_type,
+                            freq_i,
+                            freq_j,
+                            raos_hist,
+                            qtf_body_fields,
+                            qtf_body_fields_wl,
+                            qtf_fs_fields,
+                            qtf_fs_fields_wl,
+                            this->_qtf_annuli_fields,
+                            wd
+                        );
+}
+
+
+template<std::size_t N, int mode_pf>
+void FormulationKernelBackend<N, mode_pf>::_build_rhs_so( 
+                                                            QTFTypeE                        qtf_type,
+                                                            std::size_t                     freq_i,
+                                                            std::size_t                     freq_j,
+                                                            cuscomplex                      raos_hist,
+                                                            RDDQC*                          qtf_body_fields,
+                                                            RDDQC*                          qtf_body_fields_wl,
+                                                            RDDQC*                          qtf_fs_fields,
+                                                            RDDQC*                          qtf_fs_fields_wl,
+                                                            const std::vector<RDDQC*>*      qtf_annuli_fields,
+                                                            WaveDispersionSO*               wd
+                                                        )     
 {
     // Declare local variables
     cusfloat    field_points_d[NUM_GP2];
@@ -1052,6 +1185,27 @@ void FormulationKernelBackend<N, mode_pf>::_build_rhs_so(
                                 gwf_interf_local.dG_dz,
                                 wd,
                                 mode_wl ? BoundarySubtypeE::WL : BoundarySubtypeE::DIFFRAC,
+                                qb_rhs
+                            );
+    };
+
+    auto qf_rhs_annuli_func = [&](auto* panel_data, PanelGeom* panel_geom, auto& gwf_interf_local, bool , int rhs_body_id)
+    {
+        so_potential_qf_rhs(
+                                qtf_type,
+                                this->_input,
+                                freq_i,
+                                freq_j,
+                                raos_hist,
+                                rhs_body_id,
+                                panel_geom->body_cog,
+                                panel_data,
+                                gwf_interf_local.G,
+                                gwf_interf_local.dG_dx,
+                                gwf_interf_local.dG_dy,
+                                gwf_interf_local.dG_dz,
+                                wd,
+                                BoundarySubtypeE::PC,
                                 qb_rhs
                             );
     };
@@ -1123,6 +1277,29 @@ void FormulationKernelBackend<N, mode_pf>::_build_rhs_so(
                                                 field_points_z,
                                                 qb_rhs
                                         );
+
+    if ( qtf_annuli_fields != nullptr )
+    {
+        for ( auto* annulus_field : *qtf_annuli_fields )
+        {
+            if ( annulus_field == nullptr || !annulus_field->has_field_weights( ) )
+            {
+                continue;
+            }
+
+            this->_process_qtf_rhs_annuli(
+                                                annulus_field,
+                                                annulus_field->get_field_weights( ),
+                                                this->_gwfcns_interf_qfa,
+                                                qf_rhs_annuli_func,
+                                                field_points_d,
+                                                field_points_x,
+                                                field_points_y,
+                                                field_points_z,
+                                                qb_rhs
+                                        );
+        }
+    }
 
     // Deallocate local heap variables
     mkl_free( qb_rhs );
@@ -2417,6 +2594,96 @@ void FormulationKernelBackend<N, mode_pf>::solve( cusfloat w )
 
 
 template<std::size_t N, int mode_pf>
+template<QTFTypeE qtf_type>
+void FormulationKernelBackend<N, mode_pf>::solve_so( 
+                                                        std::size_t                 freq_i,
+                                                        std::size_t                 freq_j,
+                                                        cusfloat*                   raos_hist,
+                                                        RDDQC*                      qtf_body_fields,
+                                                        RDDQC*                      qtf_body_fields_wl,
+                                                        RDDQC*                      qtf_fs_fields,
+                                                        RDDQC*                      qtf_fs_fields_wl,
+                                                        const std::vector<RDDQC*>*  qtf_annuli_fields,
+                                                        WaveDispersionSO*           wd
+                                                    )
+{
+    // Compute wave frequency depending on the QTF type
+    static_assert( ( qtf_type == QTFTypeE::QTF_DIFF_CODE ) || ( qtf_type == QTFTypeE::QTF_SUM_CODE ), "Invalid QTF type" );
+    cusfloat w = 0.0;
+    if constexpr( QTFTypeE::QTF_DIFF_CODE )
+    {
+        w = std::abs( this->_input->ang_freqs[freq_i] - this->_input->ang_freqs[freq_j] );
+    }
+    else
+    {
+        w = this->_input->ang_freqs[freq_i] + this->_input->ang_freqs[freq_j];
+    }
+
+    // Recalculate steady part of the system matrixes if required
+    if ( 
+            this->_steady_mat_type != 0 
+        )
+    {
+        MPI_TIME_EXEC( this->_build_steady_matrixes<FreqRegimeE::REGULAR>( ); , this->exec_time_build_steady )
+        this->_steady_mat_type  = 0;
+    }
+    
+    // Fold database for current frequency and water depth
+    cusfloat H = pow2s( w ) * this->_input->water_depth / this->_input->grav_acc;
+
+    fold_database( H );
+
+    // Update integration functor to ne new frequency
+    this->_gwfcns_interf_qb.set_ang_freq( w );
+    this->_gwfcns_interf_qf.set_ang_freq( w );
+    this->_gwfcns_interf_qfa.set_ang_freq( w );
+    this->_gwfcns_interf_wl.set_ang_freq( w );
+    
+    // Re-calculate wave dependent system matrix term
+    MPI_TIME_EXEC(  this->_build_wave_matrixes<FreqRegimeE::REGULAR>( w );, this->exec_time_build_wave )
+                    this->_build_rhs_so( 
+                                            qtf_type,
+                                            freq_i,
+                                            freq_j,
+                                            raos_hist,
+                                            qtf_body_fields,
+                                            qtf_body_fields_wl,
+                                            qtf_fs_fields,
+                                            qtf_fs_fields_wl,
+                                            qtf_annuli_fields,
+                                            wd
+                                        );
+
+    // Calculate system matrixes condition number if required
+    if ( this->_is_condition_number )
+    {
+        cusfloat pf_cond = 0.0;
+    
+        this->_solver->Cond( this->_pf_gp->sysmat,    pf_cond     );
+    
+        if ( this->_mpi_config->is_root( ) )
+        {
+            std::cout << "Condition Number -> PF: " << pf_cond << std::endl;
+        }
+    }
+
+    // Calculate potential through the potential formulation
+    MPI_TIME_EXEC( 
+                    ( this->_solver->Solve( this->_pf_gp->sysmat, this->_pf_gp->field_values ) );, 
+                    this->exec_time_solve_pf 
+                ) 
+    MPI_Bcast(
+                    this->_pf_gp->field_values,
+                    this->_pf_gp->field_values_np,
+                    mpi_cuscomplex,
+                    this->_mpi_config->proc_root,
+                    MPI_COMM_WORLD                
+                );
+    
+}
+
+
+template<std::size_t N, int mode_pf>
 void FormulationKernelBackend<N, mode_pf>::update_results( SimulationData* sim_data )
 {
     // Update data to simulation results
@@ -2443,4 +2710,13 @@ void FormulationKernelBackend<N, mode_pf>::update_results( SimulationData* sim_d
                                     sim_data->panels_potential
                                 );
                 )
+}
+
+
+template<std::size_t N, int mode_pf>
+void FormulationKernelBackend<N, mode_pf>::set_qtf_annuli_fields(
+                                                                    const std::vector<RDDQC*>* annuli_fields
+                                                                )
+{
+    this->_qtf_annuli_fields = annuli_fields;
 }

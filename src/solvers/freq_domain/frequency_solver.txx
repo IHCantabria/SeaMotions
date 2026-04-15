@@ -341,7 +341,9 @@ void FrequencySolver<N, mode_pf>::calculate_second_order( void )
                 }
                 else if ( this->input->out_qtf_so_model == QTFSOModelE::DIRECT )
                 {
-                    std::cerr << "QTF Direct Method not implemented yet!" << std::endl;
+                    // Solve radiation-diffraction problem for the current frequency
+                    this->kernel->template solve_so<FreqRegimeE::REGULAR>( input->angfreqs[i] );
+                    this->kernel->update_results_so( sim_data );
                 }
 
                 MPI_Barrier( MPI_COMM_WORLD );
@@ -1571,6 +1573,7 @@ FrequencySolver<N, mode_pf>::~FrequencySolver( void )
         delete annulus_mesh;
     }
     this->_qtf_annuli_meshes.clear();
+    this->_qtf_annuli_weights.clear();
 
     for ( std::size_t i=0; i<this->input->field_points_np; i++ )
     {
@@ -1678,8 +1681,9 @@ void FrequencySolver<N, mode_pf>::_initialize_field_data( void )
             field_points = generate_empty_vector<cusfloat>( fp_np_max * 3 );
         }
 
-        for ( Mesh* annulus_mesh : this->_qtf_annuli_meshes )
+        for ( std::size_t annulus_idx = 0; annulus_idx < this->_qtf_annuli_meshes.size( ); ++annulus_idx )
         {
+            Mesh* annulus_mesh = this->_qtf_annuli_meshes[annulus_idx];
             const std::size_t fp_np = static_cast<std::size_t>( annulus_mesh->nodes_np );
             for ( std::size_t i=0; i<fp_np; ++i )
             {
@@ -1688,15 +1692,22 @@ void FrequencySolver<N, mode_pf>::_initialize_field_data( void )
                 field_points[ 3*i + 2 ] = annulus_mesh->z[ i ];
             }
 
+            cusfloat* annulus_weights = nullptr;
+            if ( annulus_idx < this->_qtf_annuli_weights.size( ) && !this->_qtf_annuli_weights[annulus_idx].empty( ) )
+            {
+                annulus_weights = this->_qtf_annuli_weights[annulus_idx].data( );
+            }
+
             this->_qtf_annuli_fields.emplace_back(
                                                         new RadDiffData<cuscomplex, RDDQTFConfig>(
                                                                                                     this->mpi_config,
                                                                                                     field_points,
+                                                                                                    annulus_weights,
                                                                                                     fp_np,
                                                                                                     this->input->angfreqs_np,
                                                                                                     this->input->heads_np,
                                                                                                     this->input->dofs_np,
-                                                                                                    true
+                                                                                                    false
                                                                                                 )
                                                     );
         }
@@ -1704,6 +1715,11 @@ void FrequencySolver<N, mode_pf>::_initialize_field_data( void )
         if ( field_points != nullptr )
         {
             mkl_free( field_points );
+        }
+
+        if ( this->kernel != nullptr )
+        {
+            this->kernel->set_qtf_annuli_fields( &(this->_qtf_annuli_fields) );
         }
     }
 
@@ -1796,6 +1812,8 @@ void FrequencySolver<N, mode_pf>::_initialize_mesh_groups( void )
 
             this->_qtf_annuli_meshes.clear( );
             this->_qtf_annuli_meshes.reserve( annuli_np );
+            this->_qtf_annuli_weights.clear( );
+            this->_qtf_annuli_weights.reserve( annuli_np );
             for ( int k=0; k<annuli_np; ++k )
             {
                 const cusfloat r_in = r0 + static_cast<cusfloat>( k ) * dr;
@@ -1807,6 +1825,11 @@ void FrequencySolver<N, mode_pf>::_initialize_mesh_groups( void )
                                             this->input->gauss_order,
                                             AngularRule::Trapezoidal
                                         );
+
+                this->_qtf_annuli_weights.emplace_back(
+                                                        cloud.w.begin( ),
+                                                        cloud.w.end( )
+                                                    );
 
                 Mesh annulus_mesh = Mesh::from_annulus_nodes( cloud, "QTFAnnulus" );
                 this->_qtf_annuli_meshes.emplace_back( new Mesh( std::move( annulus_mesh ) ) );

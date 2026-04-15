@@ -70,16 +70,17 @@ private:
     using vec_med   = std::vector<MorisonElement*>;
 
     /**** Declare class private attributes ****/
-    cut::CusTensor<cuscomplex>      _drag_force_aux     ;            // Auxiliary storage for the calculation of drag forces in slender elements
-    vec_fmd                         _field_points       ;            // Storage of field points for radiation and diffraction calculations
-    cut::CusTensor<cuscomplex>      _inertial_force_aux ;            // Auxiliary storage for the calculation of inertial forces in slender elements
-    std::vector<vec_med>            _morison_elements   ;            // Storage of Morison elements for the calculation of inertial and drag forces in slender elements
-    RDDQC*                          _qtf_wl_fields      = nullptr;   // Storage of waterline field points for QTF calculations
-    RDDQC*                          _qtf_bern_fields    = nullptr;   // Storage of velocity field for the calculation of bernoulli term in QTFs
-    RDDQC*                          _qtf_fs_fields      = nullptr;   // Storage of field points over the QTF free surface lid
-    RDDQC*                          _qtf_fs_wl_fields   = nullptr;   // Storage of field points over the QTF free surface lid perimeter
-    std::vector<Mesh*>              _qtf_annuli_meshes  ;            // Stack of annulus meshes for QTF field sampling
-    std::vector<RDDQC*>             _qtf_annuli_fields  ;            // RadDiffData stack for annulus field points
+    cut::CusTensor<cuscomplex>          _drag_force_aux     ;           // Auxiliary storage for the calculation of drag forces in slender elements
+    vec_fmd                             _field_points       ;           // Storage of field points for radiation and diffraction calculations
+    cut::CusTensor<cuscomplex>          _inertial_force_aux ;           // Auxiliary storage for the calculation of inertial forces in slender elements
+    std::vector<vec_med>                _morison_elements   ;           // Storage of Morison elements for the calculation of inertial and drag forces in slender elements
+    RDDQC*                              _qtf_wl_fields      = nullptr;  // Storage of waterline field points for QTF calculations
+    RDDQC*                              _qtf_bern_fields    = nullptr;  // Storage of velocity field for the calculation of bernoulli term in QTFs
+    RDDQC*                              _qtf_fs_fields      = nullptr;  // Storage of field points over the QTF free surface lid
+    RDDQC*                              _qtf_fs_wl_fields   = nullptr;  // Storage of field points over the QTF free surface lid perimeter
+    std::vector<Mesh*>                  _qtf_annuli_meshes  ;           // Stack of annulus meshes for QTF field sampling
+    std::vector<RDDQC*>                 _qtf_annuli_fields  ;           // RadDiffData stack for annulus field points
+    std::vector<std::vector<cusfloat>>  _qtf_annuli_weights;            // Weights per annulus field point set
 
     /**** Declare class private methods ****/
     void _calculate_field_points_values( 
