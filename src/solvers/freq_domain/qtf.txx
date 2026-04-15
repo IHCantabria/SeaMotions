@@ -61,7 +61,6 @@ inline  void    so_potential_qb_rhs(
                                             Input*                          input,
                                             std::size_t                     freq_i,
                                             std::size_t                     freq_j,
-                                            cusfloat*                       ang_freqs,
                                             cuscomplex*                     raos_hist,
                                             std::size_t                     body_id,
                                             cusfloat*                       cog,
@@ -106,12 +105,13 @@ inline  void    so_potential_qb_rhs(
     int qtf_sign                = ( qtf_type == QTFTypeE::QTF_DIFF_CODE ) ? -1 : 1;
 
     // Get angular frequencies
-    cusfloat wi                 = ang_freqs[freq_i];
-    cusfloat wj                 = ang_freqs[freq_j];
+    cusfloat wi                 = input->ang_freqs[freq_i];
+    cusfloat wj                 = input->ang_freqs[freq_j];
     cusfloat wi_wj              = wi + qtf_sign * wj;
 
     // Clear rhs vector to sum up all the constributions on it
-    std::size_t size_rhs        = pow2s( heads_np ) * panel_data->field_points_np
+    std::size_t size_rhs        = pow2s( heads_np ) * panel_data->field_points_np;
+    clear_vector( size_rhs, qb_rhs );
 
     // Loop over headings to get all the possible combinations
     for ( std::size_t ih=0; ih<heads_np; ih++ )
@@ -123,6 +123,14 @@ inline  void    so_potential_qb_rhs(
             rao_j_idx   = freq_j * heads_np * bodies_np * dofs_np + jh * bodies_np * dofs_np + body_id * dofs_np;
             rao_i       = &raos_freq_i[ rao_i_idx ];
             rao_j       = &raos_freq_j[ rao_j_idx ];
+
+            // Update wave dispersion relation for second order wave propagation
+            wd->set_new_data( 
+                                wi, 
+                                wj, 
+                                panel_data->head[ih], 
+                                panel_data->head[jh] 
+                            );
 
             for ( std::size_t fpi=0; fpi<panel_data->field_points_np; fpi++ )
             {
@@ -326,7 +334,6 @@ inline  void    so_potential_qf_rhs(
                                             Input*                          input,
                                             std::size_t                     freq_i,
                                             std::size_t                     freq_j,
-                                            cusfloat*                       ang_freqs,
                                             cuscomplex*                     raos_hist,
                                             std::size_t                     body_id,
                                             cusfloat*                       cog,
@@ -376,8 +383,8 @@ inline  void    so_potential_qf_rhs(
     int qtf_sign                = ( qtf_type == QTFTypeE::QTF_DIFF_CODE ) ? -1 : 1;
 
     // Get angular frequencies
-    cusfloat wi                 = ang_freqs[freq_i];
-    cusfloat wj                 = ang_freqs[freq_j];
+    cusfloat wi                 = input->ang_freqs[freq_i];
+    cusfloat wj                 = input->ang_freqs[freq_j];
     cusfloat wi_wj              = wi + qtf_sign * wj;
 
     // Clear rhs vector to sum up all the constributions on it
@@ -393,6 +400,14 @@ inline  void    so_potential_qf_rhs(
             rao_j_idx   = freq_j * heads_np * bodies_np * dofs_np + jh * bodies_np * dofs_np + body_id * dofs_np;
             rao_i       = &raos_freq_i[ rao_i_idx ];
             rao_j       = &raos_freq_j[ rao_j_idx ];
+
+            // Update wave dispersion relation for second order wave propagation
+            wd->set_new_data( 
+                                wi, 
+                                wj, 
+                                panel_data->head[ih], 
+                                panel_data->head[jh] 
+                            );
 
             for ( std::size_t fpi=0; fpi<panel_data->field_points_np; fpi++ )
             {
