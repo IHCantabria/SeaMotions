@@ -93,6 +93,11 @@ int main( int argc, char* argv[] )
     freq_solver.calculate_first_order( );
 
     /*****************************************/
+    /******** First Order Solution ***********/
+    /*****************************************/
+    freq_solver.calculate_second_order( );
+
+    /*****************************************/
     /********* Close MPI environment *********/
     /*****************************************/
     case_timer.stop( );
