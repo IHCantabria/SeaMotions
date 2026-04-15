@@ -44,12 +44,14 @@ template<std::size_t N>
 void    GWFcnsInterfaceT<N>::initialize(
                                             cusfloat    ang_freq,
                                             cusfloat    water_depth,
-                                            cusfloat    grav_acc
+                                            cusfloat    grav_acc,
+                                            bool        is_full_green
                                         )
 {
     // Storage environment properties
-    this->_grav_acc     = grav_acc;
-    this->_water_depth  = water_depth;
+    this->_is_full_green    = is_full_green;
+    this->_grav_acc         = grav_acc;
+    this->_water_depth      = water_depth;
 
     // Launch internal initialization
     this->_initialize( ang_freq );
@@ -63,15 +65,18 @@ GWFcnsInterfaceT<N>::GWFcnsInterfaceT(
                                             SourceNode* source_j,
                                             cusfloat    ang_freq,
                                             cusfloat    water_depth,
-                                            cusfloat    grav_acc
+                                            cusfloat    grav_acc,
+                                            bool        is_full_green
+
                             )
 {
     // Storage panels memory address, water depth and 
     // gravitational acceleration to use along the class
-    this->_grav_acc     = grav_acc;
-    this->_source_i     = source_i;
-    this->_source_j     = source_j;
-    this->_water_depth  = water_depth;
+    this->_grav_acc         = grav_acc;
+    this->_source_i         = source_i;
+    this->_source_j         = source_j;
+    this->_water_depth      = water_depth;
+    this->_is_full_green    = is_full_green;
 
     // Initialize object features
     this->_initialize( ang_freq );
@@ -86,7 +91,7 @@ void        GWFcnsInterfaceT<N>::operator()(
                                             cusfloat*   xi,
                                             cusfloat*   eta,
                                             cusfloat*   zeta,
-                                            bool        
+                                            bool        verbose
                                         )
 {
     // Calculate horizontal radius
@@ -123,7 +128,8 @@ void        GWFcnsInterfaceT<N>::operator()(
                 this->G,
                 this->_dG_dR,
                 this->dG_dz,
-                this->dG_dzeta
+                this->dG_dzeta,
+                this->_is_full_green
             );
 
     // Calculate X and Y cartesian coordinates derivatives

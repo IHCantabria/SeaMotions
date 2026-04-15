@@ -37,6 +37,7 @@ protected:
     cusfloat                    _dY[N];
     cusfloat                    _grav_acc               = 0.0;
     cusfloat                    _field_point_j[3]       = { 0.0, 0.0, 0.0 };
+    bool                        _is_full_green          = false;
     cusfloat                    _R[N];
     SourceNode*                 _source_i               = nullptr;
     SourceNode*                 _source_j               = nullptr;
@@ -68,14 +69,16 @@ public:
                                     SourceNode* source_j,
                                     cusfloat    ang_freq,
                                     cusfloat    water_depth,
-                                    cusfloat    grav_acc
+                                    cusfloat    grav_acc,
+                                    bool        is_full_green
                 );
 
     // Define class methods
     void        initialize( 
                                     cusfloat    ang_freq,
                                     cusfloat    water_depth,
-                                    cusfloat    grav_acc
+                                    cusfloat    grav_acc,
+                                    bool        is_full_green
                             );
     
     template<auto Kernel>
