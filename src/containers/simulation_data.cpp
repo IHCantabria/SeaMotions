@@ -384,6 +384,7 @@ SimulationData::SimulationData(
     this->_input            = input_in;
     this->_mpi_config       = mpi_config_in;
     this->qtf_np            = pow2s( heads_np_in ) * bodies_np_in * dofs_np_in;
+    this->qtf_far_np        = input_in->angfreqs_np * input_in->heads_np * QTF_FAR_N;
     this->wave_exc_np       = heads_np_in * bodies_np_in * dofs_np_in;
 
     // Allocate space variables used in all the processes
@@ -418,6 +419,12 @@ SimulationData::SimulationData(
         this->qtf_sum_mom               = generate_empty_vector<cuscomplex>( this->qtf_np );
         this->qtf_sum_secord_force      = generate_empty_vector<cuscomplex>( this->qtf_np );
         this->qtf_sum_wl                = generate_empty_vector<cuscomplex>( this->qtf_np );
+
+        this->qtf_a_cos                 = generate_empty_vector<cuscomplex>( this->qtf_far_np );
+        this->qtf_a_sin                 = generate_empty_vector<cuscomplex>( this->qtf_far_np );
+        this->qtf_b_cos                 = generate_empty_vector<cuscomplex>( this->qtf_far_np );
+        this->qtf_b_sin                 = generate_empty_vector<cuscomplex>( this->qtf_far_np );
+
     }
 
     // Allocate space for variables used only on root processor
@@ -484,6 +491,12 @@ SimulationData::~SimulationData(
         mkl_free( this->qtf_sum_mom           );
         mkl_free( this->qtf_sum_secord_force  );
         mkl_free( this->qtf_sum_wl            );
+
+        mkl_free( this->qtf_a_cos             );
+        mkl_free( this->qtf_a_sin             );
+        mkl_free( this->qtf_b_cos             );
+        mkl_free( this->qtf_b_sin             );
+
     }
 
     if ( this->_mpi_config->is_root( ) )

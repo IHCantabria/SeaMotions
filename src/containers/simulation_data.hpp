@@ -123,6 +123,10 @@ public:
     cuscomplex*     panels_pressure_p0                  = nullptr;
     cuscomplex*     potential_secord_force              = nullptr;
     cuscomplex*     qtf                                 = nullptr;
+    cuscomplex*     qtf_a_cos                           = nullptr;
+    cuscomplex*     qtf_a_sin                           = nullptr;
+    cuscomplex*     qtf_b_cos                           = nullptr;
+    cuscomplex*     qtf_b_sin                           = nullptr;
     int             qtf_body_heads_np                   = 0;
     cuscomplex*     qtf_body_pot_raddif_freq            = nullptr;
     int             qtf_body_raddif_np                  = 0;
@@ -154,6 +158,7 @@ public:
     cuscomplex*     qtf_diff_secord_force_freqs         = nullptr;
     cuscomplex*     qtf_diff_wl                         = nullptr;
     cuscomplex*     qtf_diff_wl_freqs                   = nullptr;
+    std::size_t     qtf_far_np                          = 0;
     int             qtf_fs_heads_np                     = 0;
     cuscomplex*     qtf_fs_pot_fk_freq                  = nullptr;
     cuscomplex*     qtf_fs_pot_raddif_freq              = nullptr;
