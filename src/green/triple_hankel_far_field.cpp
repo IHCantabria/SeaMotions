@@ -490,6 +490,56 @@ std::map<std::tuple<int, int, int>, cuscomplex> integrate_triple_hankel_orders(
 }
 
 
+cuscomplex triple_hankel_f(
+                                int                     n1,
+                                int                     n2,
+                                int                     n3,
+                                cusfloat                a,
+                                cusfloat                b,
+                                cusfloat                c,
+                                const TripleHankelIO&   options
+                            )
+{
+    return integrate_triple_hankel( n1, n2, n3, a, b, c, options );
+}
+
+cuscomplex triple_hankel_g(
+                                int                 n1,
+                                int                 n2,
+                                int                 n3,
+                                cusfloat            a,
+                                cusfloat            b,
+                                cusfloat            c,
+                                TripleHankelIO&     options
+                            )
+{
+    options.hkind0  = 1;
+    cuscomplex val1 = integrate_triple_hankel( n1, n2, n3, a, b, c, options );
+    options.hkind0  = 2;
+    cuscomplex val2 = integrate_triple_hankel( n1, n2, n3, a, b, c, options );
+    return ( val1 + val2 ) / 2.0;
+}
+
+
+cuscomplex triple_hankel_h(
+                                int                 n1,
+                                int                 n2,
+                                int                 n3,
+                                cusfloat            a,
+                                cusfloat            b,
+                                cusfloat            c,
+                                TripleHankelIO&     options
+                            )
+{
+    options.hkind0  = 2;
+    options.hkind1  = 1;
+    cuscomplex val1 = integrate_triple_hankel( n1, n2, n3, a, b, c, options );
+    options.hkind1  = 2;
+    cuscomplex val2 = integrate_triple_hankel( n1, n2, n3, a, b, c, options );
+    return ( val1 + val2 ) / 2.0;
+}
+
+
 #ifdef SEAMOTIONS_INTEGRATE_RADIUS_FAR_FIELD_DEMO
 int main() {
     int nu0 = 20;

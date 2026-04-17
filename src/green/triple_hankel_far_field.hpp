@@ -178,3 +178,36 @@ std::map<std::tuple<int, int, int>, cuscomplex> integrate_triple_hankel_orders(
                                                                                             cusfloat                c,
                                                                                             const TripleHankelIO&   options = {}
                                                                                         );
+
+
+cuscomplex triple_hankel_f(
+                                int                     n1,
+                                int                     n2,
+                                int                     n3,
+                                cusfloat                a,
+                                cusfloat                b,
+                                cusfloat                c,
+                                const TripleHankelIO&   options
+                            );
+
+
+cuscomplex triple_hankel_g(
+                                int                 n1,
+                                int                 n2,
+                                int                 n3,
+                                cusfloat            a,
+                                cusfloat            b,
+                                cusfloat            c,
+                                TripleHankelIO&     options
+                            );
+
+
+cuscomplex triple_hankel_h(
+                                int                 n1,
+                                int                 n2,
+                                int                 n3,
+                                cusfloat            a,
+                                cusfloat            b,
+                                cusfloat            c,
+                                TripleHankelIO&     options
+                            );
