@@ -83,6 +83,14 @@ private:
     std::vector<std::vector<cusfloat>>  _qtf_annuli_weights;            // Weights per annulus field point set
 
     /**** Declare class private methods ****/
+    void _calculate_far_field_diffraction( 
+                                                    std::size_t freq_index_i
+                                        );
+
+    void _calculate_far_field_incident( 
+                                                    std::size_t freq_index_i
+                                        );
+                    
     void _calculate_field_points_values( 
                                                     std::size_t freq_index,
                                                     cusfloat    ang_freq 

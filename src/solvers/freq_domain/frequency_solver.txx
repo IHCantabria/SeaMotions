@@ -386,6 +386,108 @@ void FrequencySolver<N, mode_pf>::calculate_second_order( void )
 
 
 template<std::size_t N, int mode_pf>
+void FrequencySolver<N, mode_pf>::_calculate_far_field_diffraction( 
+                                                                        std::size_t freq_index_i
+                                                                    )
+{
+    // Define local auxiliar variables
+    cusfloat    a               = this->input->wave_amplitude;
+    cusfloat    c               = 0.0;
+    cusfloat    ccf             = 0.0;
+    cusfloat    ep              = 0.0;
+    cusfloat    g               = this->input->grav_acc;
+    cusfloat    h               = this->input->water_depth;   
+    std::size_t heads_offset    = freq_index_i * this->input->heads_np * QTF_FAR_N;
+    cuscomplex  in              = cuscomplex( 1.0, 0.0 );
+    cuscomplex  int_mod         = cuscomplex( 0.0, 0.0 );
+    cuscomplex  int_value_cos   = cuscomplex( 0.0, 0.0 );
+    cuscomplex  int_value_sin   = cuscomplex( 0.0, 0.0 );
+    cusfloat    k               = this->input->wave_numbers[freq_index_i];
+    cusfloat    nu              = pow2s( w ) / g;
+    PanelGeom*  panel           = nullptr;
+    cusfloat    rho             = 0.0;
+    std::size_t source_offset   = 0;
+    cusfloat    theta           = 0.0;
+    cusfloat    w               = this->input->angfreqs[freq_index_i];
+
+    // Define scaling factor
+    cuscomplex  sf              = cuscomplex( 0.0, -g * a / w );
+    
+    // Calculate wave factor c
+    c = -pow2s( k ) / ( h * ( pow2s( k ) - pow2s( nu ) ) + nu );
+
+    for ( std::size_t ih=0; ih<this->input->heads_np; ih++ )
+    {
+        ep = 1.0;
+        source_offset = this->mesh_gp->panels_tnp * ih;
+        for ( std::size_t n=0; n<QTF_FAR_N; n++ )
+        {
+            for ( std::size_t i=0; i<this->mesh_gp->panels_tnp; i++ )
+            {
+                panel           = this->mesh_gp->panels[i];
+                int_value_cos   = cuscomplex( 0.0, 0.0 );
+                int_value_sin   = cuscomplex( 0.0, 0.0 );
+                if ( panel->type == PanelTypeE::DIFFRAC )
+                {
+                    // Calculate horizontal radius and angle of the current panel
+                    rho     = sqrt( pow2s( panel->center[0] ) + pow2s( panel->center[1] ) );
+                    theta   = atan2( panel->center[1], panel->center[0] );
+                    
+                    // Calculate finite depth factor
+                    ccf = cosh_cosh_factor( k, h, panel->center[2] );
+
+                    // Calculate integral value for the current panel
+                    int_mod       = this->sim_data->intensities[source_offset + i] * ccf * bessel_j( n, k * rho ) * panel->area;
+                    int_value_cos += int_mod * cos( n * theta );
+                    int_value_sin += int_mod * sin( n * theta );
+                }
+
+            }
+
+            const std::size_t idx = heads_offset + ih * QTF_FAR_N + n;
+            this->sim_data->qtf_b_cos[idx] = cuscomplex( 0.0, 2*PI*c*ep ) * int_value_cos;
+            this->sim_data->qtf_b_sin[idx] = cuscomplex( 0.0, 2*PI*c*ep ) * int_value_sin;
+            ep = 2.0;
+        }
+    }
+
+}
+
+
+template<std::size_t N, int mode_pf>
+void FrequencySolver<N, mode_pf>::_calculate_far_field_incident( 
+                                                                    std::size_t freq_index_i
+                                                                )
+{
+    // Define local auxiliar variables
+    cusfloat    a               = this->input->wave_amplitude;
+    cusfloat    ep              = 0.0;
+    cusfloat    g               = this->input->grav_acc;
+    std::size_t heads_offset    = freq_index_i * this->input->heads_np * QTF_FAR_N;
+    cuscomplex  in              = cuscomples( 1.0, 0.0 );
+    cusfloat    w               = this->input->angfreqs[freq_index_i];
+
+    // Define scaling factor
+    cuscomplex  sf              = cuscomplex( 0.0, -g * a / w );
+
+    for ( std::size_t ih=0; ih<this->input->heads_np; ih++ )
+    {
+        ep = 1.0;
+        
+        for ( std::size_t n=0; n<QTF_FAR_N; n++ )
+        {
+            const std::size_t idx = heads_offset + ih * QTF_FAR_N + n;
+            this->sim_data->qtf_a_cos[idx] = sf * ep * in * cos( n * this->input->heads[ih] );
+            this->sim_data->qtf_a_sin[idx] = sf * ep * in * sin( n * this->input->heads[ih] );
+            in *= cuscomplex( 0.0, -1 );
+            ep = 2.0;
+        }
+    }
+
+}
+
+
+template<std::size_t N, int mode_pf>
 template<FreqRegimeE freq_regime>
 void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs( 
                                                                     std::size_t freq_index, 
@@ -747,6 +849,13 @@ void FrequencySolver<N, mode_pf>::_calculate_mean_drift(
             }
         }
     }
+
+    if ( this->input->out_qtf_so_model == QTFSOModelE::DIRECT )
+    {
+        this->_calculate_far_field_incident(  )
+        this->_calculate_far_field_diffraction(  )
+    }
+
 }
 
 
