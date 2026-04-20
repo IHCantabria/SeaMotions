@@ -378,24 +378,27 @@ SimulationData::SimulationData(
                                 )
 {
     // Storage input arguments into class attributes
-    this->dofs_np           = dofs_np_in;
-    this->heads_np          = heads_np_in;
-    this->hydmech_np        = pow2s( dofs_np_in * bodies_np_in );
-    this->_input            = input_in;
-    this->_mpi_config       = mpi_config_in;
-    this->qtf_np            = pow2s( heads_np_in ) * bodies_np_in * dofs_np_in;
-    this->qtf_far_np        = input_in->angfreqs_np * input_in->heads_np * QTF_FAR_N;
-    this->wave_exc_np       = heads_np_in * bodies_np_in * dofs_np_in;
+    this->dofs_np               = dofs_np_in;
+    this->fields_np             = rows_np * ( dofs_np_in + heads_np_in );
+    this->fields_so_np          = rows_np * ( heads_np_in * heads_np_in );
+    this->heads_np              = heads_np_in;
+    this->hydmech_np            = pow2s( dofs_np_in * bodies_np_in );
+    this->_input                = input_in;
+    this->_mpi_config           = mpi_config_in;
+    this->qtf_np                = pow2s( heads_np_in ) * bodies_np_in * dofs_np_in;
+    this->qtf_far_np            = input_in->angfreqs_np * input_in->heads_np * QTF_FAR_N;
+    this->wave_exc_np           = heads_np_in * bodies_np_in * dofs_np_in;
 
     // Allocate space variables used in all the processes
-    this->added_mass        = generate_empty_vector<cusfloat>( this->hydmech_np );
-    this->damping_rad       = generate_empty_vector<cusfloat>( this->hydmech_np );
-    this->froude_krylov     = generate_empty_vector<cuscomplex>( this->wave_exc_np );
-    this->raos              = generate_empty_vector<cuscomplex>( this->wave_exc_np );
-    this->intensities       = generate_empty_vector<cuscomplex>( ( dofs_np_in + heads_np_in ) * rows_np );
-    this->panels_potential  = generate_empty_vector<cuscomplex>( ( dofs_np_in + heads_np_in ) * rows_np );
-    this->panels_pressure   = generate_empty_vector<cuscomplex>( ( dofs_np_in + heads_np_in ) * rows_np );
-    this->wave_diffrac      = generate_empty_vector<cuscomplex>( this->wave_exc_np );
+    this->added_mass            = generate_empty_vector<cusfloat>( this->hydmech_np );
+    this->damping_rad           = generate_empty_vector<cusfloat>( this->hydmech_np );
+    this->froude_krylov         = generate_empty_vector<cuscomplex>( this->wave_exc_np );
+    this->raos                  = generate_empty_vector<cuscomplex>( this->wave_exc_np );
+    this->intensities           = generate_empty_vector<cuscomplex>( this->fields_np );
+    this->panels_potential      = generate_empty_vector<cuscomplex>( this->fields_np );
+    
+    this->panels_pressure       = generate_empty_vector<cuscomplex>( this->fields_np );
+    this->wave_diffrac          = generate_empty_vector<cuscomplex>( this->wave_exc_np );
 
     // Allocate space for variables used to storage morison elements forces
     this->morison_drag_force        = generate_empty_vector<cuscomplex>( this->wave_exc_np );
@@ -406,7 +409,8 @@ SimulationData::SimulationData(
     // Storage required variables for second order calculations
     if ( this->_input->is_calc_mdrift || this->_input->out_qtf )
     {
-        this->raos_hist = generate_empty_vector<cuscomplex>( this->_input->angfreqs_np * this->wave_exc_np );
+        this->panels_potential_so       = generate_empty_vector<cuscomplex>( ( heads_np_in * heads_np_in ) * rows_np );
+        this->panels_pressure_so        = generate_empty_vector<cuscomplex>( ( heads_np_in * heads_np_in ) * rows_np );
 
         this->qtf                       = generate_empty_vector<cuscomplex>( this->qtf_np );
         this->qtf_diff_acc              = generate_empty_vector<cuscomplex>( this->qtf_np );
@@ -425,6 +429,8 @@ SimulationData::SimulationData(
         this->qtf_b_cos                 = generate_empty_vector<cuscomplex>( this->qtf_far_np );
         this->qtf_b_sin                 = generate_empty_vector<cuscomplex>( this->qtf_far_np );
 
+        this->raos_hist                 = generate_empty_vector<cuscomplex>( this->_input->angfreqs_np * this->wave_exc_np );
+
     }
 
     // Allocate space for variables used only on root processor
@@ -440,17 +446,27 @@ SimulationData::SimulationData(
 
         if ( this->_input->out_sources )
         {
-            this->intensities_p0 = generate_empty_vector<cuscomplex>( rows_np * ( dofs_np + heads_np ) );
+            this->intensities_p0 = generate_empty_vector<cuscomplex>( this->fields_np );
         }
 
         if ( this->_input->out_potential )
         {
-            this->panels_potential_p0 = generate_empty_vector<cuscomplex>( rows_np * ( dofs_np + heads_np ) );
+            this->panels_potential_p0 = generate_empty_vector<cuscomplex>( this->fields_np );
+
+            if ( this->_input->is_calc_mdrift || this->_input->out_qtf )
+            {           
+                this->panels_potential_so_p0 = generate_empty_vector<cuscomplex>( this->fields_so_np );
+            }
         }
 
         if ( this->_input->out_pressure )
         {
-            this->panels_pressure_p0 = generate_empty_vector<cuscomplex>( rows_np * ( dofs_np + heads_np ) );
+            this->panels_pressure_p0 = generate_empty_vector<cuscomplex>( this->fields_np );
+
+            if ( this->_input->is_calc_mdrift || this->_input->out_qtf )
+            {           
+                this->panels_pressure_so_p0 = generate_empty_vector<cuscomplex>( this->fields_so_np );
+            }
         }
     }
 }
@@ -517,11 +533,21 @@ SimulationData::~SimulationData(
         if ( this->_input->out_potential )
         {
             mkl_free( this->panels_potential_p0 );
+
+            if ( this->_input->is_calc_mdrift || this->_input->out_qtf )
+            {           
+                mkl_free( this->panels_potential_so_p0 );
+            }
         }
 
         if ( this->_input->out_pressure )
         {
             mkl_free( this->panels_pressure_p0 );
+
+            if ( this->_input->is_calc_mdrift || this->_input->out_qtf )
+            {           
+                mkl_free( this->panels_pressure_so_p0 );
+            }
         }
     }
 

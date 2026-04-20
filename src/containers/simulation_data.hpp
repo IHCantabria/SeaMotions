@@ -46,6 +46,8 @@ public:
     cusfloat*       damping_rad                         = nullptr;
     cusfloat*       damping_rad_p0                      = nullptr;
     int             dofs_np                             = 0;
+    int             fields_np                           = 0;
+    int             fields_so_np                        = 0;
     cuscomplex*     froude_krylov                       = nullptr;
     cuscomplex*     froude_krylov_p0                    = nullptr;
     int             heads_np                            = 0;
@@ -119,8 +121,12 @@ public:
     cuscomplex*     morison_inertial_force_p0           = nullptr;
     cuscomplex*     panels_potential                    = nullptr;
     cuscomplex*     panels_potential_p0                 = nullptr;
+    cuscomplex*     panels_potential_so                 = nullptr;
+    cuscomplex*     panels_potential_so_p0              = nullptr;
     cuscomplex*     panels_pressure                     = nullptr;
     cuscomplex*     panels_pressure_p0                  = nullptr;
+    cuscomplex*     panels_pressure_so                  = nullptr;
+    cuscomplex*     panels_pressure_so_p0               = nullptr;
     cuscomplex*     potential_secord_force              = nullptr;
     cuscomplex*     qtf                                 = nullptr;
     cuscomplex*     qtf_a_cos                           = nullptr;
