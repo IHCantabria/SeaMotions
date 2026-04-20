@@ -25,6 +25,7 @@
 #include "../../containers/mpi_config.hpp"
 #include "../../containers/rad_diff_data.hpp"
 #include "../../containers/simulation_data.hpp"
+#include "../../green/farfield_integrator.hpp"
 #include "../../green/source.hpp"
 #include "../../inout/input.hpp"
 #include "../../interfaces/gwfcns_interface_t.hpp"
@@ -47,22 +48,25 @@ private:
     using RDDQC = RadDiffData<cuscomplex, RDDQTFConfig>;
 
     /* Declare private variables */
-    GWFcnsInterfaceT<N*N>       _gwfcns_interf;                     // Wave part functor interface used for the integration over the panel by using Gauss Points (first order potential evaluation)
-    GWFcnsInterfaceT<N*N>       _gwfcns_interf_qb;                  // Wave part functor interface used for the integration over the panel by using Gauss Points (second order potential evaluation, Qb term)
-    GWFcnsInterfaceT<N*N>       _gwfcns_interf_qf;                  // Wave part functor interface used for the integration over the panel by using Gauss Points (second order potential evaluation, Qf term)
-    GWFcnsInterfaceT<1>         _gwfcns_interf_qfa;                 // Wave part functor interface used for the integration over the panel by using Gauss Points (second order potential evaluation, Qf term annuli)
-    GWFcnsInterfaceT<N>         _gwfcns_interf_wl;                  // Wave part functor interface used for the integration over the panel by using Gauss Points (second order potential evaluation for waterline points)
-    Input*                      _input                  = nullptr;  // Input system to have access to the case configuration
-    int                         _is_condition_number    = false;    // Switch to enable or disable the computation of the Condition number of the system matrixes for all the available formulations
-    MeshGroup*                  _mesh_gp                = nullptr;  // Mesh group describing the target case topology
-    MpiConfig*                  _mpi_config             = nullptr;  // Pointer to MpiConfig to have access to MPI configuration
-    MLGCmpx*                    _pf_gp                  = nullptr;  // Group of matrix data to storage Potential formulation data (Column-Major arranged data)
-    MLGCmpx*                    _pot_gp                 = nullptr;  // Group of matrix data to storage Potential matrix data (This is required for Source and Potential formulations) (Row-Major arranged data)
-    cuscomplex*                 _ppf_rhs                = nullptr;  // Partial potential formulation RHS. It storage the information at each vertical chunk of the potential matrix (see PF-RHS) depending of the processor
-    SclCmpx*                    _solver                 = nullptr;  // ScaLapack solver for complex numbers
-    int                         _steady_mat_type        = 0;        // Steady matrix type to be used in the formulation ( 0: REGULAR+Lf, 1: HF )
-    MLGCmpx*                    _sf_gp                  = nullptr;  // Group of matrix data to storage Source formulation data (Colum-Major arranged data)
-    const std::vector<RDDQC*>*  _qtf_annuli_fields    = nullptr;  // Optional annulus fields for QTF integration
+    FarFieldIntegrator<QTFTypeE::QTF_DIFF_CODE> _qtf_diff_code_integrator;          // Far-field integrator for the QTF difference code term
+    FarFieldIntegrator<QTFTypeE::QTF_SUM_CODE>  _qtf_sum_code_integrator;           // Far-field integrator for the QTF sum code term
+    GWFcnsInterfaceT<N*N>                       _gwfcns_interf;                     // Wave part functor interface used for the integration over the panel by using Gauss Points (first order potential evaluation)
+    GWFcnsInterfaceT<N*N>                       _gwfcns_interf_qb;                  // Wave part functor interface used for the integration over the panel by using Gauss Points (second order potential evaluation, Qb term)
+    GWFcnsInterfaceT<N*N>                       _gwfcns_interf_qf;                  // Wave part functor interface used for the integration over the panel by using Gauss Points (second order potential evaluation, Qf term)
+    GWFcnsInterfaceT<1>                         _gwfcns_interf_qfa;                 // Wave part functor interface used for the integration over the panel by using Gauss Points (second order potential evaluation, Qf term annuli)
+    GWFcnsInterfaceT<N>                         _gwfcns_interf_wl;                  // Wave part functor interface used for the integration over the panel by using Gauss Points (second order potential evaluation for waterline points)
+    Input*                                      _input                  = nullptr;  // Input system to have access to the case configuration
+    int                                         _is_condition_number    = false;    // Switch to enable or disable the computation of the Condition number of the system matrixes for all the available formulations
+    MeshGroup*                                  _mesh_gp                = nullptr;  // Mesh group describing the target case topology
+    MpiConfig*                                  _mpi_config             = nullptr;  // Pointer to MpiConfig to have access to MPI configuration
+    MLGCmpx*                                    _pf_gp                  = nullptr;  // Group of matrix data to storage Potential formulation data (Column-Major arranged data)
+    MLGCmpx*                                    _pot_gp                 = nullptr;  // Group of matrix data to storage Potential matrix data (This is required for Source and Potential formulations) (Row-Major arranged data)
+    cuscomplex*                                 _ppf_rhs                = nullptr;  // Partial potential formulation RHS. It storage the information at each vertical chunk of the potential matrix (see PF-RHS) depending of the processor
+    SclCmpx*                                    _solver                 = nullptr;  // ScaLapack solver for complex numbers
+    int                                         _steady_mat_type        = 0;        // Steady matrix type to be used in the formulation ( 0: REGULAR+Lf, 1: HF )
+    MLGCmpx*                                    _sf_gp                  = nullptr;  // Group of matrix data to storage Source formulation data (Colum-Major arranged data)
+    const std::vector<RDDQC*>*                  _qtf_annuli_fields      = nullptr;  // Optional annulus fields for QTF integration
+    WaveDispersionSO*                           _wdso                   = nullptr;  // Wave dispersion object for second order calculations
 
     /* Declare private methods */
     template<FreqRegimeE freq_regime>
@@ -82,8 +86,7 @@ private:
                                     RDDQC*                          qtf_body_fields,
                                     RDDQC*                          qtf_body_fields_wl,
                                     RDDQC*                          qtf_fs_fields,
-                                    RDDQC*                          qtf_fs_fields_wl,
-                                    WaveDispersionSO*               wd
+                                    RDDQC*                          qtf_fs_fields_wl
                     );
 
     void _build_rhs_so( 
@@ -95,8 +98,7 @@ private:
                                     RDDQC*                          qtf_body_fields_wl,
                                     RDDQC*                          qtf_fs_fields,
                                     RDDQC*                          qtf_fs_fields_wl,
-                                    const std::vector<RDDQC*>*      qtf_annuli_fields,
-                                    WaveDispersionSO*               wd
+                                    const std::vector<RDDQC*>*      qtf_annuli_fields
                     );
 
     template<FreqRegimeE freq_regime>
@@ -121,6 +123,13 @@ private:
                                     RDDQC*                  qtf_fs_fields_wl,
                                     WaveDispersionSO*       wd
                                 );
+
+    void _process_far_field(
+                                    QTFTypeE                qtf_type,
+                                    std::size_t             freq_i,
+                                    std::size_t             freq_j,
+                                    cuscomplex*             qb_rhs
+                            );
 
     template<int GP, typename GwfInterf, typename RhsFunc, typename IntegrateFunc>
     void _process_qtf_rhs_panels(
@@ -181,6 +190,11 @@ public:
                                         cuscomplex*                         raos,
                                         RadDiffData<cuscomplex, RDDConfig>* rad_diff_data
                             );
+
+    void    configure_second_order( 
+                                        cusfloat                            partition_circle    
+                                    );
+
     int     size(
                                         void
                 );
@@ -199,13 +213,17 @@ public:
                                         RDDQC*                      qtf_body_fields_wl,
                                         RDDQC*                      qtf_fs_fields,
                                         RDDQC*                      qtf_fs_fields_wl,
-                                        const std::vector<RDDQC*>*  qtf_annuli_fields,
-                                        WaveDispersionSO*           wd
+                                        const std::vector<RDDQC*>*  qtf_annuli_fields
                     );
 
     void    update_results( 
                                         SimulationData* sim_data 
                         );
+
+    template<QTFTypeE qtf_type>
+    void    update_results_so( 
+                                        SimulationData* sim_data 
+                                );
 
     void    set_qtf_annuli_fields(
                                         const std::vector<RDDQC*>* annuli_fields
