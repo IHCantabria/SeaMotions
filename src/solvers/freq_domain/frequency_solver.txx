@@ -342,8 +342,37 @@ void FrequencySolver<N, mode_pf>::calculate_second_order( void )
                 else if ( this->input->out_qtf_so_model == QTFSOModelE::DIRECT )
                 {
                     // Solve radiation-diffraction problem for the current frequency
-                    this->kernel->template solve_so<FreqRegimeE::REGULAR>( input->angfreqs[i] );
+                    this->kernel->template solve_so<QTFTypeE::QTF_DIFF_CODE>( 
+                                                                                i,
+                                                                                j,
+                                                                                this->sim_data->raos_hist,
+                                                                                this->_qtf_bern_fields,
+                                                                                this->_qtf_wl_fields,
+                                                                                this->_qtf_fs_fields,
+                                                                                this->_qtf_fs_fields_wl,
+                                                                                this->_qtf_annuli_fields,
+                                                                                this->_wdso     
+                                                                            );
                     this->kernel->update_results_so( sim_data );
+
+                    calculate_diffraction_forces_lin_so(
+                                                                this->_input,
+                                                                this->_mpi_config,
+                                                                this->_mesh_gp,
+                                                                sim_data->panels_potential_so,
+                                                                std::abs( this->input->angfreqs[i] - this->input->angfreqs[j] ),
+                                                                sim_data->potential_secord_force,
+                                                                sim_data->panels_pressure_so
+                                                        );
+
+                    MPI_Allreduce(
+                                        MPI_IN_PLACE,
+                                        sim_data->potential_secord_force,
+                                        sim_data->qtf_np,
+                                        mpi_cuscomplex,
+                                        MPI_SUM,
+                                        MPI_COMM_WORLD
+                                    );
                 }
 
                 MPI_Barrier( MPI_COMM_WORLD );
