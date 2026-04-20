@@ -25,11 +25,56 @@
 
 
 template<QTFTypeE qtf_type>
+void FarFieldIntegrator<qtf_type>::compute_far_field(
+                                                        std::size_t freq_index_i,
+                                                        std::size_t freq_index_j
+                                                    )
+{
+    // Set frequency indices and derived parameters
+    this->set_frequency_indices( freq_index_i, freq_index_j );
+
+    // Clear output vectors
+    std::fill( this->qc.begin(), this->qc.end(), cuscomplex( 0.0, 0.0 ) );
+    std::fill( this->qs.begin(), this->qs.end(), cuscomplex( 0.0, 0.0 ) );
+
+    // Loop over series size to compute the far field contribution for each term of the expansion
+    for ( std::size_t n=0; n<this->_series_size; n++ )
+    {
+        // Compute the far field contribution for the current term of the expansion
+        this->_integrate( n, this->qc.data(), this->qs.data() );
+
+    }
+
+    // Apply scaling factor to the far field contribution
+    for ( std::size_t ih0=0; ih0<this->_input->heads_np; ih0++ )
+    {
+        for ( std::size_t ih1=0; ih1<this->_input->heads_np; ih1++ )
+        {
+            // Determine output index
+            std::size_t ihx = this->_input->heads_np * ih0 + ih1;
+
+            // Apply scaling factor
+            Qc[ihx] *= cuscomplex( 0.0, PI * pow2s( this->_partition_circle ) / 8.0 );
+            Qs[ihx] *= cuscomplex( 0.0, PI * pow2s( this->_partition_circle ) / 8.0 );
+
+        }
+
+    }
+
+}
+
+
+template<QTFTypeE qtf_type>
 FarFieldIntegrator<qtf_type>::FarFieldIntegrator(
-                                                    Input*      input,
-                                                    std::size_t freq_i,
-                                                    std::size_t freq_j,
-                                                    cusfloat    partition_circle
+                                                    Input*          input,
+                                                    std::size_t     freq_i,
+                                                    std::size_t     freq_j,
+                                                    cusfloat        partition_circle,
+                                                    cuscomplex*     Ac,
+                                                    cuscomplex*     As,
+                                                    cuscomplex*     Bc,
+                                                    cuscomplex*     Bs,
+                                                    std::size_t     series_size
                                                 )
 {
     // Check QTF type
@@ -50,22 +95,27 @@ FarFieldIntegrator<qtf_type>::FarFieldIntegrator(
     }
 
     // Storage general usage parameters
+    this->_ac               = Ac;
+    this->_as               = As;
+    this->_bc               = Bc;
+    this->_bs               = Bs;
     this->_partition_circle = partition_circle;
+    this->_series_size      = series_size;
+
+    // Resize output vectors
+    this->_hnp2 = this->_input->heads_np * this->_input->heads_np;
+    this->qc.resize( this->hnp2, cuscomplex( 0.0, 0.0 ) );
+    this->qs.resize( this->hnp2, cuscomplex( 0.0, 0.0 ) );
 
     // Storage input paramets and recalculation of derived parameters
-    set_parameters( freq_i, freq_j );
+    this->set_parameters( freq_i, freq_j );
 
 }
 
 
 template<QTFTypeE qtf_type>
-void FarFieldIntegrator<qtf_type>::integrate(
+void FarFieldIntegrator<qtf_type>::_integrate(
                                                 std::size_t     n,
-                                                std::size_t     N,
-                                                cuscomplex      Ac,
-                                                cuscomplex      As,
-                                                cuscomplex      Bc,
-                                                cuscomplex      Bs,
                                                 cuscomplex*     Qc,
                                                 cuscomplex*     Qs
                                             )
@@ -87,11 +137,6 @@ void FarFieldIntegrator<qtf_type>::integrate(
         return v;
     };
 
-    // Clear vector 
-    int hnp2 = this->_input->heads_np * this->_input->heads_np;
-    clear_vector( hnp2, Qc );
-    clear_vector( hnp2, Qs );
-
     // Sumate expansion series terms
     cuscomplex  sum = 0.0;
 
@@ -106,7 +151,7 @@ void FarFieldIntegrator<qtf_type>::integrate(
             ihx = this->_input->heads_np * ih0 + ih1;
 
             // First chunk l=n => M
-            for ( std::size_t l=n; l<N; l++ )
+            for ( std::size_t l=n; l<this->_series_size; l++ )
             {
                 m       = l - n;
 
@@ -141,7 +186,7 @@ void FarFieldIntegrator<qtf_type>::integrate(
             }
 
             // Second chunk l=0 => M-n
-            for ( std::size_t l=0; l<N-n; l++ )
+            for ( std::size_t l=0; l<this->_series_size-n; l++ )
             {
                 m       = l + n;
 

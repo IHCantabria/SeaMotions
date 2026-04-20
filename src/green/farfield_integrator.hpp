@@ -31,48 +31,64 @@ template<QTFTypeE qtf_type>
 class FarFieldIntegrator
 {
 private:
-/*** Declare private member variables ***/
-    cusfloat        _alpha              = 0.0;
-    std::size_t     _freq_i             = 0;
-    std::size_t     _freq_j             = 0;
-    cusfloat        _grav_acc           = 9.81;
-    Input*          _input              = nullptr;
-    cusfloat        _omega              = 0.0;
-    cusfloat        _sign               = 1.0;
-    TripleHankelIO  _hankel_int_opts    ;
-    cusfloat        _partition_circle   = 0.0;
-    cusfloat        _wi                 = 0.0;
-    cusfloat        _wj                 = 0.0;
-    cusfloat        _wave_i             = 0.0;
-    cusfloat        _wave_j             = 0.0;
-    cusfloat        _wave_k             = 0.0;
+    /*** Declare private member variables ***/
+    cusfloat                    _alpha              = 0.0;
+    cuscomplex*                 _ac                 = nullptr;
+    cuscomplex*                 _as                 = nullptr;
+    cuscomplex*                 _bc                 = nullptr;
+    cuscomplex*                 _bs                 = nullptr;
+    std::size_t                 _freq_i             = 0;
+    std::size_t                 _freq_j             = 0;
+    cusfloat                    _grav_acc           = 9.81;
+    Input*                      _input              = nullptr;
+    cusfloat                    _omega              = 0.0;
+    cusfloat                    _sign               = 1.0;
+    TripleHankelIO              _hankel_int_opts    ;
+    cusfloat                    _partition_circle   = 0.0;
+    std::size_t                 _series_size        = 0;
+    cusfloat                    _wi                 = 0.0;
+    cusfloat                    _wj                 = 0.0;
+    cusfloat                    _wave_i             = 0.0;
+    cusfloat                    _wave_j             = 0.0;
+    cusfloat                    _wave_k             = 0.0;
+
+    /*** Declare private member functions ***/
+    void    _integrate( 
+                                        std::size_t     n,
+                                        cuscomplex*     Qc,
+                                        cuscomplex*     Qs
+                        );
 
 public:
+    /*** Declare public variables ***/
+    std::size_t                 hnp2 = 0;
+    std::vector<cuscomplex>     qc;
+    std::vector<cuscomplex>     qs;
+
     /*** Declare class constructors ***/
     FarFieldIntegrator( ) = default;
 
     FarFieldIntegrator( 
-                                        Input*      input,
-                                        std::size_t freq_i,
-                                        std::size_t freq_j,
-                                        cusfloat    partition_circle
+                                        Input*          input,
+                                        std::size_t     freq_i,
+                                        std::size_t     freq_j,
+                                        cusfloat        partition_circle,
+                                        cuscomplex*     Ac,
+                                        cuscomplex*     As,
+                                        cuscomplex*     Bc,
+                                        cuscomplex*     Bs,
+                                        std::size_t     series_size
                         );
 
     /*** Declare class constructors ***/
-    void    integrate( 
-                                        std::size_t     n,
-                                        std::size_t     N,
-                                        cuscomplex      Ac,
-                                        cuscomplex      As,
-                                        cuscomplex      Bc,
-                                        cuscomplex      Bs,
-                                        cuscomplex*     Qc,
-                                        cuscomplex*     Qs
-                        );
+    void    compute_far_field(
+                                        std::size_t     freq_index_i,
+                                        std::size_t     freq_index_j
+                            );
     
     void    set_frequency_indices( 
-                                        std::size_t freq_i,
-                                        std::size_t freq_j
+                                        std::size_t     freq_i,
+                                        std::size_t     freq_j
                                     );
     
     template<typename T>
