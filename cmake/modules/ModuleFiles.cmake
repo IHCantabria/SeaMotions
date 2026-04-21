@@ -130,6 +130,8 @@ set(
         ${CMAKE_SOURCE_DIR}/src/green/common.cpp
         ${CMAKE_SOURCE_DIR}/src/green/dipole.hpp
         ${CMAKE_SOURCE_DIR}/src/green/dipole.cpp
+        ${CMAKE_SOURCE_DIR}/src/green/farfield_integrator.hpp
+        ${CMAKE_SOURCE_DIR}/src/green/farfield_integrator.txx
         ${CMAKE_SOURCE_DIR}/src/green/kochin.hpp
         ${CMAKE_SOURCE_DIR}/src/green/kochin.cpp
         # ${CMAKE_SOURCE_DIR}/src/green/pulsating_fin_depth.hpp
@@ -149,6 +151,8 @@ set(
         ${CMAKE_SOURCE_DIR}/src/green/source.hpp
         ${CMAKE_SOURCE_DIR}/src/green/source.cpp
         ${CMAKE_SOURCE_DIR}/src/green/source.txx
+        ${CMAKE_SOURCE_DIR}/src/green/triple_hankel_far_field.hpp
+        ${CMAKE_SOURCE_DIR}/src/green/triple_hankel_far_field.cpp
         ${green_findepth_coeffs_src}
         ${green_infdepth_coeffs_src}
     )
