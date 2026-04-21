@@ -35,6 +35,7 @@ struct RDDFDConfig
     static constexpr int mode_f         = G_ON;
     static constexpr int mode_dfdn      = G_OFF;
     static constexpr int mode_dfdc      = G_ON;
+    static constexpr int store_modes    = OFF;
     static constexpr int store_freqs    = OFF;
 };
 
@@ -49,6 +50,7 @@ struct RDDMorisonConfig
     static constexpr int mode_f         = G_ON;
     static constexpr int mode_dfdn      = G_OFF;
     static constexpr int mode_dfdc      = G_OFF;
+    static constexpr int store_modes    = OFF;
     static constexpr int store_freqs    = OFF;
 };
 
@@ -63,5 +65,6 @@ struct RDDQTFConfig
     static constexpr int mode_f         = G_ON;
     static constexpr int mode_dfdn      = G_OFF;
     static constexpr int mode_dfdc      = G_ON;
+    static constexpr int store_modes    = ON;
     static constexpr int store_freqs    = ON;
 };
