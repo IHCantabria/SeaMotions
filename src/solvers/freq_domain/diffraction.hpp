@@ -35,7 +35,8 @@ void    calculate_diffraction_forces_lin(
                                                 cuscomplex*     panel_pot,
                                                 cusfloat        w,
                                                 cuscomplex*     wave_diffrac,
-                                                cuscomplex*     panel_pressure
+                                                cuscomplex*     panel_pressure,
+                                                bool            second_order = false
                                         );
 
 

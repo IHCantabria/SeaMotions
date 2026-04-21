@@ -30,82 +30,8 @@ void    calculate_diffraction_forces_lin(
                                                 cuscomplex*     panel_pot,
                                                 cusfloat        w,
                                                 cuscomplex*     wave_diffrac,
-                                                cuscomplex*     panels_pressure
-                                        )
-{
-    // Define local variables
-    int         dofs_np         = input->dofs_np;
-    int         elem_end_pos    = 0;
-    int         elem_start_pos  = 0;
-    int         index           = 0;
-    int         index_1         = 0;
-    cuscomplex  press_i         = cuscomplex( 0.0, 0.0 );
-    cusfloat    rho_w           = input->water_density;
-    
-    // Loop over headings to define the wave diffraction forces
-    for ( int ih=0; ih<input->heads_np; ih++ )
-    {
-        // Get hydromechanic coefficients for all the degrees of freedom
-        for ( int ib=0; ib<mesh_gp->meshes_np; ib++ )
-        {
-            // Calculate MPI data chunks
-            elem_end_pos    = 0;
-            elem_start_pos  = 0;
-            mpi_config->get_1d_bounds( 
-                                            mesh_gp->panels_np[ib], 
-                                            elem_start_pos, 
-                                            elem_end_pos 
-                                        );
-
-            for ( int id=0; id<dofs_np; id++ )
-            {
-                index = (
-                            ih * ( dofs_np * mesh_gp->meshes_np )
-                            +
-                            ib * dofs_np
-                            + 
-                            id
-                        );
-                wave_diffrac[index]   = 0.0;
-                for ( int ie=elem_start_pos; ie<elem_end_pos; ie++ )
-                {
-                    if ( mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->type == PanelTypeE::DIFFRAC )
-                    {
-                        // Integrate pressure over panel
-                        index_1                     = (
-                                                            input->dofs_np * mesh_gp->panels_tnp 
-                                                            +
-                                                            ih * mesh_gp->panels_tnp
-                                                            +
-                                                            mesh_gp->panels_cnp[ib]
-                                                            +
-                                                            ie
-                                                        );
-                        press_i                     = (
-                                                            panel_pot[index_1]
-                                                            *
-                                                            mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->normal_vec[id]
-                                                            *
-                                                            mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->area
-                                                        );
-                        wave_diffrac[index]         += cuscomplex( 0.0, w * rho_w ) * press_i;
-                        panels_pressure[index_1]    = - cuscomplex( 0.0, 1.0 ) * rho_w * w * panel_pot[index_1] ;
-                    }
-                }
-            }
-        }
-    }
-}
-
-
-void    calculate_diffraction_forces_lin_so(
-                                                Input*          input,
-                                                MpiConfig*      mpi_config,
-                                                MeshGroup*      mesh_gp,
-                                                cuscomplex*     panel_pot,
-                                                cusfloat        w,
-                                                cuscomplex*     wave_diffrac,
-                                                cuscomplex*     panels_pressure
+                                                cuscomplex*     panels_pressure,
+                                                bool            second_order
                                         )
 {
     // Define local variables
@@ -113,15 +39,16 @@ void    calculate_diffraction_forces_lin_so(
     int         elem_end_pos    = 0;
     int         elem_start_pos  = 0;
     int         heads_np        = input->heads_np;
+    int         heads_np_1      = second_order ? heads_np : 1;
     int         index           = 0;
     int         index_1         = 0;
     cuscomplex  press_i         = cuscomplex( 0.0, 0.0 );
     cusfloat    rho_w           = input->water_density;
     
     // Loop over headings to define the wave diffraction forces
-    for ( int ih0=0; ih0<input->heads_np; ih0++ )
+    for ( int ih0=0; ih0<heads_np; ih0++ )
     {
-        for ( int ih1=0; ih1<input->heads_np; ih1++ )
+        for ( int ih1=0; ih1<heads_np_1; ih1++ )
         {
             // Get hydromechanic coefficients for all the degrees of freedom
             for ( int ib=0; ib<mesh_gp->meshes_np; ib++ )
@@ -137,30 +64,58 @@ void    calculate_diffraction_forces_lin_so(
     
                 for ( int id=0; id<dofs_np; id++ )
                 {
-                    index = (
-                                ih0 * ( heads_np * dofs_np * mesh_gp->meshes_np )
-                                +
-                                ih1 * ( dofs_np * mesh_gp->meshes_np )
-                                +
-                                ib * dofs_np
-                                + 
-                                id
-                            );
+                    if ( second_order )
+                    {
+                        index = (
+                                    ih0 * ( heads_np * dofs_np * mesh_gp->meshes_np )
+                                    +
+                                    ih1 * ( dofs_np * mesh_gp->meshes_np )
+                                    +
+                                    ib * dofs_np
+                                    + 
+                                    id
+                                );
+                    }
+                    else
+                    {
+                        index = (
+                                    ih0 * ( dofs_np * mesh_gp->meshes_np )
+                                    +
+                                    ib * dofs_np
+                                    + 
+                                    id
+                                );
+                    }
                     wave_diffrac[index]   = 0.0;
                     for ( int ie=elem_start_pos; ie<elem_end_pos; ie++ )
                     {
                         if ( mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->type == PanelTypeE::DIFFRAC )
                         {
                             // Integrate pressure over panel
-                            index_1                     = (
-                                                                ih0 * ( heads_np * mesh_gp->panels_tnp )
-                                                                +
-                                                                ih1 * ( mesh_gp->panels_tnp )
-                                                                +
-                                                                mesh_gp->panels_cnp[ib]
-                                                                +
-                                                                ie
-                                                            );
+                            if ( second_order )
+                            {
+                                index_1                     = (
+                                                                    ih0 * ( heads_np * mesh_gp->panels_tnp )
+                                                                    +
+                                                                    ih1 * ( mesh_gp->panels_tnp )
+                                                                    +
+                                                                    mesh_gp->panels_cnp[ib]
+                                                                    +
+                                                                    ie
+                                                                );
+                            }
+                            else
+                            {
+                                index_1                     = (
+                                                                    input->dofs_np * mesh_gp->panels_tnp 
+                                                                    +
+                                                                    ih0 * mesh_gp->panels_tnp
+                                                                    +
+                                                                    mesh_gp->panels_cnp[ib]
+                                                                    +
+                                                                    ie
+                                                                );
+                            }
                             press_i                     = (
                                                                 panel_pot[index_1]
                                                                 *
