@@ -34,6 +34,7 @@ struct PanelData
     static constexpr int mode_f         = Config::mode_f;
     static constexpr int mode_dfdn      = Config::mode_dfdn;
     static constexpr int mode_dfdc      = Config::mode_dfdc;
+    static constexpr int store_modes    = Config::store_modes;
     static constexpr int store_freqs    = Config::store_freqs;
 
 private:
@@ -67,6 +68,7 @@ public:
     cut::CusTensor<T>               pot_diff        ;           // Store wave diffracted potential value                         [frequencies, headings, field_points]
     cut::CusTensor<T>               pot_total       ;           // Store wave total potential value                              [frequencies, headings, field_points]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
     cut::CusTensor<T>               pot_total_2     ;           // Store wave total potential value                              [frequencies, headings, field_points]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
+    cut::CusTensor<T>               pot_modes       ;           // Store raw radiation-diffraction potential modes               [frequencies, dofs + headings, field_points]
     cut::CusTensor<T>               press_incident  ;           // Store incident pressure value                                    [frequencies, headings, field_points]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
     cut::CusTensor<T>               press_rad       ;           // Store radiated pressure value                                    [frequencies, headings, field_points]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
     cut::CusTensor<T>               press_diff      ;           // Store diffracted pressure value                                    [frequencies, headings, field_points]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
@@ -87,6 +89,9 @@ public:
     cut::CusTensor<T>               vel_x_total     ;           // Store total velocity_x value                                  [frequencies, headings, field_points]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
     cut::CusTensor<T>               vel_y_total     ;           // Store total velocity_y value                                  [frequencies, headings, field_points]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
     cut::CusTensor<T>               vel_z_total     ;           // Store total velocity_z value                                  [frequencies, headings, field_points]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
+    cut::CusTensor<T>               vel_x_modes     ;           // Store raw radiation-diffraction velocity_x modes              [frequencies, dofs + headings, field_points]
+    cut::CusTensor<T>               vel_y_modes     ;           // Store raw radiation-diffraction velocity_y modes              [frequencies, dofs + headings, field_points]
+    cut::CusTensor<T>               vel_z_modes     ;           // Store raw radiation-diffraction velocity_z modes              [frequencies, dofs + headings, field_points]
     cut::CusTensor<T>               wev_total       ;           // Store wave elevation                                          [frequencies, headings, field_points]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
     cut::CusTensor<T>               wev_rel_total   ;           // Store relative wave elevation                                 [frequencies, headings, field_points]             | Total composition: { incident + sum( epsi · radiation ) + diffraction }
 
