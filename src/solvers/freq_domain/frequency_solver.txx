@@ -350,20 +350,20 @@ void FrequencySolver<N, mode_pf>::calculate_second_order( void )
                                                                                 this->_qtf_wl_fields,
                                                                                 this->_qtf_fs_fields,
                                                                                 this->_qtf_fs_fields_wl,
-                                                                                this->_qtf_annuli_fields,
-                                                                                this->_wdso     
+                                                                                this->_qtf_annuli_fields
                                                                             );
                     this->kernel->update_results_so( sim_data );
 
-                    calculate_diffraction_forces_lin_so(
-                                                                this->_input,
-                                                                this->_mpi_config,
-                                                                this->_mesh_gp,
-                                                                sim_data->panels_potential_so,
-                                                                std::abs( this->input->angfreqs[i] - this->input->angfreqs[j] ),
-                                                                sim_data->potential_secord_force,
-                                                                sim_data->panels_pressure_so
-                                                        );
+                    calculate_diffraction_forces_lin(
+                                                        this->_input,
+                                                        this->_mpi_config,
+                                                        this->_mesh_gp,
+                                                        sim_data->panels_potential_so,
+                                                        std::abs( this->input->angfreqs[i] - this->input->angfreqs[j] ),
+                                                        sim_data->potential_secord_force,
+                                                        sim_data->panels_pressure_so,
+                                                        true
+                                                    );
 
                     MPI_Allreduce(
                                         MPI_IN_PLACE,
