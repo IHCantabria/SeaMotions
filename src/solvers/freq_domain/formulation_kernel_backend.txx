@@ -1267,6 +1267,19 @@ void FormulationKernelBackend<N, mode_pf>::_build_rhs_so(
                                         );
     
     this->_process_qtf_rhs_panels<NUM_GP>(
+                                                qtf_body_fields_wl,
+                                                this->_gwfcns_interf_qf_wl,
+                                                qf_rhs_func,
+                                                integrate_1d,
+                                                true,
+                                                field_points_d,
+                                                field_points_x,
+                                                field_points_y,
+                                                field_points_z,
+                                                qb_rhs
+                                        );
+
+    this->_process_qtf_rhs_panels<NUM_GP>(
                                                 qtf_fs_fields_wl,
                                                 this->_gwfcns_interf_qf_wl,
                                                 qf_rhs_func,
