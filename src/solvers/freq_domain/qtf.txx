@@ -356,6 +356,7 @@ inline  void    so_potential_qf_rhs(
     cuscomplex  fp_cog[3]       = { 0.0, 0.0, 0.0 };
     cuscomplex  fp_so_i[3]      = { 0.0, 0.0, 0.0 };
     cuscomplex  fp_so_j[3]      = { 0.0, 0.0, 0.0 };
+    cusfloat    g               = input->grav_acc;
     std::size_t index           = 0;
     cusfloat    nlvec[3]        = { 0.0, 0.0, 0.0 };
     cusfloat    nlvec_mod       = 0.0;
@@ -388,7 +389,7 @@ inline  void    so_potential_qf_rhs(
     cusfloat wi_wj              = wi + qtf_sign * wj;
 
     // Clear rhs vector to sum up all the constributions on it
-    std::size_t size_rhs        = pow2s( heads_np ) * panel_data->field_points_np
+    std::size_t size_rhs        = pow2s( heads_np ) * panel_data->field_points_np;
 
     // Loop over headings to get all the possible combinations
     for ( std::size_t ih=0; ih<heads_np; ih++ )
@@ -480,11 +481,11 @@ inline  void    so_potential_qf_rhs(
                     
                     qf_rhs[index]   += cuscomplex( 0.0, 0.25 * wi ) * (
                                                                             v0[0] * tv[0] + v0[1] * tv[1]
-                                                                        ) * phi_i * G[ fpi ];
+                                                                        ) * phi_i * G[ fpi ] / pow2s( g );
 
                     qf_rhs[index]   -= cuscomplex( 0.0, 0.25 * wj ) * (
                                                                             vel_i[0] * tv[0] + vel_i[1] * tv[1]
-                                                                        ) * std::conj( phi_j ) * G[ fpi ];
+                                                                        ) * std::conj( phi_j ) * G[ fpi ] / pow2s( g );
 
                 }
                 else
@@ -496,7 +497,7 @@ inline  void    so_potential_qf_rhs(
                                             phi_i
                                             *
                                             std::conj( vel_j[2] )
-                                        ) * G[ fpi ];
+                                        ) * G[ fpi ] / pow2s( g );
 
                     qf_rhs[index]   -= (
                                             cuscomplex( 0.0, 0.25 * wj * pow2s( wi ) ) 
@@ -504,18 +505,18 @@ inline  void    so_potential_qf_rhs(
                                             std::conj( phi_j )
                                             *
                                             vel_i[2]
-                                        ) * G[ fpi ];
+                                        ) * G[ fpi ] / pow2s( g );
 
                     // Calculate term 2
                     copy_vector( 3, vel_j, v0 );
                     conj_vector( 3, v0, v0 );
                     
-                    qf_rhs[index]   -= 0.25 * wi * dot_product( 3, vel_i, v0 ) * G[ fpi ];
+                    qf_rhs[index]   -= 0.25 * wi * dot_product( 3, vel_i, v0 ) * G[ fpi ] / pow2s( g );
 
                     copy_vector( 3, vel_i, v0 );
                     conj_vector( 3, v0, v0 );
                     
-                    qf_rhs[index]   += 0.25 * wj * dot_product( 3, vel_j, v0 ) * G[ fpi ];
+                    qf_rhs[index]   += 0.25 * wj * dot_product( 3, vel_j, v0 ) * G[ fpi ] / pow2s( g );
 
                     // Calculate term 3
                     copy_vector( 3, vel_j, v0 );
@@ -523,15 +524,15 @@ inline  void    so_potential_qf_rhs(
 
                     qf_rhs[index]   -= 0.25 * wi * (
                                                         dG_dx[fpi] * v0[0] + dG_dy[fpi] * v0[1] + dG_dz[fpi] * v0[2]
-                                                    ) * phi_i;
+                                                    ) * phi_i / pow2s( g );
 
 
                     qf_rhs[index]   += 0.25 * wi * (
                                                         dG_dx[fpi] * vel_i[0] + dG_dy[fpi] * vel_i[1] + dG_dz[fpi] * vel_i[2]
-                                                    ) * std::conj( phi_j );
+                                                    ) * std::conj( phi_j ) / pow2s( g );
 
                     // Calculate term 4
-                    qf_rhs[index]   -= cuscomplex( 0.0, 0.5 * wi_wj ) * dot_product( 3, vel_i, vel_j ) * G[ fpi ];
+                    qf_rhs[index]   -= cuscomplex( 0.0, 0.5 * wi_wj ) * dot_product( 3, vel_i, vel_j ) * G[ fpi ] / g;
 
                 }
             }
