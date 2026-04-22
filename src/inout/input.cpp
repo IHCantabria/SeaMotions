@@ -356,7 +356,7 @@ void Input::read_body(
     {  
         // Define lid name
         std::stringstream ss;
-        ss << body->mesh_body_name << "_lid";
+        ss << body->mesh_body_name << "_int_lid";
         
         // Load lid mesh
         body->mesh_int_lid  = new Mesh(
@@ -404,7 +404,7 @@ void Input::read_body(
     {
         // Define QTF free surface name
         std::stringstream ss;
-        ss << body->mesh_body_name << "_qtflid";
+        ss << body->mesh_body_name << "_qtf_lid";
 
         // Load QTF free surface mesh
         body->mesh_fs_qtf       = new Mesh(
