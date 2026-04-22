@@ -29,11 +29,13 @@
 #include "frequency_solver.hpp"
 #include "froude_krylov.hpp"
 #include "global_static_matrix.hpp"
+#include "../../green/kochin.hpp"
 #include "hydromechanics.hpp"
 #include "../../hydrostatics.hpp"
 #include "../../math/integration.hpp"
 #include "../../math/math_tools.hpp"
 #include "../../mesh/mesh.hpp"
+#include "qtf_indirect_method.hpp"
 #include "qtf.hpp"
 #include "raos.hpp"
 
@@ -119,6 +121,80 @@ inline constexpr void _rao_offset(
 }
 
 
+inline void _store_indirect_kochin_data(
+                                            Input*          input,
+                                            MeshGroup*      mesh_gp,
+                                            std::size_t     freq_index,
+                                            cusfloat        ang_freq,
+                                            cuscomplex*     intensities,
+                                            cuscomplex*     raos,
+                                            SimulationData* sim_data
+                                        )
+{
+    const std::size_t source_nodes_np      = static_cast<std::size_t>( mesh_gp->source_nodes_tnp );
+    const std::size_t bodies_np            = static_cast<std::size_t>( input->bodies_np );
+    const std::size_t dofs_np              = static_cast<std::size_t>( input->dofs_np );
+    const std::size_t heads_np             = static_cast<std::size_t>( input->heads_np );
+    const std::size_t kochin_heads_stride  = bodies_np * static_cast<std::size_t>( input->kochin_np );
+    const std::size_t kochin_rad_stride    = bodies_np * static_cast<std::size_t>( input->kochin_np );
+
+    cusfloat            wave_num    = w2k( ang_freq, input->water_depth, input->grav_acc );
+    KochinInterface     kochin(
+                                    mesh_gp->source_nodes[0],
+                                    wave_num,
+                                    input->water_depth,
+                                    0,
+                                    false
+                                );
+    std::vector<cuscomplex> pert_src( heads_np * source_nodes_np, cuscomplex( 0.0, 0.0 ) );
+
+    for ( std::size_t ih = 0; ih < heads_np; ++ih )
+    {
+        for ( std::size_t body_id = 0; body_id < bodies_np; ++body_id )
+        {
+            for ( int source_id = mesh_gp->source_nodes_cnp[body_id]; source_id < mesh_gp->source_nodes_cnp[body_id+1]; ++source_id )
+            {
+                std::size_t pert_idx = ih * source_nodes_np + static_cast<std::size_t>( source_id );
+                for ( std::size_t dof_id = 0; dof_id < dofs_np; ++dof_id )
+                {
+                    std::size_t rao_idx = ih * ( bodies_np * dofs_np ) + body_id * dofs_np + dof_id;
+                    std::size_t src_idx = dof_id * source_nodes_np + static_cast<std::size_t>( source_id );
+                    pert_src[pert_idx] += cuscomplex( 0.0, -ang_freq ) * raos[rao_idx] * intensities[src_idx];
+                }
+
+                pert_src[pert_idx] += intensities[( dofs_np + ih ) * source_nodes_np + static_cast<std::size_t>( source_id )];
+            }
+        }
+    }
+
+    std::size_t kochin_heads_offset = freq_index * static_cast<std::size_t>( sim_data->qtf_kochin_heads_np );
+    for ( std::size_t ih = 0; ih < heads_np; ++ih )
+    {
+        calculate_kochin_coefficients(
+                                        input,
+                                        mesh_gp,
+                                        &kochin,
+                                        &( pert_src[ih * source_nodes_np] ),
+                                        &( sim_data->qtf_kochin_pert_cos_freqs[kochin_heads_offset + ih * kochin_heads_stride] ),
+                                        &( sim_data->qtf_kochin_pert_sin_freqs[kochin_heads_offset + ih * kochin_heads_stride] )
+                                    );
+    }
+
+    std::size_t kochin_rad_offset = freq_index * static_cast<std::size_t>( sim_data->qtf_kochin_rad_np );
+    for ( std::size_t dof_id = 0; dof_id < dofs_np; ++dof_id )
+    {
+        calculate_kochin_coefficients(
+                                        input,
+                                        mesh_gp,
+                                        &kochin,
+                                        &( intensities[dof_id * source_nodes_np] ),
+                                        &( sim_data->qtf_kochin_rad_cos_freqs[kochin_rad_offset + dof_id * kochin_rad_stride] ),
+                                        &( sim_data->qtf_kochin_rad_sin_freqs[kochin_rad_offset + dof_id * kochin_rad_stride] )
+                                    );
+    }
+}
+
+
 /*****************************************************************/
 /*************** Define Frequency Solver class  ******************/
 /*****************************************************************/
@@ -128,7 +204,7 @@ void FrequencySolver<N, mode_pf>::_calculate_field_points_values(
                                                                     cusfloat    ang_freq 
                                                                 )
 {
-    if ( this->input->is_calc_mdrift )
+    if ( this->input->is_calc_mdrift || this->input->out_qtf_so_model == QTFSOModelE::INDIRECT )
     {
         // Calculate velocity field at Bernoulli points for QTF calculations
         this->kernel->template compute_fields<RDDQTFConfig>(
@@ -148,7 +224,7 @@ void FrequencySolver<N, mode_pf>::_calculate_field_points_values(
 
     }
 
-    if ( this->input->out_qtf_so_model == QTFSOModelE::DIRECT )
+    if ( this->input->out_qtf_so_model == QTFSOModelE::DIRECT || this->input->out_qtf_so_model == QTFSOModelE::INDIRECT )
     {
         if ( this->_qtf_fs_fields != nullptr )
         {
@@ -160,7 +236,7 @@ void FrequencySolver<N, mode_pf>::_calculate_field_points_values(
                                                                 );
         }
 
-        if ( this->_qtf_fs_wl_fields != nullptr )
+        if ( this->input->out_qtf_so_model == QTFSOModelE::DIRECT && this->_qtf_fs_wl_fields != nullptr )
         {
             this->kernel->template compute_fields<RDDQTFConfig>(
                                                                     freq_index,
@@ -306,7 +382,35 @@ void FrequencySolver<N, mode_pf>::calculate_second_order( void )
             MpiTimer freq_timer;
 
             // Calculate second order potential contribution
-            if ( i != j )
+            if ( this->input->out_qtf_so_model == QTFSOModelE::INDIRECT )
+            {
+                calculate_secord_force_indirect(
+                                                    this->input,
+                                                    this->mpi_config,
+                                                    this->mesh_gp,
+                                                    i,
+                                                    j,
+                                                    QTFTypeE::QTF_DIFF_CODE,
+                                                    this->_qtf_bern_fields,
+                                                    this->_qtf_fs_fields,
+                                                    this->_qtf_wl_fields,
+                                                    this->sim_data
+                                                );
+
+                calculate_secord_force_indirect(
+                                                    this->input,
+                                                    this->mpi_config,
+                                                    this->mesh_gp,
+                                                    i,
+                                                    j,
+                                                    QTFTypeE::QTF_SUM_CODE,
+                                                    this->_qtf_bern_fields,
+                                                    this->_qtf_fs_fields,
+                                                    this->_qtf_wl_fields,
+                                                    this->sim_data
+                                                );
+            }
+            else if ( i != j )
             {
                 if ( this->input->out_qtf_so_model == QTFSOModelE::PINKSTER )
                 {
@@ -322,23 +426,6 @@ void FrequencySolver<N, mode_pf>::calculate_second_order( void )
                                             );
                     }
                 }
-                else if ( this->input->out_qtf_so_model == QTFSOModelE::INDIRECT )
-                {
-                    if ( this->mpi_config->is_root( ) )
-                    {
-                        calculate_secord_force_indirect(
-                                                            this->input,
-                                                            this->mesh_gp,
-                                                            this->input->angfreqs[i],
-                                                            this->input->angfreqs[j],
-                                                            QTFTypeE::QTF_DIFF_CODE,
-                                                            this->sim_data->qtf_body_pot_gp,
-                                                            this->sim_data->qtf_fs_pot_gp,
-                                                            this->sim_data->qtf_wl_vel_x_gp,
-                                                            this->sim_data
-                                                        );
-                    }
-                }
                 else if ( this->input->out_qtf_so_model == QTFSOModelE::DIRECT )
                 {
                     // Solve radiation-diffraction problem for the current frequency
@@ -349,15 +436,15 @@ void FrequencySolver<N, mode_pf>::calculate_second_order( void )
                                                                                 this->_qtf_bern_fields,
                                                                                 this->_qtf_wl_fields,
                                                                                 this->_qtf_fs_fields,
-                                                                                this->_qtf_fs_fields_wl,
-                                                                                this->_qtf_annuli_fields
+                                                                                this->_qtf_fs_wl_fields,
+                                                                                &(this->_qtf_annuli_fields)
                                                                             );
-                    this->kernel->update_results_so( sim_data );
+                    this->kernel->template update_results_so<QTFTypeE::QTF_DIFF_CODE>( sim_data );
 
                     calculate_diffraction_forces_lin(
-                                                        this->_input,
-                                                        this->_mpi_config,
-                                                        this->_mesh_gp,
+                                                        this->input,
+                                                        this->mpi_config,
+                                                        this->mesh_gp,
                                                         sim_data->panels_potential_so,
                                                         std::abs( this->input->angfreqs[i] - this->input->angfreqs[j] ),
                                                         sim_data->potential_secord_force,
@@ -404,6 +491,32 @@ void FrequencySolver<N, mode_pf>::calculate_second_order( void )
                 }
             }
 
+            if ( this->mpi_config->is_root( ) && this->input->out_qtf_so_model == QTFSOModelE::INDIRECT && this->input->out_qtf_comp )
+            {
+                if ( i != j )
+                {
+                    qtf_distribute_matrix_data(
+                                                    this->input,
+                                                    i,
+                                                    j,
+                                                    this->sim_data->qtf_diff_secord_force,
+                                                    this->sim_data->qtf_diff_secord_force_freqs,
+                                                    1,
+                                                    0
+                                                );
+                }
+
+                qtf_distribute_matrix_data(
+                                                this->input,
+                                                i,
+                                                j,
+                                                this->sim_data->qtf_sum_secord_force,
+                                                this->sim_data->qtf_sum_secord_force_freqs,
+                                                1,
+                                                0
+                                            );
+            }
+
             this->_calculate_and_distribute_qtf<QTFTypeE::QTF_DIFF_CODE>( i, j );
             this->_calculate_and_distribute_qtf<QTFTypeE::QTF_SUM_CODE>( i, j );
 
@@ -411,6 +524,10 @@ void FrequencySolver<N, mode_pf>::calculate_second_order( void )
             LOG_TASK_TIME( freq, freq_timer )
         }
     }
+
+    // Save second order forces to disk
+    this->_save_qtf<QTFTypeE::QTF_DIFF_CODE>( );
+    
 }
 
 
@@ -427,17 +544,16 @@ void FrequencySolver<N, mode_pf>::_calculate_far_field_diffraction(
     cusfloat    g               = this->input->grav_acc;
     cusfloat    h               = this->input->water_depth;   
     std::size_t heads_offset    = freq_index_i * this->input->heads_np * QTF_FAR_N;
-    cuscomplex  in              = cuscomplex( 1.0, 0.0 );
     cuscomplex  int_mod         = cuscomplex( 0.0, 0.0 );
     cuscomplex  int_value_cos   = cuscomplex( 0.0, 0.0 );
     cuscomplex  int_value_sin   = cuscomplex( 0.0, 0.0 );
     cusfloat    k               = this->input->wave_numbers[freq_index_i];
-    cusfloat    nu              = pow2s( w ) / g;
     PanelGeom*  panel           = nullptr;
     cusfloat    rho             = 0.0;
     std::size_t source_offset   = 0;
     cusfloat    theta           = 0.0;
     cusfloat    w               = this->input->angfreqs[freq_index_i];
+    cusfloat    nu              = pow2s( w ) / g;
 
     // Define scaling factor
     cuscomplex  sf              = cuscomplex( 0.0, -g * a / w );
@@ -445,13 +561,13 @@ void FrequencySolver<N, mode_pf>::_calculate_far_field_diffraction(
     // Calculate wave factor c
     c = -pow2s( k ) / ( h * ( pow2s( k ) - pow2s( nu ) ) + nu );
 
-    for ( std::size_t ih=0; ih<this->input->heads_np; ih++ )
+    for ( std::size_t ih=0; ih<static_cast<std::size_t>(this->input->heads_np); ih++ )
     {
         ep = 1.0;
         source_offset = this->mesh_gp->panels_tnp * ih;
         for ( std::size_t n=0; n<QTF_FAR_N; n++ )
         {
-            for ( std::size_t i=0; i<this->mesh_gp->panels_tnp; i++ )
+            for ( std::size_t i=0; i<static_cast<std::size_t>(this->mesh_gp->panels_tnp); i++ )
             {
                 panel           = this->mesh_gp->panels[i];
                 int_value_cos   = cuscomplex( 0.0, 0.0 );
@@ -466,7 +582,7 @@ void FrequencySolver<N, mode_pf>::_calculate_far_field_diffraction(
                     ccf = cosh_cosh_factor( k, h, panel->center[2] );
 
                     // Calculate integral value for the current panel
-                    int_mod       = this->sim_data->intensities[source_offset + i] * ccf * bessel_j( n, k * rho ) * panel->area;
+                    int_mod       = this->sim_data->intensities[source_offset + i] * ccf * std::cyl_bessel_j( static_cast<cusfloat>( n ), k * rho ) * panel->area;
                     int_value_cos += int_mod * cos( n * theta );
                     int_value_sin += int_mod * sin( n * theta );
                 }
@@ -493,13 +609,13 @@ void FrequencySolver<N, mode_pf>::_calculate_far_field_incident(
     cusfloat    ep              = 0.0;
     cusfloat    g               = this->input->grav_acc;
     std::size_t heads_offset    = freq_index_i * this->input->heads_np * QTF_FAR_N;
-    cuscomplex  in              = cuscomples( 1.0, 0.0 );
+    cuscomplex  in              = cuscomplex( 1.0, 0.0 );
     cusfloat    w               = this->input->angfreqs[freq_index_i];
 
     // Define scaling factor
     cuscomplex  sf              = cuscomplex( 0.0, -g * a / w );
 
-    for ( std::size_t ih=0; ih<this->input->heads_np; ih++ )
+    for ( std::size_t ih=0; ih<static_cast<std::size_t>(this->input->heads_np); ih++ )
     {
         ep = 1.0;
         
@@ -635,9 +751,26 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
                     );
     };
 
-    if ( this->input->out_sources && freq_regime == FreqRegimeE::REGULAR )
+    const bool need_source_history = ( freq_regime == FreqRegimeE::REGULAR )
+                                    &&
+                                    ( this->input->out_sources || this->input->out_qtf_so_model == QTFSOModelE::INDIRECT );
+
+    if ( need_source_history )
     {
         reduce_field( this->sim_data->intensities, this->sim_data->intensities_p0 );
+    }
+
+    if ( this->mpi_config->is_root( ) && freq_regime == FreqRegimeE::REGULAR && this->input->out_qtf_so_model == QTFSOModelE::INDIRECT )
+    {
+        _store_indirect_kochin_data(
+                                        this->input,
+                                        this->mesh_gp,
+                                        freq_index,
+                                        ang_freq,
+                                        this->sim_data->intensities_p0,
+                                        this->sim_data->raos,
+                                        this->sim_data
+                                    );
     }
 
     if ( this->input->out_potential && freq_regime == FreqRegimeE::REGULAR )
@@ -881,8 +1014,8 @@ void FrequencySolver<N, mode_pf>::_calculate_mean_drift(
 
     if ( this->input->out_qtf_so_model == QTFSOModelE::DIRECT )
     {
-        this->_calculate_far_field_incident(  )
-        this->_calculate_far_field_diffraction(  )
+        this->_calculate_far_field_incident( freq_index );
+        this->_calculate_far_field_diffraction( freq_index );
     }
 
 }
@@ -1755,7 +1888,7 @@ void FrequencySolver<N, mode_pf>::_initialize_field_data( void )
     MpiTimer fields_timer;
 
     // Initialize QTF waterline field points data container
-    if ( this->input->is_calc_mdrift )
+    if ( this->input->is_calc_mdrift || this->input->out_qtf_so_model == QTFSOModelE::INDIRECT )
     {
         this->_qtf_bern_fields  = new RadDiffData<cuscomplex, RDDQTFConfig>(
                                                                                 this->mpi_config,
@@ -1778,7 +1911,7 @@ void FrequencySolver<N, mode_pf>::_initialize_field_data( void )
         
     }
 
-    if ( this->input->out_qtf_so_model == QTFSOModelE::DIRECT )
+            if ( this->input->out_qtf_so_model == QTFSOModelE::DIRECT || this->input->out_qtf_so_model == QTFSOModelE::INDIRECT )
     {
         if ( this->_qtf_fs_fields == nullptr && this->mesh_fs_qtf_gp != nullptr )
         {
@@ -1792,7 +1925,7 @@ void FrequencySolver<N, mode_pf>::_initialize_field_data( void )
                                                                             );
         }
 
-        if ( this->_qtf_fs_wl_fields == nullptr && this->mesh_fs_qtf_gp != nullptr )
+        if ( this->input->out_qtf_so_model == QTFSOModelE::DIRECT && this->_qtf_fs_wl_fields == nullptr && this->mesh_fs_qtf_gp != nullptr )
         {
             this->_qtf_fs_wl_fields = new RadDiffData<cuscomplex, RDDQTFConfig>(
                                                                                     this->mpi_config,
@@ -1804,60 +1937,81 @@ void FrequencySolver<N, mode_pf>::_initialize_field_data( void )
                                                                                 );
         }
 
-        this->_qtf_annuli_fields.clear( );
-        this->_qtf_annuli_fields.reserve( this->_qtf_annuli_meshes.size( ) );
+        if ( this->input->out_qtf_so_model == QTFSOModelE::DIRECT )
+        {
+            this->_qtf_annuli_fields.clear( );
+            this->_qtf_annuli_fields.reserve( this->_qtf_annuli_meshes.size( ) );
         
-        std::size_t fp_np_max = 0;
-        for ( Mesh* annulus_mesh : this->_qtf_annuli_meshes )
-        {
-            fp_np_max = std::max( fp_np_max, static_cast<std::size_t>( annulus_mesh->nodes_np ) );
-        }
-
-        cusfloat* field_points = nullptr;
-        if ( fp_np_max > 0 )
-        {
-            field_points = generate_empty_vector<cusfloat>( fp_np_max * 3 );
-        }
-
-        for ( std::size_t annulus_idx = 0; annulus_idx < this->_qtf_annuli_meshes.size( ); ++annulus_idx )
-        {
-            Mesh* annulus_mesh = this->_qtf_annuli_meshes[annulus_idx];
-            const std::size_t fp_np = static_cast<std::size_t>( annulus_mesh->nodes_np );
-            for ( std::size_t i=0; i<fp_np; ++i )
+            std::size_t fp_np_max = 0;
+            for ( Mesh* annulus_mesh : this->_qtf_annuli_meshes )
             {
-                field_points[ 3*i + 0 ] = annulus_mesh->x[ i ];
-                field_points[ 3*i + 1 ] = annulus_mesh->y[ i ];
-                field_points[ 3*i + 2 ] = annulus_mesh->z[ i ];
+                fp_np_max = std::max( fp_np_max, static_cast<std::size_t>( annulus_mesh->nodes_np ) );
             }
 
-            cusfloat* annulus_weights = nullptr;
-            if ( annulus_idx < this->_qtf_annuli_weights.size( ) && !this->_qtf_annuli_weights[annulus_idx].empty( ) )
+            cusfloat* field_points = nullptr;
+            if ( fp_np_max > 0 )
             {
-                annulus_weights = this->_qtf_annuli_weights[annulus_idx].data( );
+                field_points = generate_empty_vector<cusfloat>( fp_np_max * 3 );
             }
 
-            this->_qtf_annuli_fields.emplace_back(
-                                                        new RadDiffData<cuscomplex, RDDQTFConfig>(
-                                                                                                    this->mpi_config,
-                                                                                                    field_points,
-                                                                                                    annulus_weights,
-                                                                                                    fp_np,
-                                                                                                    this->input->angfreqs_np,
-                                                                                                    this->input->heads_np,
-                                                                                                    this->input->dofs_np,
-                                                                                                    false
-                                                                                                )
-                                                    );
-        }
+            for ( std::size_t annulus_idx = 0; annulus_idx < this->_qtf_annuli_meshes.size( ); ++annulus_idx )
+            {
+                Mesh* annulus_mesh = this->_qtf_annuli_meshes[annulus_idx];
+                const std::size_t fp_np = static_cast<std::size_t>( annulus_mesh->nodes_np );
+                for ( std::size_t i=0; i<fp_np; ++i )
+                {
+                    field_points[ 3*i + 0 ] = annulus_mesh->x[ i ];
+                    field_points[ 3*i + 1 ] = annulus_mesh->y[ i ];
+                    field_points[ 3*i + 2 ] = annulus_mesh->z[ i ];
+                }
 
-        if ( field_points != nullptr )
-        {
-            mkl_free( field_points );
-        }
+                cusfloat* annulus_weights = nullptr;
+                if ( annulus_idx < this->_qtf_annuli_weights.size( ) && !this->_qtf_annuli_weights[annulus_idx].empty( ) )
+                {
+                    annulus_weights = this->_qtf_annuli_weights[annulus_idx].data( );
+                }
 
-        if ( this->kernel != nullptr )
+                this->_qtf_annuli_fields.emplace_back(
+                                                            new RadDiffData<cuscomplex, RDDQTFConfig>(
+                                                                                                        this->mpi_config,
+                                                                                                        field_points,
+                                                                                                        annulus_weights,
+                                                                                                        fp_np,
+                                                                                                        this->input->angfreqs_np,
+                                                                                                        this->input->heads_np,
+                                                                                                        this->input->dofs_np,
+                                                                                                        false
+                                                                                                    )
+                                                        );
+            }
+
+            if ( field_points != nullptr )
+            {
+                mkl_free( field_points );
+            }
+
+            if ( this->kernel != nullptr )
+            {
+                this->kernel->set_qtf_annuli_fields( &(this->_qtf_annuli_fields) );
+            }
+        }
+    }
+
+    if ( this->input->out_qtf_so_model == QTFSOModelE::INDIRECT && this->mpi_config->is_root( ) )
+    {
+        std::size_t kochin_heads_np = static_cast<std::size_t>( this->input->heads_np * this->input->bodies_np * this->input->kochin_np );
+        std::size_t kochin_rad_np   = static_cast<std::size_t>( this->input->dofs_np * this->input->bodies_np * this->input->kochin_np );
+        std::size_t freqs_np        = static_cast<std::size_t>( this->input->angfreqs_np );
+
+        this->sim_data->qtf_kochin_heads_np = static_cast<int>( kochin_heads_np );
+        this->sim_data->qtf_kochin_rad_np   = static_cast<int>( kochin_rad_np );
+
+        if ( this->sim_data->qtf_kochin_pert_cos_freqs == nullptr )
         {
-            this->kernel->set_qtf_annuli_fields( &(this->_qtf_annuli_fields) );
+            this->sim_data->qtf_kochin_pert_cos_freqs = generate_empty_vector<cuscomplex>( kochin_heads_np * freqs_np );
+            this->sim_data->qtf_kochin_pert_sin_freqs = generate_empty_vector<cuscomplex>( kochin_heads_np * freqs_np );
+            this->sim_data->qtf_kochin_rad_cos_freqs  = generate_empty_vector<cuscomplex>( kochin_rad_np * freqs_np );
+            this->sim_data->qtf_kochin_rad_sin_freqs  = generate_empty_vector<cuscomplex>( kochin_rad_np * freqs_np );
         }
     }
 
@@ -2100,78 +2254,94 @@ void FrequencySolver<N, mode_pf>::_prepare_results_folder( void )
 }
 
 template<std::size_t N, int mode_pf>
+template<QTFTypeE qtf_type>
 void FrequencySolver<N, mode_pf>::_save_qtf( void ) const
 {
     if ( this->mpi_config->is_root( ) )
     {
-        // Save data into the disk file
-        this->output->save_qtf_format( 
-                                        "qtf_diff",
-                                        this->sim_data->qtf_diff_freqs
-                                    );
+        const char* qtf_name = nullptr;
+        cuscomplex* qtf_freqs = nullptr;
 
-        this->output->save_qtf_format(
-                                        "qtf_sum",
-                                        this->sim_data->qtf_sum_freqs
-                                    );
+        if constexpr ( qtf_type == QTFTypeE::QTF_DIFF_CODE )
+        {
+            qtf_name = "qtf_diff";
+            qtf_freqs = this->sim_data->qtf_diff_freqs;
+        }
+        else
+        {
+            qtf_name = "qtf_sum";
+            qtf_freqs = this->sim_data->qtf_sum_freqs;
+        }
+
+        // Save data into the disk file
+        this->output->save_qtf_format( qtf_name, qtf_freqs );
 
         if ( this->input->out_qtf_comp )
         {
-            // Storage QTF acceleration term
-            this->output->save_qtf_format(
-                                            "qtf_diff_acc",
-                                            this->sim_data->qtf_diff_acc_freqs
-                                        );
-            
-            this->output->save_qtf_format(
-                                            "qtf_sum_acc",
-                                            sim_data->qtf_sum_acc_freqs
-                                        );
+            if constexpr ( qtf_type == QTFTypeE::QTF_DIFF_CODE )
+            {
+                // Storage QTF acceleration term
+                this->output->save_qtf_format(
+                                                "qtf_diff_acc",
+                                                this->sim_data->qtf_diff_acc_freqs
+                                            );
 
-            // Storage QTF bernoulli term
-            this->output->save_qtf_format(
-                                            "qtf_diff_bern",
-                                            sim_data->qtf_diff_bern_freqs
-                                        );
-            
-            this->output->save_qtf_format(
-                                            "qtf_sum_bern",
-                                            sim_data->qtf_sum_bern_freqs
-                                        );
+                // Storage QTF bernoulli term
+                this->output->save_qtf_format(
+                                                "qtf_diff_bern",
+                                                this->sim_data->qtf_diff_bern_freqs
+                                            );
 
-            // Storage QTF momentum term
-            this->output->save_qtf_format(
-                                            "qtf_diff_mom",
-                                            this->sim_data->qtf_diff_mom_freqs
-                                        );
-            
-            this->output->save_qtf_format(
-                                            "qtf_sum_mom",
-                                            this->sim_data->qtf_sum_mom_freqs
-                                        );
+                // Storage QTF momentum term
+                this->output->save_qtf_format(
+                                                "qtf_diff_mom",
+                                                this->sim_data->qtf_diff_mom_freqs
+                                            );
 
-            // Storage QTF second order potential term
-            this->output->save_qtf_format(
-                                            "qtf_diff_sop",
-                                            this->sim_data->qtf_diff_secord_force_freqs
-                                        );
-            
-            this->output->save_qtf_format(
-                                            "qtf_sum_sop",
-                                            this->sim_data->qtf_sum_secord_force_freqs
-                                        );
+                // Storage QTF second order potential term
+                this->output->save_qtf_format(
+                                                "qtf_diff_sop",
+                                                this->sim_data->qtf_diff_secord_force_freqs
+                                            );
 
-            // Storage QTF wl term
-            this->output->save_qtf_format(
-                                            "qtf_diff_wl",
-                                            this->sim_data->qtf_diff_wl_freqs
-                                        );
-            
-            this->output->save_qtf_format(
-                                            "qtf_sum_wl",
-                                            this->sim_data->qtf_sum_wl_freqs
-                                        );
-            
+                // Storage QTF wl term
+                this->output->save_qtf_format(
+                                                "qtf_diff_wl",
+                                                this->sim_data->qtf_diff_wl_freqs
+                                            );
+            }
+            else
+            {
+                // Storage QTF acceleration term
+                this->output->save_qtf_format(
+                                                "qtf_sum_acc",
+                                                this->sim_data->qtf_sum_acc_freqs
+                                            );
+
+                // Storage QTF bernoulli term
+                this->output->save_qtf_format(
+                                                "qtf_sum_bern",
+                                                this->sim_data->qtf_sum_bern_freqs
+                                            );
+
+                // Storage QTF momentum term
+                this->output->save_qtf_format(
+                                                "qtf_sum_mom",
+                                                this->sim_data->qtf_sum_mom_freqs
+                                            );
+
+                // Storage QTF second order potential term
+                this->output->save_qtf_format(
+                                                "qtf_sum_sop",
+                                                this->sim_data->qtf_sum_secord_force_freqs
+                                            );
+
+                // Storage QTF wl term
+                this->output->save_qtf_format(
+                                                "qtf_sum_wl",
+                                                this->sim_data->qtf_sum_wl_freqs
+                                            );
+            }
         }
     }
 }

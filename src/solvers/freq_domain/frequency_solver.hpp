@@ -20,6 +20,9 @@
 
 #pragma once
 
+// Include general usage scientific libraries
+#include <cmath>
+
 // Include local modules
 #include "../../config.hpp"
 #include "../../containers/field_mesh_data.hpp"
@@ -33,6 +36,7 @@
 #include "../../inout/output.hpp"
 #include "../../mesh/mesh_group.hpp"
 #include "../../tools.hpp"
+#include "../../waves/waves_common.hpp"
 
 
 // Define maximum pipe out message width to align 
@@ -145,6 +149,7 @@ private:
 
     void _prepare_results_folder( );
 
+    template<QTFTypeE qtf_type>
     void _save_qtf( void ) const;
 
 public:

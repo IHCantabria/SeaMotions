@@ -289,7 +289,6 @@ void _formulation_kernel_wave(
     
 
     // Declare local auxiliar variables
-    cusfloat    log_sing_val            = 0.0;
     cuscomplex  wave_fcn_value          = cuscomplex( 0.0, 0.0 );
     cuscomplex  wave_fcn_dn_sf_value    = cuscomplex( 0.0, 0.0 );
     cuscomplex  wave_fcn_dn_pf_value    = cuscomplex( 0.0, 0.0 );
@@ -898,7 +897,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_rhs(
 
 
 template<std::size_t N, int mode_pf>
-template<int GP, typename GwfInterf, typename RhsFunc, typename IntegrateFunc>
+template<int GP, int mode_fslid, typename GwfInterf, typename RhsFunc, typename IntegrateFunc>
 void FormulationKernelBackend<N, mode_pf>::_process_qtf_rhs_panels(
                                                                         RDDQC*          panel_fields,
                                                                         GwfInterf&      gwf_interf_local,
@@ -912,53 +911,46 @@ void FormulationKernelBackend<N, mode_pf>::_process_qtf_rhs_panels(
                                                                         cuscomplex*     qb_rhs
                                                                     )
 {
-    int         body_id         = 0;
-    int         col_count       = 0;
-    int         global_index    = 0;
     std::size_t heads_offset    = 0;
     cuscomplex  int_result      = cuscomplex( 0.0, 0.0 );
     PanelGeom*  panel_j         = nullptr;
     std::size_t rhs_pos         = 0;
-    int         row_count       = 0;
     SourceNode  source_i        = SourceNode( );
 
     for ( std::size_t i=0; i<panel_fields->panel_data.size( ); i++ )
     {
-        global_index = i + panel_fields->get_start_pos( );
+        auto* panel_data = &( panel_fields->panel_data[i] );
 
-        source_i.normal_vec[0] = panel_fields->panel_data[i]->normal_vec[0];
-        source_i.normal_vec[1] = panel_fields->panel_data[i]->normal_vec[1];
-        source_i.normal_vec[2] = panel_fields->panel_data[i]->normal_vec[2];
+        source_i.normal_vec = panel_data->panel_geom->normal_vec;
+        source_i.panel      = panel_data->panel_geom;
 
-        gwf_interf_local.set_source_i( source_i, 1.0 );
+        gwf_interf_local.set_source_i( &source_i, 1.0 );
 
-        assert( panel_fields->panel_data[i]->field_points_np == NUM_GP2 );
-        for ( std::size_t id=0; id<panel_fields->panel_data[i]->field_points_np; id++ )
+        assert( panel_data->field_points_np == GP );
+        for ( std::size_t id=0; id<panel_data->field_points_np; id++ )
         {
-            field_points_x[id]   = panel_fields->panel_data[i]->field_points_x[id];
-            field_points_y[id]   = panel_fields->panel_data[i]->field_points_y[id];
-            field_points_z[id]   = panel_fields->panel_data[i]->field_points_z[id];
+            field_points_x[id]   = panel_data->field_points[ 3 * id + 0 ];
+            field_points_y[id]   = panel_data->field_points[ 3 * id + 1 ];
+            field_points_z[id]   = panel_data->field_points[ 3 * id + 2 ];
+            field_points_d[id]   = 0.0;
         }
 
-        body_id     = this->_mesh_gp->get_body_id( global_index );
-        row_count   = 0;
-
-        for ( std::size_t j=this->_solver->start_row_0; j<this->_solver->end_row_0; j++ )
+        for ( std::size_t j=static_cast<std::size_t>(this->_solver->start_row_0); j<static_cast<std::size_t>(this->_solver->end_row_0); j++ )
         {
             panel_j = this->_mesh_gp->source_nodes[j]->panel;
             gwf_interf_local.set_source_j( this->_mesh_gp->source_nodes[j] );
 
-            gwf_interf_local.template operator()<GWFcnsInterfaceT<GP>>(
-                                                                            field_points_d,
-                                                                            field_points_d,
-                                                                            field_points_x,
-                                                                            field_points_y,
-                                                                            field_points_z
-                                                                        );
+            gwf_interf_local.template operator()<wave_term_integral<GP, G_ON, DGDR_ON, DGDZ_ON, mode_fslid>>(
+                                                                                                                field_points_d,
+                                                                                                                field_points_d,
+                                                                                                                field_points_x,
+                                                                                                                field_points_y,
+                                                                                                                field_points_z
+                                                                                                            );
 
-            if ( global_index == static_cast<int>( j ) )
+            if ( panel_data->panel_geom == panel_j )
             {
-                for ( std::size_t id=0; id<panel_fields->panel_data[i]->field_points_np; id++ )
+                for ( std::size_t id=0; id<panel_data->field_points_np; id++ )
                 {
                     gwf_interf_local.dG_dx[id] = 0.0;
                     gwf_interf_local.dG_dy[id] = 0.0;
@@ -966,24 +958,21 @@ void FormulationKernelBackend<N, mode_pf>::_process_qtf_rhs_panels(
                 }
             }
 
-            rhs_func( panel_fields->panel_data[i], panel_j, gwf_interf_local, mode_wl, body_id );
+            rhs_func( panel_data, panel_j, gwf_interf_local, mode_wl, panel_data->body_id );
 
-            for ( std::size_t ih1=0; ih1<this->_input->heads_np; ih1++ )
+            for ( std::size_t ih1=0; ih1<static_cast<std::size_t>(this->_input->heads_np); ih1++ )
             {
-                for ( std::size_t ih2=0; ih2<this->_heads_np; ih2++ )
+                for ( std::size_t ih2=0; ih2<static_cast<std::size_t>(this->_input->heads_np); ih2++ )
                 {
-                    heads_offset = ( ih1 * this->_heads_np + ih2 ) * panel_fields->panel_data[i]->field_points_np;
-                    integrate( int_result, heads_offset, panel_fields->panel_data[i]->panel_geom );
+                    heads_offset = ( ih1 * this->_input->heads_np + ih2 ) * panel_data->field_points_np;
+                    int_result   = 0.0;
+                    integrate( int_result, heads_offset, panel_data->panel_geom );
 
-                    rhs_pos                   = ( ih1 * this->_heads_np + ih2 ) * this->_pf_gp->sysmat_nrows + j;
+                    rhs_pos                   = ( ih1 * this->_input->heads_np + ih2 ) * this->_pf_gp->sysmat_nrows + j;
                     this->_ppf_rhs[rhs_pos]  += int_result;
                 }
             }
-
-            row_count++;
         }
-
-        col_count++;
     }
 }
 
@@ -1049,13 +1038,13 @@ void FormulationKernelBackend<N, mode_pf>::_process_qtf_rhs_annuli(
             PanelGeom* panel_j = this->_mesh_gp->source_nodes[j]->panel;
             gwf_interf_local.set_source_j( this->_mesh_gp->source_nodes[j] );
 
-            gwf_interf_local.template operator()<GWFcnsInterfaceT<1>>(
-                                                                            field_points_d,
-                                                                            field_points_d,
-                                                                            field_points_x,
-                                                                            field_points_y,
-                                                                            field_points_z
-                                                                        );
+            gwf_interf_local.template operator( )<wave_term_integral<1, G_ON, DGDR_ON, DGDZ_ON, ON>>(
+                                                                                                                field_points_d,
+                                                                                                                field_points_d,
+                                                                                                                field_points_x,
+                                                                                                                field_points_y,
+                                                                                                                field_points_z
+                                                                                                            );
 
             rhs_func( panel_data, panel_j, gwf_interf_local, false, 0 );
 
@@ -1096,7 +1085,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_rhs_so(
                                                             QTFTypeE                        qtf_type,
                                                             std::size_t                     freq_i,
                                                             std::size_t                     freq_j,
-                                                            cuscomplex                      raos_hist,
+                                                            cuscomplex*                      raos_hist,
                                                             RDDQC*                          qtf_body_fields,
                                                             RDDQC*                          qtf_body_fields_wl,
                                                             RDDQC*                          qtf_fs_fields,
@@ -1122,7 +1111,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_rhs_so(
                                                             QTFTypeE                        qtf_type,
                                                             std::size_t                     freq_i,
                                                             std::size_t                     freq_j,
-                                                            cuscomplex                      raos_hist,
+                                                            cuscomplex*                      raos_hist,
                                                             RDDQC*                          qtf_body_fields,
                                                             RDDQC*                          qtf_body_fields_wl,
                                                             RDDQC*                          qtf_fs_fields,
@@ -1137,7 +1126,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_rhs_so(
     cusfloat    field_points_z[NUM_GP2];
 
     // Allocate space for intermediate variables for the body rhs calculation
-    std::size_t qb_size     = this->_input->heads_np * this->_heads_np * qtf_body_fields->panel_data[0]->field_points_np;
+    std::size_t qb_size     = this->_input->heads_np * this->_input->heads_np * qtf_body_fields->panel_data[0].field_points_np;
     cuscomplex* qb_rhs      = generate_empty_vector<cuscomplex>( qb_size );
 
     // Clean rhs vector
@@ -1209,7 +1198,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_rhs_so(
 
     auto integrate_2d = [&](cuscomplex& int_out, std::size_t offset, PanelGeom* panel_geom)
     {
-        gauss2d_loop<NGP>(
+        gauss2d_loop<NUM_GP2>(
                                 int_out,
                                 [&](int idf){ return qb_rhs[offset + idf]; },
                                 panel_geom
@@ -1218,30 +1207,30 @@ void FormulationKernelBackend<N, mode_pf>::_build_rhs_so(
 
     auto integrate_1d = [&](cuscomplex& int_out, std::size_t offset, PanelGeom* panel_geom)
     {
-        gauss1d_loop<NGP>(
+        gauss1d_loop<NUM_GP>(
                                 int_out,
-                                [&](int idf){ return qb_rhs[offset + idf]; },
+                                qb_rhs + offset,
                                 panel_geom->len_wl
                             );
     };
 
-    this->_process_qtf_rhs_panels<NUM_GP2>(
-                                                qtf_body_fields,
-                                                this->_gwfcns_interf_qb,
-                                                qb_rhs_func,
-                                                integrate_2d,
-                                                false,
-                                                field_points_d,
-                                                field_points_x,
-                                                field_points_y,
-                                                field_points_z,
-                                                qb_rhs
-                                        );
+    this->_process_qtf_rhs_panels<NUM_GP2, OFF>(
+                                                    qtf_body_fields,
+                                                    this->_gwfcns_interf_qb,
+                                                    qb_rhs_func,
+                                                    integrate_2d,
+                                                    false,
+                                                    field_points_d,
+                                                    field_points_x,
+                                                    field_points_y,
+                                                    field_points_z,
+                                                    qb_rhs
+                                            );
     MPI_Barrier( MPI_COMM_WORLD );
 
-    this->_process_qtf_rhs_panels<NUM_GP>(
+    this->_process_qtf_rhs_panels<NUM_GP, ON>(
                                                 qtf_body_fields_wl,
-                                                this->_gwfcns_interf_qb_wl,
+                                                this->_gwfcns_interf_wl,
                                                 qb_rhs_func,
                                                 integrate_1d,
                                                 true,
@@ -1253,7 +1242,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_rhs_so(
                                         );
     MPI_Barrier( MPI_COMM_WORLD );
 
-    this->_process_qtf_rhs_panels<NUM_GP2>(
+    this->_process_qtf_rhs_panels<NUM_GP2, ON>(
                                                 qtf_fs_fields,
                                                 this->_gwfcns_interf_qf,
                                                 qf_rhs_func,
@@ -1266,9 +1255,9 @@ void FormulationKernelBackend<N, mode_pf>::_build_rhs_so(
                                                 qb_rhs
                                         );
     
-    this->_process_qtf_rhs_panels<NUM_GP>(
+    this->_process_qtf_rhs_panels<NUM_GP, ON>(
                                                 qtf_body_fields_wl,
-                                                this->_gwfcns_interf_qf_wl,
+                                                this->_gwfcns_interf_wl,
                                                 qf_rhs_func,
                                                 integrate_1d,
                                                 true,
@@ -1279,9 +1268,9 @@ void FormulationKernelBackend<N, mode_pf>::_build_rhs_so(
                                                 qb_rhs
                                         );
 
-    this->_process_qtf_rhs_panels<NUM_GP>(
+    this->_process_qtf_rhs_panels<NUM_GP, ON>(
                                                 qtf_fs_fields_wl,
-                                                this->_gwfcns_interf_qf_wl,
+                                                this->_gwfcns_interf_wl,
                                                 qf_rhs_func,
                                                 integrate_1d,
                                                 true,
@@ -1320,7 +1309,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_rhs_so(
     // Add Far Field contribution to the rhs
     if ( this->_mpi_config->is_root( ) )
     {
-        this->_process_far_field( this->_ppf_rhs );
+        this->_process_far_field( qtf_type, freq_i, freq_j, this->_ppf_rhs );
     }
 
     // Add all processors contributions to the rhs vector
@@ -1361,7 +1350,6 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
     cuscomplex  int_dn_sf_value         = cuscomplex( 0.0, 0.0 );
     cuscomplex  int_dn_pf_value         = cuscomplex( 0.0, 0.0 );
     cuscomplex  int_scale_f             = cuscomplex( 1.0, 0.0 );
-    cusfloat    log_sing_val            = 0.0;
     PanelGeom*  panel_j                 = nullptr;
     int         row_count               = 0;
     SourceNode* source_i                = nullptr;
@@ -2672,7 +2660,7 @@ template<QTFTypeE qtf_type>
 void FormulationKernelBackend<N, mode_pf>::solve_so( 
                                                         std::size_t                 freq_i,
                                                         std::size_t                 freq_j,
-                                                        cusfloat*                   raos_hist,
+                                                        cuscomplex*                 raos_hist,
                                                         RDDQC*                      qtf_body_fields,
                                                         RDDQC*                      qtf_body_fields_wl,
                                                         RDDQC*                      qtf_fs_fields,
@@ -2683,13 +2671,13 @@ void FormulationKernelBackend<N, mode_pf>::solve_so(
     // Compute wave frequency depending on the QTF type
     static_assert( ( qtf_type == QTFTypeE::QTF_DIFF_CODE ) || ( qtf_type == QTFTypeE::QTF_SUM_CODE ), "Invalid QTF type" );
     cusfloat w = 0.0;
-    if constexpr( QTFTypeE::QTF_DIFF_CODE )
+    if constexpr( qtf_type == QTFTypeE::QTF_DIFF_CODE )
     {
-        w = std::abs( this->_input->ang_freqs[freq_i] - this->_input->ang_freqs[freq_j] );
+        w = std::abs( this->_input->angfreqs[freq_i] - this->_input->angfreqs[freq_j] );
     }
     else
     {
-        w = this->_input->ang_freqs[freq_i] + this->_input->ang_freqs[freq_j];
+        w = this->_input->angfreqs[freq_i] + this->_input->angfreqs[freq_j];
     }
 
     // Recalculate steady part of the system matrixes if required
@@ -2774,13 +2762,13 @@ void FormulationKernelBackend<N, mode_pf>::_process_far_field(
     }
 
     // Add far field contributions to the RHS vector
-    for ( std::size_t ih0=0; ih0<this->_input->heads_np; ih0++ )
+    for ( std::size_t ih0=0; ih0<static_cast<std::size_t>(this->_input->heads_np); ih0++ )
     {
-        for ( std::size_t ih1=0; ih1<this->_input->heads_np; ih1++ )
+        for ( std::size_t ih1=0; ih1<static_cast<std::size_t>(this->_input->heads_np); ih1++ )
         {
             std::size_t local_index     = ih0 * this->_input->heads_np + ih1;
 
-            for ( std::size_t i=0; i<this->_mesh_gp->panels_tnp; i++ )
+            for ( std::size_t i=0; i<static_cast<std::size_t>(this->_mesh_gp->panels_tnp); i++ )
             {
                 std::size_t global_index    = ( 
                                                     ih0 * this->_input->heads_np * this->_mesh_gp->panels_tnp

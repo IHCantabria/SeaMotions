@@ -444,7 +444,7 @@ SimulationData::SimulationData(
         this->wave_diffrac_p0       = generate_empty_vector<cuscomplex>( wave_exc_np );
         this->wave_exc_p0           = generate_empty_vector<cuscomplex>( wave_exc_np );
 
-        if ( this->_input->out_sources )
+        if ( this->_input->out_sources || this->_input->out_qtf_so_model == QTFSOModelE::INDIRECT )
         {
             this->intensities_p0 = generate_empty_vector<cuscomplex>( this->fields_np );
         }

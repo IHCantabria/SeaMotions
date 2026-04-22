@@ -66,7 +66,7 @@ private:
     int                                         _steady_mat_type        = 0;        // Steady matrix type to be used in the formulation ( 0: REGULAR+Lf, 1: HF )
     MLGCmpx*                                    _sf_gp                  = nullptr;  // Group of matrix data to storage Source formulation data (Colum-Major arranged data)
     const std::vector<RDDQC*>*                  _qtf_annuli_fields      = nullptr;  // Optional annulus fields for QTF integration
-    WaveDispersionSO*                           _wdso                   = nullptr;  // Wave dispersion object for second order calculations
+    WaveDispersionSO                            _wdso                   ;           // Wave dispersion object for second order calculations
 
     /* Declare private methods */
     template<FreqRegimeE freq_regime>
@@ -82,7 +82,7 @@ private:
                                     QTFTypeE                        qtf_type,
                                     std::size_t                     freq_i,
                                     std::size_t                     freq_j,
-                                    cuscomplex                      raos_hist,
+                                    cuscomplex*                     raos_hist,
                                     RDDQC*                          qtf_body_fields,
                                     RDDQC*                          qtf_body_fields_wl,
                                     RDDQC*                          qtf_fs_fields,
@@ -93,7 +93,7 @@ private:
                                     QTFTypeE                        qtf_type,
                                     std::size_t                     freq_i,
                                     std::size_t                     freq_j,
-                                    cuscomplex                      raos_hist,
+                                    cuscomplex*                     raos_hist,
                                     RDDQC*                          qtf_body_fields,
                                     RDDQC*                          qtf_body_fields_wl,
                                     RDDQC*                          qtf_fs_fields,
@@ -131,7 +131,7 @@ private:
                                     cuscomplex*             qb_rhs
                             );
 
-    template<int GP, typename GwfInterf, typename RhsFunc, typename IntegrateFunc>
+    template<int GP, int mode_fslid, typename GwfInterf, typename RhsFunc, typename IntegrateFunc>
     void _process_qtf_rhs_panels(
                                     RDDQC*                  panel_fields,
                                     GwfInterf&              gwf_interf_local,
@@ -208,7 +208,7 @@ public:
     void    solve_so( 
                                         std::size_t                 freq_i,
                                         std::size_t                 freq_j,
-                                        cusfloat*                   raos_hist,
+                                        cuscomplex*                 raos_hist,
                                         RDDQC*                      qtf_body_fields,
                                         RDDQC*                      qtf_body_fields_wl,
                                         RDDQC*                      qtf_fs_fields,
