@@ -39,6 +39,6 @@ void    calculate_froude_krylov_so(
                                     MeshGroup*      mesh_gp,
                                     cusfloat        ang_freq_i,
                                     cusfloat        ang_freq_j,
-                                    int             qtf_type,
+                                    QTFTypeE        qtf_type,
                                     cuscomplex*     froude_krylov
                                 );
