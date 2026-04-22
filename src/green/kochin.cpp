@@ -62,6 +62,7 @@ void        calculate_kochin_coefficients(
             // Clear coefficients vector memory to not have 
             // spurious data to take into account
             cos_coeff[idx0]  = 0.0;
+            sin_coeff[idx0]  = 0.0;
 
             for ( int k=mesh_gp->source_nodes_cnp[j]; k<mesh_gp->source_nodes_cnp[j+1]; k++ )
             {
