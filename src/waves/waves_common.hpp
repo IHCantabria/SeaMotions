@@ -27,6 +27,12 @@
 
 
 // Declare module functions
+cusfloat    cosh_cosh_factor(
+                                            cusfloat    k,
+                                            cusfloat    h,
+                                            cusfloat    z
+                            );
+
 cuscomplex  wave_potential_fo_space( 
                                             cusfloat aw,
                                             cusfloat w,
