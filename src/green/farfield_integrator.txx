@@ -46,16 +46,16 @@ void FarFieldIntegrator<qtf_type>::compute_far_field(
     }
 
     // Apply scaling factor to the far field contribution
-    for ( std::size_t ih0=0; ih0<this->_input->heads_np; ih0++ )
+    for ( std::size_t ih0=0; ih0<static_cast<std::size_t>(this->_input->heads_np); ih0++ )
     {
-        for ( std::size_t ih1=0; ih1<this->_input->heads_np; ih1++ )
+        for ( std::size_t ih1=0; ih1<static_cast<std::size_t>(this->_input->heads_np); ih1++ )
         {
             // Determine output index
             std::size_t ihx = this->_input->heads_np * ih0 + ih1;
 
             // Apply scaling factor
-            Qc[ihx] *= cuscomplex( 0.0, PI * pow2s( this->_partition_circle ) / 8.0 );
-            Qs[ihx] *= cuscomplex( 0.0, PI * pow2s( this->_partition_circle ) / 8.0 );
+            this->qc[ihx] *= cuscomplex( 0.0, PI * pow2s( this->_partition_circle ) / 8.0 );
+            this->qs[ihx] *= cuscomplex( 0.0, PI * pow2s( this->_partition_circle ) / 8.0 );
 
         }
 
@@ -138,11 +138,10 @@ void FarFieldIntegrator<qtf_type>::_integrate(
     };
 
     // Sumate expansion series terms
-    cuscomplex  sum = 0.0;
 
-    for ( std::size_t ih0=0; ih0<this->_input->heads_np; ih0++ )
+    for ( std::size_t ih0=0; ih0<static_cast<std::size_t>(this->_input->heads_np); ih0++ )
     {
-        for ( std::size_t ih1=0; ih1<this->_input->heads_np; ih1++ )
+        for ( std::size_t ih1=0; ih1<static_cast<std::size_t>(this->_input->heads_np); ih1++ )
         {
             tc1 = cuscomplex( 0.0, 0.0 ); ts1 = cuscomplex( 0.0, 0.0 );
             tc2 = cuscomplex( 0.0, 0.0 ); ts2 = cuscomplex( 0.0, 0.0 );
@@ -158,14 +157,14 @@ void FarFieldIntegrator<qtf_type>::_integrate(
                 il      = this->_freq_i_off + ih0 * QTF_FAR_N + l;
                 jm      = this->_freq_j_off + ih1 * QTF_FAR_N + m;
 
-                acil    = Ac[ il ];
-                asil    = As[ il ];
-                acjm    = Ac[ jm ];
-                asjm    = As[ jm ];
-                bcil    = Bc[ il ];
-                bsil    = Bs[ il ];
-                bcjm    = Bc[ jm ];
-                bsjm    = Bs[ jm ];
+                acil    = this->_ac[ il ];
+                asil    = this->_as[ il ];
+                acjm    = this->_ac[ jm ];
+                asjm    = this->_as[ jm ];
+                bcil    = this->_bc[ il ];
+                bsil    = this->_bs[ il ];
+                bcjm    = this->_bc[ jm ];
+                bsjm    = this->_bs[ jm ];
 
                 FF      = this->U( triple_hankel_f, l, m );
                 FG      = this->U( triple_hankel_g, l, m );
@@ -193,14 +192,14 @@ void FarFieldIntegrator<qtf_type>::_integrate(
                 il      = this->_freq_i_off + ih0 * QTF_FAR_N + l;
                 jm      = this->_freq_j_off + ih1 * QTF_FAR_N + m;
 
-                acil    = Ac[ il ];
-                asil    = As[ il ];
-                acjm    = Ac[ jm ];
-                asjm    = As[ jm ];
-                bcil    = Bc[ il ];
-                bsil    = Bs[ il ];
-                bcjm    = Bc[ jm ];
-                bsjm    = Bs[ jm ];
+                acil    = this->_ac[ il ];
+                asil    = this->_as[ il ];
+                acjm    = this->_ac[ jm ];
+                asjm    = this->_as[ jm ];
+                bcil    = this->_bc[ il ];
+                bsil    = this->_bs[ il ];
+                bcjm    = this->_bc[ jm ];
+                bsjm    = this->_bs[ jm ];
 
                 FF      = this->V( triple_hankel_f, l, m );
                 FG      = this->V( triple_hankel_g, l, m );
@@ -228,14 +227,14 @@ void FarFieldIntegrator<qtf_type>::_integrate(
                 il      = this->_freq_i_off + ih0 * QTF_FAR_N + l;
                 jm      = this->_freq_j_off + ih1 * QTF_FAR_N + m;
 
-                acil    = Ac[ il ];
-                asil    = As[ il ];
-                acjm    = Ac[ jm ];
-                asjm    = As[ jm ];
-                bcil    = Bc[ il ];
-                bsil    = Bs[ il ];
-                bcjm    = Bc[ jm ];
-                bsjm    = Bs[ jm ];
+                acil    = this->_ac[ il ];
+                asil    = this->_as[ il ];
+                acjm    = this->_ac[ jm ];
+                asjm    = this->_as[ jm ];
+                bcil    = this->_bc[ il ];
+                bsil    = this->_bs[ il ];
+                bcjm    = this->_bc[ jm ];
+                bsjm    = this->_bs[ jm ];
 
                 FF      = this->W( triple_hankel_f, l, m );
                 FG      = this->W( triple_hankel_g, l, m );
@@ -278,8 +277,8 @@ void FarFieldIntegrator<qtf_type>::set_frequency_indices(
     this->_wave_k   = w2k( this->_wi + this->_sign * this->_wj, this->_input->grav_acc, this->_input->water_depth );
 
     // Recalculate derived parameters
-    cusfloat nu_i   = pow2s( this->_wi ) / this->_input->_grav_acc;
-    cusfloat nu_j   = pow2s( this->_wj ) / this->_input->_grav_acc;
+    cusfloat nu_i   = pow2s( this->_wi ) / this->_input->grav_acc;
+    cusfloat nu_j   = pow2s( this->_wj ) / this->_input->grav_acc;
     this->_omega    = ( 
                             + this->_wi * ( pow2s( this->_wave_j ) - pow2s( nu_j ) )
                             + this->_sign * this->_wj * ( pow2s( this->_wave_i ) - pow2s( nu_i ) )
@@ -288,8 +287,8 @@ void FarFieldIntegrator<qtf_type>::set_frequency_indices(
     this->_alpha    = ( this->_wi + this->_sign * this->_wj ) * this->_wave_i * this->_wave_j;
 
     // Calculate frequency offsets for expansion series coefficients
-    this->_freq_i_off   = this->_freq_i * this->input->heads_np * QTF_FAR_N;
-    this->_freq_j_off   = this->_freq_j * this->input->heads_np * QTF_FAR_N;
+    this->_freq_i_off   = this->_freq_i * this->_input->heads_np * QTF_FAR_N;
+    this->_freq_j_off   = this->_freq_j * this->_input->heads_np * QTF_FAR_N;
 
 }
 

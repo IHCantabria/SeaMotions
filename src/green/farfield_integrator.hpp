@@ -38,7 +38,9 @@ private:
     cuscomplex*                 _bc                 = nullptr;
     cuscomplex*                 _bs                 = nullptr;
     std::size_t                 _freq_i             = 0;
+    std::size_t                 _freq_i_off         = 0;
     std::size_t                 _freq_j             = 0;
+    std::size_t                 _freq_j_off         = 0;
     cusfloat                    _grav_acc           = 9.81;
     Input*                      _input              = nullptr;
     cusfloat                    _omega              = 0.0;
