@@ -480,12 +480,12 @@ void Input::read_case( const std::string& folder_path )
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read QTF annuli count
-    target_signal   = "QTFAnnuliNP";
+    target_signal   = "QTFAnnNP";
     read_signal     = read_channel_value( infile, this->qtf_annuli_np );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read QTF annuli angular points
-    target_signal   = "QTFAnnuliThetaNP";
+    target_signal   = "QTFAnnThNP";
     read_signal     = read_channel_value( infile, this->qtf_annuli_theta_np );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
