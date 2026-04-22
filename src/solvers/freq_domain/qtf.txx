@@ -75,9 +75,9 @@ inline  void    so_potential_qb_rhs(
                                 )
 {
     // Get local variables
-    std::size_t bodies_np       = static_cast<input->bodies_np>;
-    std::size_t dofs_np         = static_cast<input->dofs_np>;
-    std::size_t heads_np        = static_cast<input->heads_np>;
+    std::size_t bodies_np       = static_cast<std::size_t>( input->bodies_np );
+    std::size_t dofs_np         = static_cast<std::size_t>( input->dofs_np );
+    std::size_t heads_np        = static_cast<std::size_t>( input->heads_np );
     cuscomplex  dvdn            = 0.0;
     cusfloat    field_point[3]  = { 0.0, 0.0, 0.0 };
     cuscomplex  fp_cog[3]       = { 0.0, 0.0, 0.0 };
@@ -87,8 +87,8 @@ inline  void    so_potential_qb_rhs(
     cusfloat*   nvec            = panel_data->panel_geom->normal_vec;
     std::size_t pd_idx          = 0;
     std::size_t pd_jdx          = 0;
-    cuscomplex* rao_i           = &raos_freq_i[ freq_i * heads_np * bodies_np * dofs_np ];
-    cuscomplex* rao_j           = &raos_freq_j[ freq_j * heads_np * bodies_np * dofs_np ];
+    cuscomplex* rao_i           = &raos_hist[ freq_i * heads_np * bodies_np * dofs_np ];
+    cuscomplex* rao_j           = &raos_hist[ freq_j * heads_np * bodies_np * dofs_np ];
     std::size_t rao_i_idx       = 0;
     std::size_t rao_j_idx       = 0;
     cuscomplex  so_rotmat[9]    ;
@@ -105,8 +105,8 @@ inline  void    so_potential_qb_rhs(
     int qtf_sign                = ( qtf_type == QTFTypeE::QTF_DIFF_CODE ) ? -1 : 1;
 
     // Get angular frequencies
-    cusfloat wi                 = input->ang_freqs[freq_i];
-    cusfloat wj                 = input->ang_freqs[freq_j];
+    cusfloat wi                 = input->angfreqs[freq_i];
+    cusfloat wj                 = input->angfreqs[freq_j];
     cusfloat wi_wj              = wi + qtf_sign * wj;
 
     // Clear rhs vector to sum up all the constributions on it
@@ -121,15 +121,15 @@ inline  void    so_potential_qb_rhs(
             // Get RAO values for the current frequency and heading combination
             rao_i_idx   = freq_i * heads_np * bodies_np * dofs_np + ih * bodies_np * dofs_np + body_id * dofs_np;
             rao_j_idx   = freq_j * heads_np * bodies_np * dofs_np + jh * bodies_np * dofs_np + body_id * dofs_np;
-            rao_i       = &raos_freq_i[ rao_i_idx ];
-            rao_j       = &raos_freq_j[ rao_j_idx ];
+            rao_i       = &raos_hist[ rao_i_idx ];
+            rao_j       = &raos_hist[ rao_j_idx ];
 
             // Update wave dispersion relation for second order wave propagation
             wd->set_new_data( 
                                 wi, 
                                 wj, 
-                                panel_data->head[ih], 
-                                panel_data->head[jh] 
+                                input->heads[ih], 
+                                input->heads[jh] 
                             );
 
             for ( std::size_t fpi=0; fpi<panel_data->field_points_np; fpi++ )
@@ -141,12 +141,12 @@ inline  void    so_potential_qb_rhs(
                 field_point[2]  = panel_data->field_points[3*fpi+2];
 
                 // Get current field point velocities for both frequencies combinations
-                pd_idx          = freq_i * heads_np * panel_data->field_points_np;
+                pd_idx          = ( freq_i * heads_np + ih ) * panel_data->field_points_np;
                 vel_i[0]        = panel_data->vel_x_total[pd_idx + fpi];
                 vel_i[1]        = panel_data->vel_y_total[pd_idx + fpi];
                 vel_i[2]        = panel_data->vel_z_total[pd_idx + fpi];
                 
-                pd_jdx          = freq_j * heads_np * panel_data->field_points_np;
+                pd_jdx          = ( freq_j * heads_np + jh ) * panel_data->field_points_np;
                 vel_j[0]        = panel_data->vel_x_total[pd_jdx + fpi];
                 vel_j[1]        = panel_data->vel_y_total[pd_jdx + fpi];
                 vel_j[2]        = panel_data->vel_z_total[pd_jdx + fpi];
@@ -168,8 +168,8 @@ inline  void    so_potential_qb_rhs(
                 if ( mode_wl )
                 {
                     // Create direction vector
-                    tv[0]   = ( panel_geom_->x_wl[1] - panel_geom_->x_wl[0] ) / panel_geom_->len_wl;
-                    tv[1]   = ( panel_geom_->y_wl[1] - panel_geom_->y_wl[0] ) / panel_geom_->len_wl;
+                    tv[0]   = ( panel_data->panel_geom->x_wl[1] - panel_data->panel_geom->x_wl[0] ) / panel_data->panel_geom->len_wl;
+                    tv[1]   = ( panel_data->panel_geom->y_wl[1] - panel_data->panel_geom->y_wl[0] ) / panel_data->panel_geom->len_wl;
 
                     copy_vector( 3, vel_j, v0 );
                     conj_vector( 3, v0, v0 );
@@ -348,10 +348,9 @@ inline  void    so_potential_qf_rhs(
                                 )
 {
     // Get local variables
-    std::size_t bodies_np       = static_cast<input->bodies_np>;
-    std::size_t dofs_np         = static_cast<input->dofs_np>;
-    std::size_t heads_np        = static_cast<input->heads_np>;
-    cuscomplex  dvdn            = 0.0;
+    std::size_t bodies_np       = static_cast<std::size_t>( input->bodies_np    );
+    std::size_t dofs_np         = static_cast<std::size_t>( input->dofs_np      );
+    std::size_t heads_np        = static_cast<std::size_t>( input->heads_np     );
     cusfloat    field_point[3]  = { 0.0, 0.0, 0.0 };
     cuscomplex  fp_cog[3]       = { 0.0, 0.0, 0.0 };
     cuscomplex  fp_so_i[3]      = { 0.0, 0.0, 0.0 };
@@ -360,54 +359,48 @@ inline  void    so_potential_qf_rhs(
     std::size_t index           = 0;
     cusfloat    nlvec[3]        = { 0.0, 0.0, 0.0 };
     cusfloat    nlvec_mod       = 0.0;
-    cusfloat*   nvec            = panel_data->panel_geom->normal_vec;
     std::size_t pd_idx          = 0;
     std::size_t pd_jdx          = 0;
     cuscomplex  phi_i           = 0.0;
     cuscomplex  phi_j           = 0.0;
-    cuscomplex* rao_i           = &raos_freq_i[ freq_i * heads_np * bodies_np * dofs_np ];
-    cuscomplex* rao_j           = &raos_freq_j[ freq_j * heads_np * bodies_np * dofs_np ];
+    cuscomplex* rao_i           = &raos_hist[ freq_i * heads_np * bodies_np * dofs_np ];
+    cuscomplex* rao_j           = &raos_hist[ freq_j * heads_np * bodies_np * dofs_np ];
     std::size_t rao_i_idx       = 0;
     std::size_t rao_j_idx       = 0;
-    cuscomplex  so_rotmat[9]    ;
     cusfloat    tv[3]           = { 0.0, 0.0, 0.0 };
-    cusfloat    tv_mod          = 0.0;
     cuscomplex  vel_i[3]        = { 0.0, 0.0, 0.0 };
     cuscomplex  vel_j[3]        = { 0.0, 0.0, 0.0 };
     cuscomplex  v0[3]           = { 0.0, 0.0, 0.0 };
-    cuscomplex  v1[3]           = { 0.0, 0.0, 0.0 };
-    cuscomplex  wave_dx         = 0.0;
-    cuscomplex  wave_dy         = 0.0;
-    cuscomplex  wave_dz         = 0.0;
 
     // Define QTF sign based on the type of QTF term
     int qtf_sign                = ( qtf_type == QTFTypeE::QTF_DIFF_CODE ) ? -1 : 1;
 
     // Get angular frequencies
-    cusfloat wi                 = input->ang_freqs[freq_i];
-    cusfloat wj                 = input->ang_freqs[freq_j];
+    cusfloat wi                 = input->angfreqs[freq_i];
+    cusfloat wj                 = input->angfreqs[freq_j];
     cusfloat wi_wj              = wi + qtf_sign * wj;
 
     // Clear rhs vector to sum up all the constributions on it
     std::size_t size_rhs        = pow2s( heads_np ) * panel_data->field_points_np;
+    clear_vector( size_rhs, qf_rhs );
 
     // Loop over headings to get all the possible combinations
-    for ( std::size_t ih=0; ih<heads_np; ih++ )
+    for ( std::size_t ih=0; ih<static_cast<std::size_t>(heads_np); ih++ )
     {
-        for ( std::size_t jh=0; jh<heads_np; jh++ )
+        for ( std::size_t jh=0; jh<static_cast<std::size_t>(heads_np); jh++ )
         {
             // Get RAO values for the current frequency and heading combination
             rao_i_idx   = freq_i * heads_np * bodies_np * dofs_np + ih * bodies_np * dofs_np + body_id * dofs_np;
             rao_j_idx   = freq_j * heads_np * bodies_np * dofs_np + jh * bodies_np * dofs_np + body_id * dofs_np;
-            rao_i       = &raos_freq_i[ rao_i_idx ];
-            rao_j       = &raos_freq_j[ rao_j_idx ];
+            rao_i       = &raos_hist[ rao_i_idx ];
+            rao_j       = &raos_hist[ rao_j_idx ];
 
             // Update wave dispersion relation for second order wave propagation
             wd->set_new_data( 
                                 wi, 
                                 wj, 
-                                panel_data->head[ih], 
-                                panel_data->head[jh] 
+                                input->heads[ih], 
+                                input->heads[jh] 
                             );
 
             for ( std::size_t fpi=0; fpi<panel_data->field_points_np; fpi++ )
@@ -419,13 +412,13 @@ inline  void    so_potential_qf_rhs(
                 field_point[2]  = panel_data->field_points[3*fpi+2];
 
                 // Get current field point potential and velocities for both frequencies combinations
-                pd_idx          = freq_i * heads_np * panel_data->field_points_np;
+                pd_idx          = ( freq_i * heads_np + ih ) * panel_data->field_points_np;
                 phi_i           = panel_data->pot_total[pd_idx + fpi];
                 vel_i[0]        = panel_data->vel_x_total[pd_idx + fpi];
                 vel_i[1]        = panel_data->vel_y_total[pd_idx + fpi];
                 vel_i[2]        = panel_data->vel_z_total[pd_idx + fpi];
                 
-                pd_jdx          = freq_j * heads_np * panel_data->field_points_np;
+                pd_jdx          = ( freq_j * heads_np + jh ) * panel_data->field_points_np;
                 phi_j           = panel_data->pot_total[pd_jdx + fpi];
                 vel_j[0]        = panel_data->vel_x_total[pd_jdx + fpi];
                 vel_j[1]        = panel_data->vel_y_total[pd_jdx + fpi];
@@ -452,8 +445,8 @@ inline  void    so_potential_qf_rhs(
                     )
                 {
                     // Create direction vector
-                    nlvec[0]    = ( panel_geom_->x_wl[1] + panel_geom_->x_wl[0] ) / 2.0;
-                    nlvec[1]    = ( panel_geom_->y_wl[1] + panel_geom_->y_wl[0] ) / 2.0;
+                    nlvec[0]    = ( panel_data->panel_geom->x_wl[1] + panel_data->panel_geom->x_wl[0] ) / 2.0;
+                    nlvec[1]    = ( panel_data->panel_geom->y_wl[1] + panel_data->panel_geom->y_wl[0] ) / 2.0;
                     nlvec_mod   = std::sqrt( pow2s( nlvec[0] ) + pow2s( nlvec[1] ) );
                     nlvec[0]    /= nlvec_mod;
                     nlvec[1]    /= nlvec_mod;
@@ -465,8 +458,8 @@ inline  void    so_potential_qf_rhs(
                     }
 
                     // Calculate normal vector to the waterline panel outwards of the FS surface lid
-                    tv[0]       = ( panel_geom_->y_wl[1] - panel_geom_->y_wl[0] ) / panel_geom_->len_wl; // Changed to be the normal with anti-clockwise rotation
-                    tv[1]       = ( panel_geom_->x_wl[1] - panel_geom_->x_wl[0] ) / panel_geom_->len_wl; // Changed to be the normal with anti-clockwise rotation
+                    tv[0]       = ( panel_data->panel_geom->y_wl[1] - panel_data->panel_geom->y_wl[0] ) / panel_data->panel_geom->len_wl; // Changed to be the normal with anti-clockwise rotation
+                    tv[1]       = ( panel_data->panel_geom->x_wl[1] - panel_data->panel_geom->x_wl[0] ) / panel_data->panel_geom->len_wl; // Changed to be the normal with anti-clockwise rotation
 
                     // Check normal orientation
                     if ( tv[0] * nlvec[0] + tv[1] * nlvec[1] < 0.0 )

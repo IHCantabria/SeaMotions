@@ -104,3 +104,7 @@ void        so_potential_qb_rhs(
                                             cuscomplex*                     dG_dy,
                                             cuscomplex*                     dG_dz
                                 );
+
+
+// Include template implementation file
+#include "qtf.txx"
