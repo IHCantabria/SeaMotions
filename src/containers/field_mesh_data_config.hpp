@@ -52,7 +52,6 @@ struct FieldMeshDataConfig
     FieldMeshDataConfig( ) = default;
 
     FieldMeshDataConfig( 
-                            Input*          input,
                             FieldPointsDef* field_points_def
                         );
 

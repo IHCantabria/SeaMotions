@@ -48,7 +48,6 @@ private:
     cusfloat                                    _div_len            = 0.0;      // Length of the division segments of the Morison element
     cut::CusTensor<cusfloat>                    _field_points_l     ;           // Field points values where to evaluate the Morison element contribution (local coordinates referred to the COG)
     cut::CusTensor<cusfloat>                    _field_points_g     ;           // Field points values where to evaluate the Morison element contribution (global coordinates)
-    std::size_t                                 _field_points_np    = 0;        // Number of field points
     Input*                                      _input              = nullptr;  // Pointer to input data
     cusfloat                                    _kc_length          = 0.0;      // Characteristic length used for the Keulegan-Carpenter number calculation
     RDDMorison*                                 _rdd_morison        ;           // Radiation and diffraction data for Morison element calculations

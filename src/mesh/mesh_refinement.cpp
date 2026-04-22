@@ -114,14 +114,6 @@ void    refine_underwater_quadrilateral(
 
     // Check for consecutive sides
     bool is_consecutive = std::abs( edge_num[1] - edge_num[0] ) == 1;
-    int  nnf            = 3;
-    int  nnb            = 2;
-
-    if ( is_consecutive )
-    {
-        nnf = 2;
-        nnb = 1;
-    }
 
     // Calculate free surface crossings
     cusfloat fsi0[3];
@@ -429,14 +421,6 @@ void    refine_underwater_triangle(
 
     // Check for consecutive sides
     bool is_consecutive = nodes_loc_cum == 1;
-    int  nnf            = 0;
-    int  nnb            = 2;
-
-    if ( is_consecutive )
-    {
-        nnf = 2;
-        nnb = 1;
-    }
 
     // Calculate free surface crossings
     cusfloat fsi0[3];
