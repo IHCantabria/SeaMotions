@@ -394,7 +394,8 @@ void        john_series(
                                                 cuscomplex*             G,
                                                 cuscomplex*             G_dr,
                                                 cuscomplex*             G_dz,
-                                                cuscomplex*             G_dzeta
+                                                cuscomplex*             G_dzeta,
+                                                bool                    is_full
                         )
 {
     /**
@@ -1591,7 +1592,8 @@ void        wave_term_integral_inf_freq(
                                                 cuscomplex*                 G,
                                                 cuscomplex*                 G_dr,
                                                 cuscomplex*                 G_dz,
-                                                cuscomplex*                 G_dzeta
+                                                cuscomplex*                 G_dzeta,
+                                                bool                        is_full
                                         )
 {
     /**
@@ -1702,7 +1704,8 @@ void        wave_term_integral_zero_freq(
                                                 cuscomplex*                 G,
                                                 cuscomplex*                 G_dr,
                                                 cuscomplex*                 G_dz,
-                                                cuscomplex*                 G_dzeta
+                                                cuscomplex*                 G_dzeta,
+                                                bool                        is_full
                                 )
 {
     /**
