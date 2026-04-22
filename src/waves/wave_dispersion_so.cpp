@@ -25,11 +25,11 @@
 #include "wave_dispersion_base_fo.hpp"
 
 cusfloat    WaveDispersionSO::get_w_ds(
-                                            int    qtf_type
+                                            QTFTypeE    qtf_type
                                         )
 {
     cusfloat    w_ds    = this->w_sum;
-    if ( qtf_type == 0 )
+    if ( qtf_type == QTFTypeE::QTF_DIFF_CODE )
     {
         w_ds = this->w_diff;
     }

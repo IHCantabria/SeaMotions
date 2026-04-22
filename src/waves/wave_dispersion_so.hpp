@@ -76,7 +76,7 @@ public:
 
     // Define class methods
     cusfloat    get_w_ds(
-                                int     qtf_type
+                            QTFTypeE    qtf_type
                         );
 
     void        set_new_data(
