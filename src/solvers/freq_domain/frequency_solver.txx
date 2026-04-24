@@ -724,14 +724,17 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
                     MPI_COMM_WORLD
                 );
 
-    // Copy raos to raos_hist
-    if ( this->input->is_calc_mdrift || this->input->out_qtf )
+    // Copy RAOs history only for regular frequencies (asymptotic uses a sentinel index).
+    if constexpr( freq_regime == FreqRegimeE::REGULAR )
     {
-        copy_vector(
-                        this->sim_data->wave_exc_np,
-                        this->sim_data->raos,
-                        &(this->sim_data->raos_hist[freq_index * this->sim_data->wave_exc_np])
-                    );
+        if ( this->input->is_calc_mdrift || this->input->out_qtf )
+        {
+            copy_vector(
+                            this->sim_data->wave_exc_np,
+                            this->sim_data->raos,
+                            &(this->sim_data->raos_hist[freq_index * this->sim_data->wave_exc_np])
+                        );
+        }
     }
 
     
