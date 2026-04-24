@@ -106,10 +106,10 @@ private:
                                     cusfloat w
                             );
 
-    template<FreqRegimeE freq_regime>
-    void _build_wave_matrixes_2( 
-                                    cusfloat w
-                                );
+    // template<FreqRegimeE freq_regime>
+    // void _build_wave_matrixes_2( 
+    //                                 cusfloat w
+    //                             );
 
     template<FreqRegimeE freq_regime>
     void _build_wave_matrixes_so( 

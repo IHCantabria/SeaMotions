@@ -1349,7 +1349,8 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
     cuscomplex  int_value               = cuscomplex( 0.0, 0.0 );
     cuscomplex  int_dn_sf_value         = cuscomplex( 0.0, 0.0 );
     cuscomplex  int_dn_pf_value         = cuscomplex( 0.0, 0.0 );
-    cuscomplex  int_scale_f             = cuscomplex( 1.0, 0.0 );
+    cuscomplex  int_scale_f_i           = cuscomplex( 1.0, 0.0 );
+    cuscomplex  int_scale_f_j           = cuscomplex( 1.0, 0.0 );
     PanelGeom*  panel_j                 = nullptr;
     int         row_count               = 0;
     SourceNode* source_i                = nullptr;
@@ -1469,29 +1470,126 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
             COL_MAJOR_INDEX( index_cm, row_count, col_count, this->_solver->num_rows_local )
             ROW_MAJOR_INDEX( index_rm, row_count, col_count, this->_solver->num_cols_local )
 
-            if ( source_i->panel->type != PanelTypeE::EXT_LID )
+            // Calculate scaling factors for the integrals according to the panel types
+            if ( i != j )
             {
-                int_scale_f = cuscomplex( 1.0, 0.0 );
+                if ( source_i->panel->type == PanelTypeE::DIFFRAC )
+                {
+                    int_scale_f_j = cuscomplex( 1.0, 0.0 );
+                }
+                else if ( source_i->panel->type == PanelTypeE::INT_LID )
+                {
+                    int_scale_f_j = cuscomplex( -nu, 0.0 );
+                }
+                else if ( source_i->panel->type == PanelTypeE::EXT_LID )
+                {
+                    int_scale_f_i = cuscomplex( 0.0, +nu * source_i->panel->ext_lid_damp_f );
+                }
+    
+                if ( panel_j->type == PanelTypeE::DIFFRAC )
+                {
+                    int_scale_f_j  = cuscomplex( 1.0, 0.0 ) ;
+                }
+                else if ( panel_j->type == PanelTypeE::INT_LID )
+                {
+                    int_scale_f_j  = cuscomplex( -nu, 0.0 );
+                }
+                else if ( panel_j->type == PanelTypeE::EXT_LID )
+                {
+                    int_scale_f_j  = cuscomplex( 0.0, +nu * panel_j->ext_lid_damp_f );
+                }
             }
             else
             {
-                int_scale_f = cuscomplex( 0.0, - source_i->panel->ext_lid_damp_f );
+                int_scale_f_i = cuscomplex( 1.0, 0.0 );
+                int_scale_f_j = cuscomplex( 1.0, 0.0 );
             }
 
-            if ( is_john && freq_regime == FreqRegimeE::REGULAR )
+            if ( source_i->panel->type == PanelTypeE::DIFFRAC )
             {
-                this->_pot_gp->sysmat[index_rm] = int_scale_f * int_value;
-                this->_sf_gp->sysmat[index_cm]  =  int_scale_f * int_dn_sf_value;
+                if ( is_john && freq_regime == FreqRegimeE::REGULAR )
+                {
+                    this->_pot_gp->sysmat[index_rm] = int_value;
+                    if ( panel_j->type == PanelTypeE::DIFFRAC )
+                    {
+                        this->_sf_gp->sysmat[index_cm]  = int_scale_f_j * int_dn_sf_value;
+                    }
+                    else
+                    {
+                        this->_sf_gp->sysmat[index_cm]  = int_scale_f_j * int_value;
+                    }
 
-                STATIC_COND( ONLY_PF, this->_pf_gp->sysmat[index_cm]  = int_scale_f * int_dn_pf_value; )
+                    STATIC_COND( ONLY_PF, this->_pf_gp->sysmat[index_cm]  = int_dn_pf_value; )
+                }
+                else
+                {
+                    this->_pot_gp->sysmat[index_rm] = ( this->_pot_gp->sysmat_steady[index_rm] + int_value );
+                    if ( panel_j->type == PanelTypeE::DIFFRAC )
+                    {
+                        this->_sf_gp->sysmat[index_cm]  = int_scale_f_j * int_dn_sf_value;
+                    }
+                    else
+                    {
+                        this->_sf_gp->sysmat[index_cm]  = int_scale_f_j * ( this->_pot_gp->sysmat_steady[index_rm] + int_value );
+                    }
+
+                    STATIC_COND( ONLY_PF, this->_pf_gp->sysmat[index_cm]  = ( this->_pf_gp->sysmat_steady[index_cm] + int_dn_pf_value ); )
+                }
+
             }
-            else
+            else if ( 
+                        source_i->panel->type == PanelTypeE::INT_LID
+                        ||
+                        source_i->panel->type == PanelTypeE::EXT_LID
+                    )
             {
-                this->_pot_gp->sysmat[index_rm] = int_scale_f * ( this->_pot_gp->sysmat_steady[index_rm] + int_value );
-                this->_sf_gp->sysmat[index_cm]  = int_scale_f * ( this->_sf_gp->sysmat_steady[index_cm]  + int_dn_sf_value );
+                if ( is_john && freq_regime == FreqRegimeE::REGULAR )
+                {
+                    this->_pot_gp->sysmat[index_rm] = int_value;
 
-                STATIC_COND( ONLY_PF, this->_pf_gp->sysmat[index_cm]  = int_scale_f * ( this->_pf_gp->sysmat_steady[index_cm] + int_dn_pf_value ); )
+                    if ( panel_j->type == PanelTypeE::DIFFRAC )
+                    {
+                        this->_sf_gp->sysmat[index_cm]  = int_scale_f_j * int_dn_sf_value;
+                    }
+                    else
+                    {
+                        this->_sf_gp->sysmat[index_cm]  = int_scale_f_j * int_value;
+                    }
+
+                    STATIC_COND( ONLY_PF, this->_pf_gp->sysmat[index_cm]  = int_scale_f_i * int_value; )
+                }
+                else
+                {
+                    this->_pot_gp->sysmat[index_rm] = ( this->_pot_gp->sysmat_steady[index_rm] + int_value );
+                    if ( panel_j->type == PanelTypeE::DIFFRAC )
+                    {
+                        this->_sf_gp->sysmat[index_cm]  = int_scale_f_j * int_dn_sf_value;
+                    }
+                    else
+                    {
+                        this->_sf_gp->sysmat[index_cm]  = int_scale_f_j * ( this->_pot_gp->sysmat_steady[index_rm] + int_value );
+                    }
+
+                    STATIC_COND( ONLY_PF, this->_pf_gp->sysmat[index_cm]  = int_scale_f_i * ( this->_pot_gp->sysmat_steady[index_rm] + int_value ); )
+                }
+
             }
+
+
+            // if ( is_john && freq_regime == FreqRegimeE::REGULAR )
+            // {
+            //     this->_pot_gp->sysmat[index_rm] = int_scale_f * int_value;
+            //     this->_sf_gp->sysmat[index_cm]  =  int_scale_f * int_dn_sf_value;
+
+            //     STATIC_COND( ONLY_PF, this->_pf_gp->sysmat[index_cm]  = int_scale_f * int_dn_pf_value; )
+            // }
+            // else
+            // {
+            //     this->_pot_gp->sysmat[index_rm] = int_scale_f * ( this->_pot_gp->sysmat_steady[index_rm] + int_value );
+            //     this->_sf_gp->sysmat[index_cm]  = int_scale_f * ( this->_sf_gp->sysmat_steady[index_cm]  + int_dn_sf_value );
+
+            //     STATIC_COND( ONLY_PF, this->_pf_gp->sysmat[index_cm]  = int_scale_f * ( this->_pf_gp->sysmat_steady[index_cm] + int_dn_pf_value ); )
+            // }
 
             if ( 
                     ( std::isnan( int_dn_sf_value.real( ) ) || std::isnan( int_dn_sf_value.imag( ) ) )
@@ -1519,138 +1617,138 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
 }
 
 
-template<std::size_t N, int mode_pf>
-template<FreqRegimeE freq_regime>
-void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes_2( 
-                                                                    cusfloat w
-                                                                )
-{
-    // Clean system matrixes
-                            this->_sf_gp->clear_sysmat( );
-    STATIC_COND( ONLY_PF,   this->_pf_gp->clear_sysmat( ); )
-                            this->_pot_gp->clear_sysmat( );
-                            this->_pot_gp->clear_field_values( );
+// template<std::size_t N, int mode_pf>
+// template<FreqRegimeE freq_regime>
+// void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes_2( 
+//                                                                     cusfloat w
+//                                                                 )
+// {
+//     // Clean system matrixes
+//                             this->_sf_gp->clear_sysmat( );
+//     STATIC_COND( ONLY_PF,   this->_pf_gp->clear_sysmat( ); )
+//                             this->_pot_gp->clear_sysmat( );
+//                             this->_pot_gp->clear_field_values( );
     
-    // Declare local variables
-    int         col_count               = 0;
-    auto        gwf_interf              = this->_gwfcns_interf;
-    int         index_cm                = 0;
-    int         index_rm                = 0;
-    cuscomplex  int_dn_sf_st            = cuscomplex( 0.0, 0.0 );
-    cuscomplex  int_dn_sf_wv            = cuscomplex( 0.0, 0.0 );
-    cuscomplex  int_dn_pf_st            = cuscomplex( 0.0, 0.0 );
-    cuscomplex  int_dn_pf_wv            = cuscomplex( 0.0, 0.0 );
-    cuscomplex  int_scale_f             = cuscomplex( 1.0, 0.0 );
-    bool        is_john                 = false;
-    cusfloat    log_sing_val            = 0.0;
-    PanelGeom*  panel_j                 = nullptr;
-    cuscomplex  pot_term                = cuscomplex( 0.0, 0.0 );
-    cuscomplex  pot_term_st             = cuscomplex( 0.0, 0.0 );
-    cuscomplex  pot_term_wv             = cuscomplex( 0.0, 0.0 );
-    int         row_count               = 0;
-    SourceNode* source_i                = nullptr;
-    cuscomplex  vel_total_st[3]         ;
-    cuscomplex  vel_total_wv[3]         ;
-    cuscomplex  wave_fcn_value          = cuscomplex( 0.0, 0.0 );
-    cuscomplex  wave_fcn_dn_sf_value    = cuscomplex( 0.0, 0.0 );
-    cuscomplex  wave_fcn_dn_pf_value    = cuscomplex( 0.0, 0.0 );
-    cuscomplex  wave_fcn_dx_value       = cuscomplex( 0.0, 0.0 );
-    cuscomplex  wave_fcn_dy_value       = cuscomplex( 0.0, 0.0 );
-    cuscomplex  wave_fcn_dz_value       = cuscomplex( 0.0, 0.0 );
+//     // Declare local variables
+//     int         col_count               = 0;
+//     auto        gwf_interf              = this->_gwfcns_interf;
+//     int         index_cm                = 0;
+//     int         index_rm                = 0;
+//     cuscomplex  int_dn_sf_st            = cuscomplex( 0.0, 0.0 );
+//     cuscomplex  int_dn_sf_wv            = cuscomplex( 0.0, 0.0 );
+//     cuscomplex  int_dn_pf_st            = cuscomplex( 0.0, 0.0 );
+//     cuscomplex  int_dn_pf_wv            = cuscomplex( 0.0, 0.0 );
+//     cuscomplex  int_scale_f             = cuscomplex( 1.0, 0.0 );
+//     bool        is_john                 = false;
+//     cusfloat    log_sing_val            = 0.0;
+//     PanelGeom*  panel_j                 = nullptr;
+//     cuscomplex  pot_term                = cuscomplex( 0.0, 0.0 );
+//     cuscomplex  pot_term_st             = cuscomplex( 0.0, 0.0 );
+//     cuscomplex  pot_term_wv             = cuscomplex( 0.0, 0.0 );
+//     int         row_count               = 0;
+//     SourceNode* source_i                = nullptr;
+//     cuscomplex  vel_total_st[3]         ;
+//     cuscomplex  vel_total_wv[3]         ;
+//     cuscomplex  wave_fcn_value          = cuscomplex( 0.0, 0.0 );
+//     cuscomplex  wave_fcn_dn_sf_value    = cuscomplex( 0.0, 0.0 );
+//     cuscomplex  wave_fcn_dn_pf_value    = cuscomplex( 0.0, 0.0 );
+//     cuscomplex  wave_fcn_dx_value       = cuscomplex( 0.0, 0.0 );
+//     cuscomplex  wave_fcn_dy_value       = cuscomplex( 0.0, 0.0 );
+//     cuscomplex  wave_fcn_dz_value       = cuscomplex( 0.0, 0.0 );
     
-    // Calculate wave dependent parameters
-    cusfloat    nu                      = pow2s( w ) / this->_input->grav_acc;
+//     // Calculate wave dependent parameters
+//     cusfloat    nu                      = pow2s( w ) / this->_input->grav_acc;
     
-    for ( int i=this->_solver->start_col_0; i<this->_solver->end_col_0; i++ )
-    {
-        // Get memory address of the ith panel
-        source_i = this->_mesh_gp->source_nodes[i];
-        gwf_interf.set_source_i( source_i, 1.0 );
+//     for ( int i=this->_solver->start_col_0; i<this->_solver->end_col_0; i++ )
+//     {
+//         // Get memory address of the ith panel
+//         source_i = this->_mesh_gp->source_nodes[i];
+//         gwf_interf.set_source_i( source_i, 1.0 );
 
-        // Loop over rows to calcualte the influence of the panel
-        // over each collocation point
-        row_count = 0;
-        for ( int j=this->_solver->start_row_0; j<this->_solver->end_row_0; j++ )
-        {
-            // Get memory address of the panel jth
-            panel_j = this->_mesh_gp->source_nodes[j]->panel;
-            gwf_interf.set_source_j( this->_mesh_gp->source_nodes[j] );
+//         // Loop over rows to calcualte the influence of the panel
+//         // over each collocation point
+//         row_count = 0;
+//         for ( int j=this->_solver->start_row_0; j<this->_solver->end_row_0; j++ )
+//         {
+//             // Get memory address of the panel jth
+//             panel_j = this->_mesh_gp->source_nodes[j]->panel;
+//             gwf_interf.set_source_j( this->_mesh_gp->source_nodes[j] );
             
-            // Calculate steady contribution
-            _formulation_kernel_steady<
-                                            mode_pf,
-                                            freq_regime
-                                        >
-                                        (
-                                            i == j,
-                                            this->_mesh_gp->panels[i],
-                                            this->_mesh_gp->panels_mirror[i],
-                                            this->_mesh_gp->panels[j],
-                                            this->_input->water_depth,
-                                            pot_term_st,
-                                            int_dn_pf_st,
-                                            int_dn_sf_st,
-                                            vel_total_st
-                                        );
+//             // Calculate steady contribution
+//             _formulation_kernel_steady<
+//                                             mode_pf,
+//                                             freq_regime
+//                                         >
+//                                         (
+//                                             i == j,
+//                                             this->_mesh_gp->panels[i],
+//                                             this->_mesh_gp->panels_mirror[i],
+//                                             this->_mesh_gp->panels[j],
+//                                             this->_input->water_depth,
+//                                             pot_term_st,
+//                                             int_dn_pf_st,
+//                                             int_dn_sf_st,
+//                                             vel_total_st
+//                                         );
 
-            // Calculate wave contribution
-            _formulation_kernel_wave<
-                                        mode_pf,
-                                        freq_regime
-                                    >
-                                    ( 
-                                        i == j,
-                                        this->_mesh_gp->source_nodes[i],
-                                        this->_mesh_gp->source_nodes[j],
-                                        this->_gwfcns_interf,
-                                        this->_input->water_depth,
-                                        nu,
-                                        is_john,
-                                        pot_term_wv,
-                                        int_dn_pf_wv,
-                                        int_dn_sf_wv,
-                                        vel_total_wv
-                                    );
+//             // Calculate wave contribution
+//             _formulation_kernel_wave<
+//                                         mode_pf,
+//                                         freq_regime
+//                                     >
+//                                     ( 
+//                                         i == j,
+//                                         this->_mesh_gp->source_nodes[i],
+//                                         this->_mesh_gp->source_nodes[j],
+//                                         this->_gwfcns_interf,
+//                                         this->_input->water_depth,
+//                                         nu,
+//                                         is_john,
+//                                         pot_term_wv,
+//                                         int_dn_pf_wv,
+//                                         int_dn_sf_wv,
+//                                         vel_total_wv
+//                                     );
 
-            // Apply the integral value accordingly
-            COL_MAJOR_INDEX( index_cm, row_count, col_count, this->_solver->num_rows_local )
-            ROW_MAJOR_INDEX( index_rm, row_count, col_count, this->_solver->num_cols_local )
+//             // Apply the integral value accordingly
+//             COL_MAJOR_INDEX( index_cm, row_count, col_count, this->_solver->num_rows_local )
+//             ROW_MAJOR_INDEX( index_rm, row_count, col_count, this->_solver->num_cols_local )
 
-            if ( source_i->panel->type != PanelTypeE::EXT_LID )
-            {
-                int_scale_f = cuscomplex( 1.0, 0.0 );
-            }
-            else
-            {
-                int_scale_f = cuscomplex( 0.0, - source_i->panel->ext_lid_damp_f );
-            }
+//             if ( source_i->panel->type != PanelTypeE::EXT_LID )
+//             {
+//                 int_scale_f = cuscomplex( 1.0, 0.0 );
+//             }
+//             else
+//             {
+//                 int_scale_f = cuscomplex( 0.0, - source_i->panel->ext_lid_damp_f );
+//             }
 
-            if ( is_john && freq_regime == FreqRegimeE::REGULAR )
-            {
-                this->_pot_gp->sysmat[index_rm] = int_scale_f * pot_term_wv;
-                this->_sf_gp->sysmat[index_cm]  = int_scale_f * int_dn_sf_wv;
+//             if ( is_john && freq_regime == FreqRegimeE::REGULAR )
+//             {
+//                 this->_pot_gp->sysmat[index_rm] = int_scale_f * pot_term_wv;
+//                 this->_sf_gp->sysmat[index_cm]  = int_scale_f * int_dn_sf_wv;
 
-                STATIC_COND( ONLY_PF, this->_pf_gp->sysmat[index_cm]  = int_scale_f * int_dn_pf_wv; )
-            }
-            else
-            {
-                this->_pot_gp->sysmat[index_rm] = int_scale_f * ( pot_term_st + pot_term_wv );
-                this->_sf_gp->sysmat[index_cm]  = int_scale_f * ( int_dn_sf_st + int_dn_sf_wv );
+//                 STATIC_COND( ONLY_PF, this->_pf_gp->sysmat[index_cm]  = int_scale_f * int_dn_pf_wv; )
+//             }
+//             else
+//             {
+//                 this->_pot_gp->sysmat[index_rm] = int_scale_f * ( pot_term_st + pot_term_wv );
+//                 this->_sf_gp->sysmat[index_cm]  = int_scale_f * ( int_dn_sf_st + int_dn_sf_wv );
 
-                STATIC_COND( ONLY_PF, this->_pf_gp->sysmat[index_cm]  = int_scale_f * ( int_dn_pf_st + int_dn_pf_wv ); )
-            }
+//                 STATIC_COND( ONLY_PF, this->_pf_gp->sysmat[index_cm]  = int_scale_f * ( int_dn_pf_st + int_dn_pf_wv ); )
+//             }
 
-            // Advance row count
-            row_count++;
-        }
+//             // Advance row count
+//             row_count++;
+//         }
         
-        // Advance column count
-        col_count++;
+//         // Advance column count
+//         col_count++;
 
-    }
-    MPI_Barrier( MPI_COMM_WORLD );
+//     }
+//     MPI_Barrier( MPI_COMM_WORLD );
 
-}
+// }
 
 
 template<std::size_t N, int mode_pf>
