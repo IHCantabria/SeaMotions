@@ -205,8 +205,7 @@ void        calculate_qtf_terms_force(
                                     )
 {
     // Asssert if qtf_type is on the range
-    bool    assert_test = ( qtf_type == 0 ) | ( qtf_type == 1 );
-    assert( assert_test && "qtf_type variable with values differnt to 0 and 1" );
+    assert( ( qtf_type == 0 ) | ( qtf_type == 1 ) && "qtf_type variable with values differnt to 0 and 1" );
 
     // Define aux variables to be used along the function
     GaussPoints gp( input->gauss_order );
