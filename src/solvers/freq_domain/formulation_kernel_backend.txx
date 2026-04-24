@@ -1475,11 +1475,11 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
             {
                 if ( source_i->panel->type == PanelTypeE::DIFFRAC )
                 {
-                    int_scale_f_j = cuscomplex( 1.0, 0.0 );
+                    int_scale_f_i = cuscomplex( 1.0, 0.0 );
                 }
                 else if ( source_i->panel->type == PanelTypeE::INT_LID )
                 {
-                    int_scale_f_j = cuscomplex( -nu, 0.0 );
+                    int_scale_f_i = cuscomplex( -nu, 0.0 );
                 }
                 else if ( source_i->panel->type == PanelTypeE::EXT_LID )
                 {
@@ -1519,7 +1519,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
                         this->_sf_gp->sysmat[index_cm]  = int_scale_f_j * int_value;
                     }
 
-                    STATIC_COND( ONLY_PF, this->_pf_gp->sysmat[index_cm]  = int_dn_pf_value; )
+                    STATIC_COND( ONLY_PF, this->_pf_gp->sysmat[index_cm]  =  int_scale_f_i * int_dn_pf_value; )
                 }
                 else
                 {
@@ -1533,7 +1533,7 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
                         this->_sf_gp->sysmat[index_cm]  = int_scale_f_j * ( this->_pot_gp->sysmat_steady[index_rm] + int_value );
                     }
 
-                    STATIC_COND( ONLY_PF, this->_pf_gp->sysmat[index_cm]  = ( this->_pf_gp->sysmat_steady[index_cm] + int_dn_pf_value ); )
+                    STATIC_COND( ONLY_PF, this->_pf_gp->sysmat[index_cm]  = int_scale_f_i * ( this->_pf_gp->sysmat_steady[index_cm] + int_dn_pf_value ); )
                 }
 
             }
