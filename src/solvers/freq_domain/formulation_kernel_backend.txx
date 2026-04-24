@@ -100,6 +100,21 @@ inline cuscomplex calculate_fs_singularity(
     return wave_fcn_value;
 }
 
+static inline cuscomplex panel_scale_factor( const PanelGeom* panel, cusfloat nu )
+{
+    switch ( panel->type )
+    {
+        case PanelTypeE::DIFFRAC:
+            return cuscomplex( 1.0, 0.0 );
+        case PanelTypeE::INT_LID:
+            return cuscomplex( -nu, 0.0 );
+        case PanelTypeE::EXT_LID:
+            return cuscomplex( 0.0, +nu * panel->ext_lid_damp_f );
+        default:
+            return cuscomplex( 1.0, 0.0 );
+    }
+}
+
 
 template<int mode_pf, FreqRegimeE freq_regime>
 void _formulation_kernel_steady(
@@ -1473,31 +1488,8 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
             // Calculate scaling factors for the integrals according to the panel types
             if ( i != j )
             {
-                if ( source_i->panel->type == PanelTypeE::DIFFRAC )
-                {
-                    int_scale_f_i = cuscomplex( 1.0, 0.0 );
-                }
-                else if ( source_i->panel->type == PanelTypeE::INT_LID )
-                {
-                    int_scale_f_i = cuscomplex( -nu, 0.0 );
-                }
-                else if ( source_i->panel->type == PanelTypeE::EXT_LID )
-                {
-                    int_scale_f_i = cuscomplex( 0.0, +nu * source_i->panel->ext_lid_damp_f );
-                }
-    
-                if ( panel_j->type == PanelTypeE::DIFFRAC )
-                {
-                    int_scale_f_j  = cuscomplex( 1.0, 0.0 ) ;
-                }
-                else if ( panel_j->type == PanelTypeE::INT_LID )
-                {
-                    int_scale_f_j  = cuscomplex( -nu, 0.0 );
-                }
-                else if ( panel_j->type == PanelTypeE::EXT_LID )
-                {
-                    int_scale_f_j  = cuscomplex( 0.0, +nu * panel_j->ext_lid_damp_f );
-                }
+                int_scale_f_i = panel_scale_factor( source_i->panel, nu );
+                int_scale_f_j = panel_scale_factor( panel_j, nu );
             }
             else
             {
@@ -1505,75 +1497,22 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
                 int_scale_f_j = cuscomplex( 1.0, 0.0 );
             }
 
-            if ( source_i->panel->type == PanelTypeE::DIFFRAC )
-            {
-                if ( is_john && freq_regime == FreqRegimeE::REGULAR )
-                {
-                    this->_pot_gp->sysmat[index_rm] = int_value;
-                    if ( panel_j->type == PanelTypeE::DIFFRAC )
-                    {
-                        this->_sf_gp->sysmat[index_cm]  = int_scale_f_j * int_dn_sf_value;
-                    }
-                    else
-                    {
-                        this->_sf_gp->sysmat[index_cm]  = int_scale_f_j * int_value;
-                    }
+            const bool       is_john_regular    = ( is_john && freq_regime == FreqRegimeE::REGULAR );
+            const bool       i_is_diffrac       = ( source_i->panel->type == PanelTypeE::DIFFRAC );
+            const bool       j_is_diffrac       = ( panel_j->type == PanelTypeE::DIFFRAC );
+            const cuscomplex pot_total          = ( this->_pot_gp->sysmat_steady[index_rm] + int_value );
 
-                    STATIC_COND( ONLY_PF, this->_pf_gp->sysmat[index_cm]  =  int_scale_f_i * int_dn_pf_value; )
-                }
-                else
-                {
-                    this->_pot_gp->sysmat[index_rm] = ( this->_pot_gp->sysmat_steady[index_rm] + int_value );
-                    if ( panel_j->type == PanelTypeE::DIFFRAC )
-                    {
-                        this->_sf_gp->sysmat[index_cm]  = int_scale_f_j * int_dn_sf_value;
-                    }
-                    else
-                    {
-                        this->_sf_gp->sysmat[index_cm]  = int_scale_f_j * ( this->_pot_gp->sysmat_steady[index_rm] + int_value );
-                    }
+            this->_pot_gp->sysmat[index_rm]     = is_john_regular ? int_value : pot_total;
+            this->_sf_gp->sysmat[index_cm]      = int_scale_f_j * ( j_is_diffrac ? int_dn_sf_value : ( is_john_regular ? int_value : pot_total ) );
 
-                    STATIC_COND( ONLY_PF, this->_pf_gp->sysmat[index_cm]  = int_scale_f_i * ( this->_pf_gp->sysmat_steady[index_cm] + int_dn_pf_value ); )
-                }
-
-            }
-            else if ( 
-                        source_i->panel->type == PanelTypeE::INT_LID
-                        ||
-                        source_i->panel->type == PanelTypeE::EXT_LID
-                    )
-            {
-                if ( is_john && freq_regime == FreqRegimeE::REGULAR )
-                {
-                    this->_pot_gp->sysmat[index_rm] = int_value;
-
-                    if ( panel_j->type == PanelTypeE::DIFFRAC )
-                    {
-                        this->_sf_gp->sysmat[index_cm]  = int_scale_f_j * int_dn_sf_value;
-                    }
-                    else
-                    {
-                        this->_sf_gp->sysmat[index_cm]  = int_scale_f_j * int_value;
-                    }
-
-                    STATIC_COND( ONLY_PF, this->_pf_gp->sysmat[index_cm]  = int_scale_f_i * int_value; )
-                }
-                else
-                {
-                    this->_pot_gp->sysmat[index_rm] = ( this->_pot_gp->sysmat_steady[index_rm] + int_value );
-                    if ( panel_j->type == PanelTypeE::DIFFRAC )
-                    {
-                        this->_sf_gp->sysmat[index_cm]  = int_scale_f_j * int_dn_sf_value;
-                    }
-                    else
-                    {
-                        this->_sf_gp->sysmat[index_cm]  = int_scale_f_j * ( this->_pot_gp->sysmat_steady[index_rm] + int_value );
-                    }
-
-                    STATIC_COND( ONLY_PF, this->_pf_gp->sysmat[index_cm]  = int_scale_f_i * ( this->_pot_gp->sysmat_steady[index_rm] + int_value ); )
-                }
-
-            }
+            STATIC_COND(
+                            ONLY_PF,
+                            this->_pf_gp->sysmat[index_cm]  = int_scale_f_i * (
+                                                                                    i_is_diffrac
+                                                                                    ? ( is_john_regular ? int_dn_pf_value : ( this->_pf_gp->sysmat_steady[index_cm] + int_dn_pf_value ) )
+                                                                                    : ( is_john_regular ? int_value : pot_total )
+                                                                                );
+                        )
 
 
             // if ( is_john && freq_regime == FreqRegimeE::REGULAR )
