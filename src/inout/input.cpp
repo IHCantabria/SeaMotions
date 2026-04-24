@@ -739,6 +739,18 @@ void Input::configure( void )
     // QTF mesh
     this->is_fs_qtf = ( this->out_qtf_so_model == QTFSOModelE::INDIRECT || this->out_qtf_so_model == QTFSOModelE::DIRECT );
 
+    // Check if Moorison elements are not switched on to do not allow the Moorison elements forces output flag
+    bool is_morison_used = false;
+    for ( int i=0; i<this->bodies_np; i++ )
+    {
+        if ( this->bodies[i]->use_morison_elements )
+        {
+            is_morison_used = true;
+            break;
+        }
+    }
+    this->out_morison = ( this->out_morison && is_morison_used );
+
     /**********************************************************/
     /************** Check headings input units ****************/
     /**********************************************************/
