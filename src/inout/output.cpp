@@ -933,8 +933,8 @@ void    Output::save_hydromechanics_asympt_format(
     cusfloat*   amb = generate_empty_vector<cusfloat>( pow2s( this->_input->dofs_np ) );
 
     // Storage data into disk
-    hsize_t _ds_hma_ch[_DS_HM_NP]   = { 1, 1, static_cast<hsize_t>( this->_input->dofs_np ), static_cast<hsize_t>( this->_input->dofs_np ) };
-    hsize_t offset[_DS_HM_NP]       = { 0, 0, 0, 0 };
+    hsize_t _ds_hma_ch[_DS_HMA_NP]  = { 1, 1, static_cast<hsize_t>( this->_input->dofs_np ), static_cast<hsize_t>( this->_input->dofs_np ) };
+    hsize_t offset[_DS_HMA_NP]      = { 0, 0, 0, 0 };
 
     int index_global                = 0;
     int index_local                 = 0;
