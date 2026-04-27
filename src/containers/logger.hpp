@@ -83,7 +83,7 @@ private:
     /* Declare private attributes */
     bool                _is_root        = true;
     std::string         _last_msg       ;
-    int                 _time_column    = 40;
+    int                 _time_column    = 60;
     std::mutex          _mutex          ;
     static constexpr int _prefix_width  = 11;
 

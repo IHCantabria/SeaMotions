@@ -382,7 +382,7 @@ void FrequencySolver<N, mode_pf>::calculate_second_order( void )
     {
         for ( std::size_t j=0; j<static_cast<std::size_t>(this->input->angfreqs_np); j++ )
         {
-            LOG_TASK_SS( freq, "SO - Calculating period: " << std::setw( 10 ) << std::fixed << std::setprecision( 3 ) << angfreq_to_period( this->input->angfreqs[i] ) << " s" )
+            LOG_TASK_SS( freq, "SO - Calculating period: " << std::setw( 10 ) << std::fixed << std::setprecision( 3 ) << angfreq_to_period( this->input->angfreqs[i] ) << " s" << " - " << angfreq_to_period( this->input->angfreqs[j] ) << " s" )
 
             // Start time measurement for the current frequency
             MpiTimer freq_timer;
