@@ -103,19 +103,6 @@ void    SimulationData::add_qtf_data(
     int qtf_freq_np = this->qtf_np * pow2s( freqs_np );
     if ( this->_mpi_config->is_root( ) )
     {
-        // Define common variables to storage QTF values
-        this->qtf                       = generate_empty_vector<cuscomplex>( this->qtf_np );
-        this->qtf_diff_acc              = generate_empty_vector<cuscomplex>( this->qtf_np );
-        this->qtf_diff_bern             = generate_empty_vector<cuscomplex>( this->qtf_np );
-        this->qtf_diff_mom              = generate_empty_vector<cuscomplex>( this->qtf_np );
-        this->qtf_diff_secord_force     = generate_empty_vector<cuscomplex>( this->qtf_np );
-        this->qtf_diff_wl               = generate_empty_vector<cuscomplex>( this->qtf_np );
-        this->qtf_sum_acc               = generate_empty_vector<cuscomplex>( this->qtf_np );
-        this->qtf_sum_bern              = generate_empty_vector<cuscomplex>( this->qtf_np );
-        this->qtf_sum_mom               = generate_empty_vector<cuscomplex>( this->qtf_np );
-        this->qtf_sum_secord_force      = generate_empty_vector<cuscomplex>( this->qtf_np );
-        this->qtf_sum_wl                = generate_empty_vector<cuscomplex>( this->qtf_np );
-
         // Define variables used for Indirect method
         if ( this->_input->out_qtf_so_model == QTFSOModelE::INDIRECT )
         {
@@ -431,6 +418,9 @@ SimulationData::SimulationData(
 
         this->raos_hist                 = generate_empty_vector<cuscomplex>( this->_input->angfreqs_np * this->wave_exc_np );
 
+        // Add QTF data
+        this->add_qtf_data( this->_input->angfreqs_np );
+
     }
 
     // Allocate space for variables used only on root processor
@@ -469,6 +459,7 @@ SimulationData::SimulationData(
             }
         }
     }
+
 }
 
 
@@ -496,7 +487,6 @@ SimulationData::~SimulationData(
     {
         mkl_free( this->raos_hist );
 
-        mkl_free( this->qtf                   );
         mkl_free( this->qtf_diff_acc          );
         mkl_free( this->qtf_diff_bern         );
         mkl_free( this->qtf_diff_mom          );
@@ -595,17 +585,17 @@ SimulationData::~SimulationData(
     {
         if ( this->_mpi_config->is_root( ) )
         {
-            mkl_free( this->qtf                   );
-            mkl_free( this->qtf_diff_acc          );
-            mkl_free( this->qtf_diff_bern         );
-            mkl_free( this->qtf_diff_mom          );
-            mkl_free( this->qtf_diff_secord_force );
-            mkl_free( this->qtf_diff_wl           );
-            mkl_free( this->qtf_sum_acc           );
-            mkl_free( this->qtf_sum_bern          );
-            mkl_free( this->qtf_sum_mom           );
-            mkl_free( this->qtf_sum_secord_force  );
-            mkl_free( this->qtf_sum_wl            );
+            // mkl_free( this->qtf                   );
+            // mkl_free( this->qtf_diff_acc          );
+            // mkl_free( this->qtf_diff_bern         );
+            // mkl_free( this->qtf_diff_mom          );
+            // mkl_free( this->qtf_diff_secord_force );
+            // mkl_free( this->qtf_diff_wl           );
+            // mkl_free( this->qtf_sum_acc           );
+            // mkl_free( this->qtf_sum_bern          );
+            // mkl_free( this->qtf_sum_mom           );
+            // mkl_free( this->qtf_sum_secord_force  );
+            // mkl_free( this->qtf_sum_wl            );
 
             if ( this->_input->out_qtf_so_model == QTFSOModelE::INDIRECT )
             {
