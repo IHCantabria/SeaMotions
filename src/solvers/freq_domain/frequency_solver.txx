@@ -371,6 +371,12 @@ void FrequencySolver<N, mode_pf>::calculate_first_order( void )
 template<std::size_t N, int mode_pf>
 void FrequencySolver<N, mode_pf>::calculate_second_order( void )
 {
+    // Check if second order forces are to be calculated
+    if ( !this->input->out_qtf )
+    {
+        return;
+    }
+
     // Loop over frequencies
     for ( std::size_t i=0; i<static_cast<std::size_t>(this->input->angfreqs_np); i++ )
     {
