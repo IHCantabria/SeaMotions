@@ -28,6 +28,7 @@
 #include "../../containers/field_mesh_data.hpp"
 #include "../../containers/mpi_config.hpp"
 #include "../../containers/morison_element.hpp"
+#include "../../containers/panel_geom.hpp"
 #include "../../containers/rad_diff_data.hpp"
 #include "../../containers/simulation_data.hpp"
 #include "formulation_kernel_backend.hpp"
@@ -82,6 +83,7 @@ private:
     RDDQC*                              _qtf_bern_fields    = nullptr;  // Storage of velocity field for the calculation of bernoulli term in QTFs
     RDDQC*                              _qtf_fs_fields      = nullptr;  // Storage of field points over the QTF free surface lid
     RDDQC*                              _qtf_fs_wl_fields   = nullptr;  // Storage of field points over the QTF free surface lid perimeter
+    PanelGeom                           _qtf_annulus_geom   ;           // Shared panel geometry for QTF annulus fields
     std::vector<Mesh*>                  _qtf_annuli_meshes  ;           // Stack of annulus meshes for QTF field sampling
     std::vector<RDDQC*>                 _qtf_annuli_fields  ;           // RadDiffData stack for annulus field points
     std::vector<std::vector<cusfloat>>  _qtf_annuli_weights;            // Weights per annulus field point set

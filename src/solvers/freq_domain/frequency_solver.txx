@@ -1897,7 +1897,13 @@ void FrequencySolver<N, mode_pf>::_initialize_field_data( void )
     MpiTimer fields_timer;
 
     // Initialize QTF waterline field points data container
-    if ( this->input->is_calc_mdrift || this->input->out_qtf_so_model == QTFSOModelE::INDIRECT )
+    if ( 
+            this->input->is_calc_mdrift 
+            || 
+            this->input->out_qtf_so_model == QTFSOModelE::INDIRECT
+            || 
+            this->input->out_qtf_so_model == QTFSOModelE::DIRECT
+        )
     {
         this->_qtf_bern_fields  = new RadDiffData<cuscomplex, RDDQTFConfig>(
                                                                                 this->mpi_config,
@@ -1920,7 +1926,7 @@ void FrequencySolver<N, mode_pf>::_initialize_field_data( void )
         
     }
 
-            if ( this->input->out_qtf_so_model == QTFSOModelE::DIRECT || this->input->out_qtf_so_model == QTFSOModelE::INDIRECT )
+    if ( this->input->out_qtf_so_model == QTFSOModelE::DIRECT || this->input->out_qtf_so_model == QTFSOModelE::INDIRECT )
     {
         if ( this->_qtf_fs_fields == nullptr && this->mesh_fs_qtf_gp != nullptr )
         {
@@ -1963,6 +1969,18 @@ void FrequencySolver<N, mode_pf>::_initialize_field_data( void )
                 field_points = generate_empty_vector<cusfloat>( fp_np_max * 3 );
             }
 
+            // Initialize a shared panel geometry for annulus fields using the first body COG.
+            this->_qtf_annulus_geom.normal_vec[0] = 0.0;
+            this->_qtf_annulus_geom.normal_vec[1] = 0.0;
+            this->_qtf_annulus_geom.normal_vec[2] = 1.0;
+            if ( this->input->bodies_np > 0 && this->input->bodies[0] != nullptr )
+            {
+                for ( int r=0; r<3; ++r )
+                {
+                    this->_qtf_annulus_geom.body_cog[r] = this->input->bodies[0]->cog[r];
+                }
+            }
+
             for ( std::size_t annulus_idx = 0; annulus_idx < this->_qtf_annuli_meshes.size( ); ++annulus_idx )
             {
                 Mesh* annulus_mesh = this->_qtf_annuli_meshes[annulus_idx];
@@ -1992,6 +2010,12 @@ void FrequencySolver<N, mode_pf>::_initialize_field_data( void )
                                                                                                         false
                                                                                                     )
                                                         );
+
+                RDDQC* annulus_field = this->_qtf_annuli_fields.back( );
+                for ( std::size_t i=0; i<annulus_field->get_size_local( ); ++i )
+                {
+                    annulus_field->panel_data[i].panel_geom = &(this->_qtf_annulus_geom);
+                }
             }
 
             if ( field_points != nullptr )
@@ -2097,7 +2121,7 @@ void FrequencySolver<N, mode_pf>::_initialize_mesh_groups( void )
         this->mesh_fs_qtf_gp    = new MeshGroup(
                                                     fs_mesh,
                                                     1,
-                                                    false
+                                                    true
                                                 );
 
         if ( this->input->out_qtf_so_model == QTFSOModelE::DIRECT )

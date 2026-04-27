@@ -1039,6 +1039,7 @@ void FormulationKernelBackend<N, mode_pf>::_process_qtf_rhs_annuli(
     for ( std::size_t i=0; i<local_panels; i++ )
     {
         PanelData<cuscomplex, RDDQTFConfig>* panel_data = &(annulus_fields->panel_data[i]);
+        PanelGeom* panel_geom_prev = panel_data->panel_geom;
         panel_data->panel_geom = &annulus_panel_geom;
 
         field_points_x[0] = panel_data->field_points[0];
@@ -1073,6 +1074,8 @@ void FormulationKernelBackend<N, mode_pf>::_process_qtf_rhs_annuli(
                 }
             }
         }
+
+        panel_data->panel_geom = panel_geom_prev;
     }
 
     MPI_Allreduce( MPI_IN_PLACE, annuli_acc, acc_size, mpi_cuscomplex, MPI_SUM, MPI_COMM_WORLD );
