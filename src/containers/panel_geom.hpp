@@ -22,6 +22,7 @@
 
 // Include local modules
 #include "../config.hpp"
+#include "../tools/memory_report.hpp"
 
 
 
@@ -149,6 +150,13 @@ public:
     ~PanelGeom( 
                                         void 
                 );
+
+    std::size_t memory_bytes( void ) const;
+
+    void append_memory_report(
+                                    std::vector<MemoryReportEntry>& entries,
+                                    const std::string& prefix
+                                ) const;
 
     // Add method to calculate the geometric propertiess
     void    calcualte_free_surface_singularity( 

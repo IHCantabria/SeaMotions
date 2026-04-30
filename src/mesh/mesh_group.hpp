@@ -24,6 +24,7 @@
 #include "../containers/panel_geom.hpp"
 #include "../containers/source_node.hpp"
 #include "mesh.hpp"
+#include "../tools/memory_report.hpp"
 
 
 struct MeshGroup
@@ -63,6 +64,11 @@ public:
     ~MeshGroup(
                     void
                 );
+
+    void append_memory_report(
+                                    std::vector<MemoryReportEntry>& entries,
+                                    const std::string& prefix
+                                ) const;
 
     // Define class methods
     void    define_mirror_panels(

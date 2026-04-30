@@ -1986,3 +1986,180 @@ void Mesh::check_quality(
         }
     }
 }
+
+
+std::size_t Mesh::memory_bytes( void ) const
+{
+    std::size_t total = 0;
+    if ( this->elems != nullptr )
+    {
+        total += static_cast<std::size_t>( this->elems_np ) * static_cast<std::size_t>( this->enrl ) * sizeof( int );
+    }
+    if ( this->elems_type != nullptr )
+    {
+        total += static_cast<std::size_t>( this->elems_np ) * sizeof( int );
+    }
+    if ( this->x != nullptr )
+    {
+        total += static_cast<std::size_t>( this->nodes_np ) * sizeof( cusfloat );
+    }
+    if ( this->y != nullptr )
+    {
+        total += static_cast<std::size_t>( this->nodes_np ) * sizeof( cusfloat );
+    }
+    if ( this->z != nullptr )
+    {
+        total += static_cast<std::size_t>( this->nodes_np ) * sizeof( cusfloat );
+    }
+    if ( this->panels != nullptr )
+    {
+        total += static_cast<std::size_t>( this->elems_np ) * sizeof( PanelGeom* );
+    }
+    if ( this->panels_wl != nullptr )
+    {
+        total += static_cast<std::size_t>( this->panels_wl_np ) * sizeof( PanelGeom* );
+    }
+    if ( this->source_nodes != nullptr )
+    {
+        total += static_cast<std::size_t>( this->source_nodes_np ) * sizeof( SourceNode* );
+    }
+    total += this->ext_lid_damp_f.size( ) * sizeof( cusfloat );
+    total += this->panels_type.size( ) * sizeof( PanelTypeE );
+
+    if ( this->panels != nullptr )
+    {
+        for ( int i = 0; i < this->elems_np; i++ )
+        {
+            if ( this->panels[i] != nullptr )
+            {
+                total += this->panels[i]->memory_bytes( );
+            }
+        }
+    }
+
+    if ( this->panels_wl != nullptr )
+    {
+        for ( int i = 0; i < this->panels_wl_np; i++ )
+        {
+            if ( this->panels_wl[i] != nullptr )
+            {
+                total += this->panels_wl[i]->memory_bytes( );
+            }
+        }
+    }
+
+    if ( this->source_nodes != nullptr )
+    {
+        total += static_cast<std::size_t>( this->source_nodes_np ) * sizeof( SourceNode );
+    }
+
+    return total;
+}
+
+
+void Mesh::append_memory_report(
+                                    std::vector<MemoryReportEntry>& entries,
+                                    const std::string& prefix
+                                ) const
+{
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "elems" ),
+                        ( this->elems != nullptr )
+                            ? static_cast<std::size_t>( this->elems_np ) * static_cast<std::size_t>( this->enrl ) * sizeof( int )
+                            : 0
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "elems_type" ),
+                        ( this->elems_type != nullptr )
+                            ? static_cast<std::size_t>( this->elems_np ) * sizeof( int )
+                            : 0
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "x" ),
+                        ( this->x != nullptr )
+                            ? static_cast<std::size_t>( this->nodes_np ) * sizeof( cusfloat )
+                            : 0
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "y" ),
+                        ( this->y != nullptr )
+                            ? static_cast<std::size_t>( this->nodes_np ) * sizeof( cusfloat )
+                            : 0
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "z" ),
+                        ( this->z != nullptr )
+                            ? static_cast<std::size_t>( this->nodes_np ) * sizeof( cusfloat )
+                            : 0
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "panels_ptrs" ),
+                        ( this->panels != nullptr )
+                            ? static_cast<std::size_t>( this->elems_np ) * sizeof( PanelGeom* )
+                            : 0
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "panels_wl_ptrs" ),
+                        ( this->panels_wl != nullptr )
+                            ? static_cast<std::size_t>( this->panels_wl_np ) * sizeof( PanelGeom* )
+                            : 0
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "source_nodes_ptrs" ),
+                        ( this->source_nodes != nullptr )
+                            ? static_cast<std::size_t>( this->source_nodes_np ) * sizeof( SourceNode* )
+                            : 0
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "ext_lid_damp_f" ),
+                        this->ext_lid_damp_f.size( ) * sizeof( cusfloat )
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "panels_type" ),
+                        this->panels_type.size( ) * sizeof( PanelTypeE )
+                    );
+
+    std::size_t panel_bytes = 0;
+    if ( this->panels != nullptr )
+    {
+        for ( int i = 0; i < this->elems_np; i++ )
+        {
+            if ( this->panels[i] != nullptr )
+            {
+                panel_bytes += this->panels[i]->memory_bytes( );
+            }
+        }
+    }
+    add_memory_entry( entries, memory_report_path( prefix, "panels" ), panel_bytes );
+
+    std::size_t panel_wl_bytes = 0;
+    if ( this->panels_wl != nullptr )
+    {
+        for ( int i = 0; i < this->panels_wl_np; i++ )
+        {
+            if ( this->panels_wl[i] != nullptr )
+            {
+                panel_wl_bytes += this->panels_wl[i]->memory_bytes( );
+            }
+        }
+    }
+    add_memory_entry( entries, memory_report_path( prefix, "panels_wl" ), panel_wl_bytes );
+
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "source_nodes" ),
+                        ( this->source_nodes != nullptr )
+                            ? static_cast<std::size_t>( this->source_nodes_np ) * sizeof( SourceNode )
+                            : 0
+                    );
+}

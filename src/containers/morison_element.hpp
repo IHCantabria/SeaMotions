@@ -29,6 +29,7 @@
 #include "../containers/rad_diff_data.hpp"
 #include "../inout/input.hpp"
 #include "../math/custensor/custensor.hpp"
+#include "../tools/memory_report.hpp"
 
 
 class MorisonElement
@@ -99,5 +100,12 @@ public:
 
 
     RDDMorison* get_rdd( void ) const;
+
+    std::size_t memory_bytes( void ) const;
+
+    void append_memory_report(
+                                    std::vector<MemoryReportEntry>& entries,
+                                    const std::string& prefix
+                                ) const;
 
 };

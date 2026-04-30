@@ -746,6 +746,40 @@ bool PanelGeom::is_john(
 }
 
 
+std::size_t PanelGeom::memory_bytes( void ) const
+{
+    std::size_t total = sizeof( PanelGeom );
+    if ( this->_source_positions != nullptr )
+    {
+        total += 3 * sizeof( cusfloat );
+    }
+    if ( this->_source_normal_vec != nullptr )
+    {
+        total += 6 * sizeof( cusfloat );
+    }
+    return total;
+}
+
+
+void PanelGeom::append_memory_report(
+                                        std::vector<MemoryReportEntry>& entries,
+                                        const std::string& prefix
+                                    ) const
+{
+    add_memory_entry( entries, memory_report_path( prefix, "object" ), sizeof( PanelGeom ) );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "source_positions" ),
+                        ( this->_source_positions != nullptr ) ? 3 * sizeof( cusfloat ) : 0
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "source_normal_vec" ),
+                        ( this->_source_normal_vec != nullptr ) ? 6 * sizeof( cusfloat ) : 0
+                    );
+}
+
+
 void PanelGeom::local_to_global( 
                                     cusfloat    xi, 
                                     cusfloat    eta,

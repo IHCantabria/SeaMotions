@@ -34,10 +34,14 @@ void    SimulationData::add_mean_drift_data(
                                                 int wl_gp_np
                                             )
 {
-    int body_raddif_np  =   this->get_raddif_np( body_panels_tnp,  body_gp_np );
-    int body_heads_np   =   this->get_heads_np( body_panels_tnp,  body_gp_np );
-    int wl_raddif_np    =   this->get_raddif_np( wl_panels_tnp, wl_gp_np );
-    int wl_heads_np     =   this->get_heads_np( wl_panels_tnp,  wl_gp_np );
+    int body_raddif_np          =   this->get_raddif_np( body_panels_tnp,  body_gp_np );
+    int body_heads_np           =   this->get_heads_np( body_panels_tnp,  body_gp_np );
+    int wl_raddif_np            =   this->get_raddif_np( wl_panels_tnp, wl_gp_np );
+    int wl_heads_np             =   this->get_heads_np( wl_panels_tnp,  wl_gp_np );
+    this->mdrift_body_heads_np  = body_heads_np;
+    this->mdrift_body_raddif_np = body_raddif_np;
+    this->mdrift_wl_heads_np    = wl_heads_np;
+    this->mdrift_wl_raddif_np   = wl_raddif_np;
     if ( this->_mpi_config->is_root( ) )
     {
         this->mdrift                        = generate_empty_vector<cuscomplex>( this->wave_exc_np );
@@ -968,5 +972,207 @@ void    SimulationData::storage_qtf_indirect_freq(
             this->qtf_kochin_rad_cos_freqs[idx1] = qtf_kochin_rad_cos[i];
             this->qtf_kochin_rad_sin_freqs[idx1] = qtf_kochin_rad_sin[i];
         }
+    }
+}
+
+
+void SimulationData::append_memory_report(
+                                            std::vector<MemoryReportEntry>& entries,
+                                            const std::string& prefix
+                                        ) const
+{
+    auto add_ptr = [&](const std::string& name, const void* ptr, std::size_t count, std::size_t elem_size)
+    {
+        if ( ptr != nullptr && count > 0 )
+        {
+            add_memory_entry( entries, memory_report_path( prefix, name ), count * elem_size );
+        }
+    };
+
+    const std::size_t hydmech_np_sz = static_cast<std::size_t>( this->hydmech_np );
+    const std::size_t wave_exc_np_sz = static_cast<std::size_t>( this->wave_exc_np );
+    const std::size_t fields_np_sz = static_cast<std::size_t>( this->fields_np );
+    const std::size_t fields_so_np_sz = static_cast<std::size_t>( this->fields_so_np );
+    const std::size_t qtf_np_sz = static_cast<std::size_t>( this->qtf_np );
+    const std::size_t qtf_far_np_sz = static_cast<std::size_t>( this->qtf_far_np );
+
+    add_ptr( "added_mass", this->added_mass, hydmech_np_sz, sizeof( cusfloat ) );
+    add_ptr( "damping_rad", this->damping_rad, hydmech_np_sz, sizeof( cusfloat ) );
+    add_ptr( "added_mass_p0", this->added_mass_p0, hydmech_np_sz, sizeof( cusfloat ) );
+    add_ptr( "damping_rad_p0", this->damping_rad_p0, hydmech_np_sz, sizeof( cusfloat ) );
+    add_ptr( "hydrostiff_p0", this->hydrostiff_p0, hydmech_np_sz, sizeof( cusfloat ) );
+    add_ptr( "structural_mass_p0", this->structural_mass_p0, hydmech_np_sz, sizeof( cusfloat ) );
+
+    add_ptr( "froude_krylov", this->froude_krylov, wave_exc_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "froude_krylov_p0", this->froude_krylov_p0, wave_exc_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "wave_diffrac", this->wave_diffrac, wave_exc_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "wave_diffrac_p0", this->wave_diffrac_p0, wave_exc_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "wave_exc_p0", this->wave_exc_p0, wave_exc_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "raos", this->raos, wave_exc_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "morison_drag_force", this->morison_drag_force, wave_exc_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "morison_drag_force_p0", this->morison_drag_force_p0, wave_exc_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "morison_inertial_force", this->morison_inertial_force, wave_exc_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "morison_inertial_force_p0", this->morison_inertial_force_p0, wave_exc_np_sz, sizeof( cuscomplex ) );
+
+    add_ptr( "intensities", this->intensities, fields_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "intensities_p0", this->intensities_p0, fields_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "panels_potential", this->panels_potential, fields_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "panels_potential_p0", this->panels_potential_p0, fields_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "panels_pressure", this->panels_pressure, fields_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "panels_pressure_p0", this->panels_pressure_p0, fields_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "panels_potential_so", this->panels_potential_so, fields_so_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "panels_potential_so_p0", this->panels_potential_so_p0, fields_so_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "panels_pressure_so", this->panels_pressure_so, fields_so_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "panels_pressure_so_p0", this->panels_pressure_so_p0, fields_so_np_sz, sizeof( cuscomplex ) );
+
+    add_ptr( "qtf", this->qtf, qtf_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "qtf_diff_acc", this->qtf_diff_acc, qtf_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "qtf_diff_bern", this->qtf_diff_bern, qtf_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "qtf_diff_mom", this->qtf_diff_mom, qtf_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "qtf_diff_secord_force", this->qtf_diff_secord_force, qtf_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "qtf_diff_wl", this->qtf_diff_wl, qtf_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "qtf_sum_acc", this->qtf_sum_acc, qtf_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "qtf_sum_bern", this->qtf_sum_bern, qtf_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "qtf_sum_mom", this->qtf_sum_mom, qtf_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "qtf_sum_secord_force", this->qtf_sum_secord_force, qtf_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "qtf_sum_wl", this->qtf_sum_wl, qtf_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "qtf_a_cos", this->qtf_a_cos, qtf_far_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "qtf_a_sin", this->qtf_a_sin, qtf_far_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "qtf_b_cos", this->qtf_b_cos, qtf_far_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "qtf_b_sin", this->qtf_b_sin, qtf_far_np_sz, sizeof( cuscomplex ) );
+
+    add_ptr( "mdrift", this->mdrift, wave_exc_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "mdrift_wl", this->mdrift_wl, wave_exc_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "mdrift_bern", this->mdrift_bern, wave_exc_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "mdrift_acc", this->mdrift_acc, wave_exc_np_sz, sizeof( cuscomplex ) );
+    add_ptr( "mdrift_mom", this->mdrift_mom, wave_exc_np_sz, sizeof( cuscomplex ) );
+
+    add_ptr( "mdrift_body_pot_fk", this->mdrift_body_pot_fk, static_cast<std::size_t>( this->mdrift_body_heads_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_body_pot_raddif", this->mdrift_body_pot_raddif, static_cast<std::size_t>( this->mdrift_body_raddif_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_body_pot_total", this->mdrift_body_pot_total, static_cast<std::size_t>( this->mdrift_body_heads_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_body_vel_x_fk", this->mdrift_body_vel_x_fk, static_cast<std::size_t>( this->mdrift_body_heads_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_body_vel_y_fk", this->mdrift_body_vel_y_fk, static_cast<std::size_t>( this->mdrift_body_heads_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_body_vel_z_fk", this->mdrift_body_vel_z_fk, static_cast<std::size_t>( this->mdrift_body_heads_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_body_vel_x_raddif", this->mdrift_body_vel_x_raddif, static_cast<std::size_t>( this->mdrift_body_raddif_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_body_vel_y_raddif", this->mdrift_body_vel_y_raddif, static_cast<std::size_t>( this->mdrift_body_raddif_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_body_vel_z_raddif", this->mdrift_body_vel_z_raddif, static_cast<std::size_t>( this->mdrift_body_raddif_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_body_vel_x_total", this->mdrift_body_vel_x_total, static_cast<std::size_t>( this->mdrift_body_heads_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_body_vel_y_total", this->mdrift_body_vel_y_total, static_cast<std::size_t>( this->mdrift_body_heads_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_body_vel_z_total", this->mdrift_body_vel_z_total, static_cast<std::size_t>( this->mdrift_body_heads_np ), sizeof( cuscomplex ) );
+
+    add_ptr( "mdrift_wl_rel_we", this->mdrift_wl_rel_we, static_cast<std::size_t>( this->mdrift_wl_heads_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_wl_pot_fk", this->mdrift_wl_pot_fk, static_cast<std::size_t>( this->mdrift_wl_heads_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_wl_pot_raddif", this->mdrift_wl_pot_raddif, static_cast<std::size_t>( this->mdrift_wl_raddif_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_wl_pot_total", this->mdrift_wl_pot_total, static_cast<std::size_t>( this->mdrift_wl_heads_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_wl_we", this->mdrift_wl_we, static_cast<std::size_t>( this->mdrift_wl_heads_np ), sizeof( cuscomplex ) );
+
+    add_ptr( "mdrift_fs_pot_fk", this->mdrift_fs_pot_fk, static_cast<std::size_t>( this->qtf_fs_heads_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_fs_pot_raddif", this->mdrift_fs_pot_raddif, static_cast<std::size_t>( this->qtf_fs_raddif_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_fs_pot_total", this->mdrift_fs_pot_total, static_cast<std::size_t>( this->qtf_fs_heads_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_fs_vel_x_fk", this->mdrift_fs_vel_x_fk, static_cast<std::size_t>( this->qtf_fs_heads_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_fs_vel_y_fk", this->mdrift_fs_vel_y_fk, static_cast<std::size_t>( this->qtf_fs_heads_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_fs_vel_z_fk", this->mdrift_fs_vel_z_fk, static_cast<std::size_t>( this->qtf_fs_heads_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_fs_vel_x_raddif", this->mdrift_fs_vel_x_raddif, static_cast<std::size_t>( this->qtf_fs_raddif_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_fs_vel_y_raddif", this->mdrift_fs_vel_y_raddif, static_cast<std::size_t>( this->qtf_fs_raddif_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_fs_vel_z_raddif", this->mdrift_fs_vel_z_raddif, static_cast<std::size_t>( this->qtf_fs_raddif_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_fs_vel_x_total", this->mdrift_fs_vel_x_total, static_cast<std::size_t>( this->qtf_fs_heads_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_fs_vel_y_total", this->mdrift_fs_vel_y_total, static_cast<std::size_t>( this->qtf_fs_heads_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_fs_vel_z_total", this->mdrift_fs_vel_z_total, static_cast<std::size_t>( this->qtf_fs_heads_np ), sizeof( cuscomplex ) );
+
+    add_ptr( "mdrift_pc_pot_fk", this->mdrift_pc_pot_fk, static_cast<std::size_t>( this->qtf_pc_heads_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_pc_pot_raddif", this->mdrift_pc_pot_raddif, static_cast<std::size_t>( this->qtf_pc_raddif_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_pc_pot_total", this->mdrift_pc_pot_total, static_cast<std::size_t>( this->qtf_pc_heads_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_pc_vel_x_fk", this->mdrift_pc_vel_x_fk, static_cast<std::size_t>( this->qtf_pc_heads_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_pc_vel_y_fk", this->mdrift_pc_vel_y_fk, static_cast<std::size_t>( this->qtf_pc_heads_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_pc_vel_z_fk", this->mdrift_pc_vel_z_fk, static_cast<std::size_t>( this->qtf_pc_heads_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_pc_vel_x_raddif", this->mdrift_pc_vel_x_raddif, static_cast<std::size_t>( this->qtf_pc_raddif_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_pc_vel_y_raddif", this->mdrift_pc_vel_y_raddif, static_cast<std::size_t>( this->qtf_pc_raddif_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_pc_vel_z_raddif", this->mdrift_pc_vel_z_raddif, static_cast<std::size_t>( this->qtf_pc_raddif_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_pc_vel_x_total", this->mdrift_pc_vel_x_total, static_cast<std::size_t>( this->qtf_pc_heads_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_pc_vel_y_total", this->mdrift_pc_vel_y_total, static_cast<std::size_t>( this->qtf_pc_heads_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_pc_vel_z_total", this->mdrift_pc_vel_z_total, static_cast<std::size_t>( this->qtf_pc_heads_np ), sizeof( cuscomplex ) );
+
+    add_ptr( "mdrift_wl_vel_x_fk", this->mdrift_wl_vel_x_fk, static_cast<std::size_t>( this->qtf_wl_heads_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_wl_vel_y_fk", this->mdrift_wl_vel_y_fk, static_cast<std::size_t>( this->qtf_wl_heads_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_wl_vel_z_fk", this->mdrift_wl_vel_z_fk, static_cast<std::size_t>( this->qtf_wl_heads_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_wl_vel_x_raddif", this->mdrift_wl_vel_x_raddif, static_cast<std::size_t>( this->qtf_wl_raddif_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_wl_vel_y_raddif", this->mdrift_wl_vel_y_raddif, static_cast<std::size_t>( this->qtf_wl_raddif_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_wl_vel_z_raddif", this->mdrift_wl_vel_z_raddif, static_cast<std::size_t>( this->qtf_wl_raddif_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_wl_vel_x_total", this->mdrift_wl_vel_x_total, static_cast<std::size_t>( this->qtf_wl_heads_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_wl_vel_y_total", this->mdrift_wl_vel_y_total, static_cast<std::size_t>( this->qtf_wl_heads_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_wl_vel_z_total", this->mdrift_wl_vel_z_total, static_cast<std::size_t>( this->qtf_wl_heads_np ), sizeof( cuscomplex ) );
+
+    add_ptr( "mdrift_kochin_pert_cos", this->mdrift_kochin_pert_cos, static_cast<std::size_t>( this->qtf_kochin_heads_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_kochin_pert_sin", this->mdrift_kochin_pert_sin, static_cast<std::size_t>( this->qtf_kochin_heads_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_kochin_rad_cos", this->mdrift_kochin_rad_cos, static_cast<std::size_t>( this->qtf_kochin_rad_np ), sizeof( cuscomplex ) );
+    add_ptr( "mdrift_kochin_rad_sin", this->mdrift_kochin_rad_sin, static_cast<std::size_t>( this->qtf_kochin_rad_np ), sizeof( cuscomplex ) );
+
+    if ( this->_input != nullptr )
+    {
+        const std::size_t freqs_np = static_cast<std::size_t>( this->_input->angfreqs_np );
+        const std::size_t qtf_freq_np = qtf_np_sz * static_cast<std::size_t>( pow2s( static_cast<int>( freqs_np ) ) );
+
+        add_ptr( "raos_hist", this->raos_hist, freqs_np * wave_exc_np_sz, sizeof( cuscomplex ) );
+        add_ptr( "qtf_diff_acc_freqs", this->qtf_diff_acc_freqs, qtf_freq_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_diff_bern_freqs", this->qtf_diff_bern_freqs, qtf_freq_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_diff_freqs", this->qtf_diff_freqs, qtf_freq_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_diff_mom_freqs", this->qtf_diff_mom_freqs, qtf_freq_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_diff_secord_force_freqs", this->qtf_diff_secord_force_freqs, qtf_freq_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_diff_wl_freqs", this->qtf_diff_wl_freqs, qtf_freq_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_sum_acc_freqs", this->qtf_sum_acc_freqs, qtf_freq_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_sum_bern_freqs", this->qtf_sum_bern_freqs, qtf_freq_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_sum_freqs", this->qtf_sum_freqs, qtf_freq_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_sum_mom_freqs", this->qtf_sum_mom_freqs, qtf_freq_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_sum_secord_force_freqs", this->qtf_sum_secord_force_freqs, qtf_freq_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_sum_wl_freqs", this->qtf_sum_wl_freqs, qtf_freq_np, sizeof( cuscomplex ) );
+
+        add_ptr( "qtf_diff_froude_krylov_fo_freqs_p0", this->qtf_diff_froude_krylov_fo_freqs_p0, qtf_freq_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_diff_body_force_freqs_p0", this->qtf_diff_body_force_freqs_p0, qtf_freq_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_diff_fs_near_field_freqs_p0", this->qtf_diff_fs_near_field_freqs_p0, qtf_freq_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_diff_fs_far_field_freqs_p0", this->qtf_diff_fs_far_field_freqs_p0, qtf_freq_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_sum_froude_krylov_fo_freqs_p0", this->qtf_sum_froude_krylov_fo_freqs_p0, qtf_freq_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_sum_body_force_freqs_p0", this->qtf_sum_body_force_freqs_p0, qtf_freq_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_sum_fs_near_field_freqs_p0", this->qtf_sum_fs_near_field_freqs_p0, qtf_freq_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_sum_fs_far_field_freqs_p0", this->qtf_sum_fs_far_field_freqs_p0, qtf_freq_np, sizeof( cuscomplex ) );
+
+        add_ptr( "qtf_body_vel_x_total_freq", this->qtf_body_vel_x_total_freq, static_cast<std::size_t>( this->qtf_body_heads_np ) * freqs_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_body_vel_y_total_freq", this->qtf_body_vel_y_total_freq, static_cast<std::size_t>( this->qtf_body_heads_np ) * freqs_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_body_vel_z_total_freq", this->qtf_body_vel_z_total_freq, static_cast<std::size_t>( this->qtf_body_heads_np ) * freqs_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_raos_freq", this->qtf_raos_freq, wave_exc_np_sz * freqs_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_wl_rel_we_total_freq", this->qtf_wl_rel_we_total_freq, static_cast<std::size_t>( this->qtf_wl_heads_np ) * freqs_np, sizeof( cuscomplex ) );
+
+        add_ptr( "qtf_body_vel_x_fk_freq", this->qtf_body_vel_x_fk_freq, static_cast<std::size_t>( this->qtf_body_heads_np ) * freqs_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_body_vel_y_fk_freq", this->qtf_body_vel_y_fk_freq, static_cast<std::size_t>( this->qtf_body_heads_np ) * freqs_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_body_vel_z_fk_freq", this->qtf_body_vel_z_fk_freq, static_cast<std::size_t>( this->qtf_body_heads_np ) * freqs_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_body_pot_raddif_freq", this->qtf_body_pot_raddif_freq, static_cast<std::size_t>( this->qtf_body_raddif_np ) * freqs_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_body_vel_x_raddif_freq", this->qtf_body_vel_x_raddif_freq, static_cast<std::size_t>( this->qtf_body_raddif_np ) * freqs_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_body_vel_y_raddif_freq", this->qtf_body_vel_y_raddif_freq, static_cast<std::size_t>( this->qtf_body_raddif_np ) * freqs_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_body_vel_z_raddif_freq", this->qtf_body_vel_z_raddif_freq, static_cast<std::size_t>( this->qtf_body_raddif_np ) * freqs_np, sizeof( cuscomplex ) );
+
+        add_ptr( "qtf_fs_pot_fk_freq", this->qtf_fs_pot_fk_freq, static_cast<std::size_t>( this->qtf_fs_heads_np ) * freqs_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_fs_pot_raddif_freq", this->qtf_fs_pot_raddif_freq, static_cast<std::size_t>( this->qtf_fs_raddif_np ) * freqs_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_fs_pot_total_freq", this->qtf_fs_pot_total_freq, static_cast<std::size_t>( this->qtf_fs_heads_np ) * freqs_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_fs_vel_x_fk_freq", this->qtf_fs_vel_x_fk_freq, static_cast<std::size_t>( this->qtf_fs_heads_np ) * freqs_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_fs_vel_y_fk_freq", this->qtf_fs_vel_y_fk_freq, static_cast<std::size_t>( this->qtf_fs_heads_np ) * freqs_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_fs_vel_z_fk_freq", this->qtf_fs_vel_z_fk_freq, static_cast<std::size_t>( this->qtf_fs_heads_np ) * freqs_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_fs_vel_x_total_freq", this->qtf_fs_vel_x_total_freq, static_cast<std::size_t>( this->qtf_fs_raddif_np ) * freqs_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_fs_vel_y_total_freq", this->qtf_fs_vel_y_total_freq, static_cast<std::size_t>( this->qtf_fs_raddif_np ) * freqs_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_fs_vel_z_total_freq", this->qtf_fs_vel_z_total_freq, static_cast<std::size_t>( this->qtf_fs_raddif_np ) * freqs_np, sizeof( cuscomplex ) );
+
+        add_ptr( "qtf_kochin_pert_cos_freqs", this->qtf_kochin_pert_cos_freqs, static_cast<std::size_t>( this->qtf_kochin_heads_np ) * freqs_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_kochin_pert_sin_freqs", this->qtf_kochin_pert_sin_freqs, static_cast<std::size_t>( this->qtf_kochin_heads_np ) * freqs_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_kochin_rad_cos_freqs", this->qtf_kochin_rad_cos_freqs, static_cast<std::size_t>( this->qtf_kochin_rad_np ) * freqs_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_kochin_rad_sin_freqs", this->qtf_kochin_rad_sin_freqs, static_cast<std::size_t>( this->qtf_kochin_rad_np ) * freqs_np, sizeof( cuscomplex ) );
+
+        add_ptr( "qtf_pc_pot_total_freq", this->qtf_pc_pot_total_freq, static_cast<std::size_t>( this->qtf_pc_heads_np ) * freqs_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_pc_vel_x_total_freq", this->qtf_pc_vel_x_total_freq, static_cast<std::size_t>( this->qtf_pc_heads_np ) * freqs_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_pc_vel_y_total_freq", this->qtf_pc_vel_y_total_freq, static_cast<std::size_t>( this->qtf_pc_heads_np ) * freqs_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_pc_vel_z_total_freq", this->qtf_pc_vel_z_total_freq, static_cast<std::size_t>( this->qtf_pc_heads_np ) * freqs_np, sizeof( cuscomplex ) );
+
+        add_ptr( "qtf_wl_pot_raddif_freq", this->qtf_wl_pot_raddif_freq, static_cast<std::size_t>( this->qtf_wl_raddif_np ) * freqs_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_wl_pot_total_freq", this->qtf_wl_pot_total_freq, static_cast<std::size_t>( this->qtf_wl_heads_np ) * freqs_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_wl_vel_x_total_freq", this->qtf_wl_vel_x_total_freq, static_cast<std::size_t>( this->qtf_wl_heads_np ) * freqs_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_wl_vel_y_total_freq", this->qtf_wl_vel_y_total_freq, static_cast<std::size_t>( this->qtf_wl_heads_np ) * freqs_np, sizeof( cuscomplex ) );
+        add_ptr( "qtf_wl_vel_z_total_freq", this->qtf_wl_vel_z_total_freq, static_cast<std::size_t>( this->qtf_wl_heads_np ) * freqs_np, sizeof( cuscomplex ) );
     }
 }

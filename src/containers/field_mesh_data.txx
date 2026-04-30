@@ -285,6 +285,50 @@ RadDiffData<T, ModeComp>* FieldMeshData<T, ModeComp>::get_rdd( void ) const
 
 
 template<typename T, typename ModeComp>
+std::size_t FieldMeshData<T, ModeComp>::memory_bytes( void ) const
+{
+    std::size_t total = 0;
+    total += this->_data_scalar_r.size( ) * sizeof( cusfloat );
+    total += this->_data_vector.size( ) * sizeof( cusfloat );
+    total += this->_data_vector_r.size( ) * sizeof( cusfloat );
+    if ( this->_rdd != nullptr )
+    {
+        total += this->_rdd->memory_bytes( );
+    }
+    return total;
+}
+
+
+template<typename T, typename ModeComp>
+void FieldMeshData<T, ModeComp>::append_memory_report(
+                                                        std::vector<MemoryReportEntry>& entries,
+                                                        const std::string& prefix
+                                                    ) const
+{
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "data_scalar_r" ),
+                        this->_data_scalar_r.size( ) * sizeof( cusfloat )
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "data_vector" ),
+                        this->_data_vector.size( ) * sizeof( cusfloat )
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "data_vector_r" ),
+                        this->_data_vector_r.size( ) * sizeof( cusfloat )
+                    );
+
+    if ( this->_rdd != nullptr )
+    {
+        this->_rdd->append_memory_report( entries, memory_report_path( prefix, "rdd" ) );
+    }
+}
+
+
+template<typename T, typename ModeComp>
 FieldMeshData<T, ModeComp>::FieldMeshData( 
                                             Input*          input,
                                             FieldPointsDef* field_points_def,

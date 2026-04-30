@@ -29,6 +29,7 @@
 #include "mpi_config.hpp"
 #include "panel_data.hpp"
 #include "rad_diff_data_config.hpp"
+#include "../tools/memory_report.hpp"
 
 
 template<typename T, typename Config>
@@ -130,6 +131,13 @@ public:
     const cusfloat*     get_field_weights( void ) const;
 
     bool                has_field_weights( void ) const;
+
+    std::size_t         memory_bytes( void ) const;
+
+    void                append_memory_report(
+                                                std::vector<MemoryReportEntry>& entries,
+                                                const std::string& prefix
+                                            ) const;
     
 };
 

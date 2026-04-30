@@ -37,6 +37,7 @@
 #include "../../inout/output.hpp"
 #include "../../mesh/mesh_group.hpp"
 #include "../../tools.hpp"
+#include "../../tools/memory_report.hpp"
 #include "../../waves/waves_common.hpp"
 
 
@@ -181,6 +182,8 @@ public:
     void calculate_first_order( );
 
     void calculate_second_order( );
+
+    void write_memory_report( const std::string& file_path ) const;
 
 };
 

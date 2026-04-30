@@ -19,7 +19,9 @@
  */
 
 // Include general usage libraries
+#include <cstdint>
 #include <filesystem>
+#include <fstream>
 #include <iomanip>
 
 // Include local module
@@ -300,6 +302,12 @@ void FrequencySolver<N, mode_pf>::calculate_first_order( void )
     /*   Calculate regular frequency band coefficients     */
     /*******************************************************/
 
+    if ( this->input != nullptr )
+    {
+        std::filesystem::path report_path = std::filesystem::path( this->input->case_fopath ) / "memory_report_first_order.csv";
+        this->write_memory_report( report_path.string( ) );
+    }
+
     // Loop over frequencies
     for ( std::size_t i=0; i<static_cast<std::size_t>(this->input->angfreqs_np); i++ )
     {
@@ -375,6 +383,12 @@ void FrequencySolver<N, mode_pf>::calculate_second_order( void )
     if ( !this->input->out_qtf )
     {
         return;
+    }
+
+    if ( this->input != nullptr )
+    {
+        std::filesystem::path report_path = std::filesystem::path( this->input->case_fopath ) / "memory_report_second_order.csv";
+        this->write_memory_report( report_path.string( ) );
     }
 
     // Recover partition circle radius from mesh if not already cached
@@ -2385,4 +2399,138 @@ void FrequencySolver<N, mode_pf>::_save_qtf( void ) const
             }
         }
     }
+}
+
+
+template<std::size_t N, int mode_pf>
+void FrequencySolver<N, mode_pf>::write_memory_report( const std::string& file_path ) const
+{
+    if ( this->mpi_config == nullptr || !this->mpi_config->is_root( ) )
+    {
+        return;
+    }
+
+    std::ofstream report_file( file_path );
+    if ( !report_file.is_open( ) )
+    {
+        Logger warn_logger( this->mpi_config->is_root( ) );
+        warn_logger.warn( "Could not write memory report to: " + file_path );
+        return;
+    }
+
+    std::vector<MemoryReportEntry> entries;
+    auto is_bad_ptr = [](const void* ptr)
+    {
+        if ( ptr == nullptr )
+        {
+            return true;
+        }
+        const std::uintptr_t val = reinterpret_cast<std::uintptr_t>( ptr );
+        const std::uint32_t  low = static_cast<std::uint32_t>( val & 0xFFFFFFFFu );
+        return val < 0x10000ull
+            || val == 0xFFFFFFFFFFFFFFFFull
+            || low == 0xFEEEFEEEu
+            || low == 0xDDDDDDDDu
+            || low == 0xCDCDCDCDu
+            || low == 0xCCCCCCCCu;
+    };
+
+    if ( this->sim_data != nullptr )
+    {
+        this->sim_data->append_memory_report( entries, "SimulationData" );
+    }
+    if ( this->kernel != nullptr )
+    {
+        this->kernel->append_memory_report( entries, "FormulationKernelBackend" );
+    }
+
+    if ( this->mesh_gp != nullptr )
+    {
+        this->mesh_gp->append_memory_report( entries, "MeshGroup" );
+        if ( this->mesh_gp->meshes != nullptr )
+        {
+            for ( int i = 0; i < this->mesh_gp->meshes_np; i++ )
+            {
+                if ( !is_bad_ptr( this->mesh_gp->meshes[i] ) )
+                {
+                    this->mesh_gp->meshes[i]->append_memory_report(
+                                                                    entries,
+                                                                    "MeshGroup.Mesh[" + std::to_string( i ) + "]"
+                                                                );
+                }
+            }
+        }
+    }
+
+    if ( this->mesh_fs_qtf_gp != nullptr )
+    {
+        this->mesh_fs_qtf_gp->append_memory_report( entries, "MeshFsQtfGroup" );
+        if ( this->mesh_fs_qtf_gp->meshes != nullptr )
+        {
+            for ( int i = 0; i < this->mesh_fs_qtf_gp->meshes_np; i++ )
+            {
+                if ( !is_bad_ptr( this->mesh_fs_qtf_gp->meshes[i] ) )
+                {
+                    this->mesh_fs_qtf_gp->meshes[i]->append_memory_report(
+                                                                            entries,
+                                                                            "MeshFsQtfGroup.Mesh[" + std::to_string( i ) + "]"
+                                                                        );
+                }
+            }
+        }
+    }
+
+    for ( std::size_t i = 0; i < this->_field_points.size( ); i++ )
+    {
+        if ( this->_field_points[i] != nullptr )
+        {
+            this->_field_points[i]->append_memory_report(
+                                                            entries,
+                                                            "FieldMeshData[" + std::to_string( i ) + "]"
+                                                        );
+        }
+    }
+
+    if ( this->_qtf_wl_fields != nullptr )
+    {
+        this->_qtf_wl_fields->append_memory_report( entries, "QTFWlFields" );
+    }
+    if ( this->_qtf_bern_fields != nullptr )
+    {
+        this->_qtf_bern_fields->append_memory_report( entries, "QTFBernFields" );
+    }
+    if ( this->_qtf_fs_fields != nullptr )
+    {
+        this->_qtf_fs_fields->append_memory_report( entries, "QTFFsFields" );
+    }
+    if ( this->_qtf_fs_wl_fields != nullptr )
+    {
+        this->_qtf_fs_wl_fields->append_memory_report( entries, "QTFFsWlFields" );
+    }
+    for ( std::size_t i = 0; i < this->_qtf_annuli_fields.size( ); i++ )
+    {
+        if ( this->_qtf_annuli_fields[i] != nullptr )
+        {
+            this->_qtf_annuli_fields[i]->append_memory_report(
+                                                                entries,
+                                                                "QTFAnnulusFields[" + std::to_string( i ) + "]"
+                                                            );
+        }
+    }
+
+    for ( std::size_t i = 0; i < this->_morison_elements.size( ); i++ )
+    {
+        for ( std::size_t j = 0; j < this->_morison_elements[i].size( ); j++ )
+        {
+            if ( this->_morison_elements[i][j] != nullptr )
+            {
+                this->_morison_elements[i][j]->append_memory_report(
+                                                                        entries,
+                                                                        "MorisonElement[" + std::to_string( i ) + "][" + std::to_string( j ) + "]"
+                                                                    );
+            }
+        }
+    }
+
+    write_memory_report_csv( report_file, entries );
 }

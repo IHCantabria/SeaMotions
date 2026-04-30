@@ -2872,6 +2872,41 @@ void FormulationKernelBackend<N, mode_pf>::set_qtf_annuli_fields(
 
 
 template<std::size_t N, int mode_pf>
+void FormulationKernelBackend<N, mode_pf>::append_memory_report(
+                                                                    std::vector<MemoryReportEntry>& entries,
+                                                                    const std::string& prefix
+                                                                ) const
+{
+    if ( this->_sf_gp != nullptr )
+    {
+        this->_sf_gp->append_memory_report( entries, memory_report_path( prefix, "sf_gp" ) );
+    }
+    if ( this->_pot_gp != nullptr )
+    {
+        this->_pot_gp->append_memory_report( entries, memory_report_path( prefix, "pot_gp" ) );
+    }
+    if ( this->_pf_gp != nullptr )
+    {
+        this->_pf_gp->append_memory_report( entries, memory_report_path( prefix, "pf_gp" ) );
+    }
+    if ( this->_ppf_rhs != nullptr && this->_pot_gp != nullptr && this->_input != nullptr )
+    {
+        std::size_t rhs_len = static_cast<std::size_t>( this->_pot_gp->sysmat_nrows )
+                                * static_cast<std::size_t>( this->_input->dofs_np + this->_input->heads_np );
+        add_memory_entry(
+                            entries,
+                            memory_report_path( prefix, "ppf_rhs" ),
+                            rhs_len * sizeof( cuscomplex )
+                        );
+    }
+    if ( this->_solver != nullptr )
+    {
+        this->_solver->append_memory_report( entries, memory_report_path( prefix, "scalapack_solver" ) );
+    }
+}
+
+
+template<std::size_t N, int mode_pf>
 void FormulationKernelBackend<N, mode_pf>::update_results( SimulationData* sim_data )
 {
     // Update data to simulation results

@@ -29,6 +29,7 @@
 #include "../config.hpp"
 #include "../math/math_tools.hpp"
 #include "../tools.hpp"
+#include "../tools/memory_report.hpp"
 
 
 template <typename T>
@@ -96,6 +97,13 @@ public:
 
     void clear_sysmat( void );
 
+    std::size_t memory_bytes( void ) const;
+
+    void append_memory_report(
+                                    std::vector<MemoryReportEntry>& entries,
+                                    const std::string& prefix
+                                ) const;
+
 };
 
 
@@ -115,6 +123,89 @@ void MatLinGroup<T>::clear_sysmat(
 {
     clear_vector( this->field_values_np, this->field_values );
     clear_vector( this->sysmat_nrows * this->sysmat_ncols, this->sysmat );
+}
+
+
+template<typename T>
+std::size_t MatLinGroup<T>::memory_bytes( void ) const
+{
+    std::size_t total = 0;
+    if ( this->cog_to_field_points != nullptr )
+    {
+        total += static_cast<std::size_t>( this->_dims_np ) * static_cast<std::size_t>( this->field_points_np ) * sizeof( cusfloat );
+    }
+    if ( this->field_points != nullptr )
+    {
+        total += static_cast<std::size_t>( this->_dims_np ) * static_cast<std::size_t>( this->field_points_np ) * sizeof( cusfloat );
+    }
+    if ( this->field_points_cnp != nullptr )
+    {
+        total += static_cast<std::size_t>( this->field_points_nb + 1 ) * sizeof( int );
+    }
+    if ( this->field_values != nullptr )
+    {
+        total += static_cast<std::size_t>( this->field_values_np ) * sizeof( T );
+    }
+    if ( this->sysmat != nullptr )
+    {
+        total += static_cast<std::size_t>( this->sysmat_nrows ) * static_cast<std::size_t>( this->sysmat_ncols ) * sizeof( T );
+    }
+    if ( this->sysmat_steady != nullptr )
+    {
+        total += static_cast<std::size_t>( this->sysmat_nrows ) * static_cast<std::size_t>( this->sysmat_ncols ) * sizeof( T );
+    }
+    return total;
+}
+
+
+template<typename T>
+void MatLinGroup<T>::append_memory_report(
+                                                std::vector<MemoryReportEntry>& entries,
+                                                const std::string& prefix
+                                            ) const
+{
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "cog_to_field_points" ),
+                        ( this->cog_to_field_points != nullptr )
+                            ? static_cast<std::size_t>( this->_dims_np ) * static_cast<std::size_t>( this->field_points_np ) * sizeof( cusfloat )
+                            : 0
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "field_points" ),
+                        ( this->field_points != nullptr )
+                            ? static_cast<std::size_t>( this->_dims_np ) * static_cast<std::size_t>( this->field_points_np ) * sizeof( cusfloat )
+                            : 0
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "field_points_cnp" ),
+                        ( this->field_points_cnp != nullptr )
+                            ? static_cast<std::size_t>( this->field_points_nb + 1 ) * sizeof( int )
+                            : 0
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "field_values" ),
+                        ( this->field_values != nullptr )
+                            ? static_cast<std::size_t>( this->field_values_np ) * sizeof( T )
+                            : 0
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "sysmat" ),
+                        ( this->sysmat != nullptr )
+                            ? static_cast<std::size_t>( this->sysmat_nrows ) * static_cast<std::size_t>( this->sysmat_ncols ) * sizeof( T )
+                            : 0
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "sysmat_steady" ),
+                        ( this->sysmat_steady != nullptr )
+                            ? static_cast<std::size_t>( this->sysmat_nrows ) * static_cast<std::size_t>( this->sysmat_ncols ) * sizeof( T )
+                            : 0
+                    );
 }
 
 

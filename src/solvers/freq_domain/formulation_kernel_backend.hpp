@@ -25,6 +25,7 @@
 #include "../../containers/mpi_config.hpp"
 #include "../../containers/rad_diff_data.hpp"
 #include "../../containers/simulation_data.hpp"
+#include "../../tools/memory_report.hpp"
 #include "../../green/farfield_integrator.hpp"
 #include "../../green/source.hpp"
 #include "../../inout/input.hpp"
@@ -228,6 +229,11 @@ public:
     void    set_qtf_annuli_fields(
                                         const std::vector<RDDQC*>* annuli_fields
                                 );
+
+    void    append_memory_report(
+                    std::vector<MemoryReportEntry>& entries,
+                    const std::string& prefix
+                ) const;
 
 };
 
