@@ -204,3 +204,10 @@ enum class QTFTypeE: int
     QTF_DIFF_CODE      = 0,    // QTF difference term
     QTF_SUM_CODE       = 1     // QTF sum term
 };
+
+// Recalculation type enum. Switch used to recalculate steady part during the frequency loop or not.
+enum class RecalcSteadyE: int
+{
+    OFF   = 0,    // No recalculation of the steady part during the frequency loop
+    ON    = 1     // Recalculation of the steady part during the frequency loop
+};
