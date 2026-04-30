@@ -139,6 +139,7 @@ void _formulation_kernel_steady(
     cusfloat    vel_3[ndim]             = { 0.0, 0.0, 0.0 };
     cusfloat    vel_4[ndim]             = { 0.0, 0.0, 0.0 };
     cusfloat    vel_5[ndim]             = { 0.0, 0.0, 0.0 };
+    cusfloat    vel_total_pf[ndim];     clear_vector( ndim, vel_total_pf );
 
     cusfloat    pot_0                   = 0.0;
     cusfloat    pot_1                   = 0.0;
@@ -234,6 +235,8 @@ void _formulation_kernel_steady(
         vel_total[1]    = - ( vel_0[1] + vel_1[1] + vel_2[1] + vel_3[1] + vel_4[1] + vel_5[1] );
         vel_total[2]    = - ( vel_0[2] + vel_1[2] + vel_2[2] + vel_3[2] - vel_4[2] + vel_5[2] );
 
+        STATIC_COND( ONLY_PF, vel_total_pf[2] = - ( - vel_0[2] + vel_1[2] + vel_2[2] - vel_3[2] + vel_4[2] + vel_5[2] );    )
+
         pot_term        = ( pot_0 + pot_1 + pot_2 + pot_3 + pot_4 + pot_5 ) / 4.0 / PI;
     }
     else // freq_regime == FREQ_REGIME_INF_FREQ
@@ -242,8 +245,14 @@ void _formulation_kernel_steady(
         vel_total[1]    = - ( vel_0[1] + vel_1[1] - vel_2[1] - vel_3[1] - vel_4[1] - vel_5[1] );
         vel_total[2]    = - ( vel_0[2] + vel_1[2] - vel_2[2] - vel_3[2] + vel_4[2] - vel_5[2] );
 
+        STATIC_COND( ONLY_PF, vel_total_pf[2] = - ( - vel_0[2] + vel_1[2] - vel_2[2] + vel_3[2] - vel_4[2] - vel_5[2] );    )
+
         pot_term        = ( pot_0 + pot_1 - pot_2 - pot_3 - pot_4 - pot_5 ) / 4.0 / PI;
     }
+
+
+    STATIC_COND( ONLY_PF, vel_total_pf[0] = - vel_total[0].real( ); )
+    STATIC_COND( ONLY_PF, vel_total_pf[1] = - vel_total[1].real( ); )
 
                             
     int_dn_sf_value    = (
@@ -253,6 +262,17 @@ void _formulation_kernel_steady(
                             +
                             panel_j->normal_vec[2] * vel_total[2]
                         ) / 4.0 / PI;
+
+    STATIC_COND(
+                    ONLY_PF,
+                    int_dn_pf_value = (
+                                            panel_i->normal_vec[0] * vel_total_pf[0]
+                                            +
+                                            panel_i->normal_vec[1] * vel_total_pf[1]
+                                            +
+                                            panel_i->normal_vec[2] * vel_total_pf[2]
+                                        ) / 4.0 / PI;
+                )
         
     // Discard spurious values for normal derivatives
     if ( is_diag )
@@ -1349,8 +1369,8 @@ void FormulationKernelBackend<N, mode_pf, recalc_steady>::_build_rhs_so(
 template<std::size_t N, int mode_pf, RecalcSteadyE recalc_steady>
 template<FreqRegimeE freq_regime>
 void FormulationKernelBackend<N, mode_pf, recalc_steady>::_build_wave_matrixes( 
-                                                                    cusfloat w
-                                                                )
+                                                                                    cusfloat w
+                                                                                )
 {
     // Clean system matrixes
                             this->_sf_gp->clear_sysmat( );
@@ -1570,6 +1590,8 @@ void FormulationKernelBackend<N, mode_pf, recalc_steady>::_build_wave_matrixes_2
     STATIC_COND( ONLY_PF,       this->_pf_gp->clear_sysmat( );          )
     STATIC_COND( !(ONLY_PF),    this->_pot_gp->clear_sysmat( );         )
     STATIC_COND( !(ONLY_PF),    this->_pot_gp->clear_field_values( );   )
+
+    STATIC_COND( ONLY_PF, clear_vector( this->_pf_gp->sysmat_nrows * ( this->_input->dofs_np + this->_input->heads_np ), this->_ppf_rhs ); )
 
     // Declare local variables
     cusfloat    ang_freq_2              = w * w;
