@@ -1566,10 +1566,10 @@ void FormulationKernelBackend<N, mode_pf, recalc_steady>::_build_wave_matrixes_2
                                                                                 )
 {
     // Clean system matrixes
-                            this->_sf_gp->clear_sysmat( );
-    STATIC_COND( ONLY_PF,   this->_pf_gp->clear_sysmat( ); )
-                            this->_pot_gp->clear_sysmat( );
-                            this->_pot_gp->clear_field_values( );
+                                this->_sf_gp->clear_sysmat( );
+    STATIC_COND( ONLY_PF,       this->_pf_gp->clear_sysmat( );          )
+    STATIC_COND( !(ONLY_PF),    this->_pot_gp->clear_sysmat( );         )
+    STATIC_COND( !(ONLY_PF),    this->_pot_gp->clear_field_values( );   )
 
     // Declare local variables
     cusfloat    ang_freq_2              = w * w;
@@ -1585,7 +1585,6 @@ void FormulationKernelBackend<N, mode_pf, recalc_steady>::_build_wave_matrixes_2
     cuscomplex  int_dn_sf_wv            = cuscomplex( 0.0, 0.0 );
     cuscomplex  int_dn_pf_st            = cuscomplex( 0.0, 0.0 );
     cuscomplex  int_dn_pf_wv            = cuscomplex( 0.0, 0.0 );
-    cuscomplex  int_scale_f             = cuscomplex( 1.0, 0.0 );
     cuscomplex  int_scale_f_i           = cuscomplex( 1.0, 0.0 );
     cuscomplex  int_scale_f_j           = cuscomplex( 1.0, 0.0 );
     PanelGeom*  panel_j                 = nullptr;
@@ -1622,6 +1621,10 @@ void FormulationKernelBackend<N, mode_pf, recalc_steady>::_build_wave_matrixes_2
             panel_j = this->_mesh_gp->source_nodes[j]->panel;
             gwf_interf.set_source_j( this->_mesh_gp->source_nodes[j] );
 
+            // Define row and column major indexes
+            COL_MAJOR_INDEX( index_cm, row_count, col_count, this->_solver->num_rows_local )
+            ROW_MAJOR_INDEX( index_rm, row_count, col_count, this->_solver->num_cols_local )
+
             // Calculate steady contribution
             if constexpr ( recalc_steady == RecalcSteadyE::ON )
             {
@@ -1643,9 +1646,9 @@ void FormulationKernelBackend<N, mode_pf, recalc_steady>::_build_wave_matrixes_2
             }
             else
             {
-                pot_term_st     = this->_pot_gp->sysmat_steady[ ROW_MAJOR_INDEX( index_rm, row_count, col_count, this->_solver->num_cols_local ) ];
-                int_dn_pf_st    = this->_pf_gp->sysmat_steady[ COL_MAJOR_INDEX( index_cm, row_count, col_count, this->_solver->num_rows_local ) ];
-                int_dn_sf_st    = this->_sf_gp->sysmat_steady[ COL_MAJOR_INDEX( index_cm, row_count, col_count, this->_solver->num_rows_local ) ];
+                pot_term_st     = this->_pot_gp->sysmat_steady[ index_rm ];
+                int_dn_pf_st    = this->_pf_gp->sysmat_steady[ index_cm ];
+                int_dn_sf_st    = this->_sf_gp->sysmat_steady[ index_cm ];
             }
 
             // Calculate wave contribution
@@ -1666,10 +1669,6 @@ void FormulationKernelBackend<N, mode_pf, recalc_steady>::_build_wave_matrixes_2
                                         int_dn_sf_wv,
                                         vel_total_wv
                                     );
-
-            // Apply the integral value accordingly
-            COL_MAJOR_INDEX( index_cm, row_count, col_count, this->_solver->num_rows_local )
-            ROW_MAJOR_INDEX( index_rm, row_count, col_count, this->_solver->num_cols_local )
 
             // Calculate scaling factors for the integrals according to the panel types
             if ( i != j )
@@ -2452,34 +2451,6 @@ void FormulationKernelBackend<N, mode_pf, recalc_steady>::compute_fields(
                 }
             }
         
-            // Calculate raddiation and diffraction fields completed
-            for ( std::size_t idh=0; idh<heads_np; idh++ )
-            {
-                // Get indexes to locate and to storage data
-                index_fd    = store_freqs * freq_index * ( heads_np * fp_np ) + idh * fp_np + j;
-                index_sc    = ( dofs_np + idh ) * sources_np + i;
-
-                // Add incident wave velocity potential to total field
-                STATIC_COND( ONLY_FCN,   panel_rdd->pot_total_2[index_fd]   += this->_pot_gp->field_values[index_sc];      )
-
-                for ( std::size_t idd=0; idd<dofs_np; idd++ )
-                {
-                    // Get indexes to locate and to storage data
-                    index_ax    = idh * ( dofs_np * body_np ) + body_id * dofs_np + idd;
-                    index_sc    = idd * sources_np + i;
-                    
-                    // Get source value for the current position
-                    source_val  = this->_sf_gp->field_values[index_sc];
-
-                    // Get current RAO value
-                    rao_val     = raos[ index_ax ];
-
-                    // Calculate field contributions
-                    STATIC_COND( ONLY_FCN,   panel_rdd->pot_total_2[index_fd]   += cuscomplex(0.0, -ang_freq) * rao_val * this->_pot_gp->field_values[index_sc];      )
-                }
-
-            }
-
             // Calculate total pressure field
             for ( std::size_t idh=0; idh<heads_np; idh++ )
             {
@@ -2697,7 +2668,7 @@ FormulationKernelBackend<N, mode_pf, recalc_steady>::FormulationKernelBackend(
                                         );
 
     STATIC_COND( 
-                    !ONLY_PF,
+                    !(ONLY_PF),
                     this->_pot_gp       = new   MLGCmpx(
                                                             this->_mesh_gp->panels_tnp,
                                                             this->ipm_cols_np,
@@ -2732,7 +2703,7 @@ FormulationKernelBackend<N, mode_pf, recalc_steady>::FormulationKernelBackend(
                 )
 
     // Allocate space for the partial potential formulation RHS vector
-    STATIC_COND( ONLY_PF, this->_ppf_rhs  = generate_empty_vector<cuscomplex>( this->_pot_gp->sysmat_nrows * ( this->_input->dofs_np + this->_input->heads_np ) ); )
+    STATIC_COND( ONLY_PF, this->_ppf_rhs  = generate_empty_vector<cuscomplex>( this->_pf_gp->sysmat_nrows * pf_len ); )
 
     // Allocate space for the wave part integration interface functor
     this->_gwfcns_interf.initialize(
@@ -2906,7 +2877,7 @@ void FormulationKernelBackend<N, mode_pf, recalc_steady>::solve( cusfloat w )
     if constexpr( ONLY_PF )
     {
         // Declare local block variables
-        int         dofs_offset = this->_input->dofs_np * this->_pot_gp->sysmat_nrows;
+        int         dofs_offset = this->_input->dofs_np * this->_pf_gp->sysmat_nrows;
         int         index       = 0;
         PanelGeom*  panel_j     = nullptr;
         double      nu          = pow2s( w ) / this->_input->grav_acc;
