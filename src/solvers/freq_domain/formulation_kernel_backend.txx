@@ -2908,9 +2908,12 @@ void FormulationKernelBackend<N, mode_pf, recalc_steady>::_initialize(
                                                             void 
                                                         )
 {
-    //Calculate steady part integral over the panels
-    MPI_TIME_EXEC( this->_build_steady_matrixes<FreqRegimeE::REGULAR>( ); , this->exec_time_build_steady )
-    this->_steady_mat_type  = 0;
+    if constexpr ( recalc_steady == RecalcSteadyE::OFF )
+    {
+        //Calculate steady part integral over the panels
+        MPI_TIME_EXEC( this->_build_steady_matrixes<FreqRegimeE::REGULAR>( ); , this->exec_time_build_steady )
+        this->_steady_mat_type  = 0;
+    }
 }
 
 
@@ -2951,7 +2954,8 @@ FormulationKernelBackend<N, mode_pf, recalc_steady>::FormulationKernelBackend(
                                             this->_mesh_gp->panels_tnp-1,
                                             this->ipm_sc,
                                             this->ipm_ed,
-                                            true
+                                            true,
+                                            recalc_steady
                                         );
 
     STATIC_COND( 
@@ -2965,7 +2969,8 @@ FormulationKernelBackend<N, mode_pf, recalc_steady>::FormulationKernelBackend(
                                                             this->_mesh_gp->panels_tnp-1,
                                                             this->ipm_sc,
                                                             this->ipm_ed,
-                                                            true
+                                                            true,
+                                                            recalc_steady
                                                         );
                 )
 
@@ -2983,7 +2988,8 @@ FormulationKernelBackend<N, mode_pf, recalc_steady>::FormulationKernelBackend(
                                                             this->_mesh_gp->panels_tnp-1,
                                                             this->ipm_sc,
                                                             this->ipm_ed,
-                                                            true
+                                                            true,
+                                                            recalc_steady
                                                         );
                 )
 
@@ -3077,27 +3083,30 @@ template<FreqRegimeE freq_regime>
 void FormulationKernelBackend<N, mode_pf, recalc_steady>::solve( cusfloat w )
 {
     // Recalculate steady part of the system matrixes if required
-    if ( 
-            this->_steady_mat_type != 0 
-            &&
-            (   
-                freq_regime == FreqRegimeE::REGULAR 
-                || 
-                freq_regime == FreqRegimeE::ASYMPT_LOW 
-            )
-        )
+    if constexpr ( recalc_steady == RecalcSteadyE::OFF )
     {
-        MPI_TIME_EXEC( this->_build_steady_matrixes<freq_regime>( ); , this->exec_time_build_steady )
-        this->_steady_mat_type  = 0;
-    }
-    else if ( 
-                this->_steady_mat_type != 1 
+        if ( 
+                this->_steady_mat_type != 0 
                 &&
-                freq_regime == FreqRegimeE::ASYMPT_HIGH 
+                (   
+                    freq_regime == FreqRegimeE::REGULAR 
+                    || 
+                    freq_regime == FreqRegimeE::ASYMPT_LOW 
+                )
             )
-    {
-        MPI_TIME_EXEC( this->_build_steady_matrixes<freq_regime>( ); , this->exec_time_build_steady )
-        this->_steady_mat_type  = 1;
+        {
+            MPI_TIME_EXEC( this->_build_steady_matrixes<freq_regime>( ); , this->exec_time_build_steady )
+            this->_steady_mat_type  = 0;
+        }
+        else if ( 
+                    this->_steady_mat_type != 1 
+                    &&
+                    freq_regime == FreqRegimeE::ASYMPT_HIGH 
+                )
+        {
+            MPI_TIME_EXEC( this->_build_steady_matrixes<freq_regime>( ); , this->exec_time_build_steady )
+            this->_steady_mat_type  = 1;
+        }
     }
     
     // Fold integrals database if required
@@ -3256,13 +3265,16 @@ void FormulationKernelBackend<N, mode_pf, recalc_steady>::solve_so(
         w = this->_input->angfreqs[freq_i] + this->_input->angfreqs[freq_j];
     }
 
-    // Recalculate steady part of the system matrixes if required
-    if ( 
-            this->_steady_mat_type != 0 
-        )
+    if constexpr ( recalc_steady == RecalcSteadyE::OFF )
     {
-        MPI_TIME_EXEC( this->_build_steady_matrixes<FreqRegimeE::REGULAR>( ); , this->exec_time_build_steady )
-        this->_steady_mat_type  = 0;
+        // Recalculate steady part of the system matrixes if required
+        if ( 
+                this->_steady_mat_type != 0 
+            )
+        {
+            MPI_TIME_EXEC( this->_build_steady_matrixes<FreqRegimeE::REGULAR>( ); , this->exec_time_build_steady )
+            this->_steady_mat_type  = 0;
+        }
     }
 
     // Update frequency index for far-field integrators

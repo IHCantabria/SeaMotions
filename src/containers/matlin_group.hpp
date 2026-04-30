@@ -75,7 +75,8 @@ public:
                     int         end_row_in,
                     int         start_col_in,
                     int         end_col_in,
-                    bool        is_sysmat_field_in
+                    bool        is_sysmat_field_in,
+                    RecalcSteadyE recalc_steady_in = RecalcSteadyE::OFF
                 );
 
     MatLinGroup(
@@ -85,7 +86,8 @@ public:
                     int         fields_np_in,
                     int         start_col_in,
                     int         end_col_in,
-                    bool        is_sysmat_field_in
+                    bool        is_sysmat_field_in,
+                    RecalcSteadyE recalc_steady_in = RecalcSteadyE::OFF
                 );
 
     ~MatLinGroup(
@@ -270,7 +272,8 @@ MatLinGroup<T>::MatLinGroup(
                                 int     end_row_in,
                                 int     start_col_in,
                                 int     end_col_in,
-                                bool    is_sysmat_field_in
+                                bool    is_sysmat_field_in,
+                                RecalcSteadyE recalc_steady_in
                             )
 {
     // Storage input arguments
@@ -290,7 +293,10 @@ MatLinGroup<T>::MatLinGroup(
 
     // Allocate space for the system matrixes
     this->sysmat            = generate_empty_vector<T>( this->sysmat_nrows * this->sysmat_ncols );
-    this->sysmat_steady     = generate_empty_vector<T>( this->sysmat_nrows * this->sysmat_ncols );
+    if ( recalc_steady_in == RecalcSteadyE::OFF )
+    {
+        this->sysmat_steady = generate_empty_vector<T>( this->sysmat_nrows * this->sysmat_ncols );
+    }
 
     // Allocate space for the field points and the field values
     this->cog_to_field_points   = generate_empty_vector<cusfloat>( this->_dims_np * this->sysmat_nrows );
@@ -308,7 +314,8 @@ MatLinGroup<T>::MatLinGroup(
                                 int         fields_np_in,
                                 int         start_col_in,
                                 int         end_col_in,
-                                bool        is_sysmat_field_in
+                                bool        is_sysmat_field_in,
+                                RecalcSteadyE recalc_steady_in
                             )
 {
     // Storage input arguments
@@ -331,7 +338,10 @@ MatLinGroup<T>::MatLinGroup(
 
     // Allocate space for the system matrixes
     this->sysmat            = generate_empty_vector<T>( this->sysmat_nrows * this->sysmat_ncols );
-    this->sysmat_steady     = generate_empty_vector<T>( this->sysmat_nrows * this->sysmat_ncols );
+    if ( recalc_steady_in == RecalcSteadyE::OFF )
+    {
+        this->sysmat_steady = generate_empty_vector<T>( this->sysmat_nrows * this->sysmat_ncols );
+    }
 
     // Allocate space for the field points and the field values
     this->field_points_cnp      = generate_empty_vector<int>( this->field_points_nb+1 );
