@@ -41,7 +41,7 @@
 #define ROW_MAJOR_INDEX( index, row_count, col_count, num_cols_local ) index_rm = row_count * num_cols_local + col_count;
 
 // Declare function
-template<std::size_t N, int mode_pf>
+template<std::size_t N, int mode_pf, RecalcSteadyE recalc_steady>
 struct FormulationKernelBackend
 {
 private:
@@ -107,10 +107,15 @@ private:
                                     cusfloat w
                             );
 
-    // template<FreqRegimeE freq_regime>
-    // void _build_wave_matrixes_2( 
-    //                                 cusfloat w
-    //                             );
+    template<FreqRegimeE freq_regime>
+    void _build_wave_matrixes_sf( 
+                                    cusfloat w
+                                );
+
+    template<FreqRegimeE freq_regime>
+    void _build_wave_matrixes_pf( 
+                                    cusfloat w
+                                );
 
     template<FreqRegimeE freq_regime>
     void _build_wave_matrixes_so( 

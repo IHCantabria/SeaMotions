@@ -398,9 +398,9 @@ void _formulation_kernel_wave(
 }
 
 
-template<std::size_t N, int mode_pf>
+template<std::size_t N, int mode_pf, RecalcSteadyE recalc_steady>
 template<FreqRegimeE freq_regime>
-void FormulationKernelBackend<N, mode_pf>::_build_steady_matrixes( void )
+void FormulationKernelBackend<N, mode_pf, recalc_steady>::_build_steady_matrixes( void )
 {
     /***************************************/
     /******** Fill system matrix  **********/
@@ -640,8 +640,8 @@ void FormulationKernelBackend<N, mode_pf>::_build_steady_matrixes( void )
 }
 
 
-template<std::size_t N, int mode_pf>
-void FormulationKernelBackend<N, mode_pf>::_build_rhs( 
+template<std::size_t N, int mode_pf, RecalcSteadyE recalc_steady>
+void FormulationKernelBackend<N, mode_pf, recalc_steady>::_build_rhs( 
                                                         cusfloat w
                                                     )
 {
@@ -911,9 +911,9 @@ void FormulationKernelBackend<N, mode_pf>::_build_rhs(
 }
 
 
-template<std::size_t N, int mode_pf>
+template<std::size_t N, int mode_pf, RecalcSteadyE recalc_steady>
 template<int GP, int mode_fslid, typename GwfInterf, typename RhsFunc, typename IntegrateFunc>
-void FormulationKernelBackend<N, mode_pf>::_process_qtf_rhs_panels(
+void FormulationKernelBackend<N, mode_pf, recalc_steady>::_process_qtf_rhs_panels(
                                                                         RDDQC*          panel_fields,
                                                                         GwfInterf&      gwf_interf_local,
                                                                         RhsFunc&&       rhs_func,
@@ -992,9 +992,9 @@ void FormulationKernelBackend<N, mode_pf>::_process_qtf_rhs_panels(
 }
 
 
-template<std::size_t N, int mode_pf>
+template<std::size_t N, int mode_pf, RecalcSteadyE recalc_steady>
 template<typename RhsFunc>
-void FormulationKernelBackend<N, mode_pf>::_process_qtf_rhs_annuli(
+void FormulationKernelBackend<N, mode_pf, recalc_steady>::_process_qtf_rhs_annuli(
                                                                         RDDQC*                  annulus_fields,
                                                                         const cusfloat*         field_weights,
                                                                         GWFcnsInterfaceT<1>&    gwf_interf_local,
@@ -1098,8 +1098,8 @@ void FormulationKernelBackend<N, mode_pf>::_process_qtf_rhs_annuli(
     mkl_free( annuli_acc );
 }
 
-template<std::size_t N, int mode_pf>
-void FormulationKernelBackend<N, mode_pf>::_build_rhs_so( 
+template<std::size_t N, int mode_pf, RecalcSteadyE recalc_steady>
+void FormulationKernelBackend<N, mode_pf, recalc_steady>::_build_rhs_so( 
                                                             QTFTypeE                        qtf_type,
                                                             std::size_t                     freq_i,
                                                             std::size_t                     freq_j,
@@ -1124,8 +1124,8 @@ void FormulationKernelBackend<N, mode_pf>::_build_rhs_so(
 }
 
 
-template<std::size_t N, int mode_pf>
-void FormulationKernelBackend<N, mode_pf>::_build_rhs_so( 
+template<std::size_t N, int mode_pf, RecalcSteadyE recalc_steady>
+void FormulationKernelBackend<N, mode_pf, recalc_steady>::_build_rhs_so( 
                                                             QTFTypeE                        qtf_type,
                                                             std::size_t                     freq_i,
                                                             std::size_t                     freq_j,
@@ -1346,9 +1346,9 @@ void FormulationKernelBackend<N, mode_pf>::_build_rhs_so(
 }
 
 
-template<std::size_t N, int mode_pf>
+template<std::size_t N, int mode_pf, RecalcSteadyE recalc_steady>
 template<FreqRegimeE freq_regime>
-void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes( 
+void FormulationKernelBackend<N, mode_pf, recalc_steady>::_build_wave_matrixes( 
                                                                     cusfloat w
                                                                 )
 {
@@ -1559,143 +1559,666 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes(
 }
 
 
-// template<std::size_t N, int mode_pf>
-// template<FreqRegimeE freq_regime>
-// void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes_2( 
-//                                                                     cusfloat w
-//                                                                 )
-// {
-//     // Clean system matrixes
-//                             this->_sf_gp->clear_sysmat( );
-//     STATIC_COND( ONLY_PF,   this->_pf_gp->clear_sysmat( ); )
-//                             this->_pot_gp->clear_sysmat( );
-//                             this->_pot_gp->clear_field_values( );
-    
-//     // Declare local variables
-//     int         col_count               = 0;
-//     auto        gwf_interf              = this->_gwfcns_interf;
-//     int         index_cm                = 0;
-//     int         index_rm                = 0;
-//     cuscomplex  int_dn_sf_st            = cuscomplex( 0.0, 0.0 );
-//     cuscomplex  int_dn_sf_wv            = cuscomplex( 0.0, 0.0 );
-//     cuscomplex  int_dn_pf_st            = cuscomplex( 0.0, 0.0 );
-//     cuscomplex  int_dn_pf_wv            = cuscomplex( 0.0, 0.0 );
-//     cuscomplex  int_scale_f             = cuscomplex( 1.0, 0.0 );
-//     bool        is_john                 = false;
-//     cusfloat    log_sing_val            = 0.0;
-//     PanelGeom*  panel_j                 = nullptr;
-//     cuscomplex  pot_term                = cuscomplex( 0.0, 0.0 );
-//     cuscomplex  pot_term_st             = cuscomplex( 0.0, 0.0 );
-//     cuscomplex  pot_term_wv             = cuscomplex( 0.0, 0.0 );
-//     int         row_count               = 0;
-//     SourceNode* source_i                = nullptr;
-//     cuscomplex  vel_total_st[3]         ;
-//     cuscomplex  vel_total_wv[3]         ;
-//     cuscomplex  wave_fcn_value          = cuscomplex( 0.0, 0.0 );
-//     cuscomplex  wave_fcn_dn_sf_value    = cuscomplex( 0.0, 0.0 );
-//     cuscomplex  wave_fcn_dn_pf_value    = cuscomplex( 0.0, 0.0 );
-//     cuscomplex  wave_fcn_dx_value       = cuscomplex( 0.0, 0.0 );
-//     cuscomplex  wave_fcn_dy_value       = cuscomplex( 0.0, 0.0 );
-//     cuscomplex  wave_fcn_dz_value       = cuscomplex( 0.0, 0.0 );
-    
-//     // Calculate wave dependent parameters
-//     cusfloat    nu                      = pow2s( w ) / this->_input->grav_acc;
-    
-//     for ( int i=this->_solver->start_col_0; i<this->_solver->end_col_0; i++ )
-//     {
-//         // Get memory address of the ith panel
-//         source_i = this->_mesh_gp->source_nodes[i];
-//         gwf_interf.set_source_i( source_i, 1.0 );
-
-//         // Loop over rows to calcualte the influence of the panel
-//         // over each collocation point
-//         row_count = 0;
-//         for ( int j=this->_solver->start_row_0; j<this->_solver->end_row_0; j++ )
-//         {
-//             // Get memory address of the panel jth
-//             panel_j = this->_mesh_gp->source_nodes[j]->panel;
-//             gwf_interf.set_source_j( this->_mesh_gp->source_nodes[j] );
-            
-//             // Calculate steady contribution
-//             _formulation_kernel_steady<
-//                                             mode_pf,
-//                                             freq_regime
-//                                         >
-//                                         (
-//                                             i == j,
-//                                             this->_mesh_gp->panels[i],
-//                                             this->_mesh_gp->panels_mirror[i],
-//                                             this->_mesh_gp->panels[j],
-//                                             this->_input->water_depth,
-//                                             pot_term_st,
-//                                             int_dn_pf_st,
-//                                             int_dn_sf_st,
-//                                             vel_total_st
-//                                         );
-
-//             // Calculate wave contribution
-//             _formulation_kernel_wave<
-//                                         mode_pf,
-//                                         freq_regime
-//                                     >
-//                                     ( 
-//                                         i == j,
-//                                         this->_mesh_gp->source_nodes[i],
-//                                         this->_mesh_gp->source_nodes[j],
-//                                         this->_gwfcns_interf,
-//                                         this->_input->water_depth,
-//                                         nu,
-//                                         is_john,
-//                                         pot_term_wv,
-//                                         int_dn_pf_wv,
-//                                         int_dn_sf_wv,
-//                                         vel_total_wv
-//                                     );
-
-//             // Apply the integral value accordingly
-//             COL_MAJOR_INDEX( index_cm, row_count, col_count, this->_solver->num_rows_local )
-//             ROW_MAJOR_INDEX( index_rm, row_count, col_count, this->_solver->num_cols_local )
-
-//             if ( source_i->panel->type != PanelTypeE::EXT_LID )
-//             {
-//                 int_scale_f = cuscomplex( 1.0, 0.0 );
-//             }
-//             else
-//             {
-//                 int_scale_f = cuscomplex( 0.0, - source_i->panel->ext_lid_damp_f );
-//             }
-
-//             if ( is_john && freq_regime == FreqRegimeE::REGULAR )
-//             {
-//                 this->_pot_gp->sysmat[index_rm] = int_scale_f * pot_term_wv;
-//                 this->_sf_gp->sysmat[index_cm]  = int_scale_f * int_dn_sf_wv;
-
-//                 STATIC_COND( ONLY_PF, this->_pf_gp->sysmat[index_cm]  = int_scale_f * int_dn_pf_wv; )
-//             }
-//             else
-//             {
-//                 this->_pot_gp->sysmat[index_rm] = int_scale_f * ( pot_term_st + pot_term_wv );
-//                 this->_sf_gp->sysmat[index_cm]  = int_scale_f * ( int_dn_sf_st + int_dn_sf_wv );
-
-//                 STATIC_COND( ONLY_PF, this->_pf_gp->sysmat[index_cm]  = int_scale_f * ( int_dn_pf_st + int_dn_pf_wv ); )
-//             }
-
-//             // Advance row count
-//             row_count++;
-//         }
-        
-//         // Advance column count
-//         col_count++;
-
-//     }
-//     MPI_Barrier( MPI_COMM_WORLD );
-
-// }
-
-
-template<std::size_t N, int mode_pf>
+template<std::size_t N, int mode_pf, RecalcSteadyE recalc_steady>
 template<FreqRegimeE freq_regime>
-void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes_so( 
+void FormulationKernelBackend<N, mode_pf, recalc_steady>::_build_wave_matrixes_sf( 
+                                                                    cusfloat w
+                                                                )
+{
+    // Clean system matrixes
+                            this->_sf_gp->clear_sysmat( );
+    STATIC_COND( ONLY_PF,   this->_pf_gp->clear_sysmat( ); )
+                            this->_pot_gp->clear_sysmat( );
+                            this->_pot_gp->clear_field_values( );
+    
+    // Declare local variables
+    int         col_count               = 0;
+    auto        gwf_interf              = this->_gwfcns_interf;
+    int         index_cm                = 0;
+    int         index_rm                = 0;
+    cuscomplex  int_dn_sf_st            = cuscomplex( 0.0, 0.0 );
+    cuscomplex  int_dn_sf_wv            = cuscomplex( 0.0, 0.0 );
+    cuscomplex  int_dn_pf_st            = cuscomplex( 0.0, 0.0 );
+    cuscomplex  int_dn_pf_wv            = cuscomplex( 0.0, 0.0 );
+    cuscomplex  int_scale_f             = cuscomplex( 1.0, 0.0 );
+    bool        is_john                 = false;
+    cusfloat    log_sing_val            = 0.0;
+    PanelGeom*  panel_j                 = nullptr;
+    cuscomplex  pot_term                = cuscomplex( 0.0, 0.0 );
+    cuscomplex  pot_term_st             = cuscomplex( 0.0, 0.0 );
+    cuscomplex  pot_term_wv             = cuscomplex( 0.0, 0.0 );
+    int         row_count               = 0;
+    SourceNode* source_i                = nullptr;
+    cuscomplex  vel_total_st[3]         ;
+    cuscomplex  vel_total_wv[3]         ;
+    cuscomplex  wave_fcn_value          = cuscomplex( 0.0, 0.0 );
+    cuscomplex  wave_fcn_dn_sf_value    = cuscomplex( 0.0, 0.0 );
+    cuscomplex  wave_fcn_dn_pf_value    = cuscomplex( 0.0, 0.0 );
+    cuscomplex  wave_fcn_dx_value       = cuscomplex( 0.0, 0.0 );
+    cuscomplex  wave_fcn_dy_value       = cuscomplex( 0.0, 0.0 );
+    cuscomplex  wave_fcn_dz_value       = cuscomplex( 0.0, 0.0 );
+    
+    // Calculate wave dependent parameters
+    cusfloat    nu                      = pow2s( w ) / this->_input->grav_acc;
+    
+    for ( int i=this->_solver->start_col_0; i<this->_solver->end_col_0; i++ )
+    {
+        // Get memory address of the ith panel
+        source_i = this->_mesh_gp->source_nodes[i];
+        gwf_interf.set_source_i( source_i, 1.0 );
+
+        // Loop over rows to calcualte the influence of the panel
+        // over each collocation point
+        row_count = 0;
+        for ( int j=this->_solver->start_row_0; j<this->_solver->end_row_0; j++ )
+        {
+            // Get memory address of the panel jth
+            panel_j = this->_mesh_gp->source_nodes[j]->panel;
+            gwf_interf.set_source_j( this->_mesh_gp->source_nodes[j] );
+            
+            // Calculate steady contribution
+            if constexpr ( recalc_steady == RecalcSteadyE::ON )
+            {
+                _formulation_kernel_steady<
+                                            mode_pf,
+                                            freq_regime
+                                        >
+                                        (
+                                            i == j,
+                                            this->_mesh_gp->panels[i],
+                                            this->_mesh_gp->panels_mirror[i],
+                                            this->_mesh_gp->panels[j],
+                                            this->_input->water_depth,
+                                            pot_term_st,
+                                            int_dn_pf_st,
+                                            int_dn_sf_st,
+                                            vel_total_st
+                                        );
+            }
+            else
+            {
+                pot_term_st     = this->_pot_gp->sysmat_steady[ ROW_MAJOR_INDEX( index_rm, row_count, col_count, this->_solver->num_cols_local ) ];
+                int_dn_pf_st    = this->_pf_gp->sysmat_steady[ COL_MAJOR_INDEX( index_cm, row_count, col_count, this->_solver->num_rows_local ) ];
+                int_dn_sf_st    = this->_sf_gp->sysmat_steady[ COL_MAJOR_INDEX( index_cm, row_count, col_count, this->_solver->num_rows_local ) ];
+            }
+            
+
+            // Calculate wave contribution
+            _formulation_kernel_wave<
+                                        mode_pf,
+                                        freq_regime
+                                    >
+                                    ( 
+                                        i == j,
+                                        this->_mesh_gp->source_nodes[i],
+                                        this->_mesh_gp->source_nodes[j],
+                                        this->_gwfcns_interf,
+                                        this->_input->water_depth,
+                                        nu,
+                                        is_john,
+                                        pot_term_wv,
+                                        int_dn_pf_wv,
+                                        int_dn_sf_wv,
+                                        vel_total_wv
+                                    );
+
+            // Apply the integral value accordingly
+            COL_MAJOR_INDEX( index_cm, row_count, col_count, this->_solver->num_rows_local )
+            ROW_MAJOR_INDEX( index_rm, row_count, col_count, this->_solver->num_cols_local )
+
+            // Calculate scaling factors for the integrals according to the panel types
+            if ( i != j )
+            {
+                int_scale_f_i = panel_scale_factor( source_i->panel, nu );
+                int_scale_f_j = panel_scale_factor( panel_j, nu );
+            }
+            else
+            {
+                int_scale_f_i = cuscomplex( 1.0, 0.0 );
+                int_scale_f_j = cuscomplex( 1.0, 0.0 );
+            }
+
+            const bool       is_john_regular    = ( is_john && freq_regime == FreqRegimeE::REGULAR );
+            const bool       i_is_diffrac       = ( source_i->panel->type == PanelTypeE::DIFFRAC );
+            const bool       j_is_diffrac       = ( panel_j->type == PanelTypeE::DIFFRAC );
+            const cuscomplex pot_total          = is_john_regular ? pot_term_wv  : ( pot_term_st  + pot_term_wv  );
+            const cuscomplex int_dn_sf_value    = is_john_regular ? int_dn_sf_wv : ( int_dn_sf_st + int_dn_sf_wv );
+            const cuscomplex int_dn_pf_value    = is_john_regular ? int_dn_pf_wv : ( int_dn_pf_st + int_dn_pf_wv );
+
+            this->_sf_gp->sysmat[index_cm]      = int_scale_f_j * ( j_is_diffrac ? int_dn_sf_value : pot_total );
+            this->_pf_gp->sysmat[index_cm]      = int_scale_f_i * ( i_is_diffrac ? int_dn_pf_value : pot_total );
+
+            if ( 
+                    ( std::isnan( this->_sf_gp->sysmat[index_cm].real( ) ) || std::isnan( this->_sf_gp->sysmat[index_cm].imag( ) ) )
+                    ||
+                    ( std::isnan( pot_total.real( ) ) || std::isnan( pot_total.imag( ) ) )
+                    ||
+                    ( std::isnan( int_dn_pf_wv.real( ) ) || std::isnan( int_dn_pf_wv.imag( ) ) )
+                )
+            {
+                std::cout << "Error: NaN value found when building wave source system matrix at row " << row_count << " and column " << col_count << " for SF integral." << std::endl;
+                std::cout << "I: " << i << "J : " << j << std::endl;
+                MPI_Abort( MPI_COMM_WORLD, EXIT_FAILURE );
+            }
+
+            // Advance row count
+            row_count++;
+        }
+        
+        // Advance column count
+        col_count++;
+
+    }
+    
+    // Calculate source formulation rhs
+    for ( int i=0; i<this->_input->dofs_np; i++ )
+    {
+        for ( int j=this->_solver->start_row_0; j<this->_solver->end_row_0; j++ )
+        {
+            panel_j = this->_mesh_gp->source_nodes[j]->panel;
+            index   = i * this->_sf_gp->sysmat_nrows + j;
+            if ( panel_j->type == PanelTypeE::DIFFRAC )
+            {
+                this->_sf_gp->field_values[index] = (
+                                                        this->_mesh_gp->source_nodes[j]->normal_vec[i]
+                                                        *
+                                                        this->_mesh_gp->source_nodes[j]->panel->is_move_f
+                                                    );
+
+            }
+            else if ( panel_j->type == PanelTypeE::INT_LID )
+            {
+                this->_sf_gp->field_values[index] = 0.0;
+            }
+
+        }
+    }
+
+    for ( int i=0; i<this->_input->heads_np; i++ )
+    {
+        for ( int j=this->_solver->start_row_0; j<this->_solver->end_row_0; j++ )
+        {
+            panel_j = this->_mesh_gp->source_nodes[j]->panel;
+            index   = dofs_offset_sf + i * this->_sf_gp->sysmat_nrows + j;
+            if ( panel_j->type == PanelTypeE::DIFFRAC )
+            {
+                // Get wave potential derivatives for the panel
+                wave_dx     =   wave_potential_fo_space_dx(
+                                                                1.0,
+                                                                w,
+                                                                k,
+                                                                this->_input->water_depth,
+                                                                this->_input->grav_acc,
+                                                                this->_mesh_gp->source_nodes[j]->panel->center[0],
+                                                                this->_mesh_gp->source_nodes[j]->panel->center[1],
+                                                                this->_mesh_gp->source_nodes[j]->panel->center[2],
+                                                                this->_input->heads[i]
+                                                            );
+
+                wave_dy     =   wave_potential_fo_space_dy(
+                                                                1.0,
+                                                                w,
+                                                                k,
+                                                                this->_input->water_depth,
+                                                                this->_input->grav_acc,
+                                                                this->_mesh_gp->source_nodes[j]->panel->center[0],
+                                                                this->_mesh_gp->source_nodes[j]->panel->center[1],
+                                                                this->_mesh_gp->source_nodes[j]->panel->center[2],
+                                                                this->_input->heads[i]
+                                                            );
+
+                wave_dz     =   wave_potential_fo_space_dz(
+                                                                1.0,
+                                                                w,
+                                                                k,
+                                                                this->_input->water_depth,
+                                                                this->_input->grav_acc,
+                                                                this->_mesh_gp->source_nodes[j]->panel->center[0],
+                                                                this->_mesh_gp->source_nodes[j]->panel->center[1],
+                                                                this->_mesh_gp->source_nodes[j]->panel->center[2],
+                                                                this->_input->heads[i]
+                                                            );
+
+                // Calculate normal derivative of the wave flow velocities for the jth panel
+                this->_sf_gp->field_values[index]   = -(
+                                                            wave_dx * this->_mesh_gp->source_nodes[j]->normal_vec[0]
+                                                            +
+                                                            wave_dy * this->_mesh_gp->source_nodes[j]->normal_vec[1]
+                                                            +
+                                                            wave_dz * this->_mesh_gp->source_nodes[j]->normal_vec[2]
+                                                        );
+            }
+            else if ( panel_j->type == PanelTypeE::INT_LID )
+            {
+                this->_sf_gp->field_values[index]  = 0.0;
+            }
+            else if ( panel_j->type == PanelTypeE::EXT_LID )
+            {
+                // Get wave potential derivatives for the panel
+                wave_pot    =   wave_potential_fo_space(
+                                                            1.0,
+                                                            w,
+                                                            k,
+                                                            this->_input->water_depth,
+                                                            this->_input->grav_acc,
+                                                            this->_mesh_gp->source_nodes[j]->panel->center[0],
+                                                            this->_mesh_gp->source_nodes[j]->panel->center[1],
+                                                            this->_mesh_gp->source_nodes[j]->panel->center[2],
+                                                            this->_input->heads[i]
+                                                        );
+
+                // Calculate normal derivative of the wave flow velocities for the jth panel
+                this->_sf_gp->field_values[index]  = -(
+                                                            cuscomplex( 0.0, 1.0 )
+                                                            *
+                                                            ang_freq_2
+                                                            *
+                                                            panel_j->ext_lid_damp_f
+                                                            *
+                                                            wave_pot
+                                                            /
+                                                            this->_input->grav_acc
+                                                        );
+            }
+        }
+    }
+
+    // Synchronize processes progress status
+    MPI_Barrier( MPI_COMM_WORLD );
+
+}
+
+
+template<std::size_t N, int mode_pf, RecalcSteadyE recalc_steady>
+template<FreqRegimeE freq_regime>
+void FormulationKernelBackend<N, mode_pf, recalc_steady>::_build_wave_matrixes_pf(
+                                                                    cusfloat w
+                                                                )
+{
+    // Clean system matrixes
+                            this->_sf_gp->clear_sysmat( );
+    STATIC_COND( ONLY_PF,   this->_pf_gp->clear_sysmat( ); )
+                            this->_pot_gp->clear_sysmat( );
+                            this->_pot_gp->clear_field_values( );
+
+    // Declare local variables
+    cusfloat    ang_freq_2              = w * w;
+    int         col_count               = 0;
+    int         dofs_offset_pf          = this->_input->dofs_np * this->_pf_gp->sysmat_nrows;
+    int         dofs_offset_sf          = this->_input->dofs_np * this->_sf_gp->sysmat_nrows;
+    auto        gwf_interf              = this->_gwfcns_interf;
+    int         index                   = 0;
+    int         index_cm                = 0;
+    int         index_rm                = 0;
+    bool        is_john                 = false;
+    cuscomplex  int_dn_sf_st            = cuscomplex( 0.0, 0.0 );
+    cuscomplex  int_dn_sf_wv            = cuscomplex( 0.0, 0.0 );
+    cuscomplex  int_dn_pf_st            = cuscomplex( 0.0, 0.0 );
+    cuscomplex  int_dn_pf_wv            = cuscomplex( 0.0, 0.0 );
+    cuscomplex  int_scale_f             = cuscomplex( 1.0, 0.0 );
+    cuscomplex  int_scale_f_i           = cuscomplex( 1.0, 0.0 );
+    cuscomplex  int_scale_f_j           = cuscomplex( 1.0, 0.0 );
+    PanelGeom*  panel_j                 = nullptr;
+    cuscomplex  pot_term_st             = cuscomplex( 0.0, 0.0 );
+    cuscomplex  pot_term_wv             = cuscomplex( 0.0, 0.0 );
+    int         row_count               = 0;
+    SourceNode* source_i                = nullptr;
+    cuscomplex  vel_total_st[3];
+    cuscomplex  vel_total_wv[3];
+    cuscomplex  wave_dx                 = cuscomplex( 0.0, 0.0 );
+    cuscomplex  wave_dy                 = cuscomplex( 0.0, 0.0 );
+    cuscomplex  wave_dz                 = cuscomplex( 0.0, 0.0 );
+    cuscomplex  wave_pot                = cuscomplex( 0.0, 0.0 );
+
+    // Calculate wave dependent parameters
+    cusfloat    k                       = w2k( w, this->_input->water_depth, this->_input->grav_acc );
+    cusfloat    nu                      = pow2s( w ) / this->_input->grav_acc;
+
+    // Clear potential rhs to avoid spurious valures
+    STATIC_COND( ONLY_PF, clear_vector( this->_pf_gp->sysmat_nrows * ( this->_input->dofs_np + this->_input->heads_np ), this->_ppf_rhs ); )
+
+    for ( int i=this->_solver->start_col_0; i<this->_solver->end_col_0; i++ )
+    {
+        // Get memory address of the ith panel
+        source_i = this->_mesh_gp->source_nodes[i];
+        gwf_interf.set_source_i( source_i, 1.0 );
+
+        // Loop over rows to calcualte the influence of the panel
+        // over each collocation point
+        row_count = 0;
+        for ( int j=this->_solver->start_row_0; j<this->_solver->end_row_0; j++ )
+        {
+            // Get memory address of the panel jth
+            panel_j = this->_mesh_gp->source_nodes[j]->panel;
+            gwf_interf.set_source_j( this->_mesh_gp->source_nodes[j] );
+
+            // Calculate steady contribution
+            if constexpr ( recalc_steady == RecalcSteadyE::ON )
+            {
+                _formulation_kernel_steady<
+                                            mode_pf,
+                                            freq_regime
+                                        >
+                                        (
+                                            i == j,
+                                            this->_mesh_gp->panels[i],
+                                            this->_mesh_gp->panels_mirror[i],
+                                            this->_mesh_gp->panels[j],
+                                            this->_input->water_depth,
+                                            pot_term_st,
+                                            int_dn_pf_st,
+                                            int_dn_sf_st,
+                                            vel_total_st
+                                        );
+            }
+            else
+            {
+                pot_term_st     = this->_pot_gp->sysmat_steady[ ROW_MAJOR_INDEX( index_rm, row_count, col_count, this->_solver->num_cols_local ) ];
+                int_dn_pf_st    = this->_pf_gp->sysmat_steady[ COL_MAJOR_INDEX( index_cm, row_count, col_count, this->_solver->num_rows_local ) ];
+                int_dn_sf_st    = this->_sf_gp->sysmat_steady[ COL_MAJOR_INDEX( index_cm, row_count, col_count, this->_solver->num_rows_local ) ];
+            }
+
+            // Calculate wave contribution
+            _formulation_kernel_wave<
+                                        mode_pf,
+                                        freq_regime
+                                    >
+                                    (
+                                        i == j,
+                                        this->_mesh_gp->source_nodes[i],
+                                        this->_mesh_gp->source_nodes[j],
+                                        this->_gwfcns_interf,
+                                        this->_input->water_depth,
+                                        nu,
+                                        is_john,
+                                        pot_term_wv,
+                                        int_dn_pf_wv,
+                                        int_dn_sf_wv,
+                                        vel_total_wv
+                                    );
+
+            // Apply the integral value accordingly
+            COL_MAJOR_INDEX( index_cm, row_count, col_count, this->_solver->num_rows_local )
+            ROW_MAJOR_INDEX( index_rm, row_count, col_count, this->_solver->num_cols_local )
+
+            // Calculate scaling factors for the integrals according to the panel types
+            if ( i != j )
+            {
+                int_scale_f_i = panel_scale_factor( source_i->panel, nu );
+                int_scale_f_j = panel_scale_factor( panel_j, nu );
+            }
+            else
+            {
+                int_scale_f_i = cuscomplex( 1.0, 0.0 );
+                int_scale_f_j = cuscomplex( 1.0, 0.0 );
+            }
+
+            const bool       is_john_regular    = ( is_john && freq_regime == FreqRegimeE::REGULAR );
+            const bool       i_is_diffrac       = ( source_i->panel->type == PanelTypeE::DIFFRAC );
+            const bool       j_is_diffrac       = ( panel_j->type == PanelTypeE::DIFFRAC );
+            const cuscomplex pot_total          = is_john_regular ? pot_term_wv  : ( pot_term_st  + pot_term_wv  );
+            const cuscomplex int_dn_sf_value    = is_john_regular ? int_dn_sf_wv : ( int_dn_sf_st + int_dn_sf_wv );
+            const cuscomplex int_dn_pf_value    = is_john_regular ? int_dn_pf_wv : ( int_dn_pf_st + int_dn_pf_wv );
+
+            this->_sf_gp->sysmat[index_cm]      = int_scale_f_j * ( j_is_diffrac ? int_dn_sf_value : pot_total );
+            this->_pf_gp->sysmat[index_cm]      = int_scale_f_i * ( i_is_diffrac ? int_dn_pf_value : pot_total );
+
+            if ( 
+                    ( std::isnan( this->_sf_gp->sysmat[index_cm].real( ) ) || std::isnan( this->_sf_gp->sysmat[index_cm].imag( ) ) )
+                    ||
+                    ( std::isnan( pot_total.real( ) ) || std::isnan( pot_total.imag( ) ) )
+                    ||
+                    ( std::isnan( int_dn_pf_wv.real( ) ) || std::isnan( int_dn_pf_wv.imag( ) ) )
+                )
+            {
+                std::cout << "Error: NaN value found when building wave source system matrix at row " << row_count << " and column " << col_count << " for SF integral." << std::endl;
+                std::cout << "I: " << i << "J : " << j << std::endl;
+                MPI_Abort( MPI_COMM_WORLD, EXIT_FAILURE );
+            }
+
+            // Calculate potential formulation rhs
+            if constexpr( ONLY_PF )
+            {
+                if ( source_i->panel->type == PanelTypeE::DIFFRAC )
+                {
+                    for ( int id=0; id<this->_input->dofs_np; id++ )
+                    {
+                        index                   = id * this->_pf_gp->sysmat_nrows + j;
+                        this->_ppf_rhs[index]   += (
+                                                        source_i->normal_vec[id]
+                                                        *
+                                                        source_i->panel->is_move_f
+                                                    ) * pot_total;
+                    }
+
+                    for ( int id=0; id<this->_input->heads_np; id++ )
+                    {
+                        // Get wave potential derivatives for the panel
+                        wave_dx     =   wave_potential_fo_space_dx(
+                                                                        1.0,
+                                                                        w,
+                                                                        k,
+                                                                        this->_input->water_depth,
+                                                                        this->_input->grav_acc,
+                                                                        source_i->panel->center[0],
+                                                                        source_i->panel->center[1],
+                                                                        source_i->panel->center[2],
+                                                                        this->_input->heads[id]
+                                                                    );
+
+                        wave_dy     =   wave_potential_fo_space_dy(
+                                                                        1.0,
+                                                                        w,
+                                                                        k,
+                                                                        this->_input->water_depth,
+                                                                        this->_input->grav_acc,
+                                                                        source_i->panel->center[0],
+                                                                        source_i->panel->center[1],
+                                                                        source_i->panel->center[2],
+                                                                        this->_input->heads[id]
+                                                                    );
+
+                        wave_dz     =   wave_potential_fo_space_dz(
+                                                                        1.0,
+                                                                        w,
+                                                                        k,
+                                                                        this->_input->water_depth,
+                                                                        this->_input->grav_acc,
+                                                                        source_i->panel->center[0],
+                                                                        source_i->panel->center[1],
+                                                                        source_i->panel->center[2],
+                                                                        this->_input->heads[id]
+                                                                    );
+
+                        // Calculate normal derivative of the wave flow velocities for the jth panel
+                        index                   = dofs_offset_pf + id * this->_pf_gp->sysmat_nrows + j;
+                        this->_ppf_rhs[index]   += -(
+                                                        wave_dx * source_i->normal_vec[0]
+                                                        +
+                                                        wave_dy * source_i->normal_vec[1]
+                                                        +
+                                                        wave_dz * source_i->normal_vec[2]
+                                                    ) * pot_total;
+                    }
+                }
+                else if ( source_i->panel->type == PanelTypeE::EXT_LID )
+                {
+                    for ( int id=0; id<this->_input->heads_np; id++ )
+                    {
+                        // Get wave potential derivatives for the panel
+                        wave_pot     =   wave_potential_fo_space(
+                                                                    1.0,
+                                                                    w,
+                                                                    k,
+                                                                    this->_input->water_depth,
+                                                                    this->_input->grav_acc,
+                                                                    source_i->panel->center[0],
+                                                                    source_i->panel->center[1],
+                                                                    source_i->panel->center[2],
+                                                                    this->_input->heads[id]
+                                                                );
+
+                        // Calculate normal derivative of the wave flow velocities for the jth panel
+                        index                   = dofs_offset_pf + id * this->_pf_gp->sysmat_nrows + j;
+                        this->_ppf_rhs[index]   += -(
+                                                        cuscomplex( 0.0, 1.0 )
+                                                        *
+                                                        ang_freq_2
+                                                        *
+                                                        source_i->panel->ext_lid_damp_f
+                                                        *
+                                                        wave_pot
+                                                        /
+                                                        this->_input->grav_acc
+                                                    ) * pot_total;
+                    }
+                }
+            }
+
+            // Advance row count
+            row_count++;
+        }
+
+        // Advance column count
+        col_count++;
+
+    }
+
+    // Sum up contributions along processors
+    STATIC_COND(
+                    ONLY_PF,
+                    MPI_Allreduce(
+                                        this->_ppf_rhs,
+                                        this->_pf_gp->field_values,
+                                        this->_pf_gp->sysmat_nrows * ( this->_input->dofs_np + this->_input->heads_np ),
+                                        mpi_cuscomplex,
+                                        MPI_SUM,
+                                        MPI_COMM_WORLD
+                                    );
+                )
+
+    // Calculate source formulation rhs
+    for ( int i=0; i<this->_input->dofs_np; i++ )
+    {
+        for ( int j=this->_solver->start_row_0; j<this->_solver->end_row_0; j++ )
+        {
+            panel_j = this->_mesh_gp->source_nodes[j]->panel;
+            index   = i * this->_sf_gp->sysmat_nrows + j;
+            if ( panel_j->type == PanelTypeE::DIFFRAC )
+            {
+                this->_sf_gp->field_values[index] = (
+                                                        this->_mesh_gp->source_nodes[j]->normal_vec[i]
+                                                        *
+                                                        this->_mesh_gp->source_nodes[j]->panel->is_move_f
+                                                    );
+
+            }
+            else if ( panel_j->type == PanelTypeE::INT_LID )
+            {
+                this->_sf_gp->field_values[index] = 0.0;
+            }
+
+        }
+    }
+
+    for ( int i=0; i<this->_input->heads_np; i++ )
+    {
+        for ( int j=this->_solver->start_row_0; j<this->_solver->end_row_0; j++ )
+        {
+            panel_j = this->_mesh_gp->source_nodes[j]->panel;
+            index   = dofs_offset_sf + i * this->_sf_gp->sysmat_nrows + j;
+            if ( panel_j->type == PanelTypeE::DIFFRAC )
+            {
+                // Get wave potential derivatives for the panel
+                wave_dx     =   wave_potential_fo_space_dx(
+                                                                1.0,
+                                                                w,
+                                                                k,
+                                                                this->_input->water_depth,
+                                                                this->_input->grav_acc,
+                                                                this->_mesh_gp->source_nodes[j]->panel->center[0],
+                                                                this->_mesh_gp->source_nodes[j]->panel->center[1],
+                                                                this->_mesh_gp->source_nodes[j]->panel->center[2],
+                                                                this->_input->heads[i]
+                                                            );
+
+                wave_dy     =   wave_potential_fo_space_dy(
+                                                                1.0,
+                                                                w,
+                                                                k,
+                                                                this->_input->water_depth,
+                                                                this->_input->grav_acc,
+                                                                this->_mesh_gp->source_nodes[j]->panel->center[0],
+                                                                this->_mesh_gp->source_nodes[j]->panel->center[1],
+                                                                this->_mesh_gp->source_nodes[j]->panel->center[2],
+                                                                this->_input->heads[i]
+                                                            );
+
+                wave_dz     =   wave_potential_fo_space_dz(
+                                                                1.0,
+                                                                w,
+                                                                k,
+                                                                this->_input->water_depth,
+                                                                this->_input->grav_acc,
+                                                                this->_mesh_gp->source_nodes[j]->panel->center[0],
+                                                                this->_mesh_gp->source_nodes[j]->panel->center[1],
+                                                                this->_mesh_gp->source_nodes[j]->panel->center[2],
+                                                                this->_input->heads[i]
+                                                            );
+
+                // Calculate normal derivative of the wave flow velocities for the jth panel
+                this->_sf_gp->field_values[index]   = -(
+                                                            wave_dx * this->_mesh_gp->source_nodes[j]->normal_vec[0]
+                                                            +
+                                                            wave_dy * this->_mesh_gp->source_nodes[j]->normal_vec[1]
+                                                            +
+                                                            wave_dz * this->_mesh_gp->source_nodes[j]->normal_vec[2]
+                                                        );
+            }
+            else if ( panel_j->type == PanelTypeE::INT_LID )
+            {
+                this->_sf_gp->field_values[index]  = 0.0;
+            }
+            else if ( panel_j->type == PanelTypeE::EXT_LID )
+            {
+                // Get wave potential derivatives for the panel
+                wave_pot    =   wave_potential_fo_space(
+                                                            1.0,
+                                                            w,
+                                                            k,
+                                                            this->_input->water_depth,
+                                                            this->_input->grav_acc,
+                                                            this->_mesh_gp->source_nodes[j]->panel->center[0],
+                                                            this->_mesh_gp->source_nodes[j]->panel->center[1],
+                                                            this->_mesh_gp->source_nodes[j]->panel->center[2],
+                                                            this->_input->heads[i]
+                                                        );
+
+                // Calculate normal derivative of the wave flow velocities for the jth panel
+                this->_sf_gp->field_values[index]  = -(
+                                                            cuscomplex( 0.0, 1.0 )
+                                                            *
+                                                            ang_freq_2
+                                                            *
+                                                            panel_j->ext_lid_damp_f
+                                                            *
+                                                            wave_pot
+                                                            /
+                                                            this->_input->grav_acc
+                                                        );
+            }
+        }
+    }
+
+    // Synchronize processes progress status
+    MPI_Barrier( MPI_COMM_WORLD );
+
+}
+
+
+template<std::size_t N, int mode_pf, RecalcSteadyE recalc_steady>
+template<FreqRegimeE freq_regime>
+void FormulationKernelBackend<N, mode_pf, recalc_steady>::_build_wave_matrixes_so( 
                                                                         QTFTypeE            qtf_type,
                                                                         std::size_t         freq_i,
                                                                         std::size_t         freq_j,
@@ -1858,9 +2381,9 @@ void FormulationKernelBackend<N, mode_pf>::_build_wave_matrixes_so(
 }
 
 
-template<std::size_t N, int mode_pf>
+template<std::size_t N, int mode_pf, RecalcSteadyE recalc_steady>
 template<typename RDDConfig>
-void FormulationKernelBackend<N, mode_pf>::compute_fields(
+void FormulationKernelBackend<N, mode_pf, recalc_steady>::compute_fields(
                                                                 std::size_t                         freq_index,
                                                                 cusfloat                            ang_freq,
                                                                 cuscomplex*                         raos,
@@ -2349,8 +2872,8 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
 }
 
 
-template<std::size_t N, int mode_pf>
-void FormulationKernelBackend<N, mode_pf>::configure_second_order( 
+template<std::size_t N, int mode_pf, RecalcSteadyE recalc_steady>
+void FormulationKernelBackend<N, mode_pf, recalc_steady>::configure_second_order( 
                                                                         SimulationData* sim_data
                                                                     )
 {
@@ -2380,19 +2903,19 @@ void FormulationKernelBackend<N, mode_pf>::configure_second_order(
 }
 
 
-template<std::size_t N, int mode_pf>
-void FormulationKernelBackend<N, mode_pf>::_initialize( 
+template<std::size_t N, int mode_pf, RecalcSteadyE recalc_steady>
+void FormulationKernelBackend<N, mode_pf, recalc_steady>::_initialize( 
                                                             void 
                                                         )
 {
-    Calculate steady part integral over the panels
+    //Calculate steady part integral over the panels
     MPI_TIME_EXEC( this->_build_steady_matrixes<FreqRegimeE::REGULAR>( ); , this->exec_time_build_steady )
     this->_steady_mat_type  = 0;
 }
 
 
-template<std::size_t N, int mode_pf>
-FormulationKernelBackend<N, mode_pf>::FormulationKernelBackend(
+template<std::size_t N, int mode_pf, RecalcSteadyE recalc_steady>
+FormulationKernelBackend<N, mode_pf, recalc_steady>::FormulationKernelBackend(
                                                                     Input*      input, 
                                                                     MpiConfig*  mpi_config, 
                                                                     MeshGroup*  mesh_gp
@@ -2431,17 +2954,20 @@ FormulationKernelBackend<N, mode_pf>::FormulationKernelBackend(
                                             true
                                         );
 
-    this->_pot_gp       = new   MLGCmpx(
-                                            this->_mesh_gp->panels_tnp,
-                                            this->ipm_cols_np,
-                                            this->_mesh_gp->meshes_np,
-                                            ( this->_input->dofs_np + this->_input->heads_np ),
-                                            0,
-                                            this->_mesh_gp->panels_tnp-1,
-                                            this->ipm_sc,
-                                            this->ipm_ed,
-                                            true
-                                        );
+    STATIC_COND( 
+                    !ONLY_PF,
+                    this->_pot_gp       = new   MLGCmpx(
+                                                            this->_mesh_gp->panels_tnp,
+                                                            this->ipm_cols_np,
+                                                            this->_mesh_gp->meshes_np,
+                                                            ( this->_input->dofs_np + this->_input->heads_np ),
+                                                            0,
+                                                            this->_mesh_gp->panels_tnp-1,
+                                                            this->ipm_sc,
+                                                            this->ipm_ed,
+                                                            true
+                                                        );
+                )
 
     std::size_t  fo_len = this->_input->dofs_np + this->_input->heads_np;
     std::size_t  so_len = this->_input->heads_np * this->_input->heads_np;
@@ -2523,8 +3049,8 @@ FormulationKernelBackend<N, mode_pf>::FormulationKernelBackend(
 }
 
 
-template<std::size_t N, int mode_pf>
-FormulationKernelBackend<N, mode_pf>::~FormulationKernelBackend( )
+template<std::size_t N, int mode_pf, RecalcSteadyE recalc_steady>
+FormulationKernelBackend<N, mode_pf, recalc_steady>::~FormulationKernelBackend( )
 {
     if ( this->_input->out_qtf_so_model == QTFSOModelE::DIRECT )
     {
@@ -2539,16 +3065,16 @@ FormulationKernelBackend<N, mode_pf>::~FormulationKernelBackend( )
 }
 
 
-template<std::size_t N, int mode_pf>
-int FormulationKernelBackend<N, mode_pf>::size( void )
+template<std::size_t N, int mode_pf, RecalcSteadyE recalc_steady>
+int FormulationKernelBackend<N, mode_pf, recalc_steady>::size( void )
 {
     return this->_solver->num_rows;
 }
 
 
-template<std::size_t N, int mode_pf>
+template<std::size_t N, int mode_pf, RecalcSteadyE recalc_steady>
 template<FreqRegimeE freq_regime>
-void FormulationKernelBackend<N, mode_pf>::solve( cusfloat w )
+void FormulationKernelBackend<N, mode_pf, recalc_steady>::solve( cusfloat w )
 {
     // Recalculate steady part of the system matrixes if required
     if ( 
@@ -2705,9 +3231,9 @@ void FormulationKernelBackend<N, mode_pf>::solve( cusfloat w )
 }
 
 
-template<std::size_t N, int mode_pf>
+template<std::size_t N, int mode_pf, RecalcSteadyE recalc_steady>
 template<QTFTypeE qtf_type>
-void FormulationKernelBackend<N, mode_pf>::solve_so( 
+void FormulationKernelBackend<N, mode_pf, recalc_steady>::solve_so( 
                                                         std::size_t                 freq_i,
                                                         std::size_t                 freq_j,
                                                         cuscomplex*                 raos_hist,
@@ -2803,8 +3329,8 @@ void FormulationKernelBackend<N, mode_pf>::solve_so(
 }
 
 
-template<std::size_t N, int mode_pf>
-void FormulationKernelBackend<N, mode_pf>::_process_far_field(
+template<std::size_t N, int mode_pf, RecalcSteadyE recalc_steady>
+void FormulationKernelBackend<N, mode_pf, recalc_steady>::_process_far_field(
                                                                 QTFTypeE        qtf_type,
                                                                 std::size_t     freq_i,
                                                                 std::size_t     freq_j,
@@ -2862,8 +3388,8 @@ void FormulationKernelBackend<N, mode_pf>::_process_far_field(
 }
 
 
-template<std::size_t N, int mode_pf>
-void FormulationKernelBackend<N, mode_pf>::set_qtf_annuli_fields(
+template<std::size_t N, int mode_pf, RecalcSteadyE recalc_steady>
+void FormulationKernelBackend<N, mode_pf, recalc_steady>::set_qtf_annuli_fields(
                                                                     const std::vector<RDDQC*>* annuli_fields
                                                                 )
 {
@@ -2871,8 +3397,8 @@ void FormulationKernelBackend<N, mode_pf>::set_qtf_annuli_fields(
 }
 
 
-template<std::size_t N, int mode_pf>
-void FormulationKernelBackend<N, mode_pf>::append_memory_report(
+template<std::size_t N, int mode_pf, RecalcSteadyE recalc_steady>
+void FormulationKernelBackend<N, mode_pf, recalc_steady>::append_memory_report(
                                                                     std::vector<MemoryReportEntry>& entries,
                                                                     const std::string& prefix
                                                                 ) const
@@ -2906,8 +3432,8 @@ void FormulationKernelBackend<N, mode_pf>::append_memory_report(
 }
 
 
-template<std::size_t N, int mode_pf>
-void FormulationKernelBackend<N, mode_pf>::update_results( SimulationData* sim_data )
+template<std::size_t N, int mode_pf, RecalcSteadyE recalc_steady>
+void FormulationKernelBackend<N, mode_pf, recalc_steady>::update_results( SimulationData* sim_data )
 {
     // Update data to simulation results
     copy_vector( 
@@ -2936,9 +3462,9 @@ void FormulationKernelBackend<N, mode_pf>::update_results( SimulationData* sim_d
 }
 
 
-template<std::size_t N, int mode_pf>
+template<std::size_t N, int mode_pf, RecalcSteadyE recalc_steady>
 template<QTFTypeE qtf_type>
-void FormulationKernelBackend<N, mode_pf>::update_results_so( SimulationData* sim_data )
+void FormulationKernelBackend<N, mode_pf, recalc_steady>::update_results_so( SimulationData* sim_data )
 {
     // Update data to simulation results
     copy_vector( 
