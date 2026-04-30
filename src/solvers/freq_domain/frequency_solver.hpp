@@ -74,6 +74,8 @@ private:
     using FMD       = FieldMeshData<cuscomplex, RDDFDConfig>;
     using vec_fmd   = std::vector<FMD*>;
     using vec_med   = std::vector<MorisonElement*>;
+    
+    typedef FormulationKernelBackend<NUM_GP, mode_pf, RecalcSteadyE::ON> KernelType;
 
     /**** Declare class private attributes ****/
     cut::CusTensor<cuscomplex>          _drag_force_aux     ;           // Auxiliary storage for the calculation of drag forces in slender elements
@@ -157,7 +159,7 @@ private:
 
 public:
     // Declare public attributes
-    FormulationKernelBackend<NUM_GP, mode_pf>*  kernel          = nullptr;  // Kernel of the formulation. It solves the raddiation diffraction problem. It can be CPU or GPU based.
+    KernelType*                                 kernel          = nullptr;  // Kernel of the formulation. It solves the raddiation diffraction problem. It can be CPU or GPU based.
     Hydrostatics**                              hydrostatics    = nullptr;  // 
     Input*                                      input           = nullptr;  // 
     MeshGroup*                                  mesh_gp         = nullptr;  // 

@@ -1907,7 +1907,7 @@ void FrequencySolver<N, mode_pf>::_generate_formulation_kernel( void )
 {
     LOG_TASK_SS( kernel, "Generating kernel..." )
     MpiTimer kernel_timer;
-    this->kernel = new FormulationKernelBackend<NUM_GP, mode_pf>( this->input, this->mpi_config, this->mesh_gp );
+    this->kernel = new FormulationKernelBackend<NUM_GP, mode_pf, RecalcSteadyE::ON>( this->input, this->mpi_config, this->mesh_gp );
     LOG_TASK_TIME( kernel, kernel_timer )
 }
 
