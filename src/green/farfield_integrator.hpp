@@ -42,6 +42,7 @@ private:
     std::size_t                 _freq_j             = 0;
     std::size_t                 _freq_j_off         = 0;
     cusfloat                    _grav_acc           = 9.81;
+    cusfloat                    _hnp2               = 0.0;
     Input*                      _input              = nullptr;
     cusfloat                    _omega              = 0.0;
     cusfloat                    _sign               = 1.0;

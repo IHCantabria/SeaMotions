@@ -30,6 +30,25 @@ void FarFieldIntegrator<qtf_type>::compute_far_field(
                                                         std::size_t freq_index_j
                                                     )
 {
+    if ( this->_input == nullptr )
+    {
+        return;
+    }
+
+    const std::size_t heads_np = static_cast<std::size_t>( this->_input->heads_np );
+    const std::size_t hnp2 = heads_np * heads_np;
+    if ( hnp2 == 0 || this->_series_size == 0 )
+    {
+        return;
+    }
+
+    if ( this->qc.size( ) != hnp2 || this->qs.size( ) != hnp2 )
+    {
+        this->_hnp2 = hnp2;
+        this->qc.assign( hnp2, cuscomplex( 0.0, 0.0 ) );
+        this->qs.assign( hnp2, cuscomplex( 0.0, 0.0 ) );
+    }
+
     // Set frequency indices and derived parameters
     this->set_frequency_indices( freq_index_i, freq_index_j );
 
@@ -99,6 +118,7 @@ FarFieldIntegrator<qtf_type>::FarFieldIntegrator(
     this->_as               = As;
     this->_bc               = Bc;
     this->_bs               = Bs;
+    this->_input            = input;
     this->_partition_circle = partition_circle;
     this->_series_size      = series_size;
 
@@ -108,7 +128,7 @@ FarFieldIntegrator<qtf_type>::FarFieldIntegrator(
     this->qs.resize( this->hnp2, cuscomplex( 0.0, 0.0 ) );
 
     // Storage input paramets and recalculation of derived parameters
-    this->set_parameters( freq_i, freq_j );
+    this->set_frequency_indices( freq_i, freq_j );
 
 }
 

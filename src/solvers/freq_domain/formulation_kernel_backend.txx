@@ -2351,21 +2351,31 @@ void FormulationKernelBackend<N, mode_pf>::compute_fields(
 
 template<std::size_t N, int mode_pf>
 void FormulationKernelBackend<N, mode_pf>::configure_second_order( 
-                                                                        cusfloat partition_circle    
+                                                                        SimulationData* sim_data
                                                                     )
 {
     this->_qtf_diff_code_integrator = FarFieldIntegrator<QTFTypeE::QTF_DIFF_CODE>( 
                                                                                         this->_input,
-                                                                                        this->_input->angfreqs[0],
-                                                                                        this->_input->angfreqs[0],
-                                                                                        partition_circle
+                                                                                        0,
+                                                                                        1,
+                                                                                        sim_data->qtf_pc_radius,
+                                                                                        sim_data->qtf_a_cos,
+                                                                                        sim_data->qtf_a_sin,
+                                                                                        sim_data->qtf_b_cos,
+                                                                                        sim_data->qtf_b_sin,
+                                                                                        QTF_FAR_N
                                                                                     );
 
     this->_qtf_sum_code_integrator  = FarFieldIntegrator<QTFTypeE::QTF_SUM_CODE>( 
                                                                                         this->_input,
-                                                                                        this->_input->angfreqs[0],
-                                                                                        this->_input->angfreqs[0],
-                                                                                        partition_circle
+                                                                                        0,
+                                                                                        1,
+                                                                                        sim_data->qtf_pc_radius,
+                                                                                        sim_data->qtf_a_cos,
+                                                                                        sim_data->qtf_a_sin,
+                                                                                        sim_data->qtf_b_cos,
+                                                                                        sim_data->qtf_b_sin,
+                                                                                        QTF_FAR_N
                                                                                     );
 }
 
@@ -2728,7 +2738,17 @@ void FormulationKernelBackend<N, mode_pf>::solve_so(
         MPI_TIME_EXEC( this->_build_steady_matrixes<FreqRegimeE::REGULAR>( ); , this->exec_time_build_steady )
         this->_steady_mat_type  = 0;
     }
-    
+
+    // Update frequency index for far-field integrators
+    if constexpr( qtf_type == QTFTypeE::QTF_DIFF_CODE )
+    {
+        this->_qtf_diff_code_integrator.set_frequency_indices( freq_i, freq_j );
+    }
+    else
+    {
+        this->_qtf_sum_code_integrator.set_frequency_indices( freq_i, freq_j );
+    }
+
     // Fold database for current frequency and water depth
     cusfloat H = pow2s( w ) * this->_input->water_depth / this->_input->grav_acc;
 

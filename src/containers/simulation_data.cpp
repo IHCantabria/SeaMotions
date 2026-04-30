@@ -374,6 +374,7 @@ SimulationData::SimulationData(
     this->_mpi_config           = mpi_config_in;
     this->qtf_np                = pow2s( heads_np_in ) * bodies_np_in * dofs_np_in;
     this->qtf_far_np            = input_in->angfreqs_np * input_in->heads_np * QTF_FAR_N;
+    this->qtf_pc_radius         = 0.0;
     this->wave_exc_np           = heads_np_in * bodies_np_in * dofs_np_in;
 
     // Allocate space variables used in all the processes

@@ -192,7 +192,7 @@ public:
                             );
 
     void    configure_second_order( 
-                                        cusfloat                            partition_circle    
+                                        SimulationData*                     sim_data
                                     );
 
     int     size(

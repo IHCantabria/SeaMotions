@@ -185,6 +185,7 @@ public:
     int             qtf_pc_heads_np                     = 0;
     cuscomplex*     qtf_pc_pot_total_freq               = nullptr;
     int             qtf_pc_raddif_np                    = 0;
+    cusfloat        qtf_pc_radius                       = 0.0;
     cuscomplex*     qtf_pc_vel_x_total_freq             = nullptr;
     cuscomplex*     qtf_pc_vel_y_total_freq             = nullptr;
     cuscomplex*     qtf_pc_vel_z_total_freq             = nullptr;

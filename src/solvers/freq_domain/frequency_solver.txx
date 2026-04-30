@@ -377,6 +377,14 @@ void FrequencySolver<N, mode_pf>::calculate_second_order( void )
         return;
     }
 
+    // Recover partition circle radius from mesh if not already cached
+    this->sim_data->qtf_pc_radius = this->input->bodies[0]->mesh_fs_qtf->get_fs_radius( );
+
+    // Configure second order integrators with the current simulation data
+    this->kernel->configure_second_order( 
+                                            this->sim_data
+                                        );
+
     // Loop over frequencies
     for ( std::size_t i=0; i<static_cast<std::size_t>(this->input->angfreqs_np); i++ )
     {
