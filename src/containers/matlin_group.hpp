@@ -23,7 +23,9 @@
 
 // Include general usage libraries
 #include <fstream>
+#include <sstream>
 #include <string>
+#include <type_traits>
 
 // Include local modules
 #include "../config.hpp"
@@ -44,6 +46,12 @@ private:
     void    _load_field_points(
                                     std::string fipath
                                 );
+
+    std::string _matrix_to_disk(
+                                    const T* matrix,
+                                    int nrows,
+                                    int ncols
+                                ) const;
 
 public:
     // Define class public attributes
@@ -99,6 +107,10 @@ public:
 
     void clear_sysmat( void );
 
+    std::string sysmat_to_disk( void ) const;
+
+    std::string sysmat_steady_to_disk( void ) const;
+
     std::size_t memory_bytes( void ) const;
 
     void append_memory_report(
@@ -125,6 +137,65 @@ void MatLinGroup<T>::clear_sysmat(
 {
     clear_vector( this->field_values_np, this->field_values );
     clear_vector( this->sysmat_nrows * this->sysmat_ncols, this->sysmat );
+}
+
+
+template<typename T>
+std::string MatLinGroup<T>::_matrix_to_disk(
+                                                const T* matrix,
+                                                int nrows,
+                                                int ncols
+                                            ) const
+{
+    std::ostringstream out;
+    if ( matrix == nullptr )
+    {
+        return out.str( );
+    }
+
+    out << nrows << " " << ncols << "\n";
+    if constexpr ( std::is_same<T, cuscomplex>::value )
+    {
+        out << "row col real imag\n";
+    }
+    else
+    {
+        out << "row col value\n";
+    }
+
+    for ( int row = 0; row < nrows; row++ )
+    {
+        for ( int col = 0; col < ncols; col++ )
+        {
+            int index = col * nrows + row;
+            out << row << " " << col << " ";
+            if constexpr ( std::is_same<T, cuscomplex>::value )
+            {
+                out << matrix[index].real( ) << " " << matrix[index].imag( );
+            }
+            else
+            {
+                out << matrix[index];
+            }
+            out << "\n";
+        }
+    }
+
+    return out.str( );
+}
+
+
+template<typename T>
+std::string MatLinGroup<T>::sysmat_to_disk( void ) const
+{
+    return _matrix_to_disk( this->sysmat, this->sysmat_nrows, this->sysmat_ncols );
+}
+
+
+template<typename T>
+std::string MatLinGroup<T>::sysmat_steady_to_disk( void ) const
+{
+    return _matrix_to_memory( this->sysmat_steady, this->sysmat_nrows, this->sysmat_ncols );
 }
 
 
