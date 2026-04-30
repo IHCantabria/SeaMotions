@@ -302,7 +302,7 @@ void FrequencySolver<N, mode_pf>::calculate_first_order( void )
     /*   Calculate regular frequency band coefficients     */
     /*******************************************************/
 
-    if ( this->input != nullptr )
+    if ( this->input != nullptr && this->input->out_memory_report )
     {
         std::filesystem::path report_path = std::filesystem::path( this->input->case_fopath ) / "memory_report_first_order.csv";
         this->write_memory_report( report_path.string( ) );
@@ -385,7 +385,7 @@ void FrequencySolver<N, mode_pf>::calculate_second_order( void )
         return;
     }
 
-    if ( this->input != nullptr )
+    if ( this->input != nullptr && this->input->out_memory_report )
     {
         std::filesystem::path report_path = std::filesystem::path( this->input->case_fopath ) / "memory_report_second_order.csv";
         this->write_memory_report( report_path.string( ) );

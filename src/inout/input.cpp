@@ -34,6 +34,7 @@
 #include "../tools.hpp"
 #include "../version.hpp"
 #include "../waves/wave_dispersion_base_fo.hpp"
+#include "../tools/cli_options.hpp"
 
 // Manage namespaces
 namespace fs = std::filesystem;
@@ -62,6 +63,15 @@ void Input::load( const std::string& folder_path )
 
     // Configure inputs
     this->configure( );
+}
+
+
+void Input::apply_cli_options( const CliOptions& options )
+{
+    if ( options.out_memory_report )
+    {
+        this->out_memory_report = true;
+    }
 }
 
 
@@ -956,6 +966,7 @@ void Input::print( void )
     std::cout << " - OutSources: " << this->out_sources << std::endl;
     std::cout << " - OutStMass: " << this->out_struct_mass << std::endl;
     std::cout << " - OutWex: " << this->out_wex << std::endl;
+    std::cout << " - OutMemReport: " << this->out_memory_report << std::endl;
 
     std::cout << std::endl;
     std::cout << "SITE CONDITIONS: " << std::endl;

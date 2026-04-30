@@ -31,6 +31,8 @@
 #include "../containers/field_points_def.hpp"
 #include "../mesh/mesh.hpp"
 
+struct CliOptions;
+
 
 struct Input
 {
@@ -81,6 +83,7 @@ public:
     bool                            out_sources         = false;
     bool                            out_struct_mass     = false;
     bool                            out_wex             = false;
+    bool                            out_memory_report   = false;
     int                             poly_order          = 0;
     cusfloat                        pot_abs_err         = 1e-3;
     cusfloat                        pot_rel_err         = 1e-3;
@@ -106,6 +109,10 @@ public:
 
     void    load(
                                     const std::string& folder_path
+                );
+
+    void    apply_cli_options(
+                                    const CliOptions& options
                 );
 
     int     gauss_np_factor_1d( 
