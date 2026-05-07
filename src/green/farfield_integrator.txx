@@ -172,106 +172,121 @@ void FarFieldIntegrator<qtf_type>::_integrate(
             // First chunk l=n => M
             for ( std::size_t l=n; l<this->_series_size; l++ )
             {
-                m       = l - n;
+                if ( l >= n )
+                {
+                    m       = l - n;
+    
+                    il      = this->_freq_i_off + ih0 * QTF_FAR_N + l;
+                    jm      = this->_freq_j_off + ih1 * QTF_FAR_N + m;
+    
+                    acil    = this->_ac[ il ];
+                    asil    = this->_as[ il ];
+                    acjm    = this->_ac[ jm ];
+                    asjm    = this->_as[ jm ];
+                    bcil    = this->_bc[ il ];
+                    bsil    = this->_bs[ il ];
+                    bcjm    = this->_bc[ jm ];
+                    bsjm    = this->_bs[ jm ];
+    
+                    FF      = this->U( triple_hankel_f, l, m );
+                    FG      = this->U( triple_hankel_g, l, m );
+                    FH      = this->U( triple_hankel_h, l, m );
+                    
+                    tc1     += FF *( bcil * conj_if( bcjm ) + bsil * conj_if( bsjm ) );
+                    tc1     += FG *( acil * conj_if( bcjm ) + asil * conj_if( bsjm ) );
+                    tc1     += FH *( bcil * conj_if( acjm ) + bsil * conj_if( asjm ) );
+    
+                    ts1     += FF *( bsil * conj_if( bcjm ) - bcil * conj_if( bsjm ) );
+                    ts1     += FG *( asil * conj_if( bcjm ) - acil * conj_if( bsjm ) );
+                    ts1     += FH *( bsil * conj_if( acjm ) - bcil * conj_if( asjm ) );
+    
+                    kd      = static_cast<cusfloat>( l == n );
+                    Qc[ihx] += ( 1.0 + kd ) * ( tc1 + tc2 + tc3 );
+                    Qs[ihx] += ( 1.0 + kd ) * ( ts1 + ts2 + ts3 );
 
-                il      = this->_freq_i_off + ih0 * QTF_FAR_N + l;
-                jm      = this->_freq_j_off + ih1 * QTF_FAR_N + m;
-
-                acil    = this->_ac[ il ];
-                asil    = this->_as[ il ];
-                acjm    = this->_ac[ jm ];
-                asjm    = this->_as[ jm ];
-                bcil    = this->_bc[ il ];
-                bsil    = this->_bs[ il ];
-                bcjm    = this->_bc[ jm ];
-                bsjm    = this->_bs[ jm ];
-
-                FF      = this->U( triple_hankel_f, l, m );
-                FG      = this->U( triple_hankel_g, l, m );
-                FH      = this->U( triple_hankel_h, l, m );
-                
-                tc1     += FF *( bcil * conj_if( bcjm ) + bsil * conj_if( bsjm ) );
-                tc1     += FG *( acil * conj_if( bcjm ) + asil * conj_if( bsjm ) );
-                tc1     += FH *( bcil * conj_if( acjm ) + bsil * conj_if( asjm ) );
-
-                ts1     += FF *( bsil * conj_if( bcjm ) - bcil * conj_if( bsjm ) );
-                ts1     += FG *( asil * conj_if( bcjm ) - acil * conj_if( bsjm ) );
-                ts1     += FH *( bsil * conj_if( acjm ) - bcil * conj_if( asjm ) );
-
-                kd      = static_cast<cusfloat>( l == n );
-                Qc[ihx] += ( 1.0 + kd ) * ( tc1 + tc2 + tc3 );
-                Qs[ihx] += ( 1.0 + kd ) * ( ts1 + ts2 + ts3 );
+                }
 
             }
 
             // Second chunk l=0 => M-n
-            for ( std::size_t l=0; l<this->_series_size-n; l++ )
+            if ( this->_series_size >= n )
             {
-                m       = l + n;
-
-                il      = this->_freq_i_off + ih0 * QTF_FAR_N + l;
-                jm      = this->_freq_j_off + ih1 * QTF_FAR_N + m;
-
-                acil    = this->_ac[ il ];
-                asil    = this->_as[ il ];
-                acjm    = this->_ac[ jm ];
-                asjm    = this->_as[ jm ];
-                bcil    = this->_bc[ il ];
-                bsil    = this->_bs[ il ];
-                bcjm    = this->_bc[ jm ];
-                bsjm    = this->_bs[ jm ];
-
-                FF      = this->V( triple_hankel_f, l, m );
-                FG      = this->V( triple_hankel_g, l, m );
-                FH      = this->V( triple_hankel_h, l, m );
-                
-                tc1     += FF *( bcil * conj_if( bcjm ) + bsil * conj_if( bsjm ) );
-                tc1     += FG *( acil * conj_if( bcjm ) + asil * conj_if( bsjm ) );
-                tc1     += FH *( bcil * conj_if( acjm ) + bsil * conj_if( asjm ) );
-
-                ts1     += FF *( bsil * conj_if( bcjm ) - bcil * conj_if( bsjm ) );
-                ts1     += FG *( asil * conj_if( bcjm ) - acil * conj_if( bsjm ) );
-                ts1     += FH *( bsil * conj_if( acjm ) - bcil * conj_if( asjm ) );
-
-                kd      = static_cast<cusfloat>( l == 0 );
-                Qc[ihx] += ( 1.0 + kd ) * ( tc1 + tc2 + tc3 );
-                Qs[ihx] += ( 1.0 + kd ) * ( ts1 + ts2 + ts3 );
-
+                for ( std::size_t l=0; l<this->_series_size-n; l++ )
+                {
+                    m       = l + n;
+    
+                    il      = this->_freq_i_off + ih0 * QTF_FAR_N + l;
+                    jm      = this->_freq_j_off + ih1 * QTF_FAR_N + m;
+    
+                    acil    = this->_ac[ il ];
+                    asil    = this->_as[ il ];
+                    acjm    = this->_ac[ jm ];
+                    asjm    = this->_as[ jm ];
+                    bcil    = this->_bc[ il ];
+                    bsil    = this->_bs[ il ];
+                    bcjm    = this->_bc[ jm ];
+                    bsjm    = this->_bs[ jm ];
+    
+                    FF      = this->V( triple_hankel_f, l, m );
+                    FG      = this->V( triple_hankel_g, l, m );
+                    FH      = this->V( triple_hankel_h, l, m );
+                    
+                    tc1     += FF *( bcil * conj_if( bcjm ) + bsil * conj_if( bsjm ) );
+                    tc1     += FG *( acil * conj_if( bcjm ) + asil * conj_if( bsjm ) );
+                    tc1     += FH *( bcil * conj_if( acjm ) + bsil * conj_if( asjm ) );
+    
+                    ts1     += FF *( bsil * conj_if( bcjm ) - bcil * conj_if( bsjm ) );
+                    ts1     += FG *( asil * conj_if( bcjm ) - acil * conj_if( bsjm ) );
+                    ts1     += FH *( bsil * conj_if( acjm ) - bcil * conj_if( asjm ) );
+    
+                    kd      = static_cast<cusfloat>( l == 0 );
+                    Qc[ihx] += ( 1.0 + kd ) * ( tc1 + tc2 + tc3 );
+                    Qs[ihx] += ( 1.0 + kd ) * ( ts1 + ts2 + ts3 );
+    
+                }
             }
 
-            // Second chunk l=1 => n-1
-            for ( std::size_t l=1; l<n-1; l++ )
+            // Third chunk l=1 => n-1
+            if ( n > 1 )
             {
-                m       = n - l;
-
-                il      = this->_freq_i_off + ih0 * QTF_FAR_N + l;
-                jm      = this->_freq_j_off + ih1 * QTF_FAR_N + m;
-
-                acil    = this->_ac[ il ];
-                asil    = this->_as[ il ];
-                acjm    = this->_ac[ jm ];
-                asjm    = this->_as[ jm ];
-                bcil    = this->_bc[ il ];
-                bsil    = this->_bs[ il ];
-                bcjm    = this->_bc[ jm ];
-                bsjm    = this->_bs[ jm ];
-
-                FF      = this->W( triple_hankel_f, l, m );
-                FG      = this->W( triple_hankel_g, l, m );
-                FH      = this->W( triple_hankel_h, l, m );
-                
-                // First chunk l=n => M
-                tc1     += FF *( bcil * conj_if( bcjm ) - bsil * conj_if( bsjm ) );
-                tc1     += FG *( acil * conj_if( bcjm ) - asil * conj_if( bsjm ) );
-                tc1     += FH *( bcil * conj_if( acjm ) - bsil * conj_if( asjm ) );
-
-                ts1     += FF *( bsil * conj_if( bcjm ) + bcil * conj_if( bsjm ) );
-                ts1     += FG *( asil * conj_if( bcjm ) + acil * conj_if( bsjm ) );
-                ts1     += FH *( bsil * conj_if( acjm ) + bcil * conj_if( asjm ) );
-
-                Qc[ihx] += ( tc1 + tc2 + tc3 );
-                Qs[ihx] += ( ts1 + ts2 + ts3 );
-
+                for ( std::size_t l=1; l<n-1; l++ )
+                {
+                    if ( n >= l )
+                    {
+                        m       = n - l;
+        
+                        il      = this->_freq_i_off + ih0 * QTF_FAR_N + l;
+                        jm      = this->_freq_j_off + ih1 * QTF_FAR_N + m;
+        
+                        acil    = this->_ac[ il ];
+                        asil    = this->_as[ il ];
+                        acjm    = this->_ac[ jm ];
+                        asjm    = this->_as[ jm ];
+                        bcil    = this->_bc[ il ];
+                        bsil    = this->_bs[ il ];
+                        bcjm    = this->_bc[ jm ];
+                        bsjm    = this->_bs[ jm ];
+        
+                        FF      = this->W( triple_hankel_f, l, m );
+                        FG      = this->W( triple_hankel_g, l, m );
+                        FH      = this->W( triple_hankel_h, l, m );
+                        
+                        // First chunk l=n => M
+                        tc1     += FF *( bcil * conj_if( bcjm ) - bsil * conj_if( bsjm ) );
+                        tc1     += FG *( acil * conj_if( bcjm ) - asil * conj_if( bsjm ) );
+                        tc1     += FH *( bcil * conj_if( acjm ) - bsil * conj_if( asjm ) );
+        
+                        ts1     += FF *( bsil * conj_if( bcjm ) + bcil * conj_if( bsjm ) );
+                        ts1     += FG *( asil * conj_if( bcjm ) + acil * conj_if( bsjm ) );
+                        ts1     += FH *( bsil * conj_if( acjm ) + bcil * conj_if( asjm ) );
+        
+                        Qc[ihx] += ( tc1 + tc2 + tc3 );
+                        Qs[ihx] += ( ts1 + ts2 + ts3 );
+        
+                    }
+    
+                }
+    
             }
 
         }
