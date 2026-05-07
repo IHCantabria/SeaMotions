@@ -475,14 +475,14 @@ void FrequencySolver<N, mode_pf>::calculate_second_order( void )
                                                         this->mesh_gp,
                                                         sim_data->panels_potential_so,
                                                         std::abs( this->input->angfreqs[i] - this->input->angfreqs[j] ),
-                                                        sim_data->potential_secord_force,
+                                                        sim_data->qtf_diff_secord_force,
                                                         sim_data->panels_pressure_so,
                                                         true
                                                     );
 
                     MPI_Allreduce(
                                         MPI_IN_PLACE,
-                                        sim_data->potential_secord_force,
+                                        sim_data->qtf_diff_secord_force,
                                         sim_data->qtf_np,
                                         mpi_cuscomplex,
                                         MPI_SUM,
