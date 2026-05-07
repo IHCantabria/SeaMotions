@@ -3030,7 +3030,7 @@ void FormulationKernelBackend<N, mode_pf, recalc_steady>::solve_so(
     this->_gwfcns_interf_wl.set_ang_freq( w );
     
     // Re-calculate wave dependent system matrix term
-    MPI_TIME_EXEC(  this->_build_wave_matrixes<FreqRegimeE::REGULAR>( w );, this->exec_time_build_wave )
+    MPI_TIME_EXEC(  this->_build_wave_matrixes_2<FreqRegimeE::REGULAR>( w );, this->exec_time_build_wave )
                     this->_build_rhs_so( 
                                             qtf_type,
                                             freq_i,
@@ -3091,23 +3091,23 @@ void FormulationKernelBackend<N, mode_pf, recalc_steady>::_process_far_field(
     }
 
     // Add far field contributions to the RHS vector
+    const std::size_t heads_np = static_cast<std::size_t>( this->_input->heads_np );
     for ( std::size_t ih0=0; ih0<static_cast<std::size_t>(this->_input->heads_np); ih0++ )
     {
-        for ( std::size_t ih1=0; ih1<static_cast<std::size_t>(this->_input->heads_np); ih1++ )
+        for ( std::size_t ih1=0; ih1<static_cast<std::size_t>(heads_np); ih1++ )
         {
-            std::size_t local_index     = ih0 * this->_input->heads_np + ih1;
+            std::size_t local_index     = ih0 * heads_np + ih1;
 
             for ( std::size_t i=0; i<static_cast<std::size_t>(this->_mesh_gp->panels_tnp); i++ )
             {
                 std::size_t global_index    = ( 
-                                                    ih0 * this->_input->heads_np * this->_mesh_gp->panels_tnp
+                                                    ih0 * heads_np * this->_mesh_gp->panels_tnp
                                                     +
                                                     ih1 * this->_mesh_gp->panels_tnp
                                                 );
                 
                 
                 
-
                 if ( qtf_type == QTFTypeE::QTF_DIFF_CODE )
                 {
                     qb_rhs[global_index]        += ( 
