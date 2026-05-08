@@ -579,3 +579,35 @@ set_tests_properties(
                         test_triple_hankel_mod_database
                         PROPERTIES FIXTURES_REQUIRED triple_hankel_db
                     )
+
+
+# Add test to verify the 1D, 2D, and 3D Chebyshev database folding algorithms.
+# No external data files needed – the test uses the built-in coefficient headers
+# and a small synthetic polynomial for the 2D case.
+set(
+        test_fold_database_src
+        test_fold_database.cpp
+        "../../src/config.hpp"
+        ${containers_module_files}
+        ${inout_module_files}
+        ${interfaces_module_files}
+        ${panel_geometry_src}
+        ${green_module_files}
+        ${math_module_files}
+        ${mesh_module_files}
+        ${raos_module_files}
+        ${tools_module_files}
+        ${version_module_files}
+        ${waves_module_files}
+    )
+
+add_executable(
+                    test_fold_database_cmd
+                    ${test_fold_database_src}
+                )
+set_mkl_lib_target( test_fold_database_cmd )
+set_hdf5_target( test_fold_database_cmd )
+add_test(
+            NAME    test_fold_database
+            COMMAND test_fold_database_cmd
+        )
