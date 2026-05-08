@@ -187,7 +187,7 @@ cuscomplex triple_hankel_f(
                                 cusfloat                a,
                                 cusfloat                b,
                                 cusfloat                c,
-                                const TripleHankelIO&   options
+                                TripleHankelIO&         options
                             );
 
 

@@ -87,8 +87,13 @@ int     MeshGroup::get_body_id(
     // Storage necessary input arguments into class
     // attributes
     this->_is_wl_points = is_wl_points;
-    this->meshes        = meshes_in;
     this->meshes_np     = meshes_np_in;
+
+    this->meshes = new Mesh*[ this->meshes_np ];
+    for ( int i = 0; i < this->meshes_np; i++ )
+    {
+        this->meshes[i] = meshes_in[i];
+    }
 
     // Allocate space for dimensions vectors
     this->panels_raddif_np  = new int[this->meshes_np];     clear_vector( this->meshes_np, this->panels_raddif_np );
@@ -187,6 +192,7 @@ int     MeshGroup::get_body_id(
                                             void
                             )
 {
+    delete [] this->meshes;
     delete [] this->panels;
     delete [] this->panels_np;
     delete [] this->panels_cnp;
@@ -208,5 +214,118 @@ int     MeshGroup::get_body_id(
         delete [] this->panels_wl;
         delete [] this->panels_wl_np;
         delete [] this->panels_wl_cnp;
+    }
+}
+
+
+void MeshGroup::append_memory_report(
+                                        std::vector<MemoryReportEntry>& entries,
+                                        const std::string& prefix
+                                    ) const
+{
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "panels_ptrs" ),
+                        ( this->panels != nullptr )
+                            ? static_cast<std::size_t>( this->panels_tnp ) * sizeof( PanelGeom* )
+                            : 0
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "panels_np" ),
+                        ( this->panels_np != nullptr )
+                            ? static_cast<std::size_t>( this->meshes_np ) * sizeof( int )
+                            : 0
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "panels_cnp" ),
+                        ( this->panels_cnp != nullptr )
+                            ? static_cast<std::size_t>( this->meshes_np + 1 ) * sizeof( int )
+                            : 0
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "panels_raddif_np" ),
+                        ( this->panels_raddif_np != nullptr )
+                            ? static_cast<std::size_t>( this->meshes_np ) * sizeof( int )
+                            : 0
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "panels_raddif_cnp" ),
+                        ( this->panels_raddif_cnp != nullptr )
+                            ? static_cast<std::size_t>( this->meshes_np + 1 ) * sizeof( int )
+                            : 0
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "source_nodes_ptrs" ),
+                        ( this->source_nodes != nullptr )
+                            ? static_cast<std::size_t>( this->source_nodes_tnp ) * sizeof( SourceNode* )
+                            : 0
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "source_nodes_np" ),
+                        ( this->source_nodes_np != nullptr )
+                            ? static_cast<std::size_t>( this->meshes_np ) * sizeof( int )
+                            : 0
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "source_nodes_cnp" ),
+                        ( this->source_nodes_cnp != nullptr )
+                            ? static_cast<std::size_t>( this->meshes_np + 1 ) * sizeof( int )
+                            : 0
+                    );
+
+    if ( this->_is_wl_points )
+    {
+        add_memory_entry(
+                            entries,
+                            memory_report_path( prefix, "panels_wl_ptrs" ),
+                            ( this->panels_wl != nullptr )
+                                ? static_cast<std::size_t>( this->panels_wl_tnp ) * sizeof( PanelGeom* )
+                                : 0
+                        );
+        add_memory_entry(
+                            entries,
+                            memory_report_path( prefix, "panels_wl_np" ),
+                            ( this->panels_wl_np != nullptr )
+                                ? static_cast<std::size_t>( this->meshes_np ) * sizeof( int )
+                                : 0
+                        );
+        add_memory_entry(
+                            entries,
+                            memory_report_path( prefix, "panels_wl_cnp" ),
+                            ( this->panels_wl_cnp != nullptr )
+                                ? static_cast<std::size_t>( this->meshes_np + 1 ) * sizeof( int )
+                                : 0
+                        );
+    }
+
+    if ( this->is_panels_mirror )
+    {
+        add_memory_entry(
+                            entries,
+                            memory_report_path( prefix, "panels_mirror_ptrs" ),
+                            ( this->panels_mirror != nullptr )
+                                ? static_cast<std::size_t>( this->panels_tnp ) * sizeof( PanelGeom* )
+                                : 0
+                        );
+
+        std::size_t mirror_bytes = 0;
+        if ( this->panels_mirror != nullptr )
+        {
+            for ( int i = 0; i < this->panels_tnp; i++ )
+            {
+                if ( this->panels_mirror[i] != nullptr )
+                {
+                    mirror_bytes += this->panels_mirror[i]->memory_bytes( );
+                }
+            }
+        }
+        add_memory_entry( entries, memory_report_path( prefix, "panels_mirror" ), mirror_bytes );
     }
 }

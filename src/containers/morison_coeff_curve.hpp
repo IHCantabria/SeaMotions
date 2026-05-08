@@ -27,6 +27,7 @@
 // Include local modules
 #include "../math/data_fit/interp1d.hpp"
 #include "../math/custensor/custensor.hpp"
+#include "../tools/memory_report.hpp"
 
 
 struct MorisonCoeffCurve
@@ -65,5 +66,12 @@ public:
 
     /*** Declare public methods ***/
     cusfloat eval( cusfloat x ) const;
+
+    std::size_t memory_bytes( void ) const;
+
+    void append_memory_report(
+                                    std::vector<MemoryReportEntry>& entries,
+                                    const std::string& prefix
+                                ) const;
 
 };

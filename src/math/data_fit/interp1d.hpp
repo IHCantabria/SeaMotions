@@ -22,6 +22,7 @@
 
 // Include general usage scientific libraries
 #include "mkl.h"
+#include <cstddef>
 #include <sstream>
 #include <stdexcept>
 
@@ -234,6 +235,11 @@ public:
                                         );
         DF_CHECK_STATUS(errcode);
 
+    }
+
+    std::size_t memory_bytes( void ) const
+    {
+        return static_cast<std::size_t>( this->_spline_coeffs_np ) * sizeof( T );
     }
 
 };

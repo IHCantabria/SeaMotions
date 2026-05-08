@@ -472,3 +472,53 @@ bool RadDiffData<T, Config>::has_field_weights( void ) const
 {
     return this->_has_field_weights;
 }
+
+
+template<typename T, typename Config>
+std::size_t RadDiffData<T, Config>::memory_bytes( void ) const
+{
+    std::size_t total = 0;
+    total += this->_field_data.size( ) * sizeof( cusfloat );
+    total += this->_field_data_r.size( ) * sizeof( T );
+    total += this->_field_weights.size( ) * sizeof( cusfloat );
+    for ( const auto& panel : this->panel_data )
+    {
+        total += panel.memory_bytes( );
+    }
+    return total;
+}
+
+
+template<typename T, typename Config>
+void RadDiffData<T, Config>::append_memory_report(
+                                                    std::vector<MemoryReportEntry>& entries,
+                                                    const std::string& prefix
+                                                ) const
+{
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "field_data" ),
+                        this->_field_data.size( ) * sizeof( cusfloat )
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "field_data_r" ),
+                        this->_field_data_r.size( ) * sizeof( T )
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "field_weights" ),
+                        this->_field_weights.size( ) * sizeof( cusfloat )
+                    );
+
+    std::size_t panel_bytes = 0;
+    for ( const auto& panel : this->panel_data )
+    {
+        panel_bytes += panel.memory_bytes( );
+    }
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "panel_data" ),
+                        panel_bytes
+                    );
+}

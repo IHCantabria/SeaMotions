@@ -24,6 +24,7 @@
 #include "../containers/panel_geom.hpp"
 #include "../math/custensor/custensor.hpp"
 #include "rad_diff_data_config.hpp"
+#include "../tools/memory_report.hpp"
 
 
 template<typename T, typename Config>
@@ -118,6 +119,13 @@ public:
 
     /* Declare public methods */
     void clear_data( void );
+
+    std::size_t memory_bytes( void ) const;
+
+    void append_memory_report(
+                                    std::vector<MemoryReportEntry>& entries,
+                                    const std::string& prefix
+                                ) const;
 
     template<FieldTypeE field_type, FieldComponentE field_component>
     const cut::CusTensor<T>* get_field_data( void ) const;

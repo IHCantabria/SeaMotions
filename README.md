@@ -35,5 +35,18 @@ SeaMotions is a Boundary Element Method (BEM) solver that models the interaction
 - Parallel HDF5 compilation guide: see [PARALLEL_HDF5.md](PARALLEL_HDF5.md).
 - Example setups and validation workflows: inspect the `examples/` and `tests/` folders.
 
+## Command Line
+Run the frequency solver by passing the case folder path. The RAM usage report is optional and writes CSV files into the case folder.
+
+Example:
+```bash
+seamotions_freq --mem-report <case_folder>
+```
+
+Options:
+- `-c, --case <path>`: case folder path (optional when passing as a positional argument)
+- `--mem-report`: write RAM usage CSV reports
+- `-h, --help`: show help
+
 ## Contact
 For any software-related questions or bug reports, contact [Sergio Fernandez Ruano](https://ihcantabria.com/directorio-personal/sergio-fernandez-ruano/).

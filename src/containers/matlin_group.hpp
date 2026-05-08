@@ -23,12 +23,15 @@
 
 // Include general usage libraries
 #include <fstream>
+#include <sstream>
 #include <string>
+#include <type_traits>
 
 // Include local modules
 #include "../config.hpp"
 #include "../math/math_tools.hpp"
 #include "../tools.hpp"
+#include "../tools/memory_report.hpp"
 
 
 template <typename T>
@@ -43,6 +46,12 @@ private:
     void    _load_field_points(
                                     std::string fipath
                                 );
+
+    std::string _matrix_to_disk(
+                                    const T* matrix,
+                                    int nrows,
+                                    int ncols
+                                ) const;
 
 public:
     // Define class public attributes
@@ -74,7 +83,8 @@ public:
                     int         end_row_in,
                     int         start_col_in,
                     int         end_col_in,
-                    bool        is_sysmat_field_in
+                    bool        is_sysmat_field_in,
+                    RecalcSteadyE recalc_steady_in = RecalcSteadyE::OFF
                 );
 
     MatLinGroup(
@@ -84,7 +94,8 @@ public:
                     int         fields_np_in,
                     int         start_col_in,
                     int         end_col_in,
-                    bool        is_sysmat_field_in
+                    bool        is_sysmat_field_in,
+                    RecalcSteadyE recalc_steady_in = RecalcSteadyE::OFF
                 );
 
     ~MatLinGroup(
@@ -95,6 +106,17 @@ public:
     void clear_field_values( void );
 
     void clear_sysmat( void );
+
+    std::string sysmat_to_disk( void ) const;
+
+    std::string sysmat_steady_to_disk( void ) const;
+
+    std::size_t memory_bytes( void ) const;
+
+    void append_memory_report(
+                                    std::vector<MemoryReportEntry>& entries,
+                                    const std::string& prefix
+                                ) const;
 
 };
 
@@ -115,6 +137,148 @@ void MatLinGroup<T>::clear_sysmat(
 {
     clear_vector( this->field_values_np, this->field_values );
     clear_vector( this->sysmat_nrows * this->sysmat_ncols, this->sysmat );
+}
+
+
+template<typename T>
+std::string MatLinGroup<T>::_matrix_to_disk(
+                                                const T* matrix,
+                                                int nrows,
+                                                int ncols
+                                            ) const
+{
+    std::ostringstream out;
+    if ( matrix == nullptr )
+    {
+        return out.str( );
+    }
+
+    out << nrows << " " << ncols << "\n";
+    if constexpr ( std::is_same<T, cuscomplex>::value )
+    {
+        out << "row col real imag\n";
+    }
+    else
+    {
+        out << "row col value\n";
+    }
+
+    for ( int row = 0; row < nrows; row++ )
+    {
+        for ( int col = 0; col < ncols; col++ )
+        {
+            int index = col * nrows + row;
+            out << row << " " << col << " ";
+            if constexpr ( std::is_same<T, cuscomplex>::value )
+            {
+                out << matrix[index].real( ) << " " << matrix[index].imag( );
+            }
+            else
+            {
+                out << matrix[index];
+            }
+            out << "\n";
+        }
+    }
+
+    return out.str( );
+}
+
+
+template<typename T>
+std::string MatLinGroup<T>::sysmat_to_disk( void ) const
+{
+    return _matrix_to_disk( this->sysmat, this->sysmat_nrows, this->sysmat_ncols );
+}
+
+
+template<typename T>
+std::string MatLinGroup<T>::sysmat_steady_to_disk( void ) const
+{
+    return _matrix_to_memory( this->sysmat_steady, this->sysmat_nrows, this->sysmat_ncols );
+}
+
+
+template<typename T>
+std::size_t MatLinGroup<T>::memory_bytes( void ) const
+{
+    std::size_t total = 0;
+    if ( this->cog_to_field_points != nullptr )
+    {
+        total += static_cast<std::size_t>( this->_dims_np ) * static_cast<std::size_t>( this->field_points_np ) * sizeof( cusfloat );
+    }
+    if ( this->field_points != nullptr )
+    {
+        total += static_cast<std::size_t>( this->_dims_np ) * static_cast<std::size_t>( this->field_points_np ) * sizeof( cusfloat );
+    }
+    if ( this->field_points_cnp != nullptr )
+    {
+        total += static_cast<std::size_t>( this->field_points_nb + 1 ) * sizeof( int );
+    }
+    if ( this->field_values != nullptr )
+    {
+        total += static_cast<std::size_t>( this->field_values_np ) * sizeof( T );
+    }
+    if ( this->sysmat != nullptr )
+    {
+        total += static_cast<std::size_t>( this->sysmat_nrows ) * static_cast<std::size_t>( this->sysmat_ncols ) * sizeof( T );
+    }
+    if ( this->sysmat_steady != nullptr )
+    {
+        total += static_cast<std::size_t>( this->sysmat_nrows ) * static_cast<std::size_t>( this->sysmat_ncols ) * sizeof( T );
+    }
+    return total;
+}
+
+
+template<typename T>
+void MatLinGroup<T>::append_memory_report(
+                                                std::vector<MemoryReportEntry>& entries,
+                                                const std::string& prefix
+                                            ) const
+{
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "cog_to_field_points" ),
+                        ( this->cog_to_field_points != nullptr )
+                            ? static_cast<std::size_t>( this->_dims_np ) * static_cast<std::size_t>( this->field_points_np ) * sizeof( cusfloat )
+                            : 0
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "field_points" ),
+                        ( this->field_points != nullptr )
+                            ? static_cast<std::size_t>( this->_dims_np ) * static_cast<std::size_t>( this->field_points_np ) * sizeof( cusfloat )
+                            : 0
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "field_points_cnp" ),
+                        ( this->field_points_cnp != nullptr )
+                            ? static_cast<std::size_t>( this->field_points_nb + 1 ) * sizeof( int )
+                            : 0
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "field_values" ),
+                        ( this->field_values != nullptr )
+                            ? static_cast<std::size_t>( this->field_values_np ) * sizeof( T )
+                            : 0
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "sysmat" ),
+                        ( this->sysmat != nullptr )
+                            ? static_cast<std::size_t>( this->sysmat_nrows ) * static_cast<std::size_t>( this->sysmat_ncols ) * sizeof( T )
+                            : 0
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "sysmat_steady" ),
+                        ( this->sysmat_steady != nullptr )
+                            ? static_cast<std::size_t>( this->sysmat_nrows ) * static_cast<std::size_t>( this->sysmat_ncols ) * sizeof( T )
+                            : 0
+                    );
 }
 
 
@@ -179,7 +343,8 @@ MatLinGroup<T>::MatLinGroup(
                                 int     end_row_in,
                                 int     start_col_in,
                                 int     end_col_in,
-                                bool    is_sysmat_field_in
+                                bool    is_sysmat_field_in,
+                                RecalcSteadyE recalc_steady_in
                             )
 {
     // Storage input arguments
@@ -199,7 +364,10 @@ MatLinGroup<T>::MatLinGroup(
 
     // Allocate space for the system matrixes
     this->sysmat            = generate_empty_vector<T>( this->sysmat_nrows * this->sysmat_ncols );
-    this->sysmat_steady     = generate_empty_vector<T>( this->sysmat_nrows * this->sysmat_ncols );
+    if ( recalc_steady_in == RecalcSteadyE::OFF )
+    {
+        this->sysmat_steady = generate_empty_vector<T>( this->sysmat_nrows * this->sysmat_ncols );
+    }
 
     // Allocate space for the field points and the field values
     this->cog_to_field_points   = generate_empty_vector<cusfloat>( this->_dims_np * this->sysmat_nrows );
@@ -217,7 +385,8 @@ MatLinGroup<T>::MatLinGroup(
                                 int         fields_np_in,
                                 int         start_col_in,
                                 int         end_col_in,
-                                bool        is_sysmat_field_in
+                                bool        is_sysmat_field_in,
+                                RecalcSteadyE recalc_steady_in
                             )
 {
     // Storage input arguments
@@ -240,7 +409,10 @@ MatLinGroup<T>::MatLinGroup(
 
     // Allocate space for the system matrixes
     this->sysmat            = generate_empty_vector<T>( this->sysmat_nrows * this->sysmat_ncols );
-    this->sysmat_steady     = generate_empty_vector<T>( this->sysmat_nrows * this->sysmat_ncols );
+    if ( recalc_steady_in == RecalcSteadyE::OFF )
+    {
+        this->sysmat_steady = generate_empty_vector<T>( this->sysmat_nrows * this->sysmat_ncols );
+    }
 
     // Allocate space for the field points and the field values
     this->field_points_cnp      = generate_empty_vector<int>( this->field_points_nb+1 );

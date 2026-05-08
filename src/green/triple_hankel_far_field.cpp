@@ -497,10 +497,11 @@ cuscomplex triple_hankel_f(
                                 cusfloat                a,
                                 cusfloat                b,
                                 cusfloat                c,
-                                const TripleHankelIO&   options
+                                TripleHankelIO&   options
                             )
 {
-    return integrate_triple_hankel( n1, n2, n3, a, b, c, options );
+    options.verbose = false;
+    return integrate_triple_hankel_mod( n1, n2, n3, a, b, c, options );
 }
 
 cuscomplex triple_hankel_g(
@@ -513,10 +514,11 @@ cuscomplex triple_hankel_g(
                                 TripleHankelIO&     options
                             )
 {
+    options.verbose = false;
     options.hkind0  = 1;
-    cuscomplex val1 = integrate_triple_hankel( n1, n2, n3, a, b, c, options );
+    cuscomplex val1 = integrate_triple_hankel_mod( n1, n2, n3, a, b, c, options );
     options.hkind0  = 2;
-    cuscomplex val2 = integrate_triple_hankel( n1, n2, n3, a, b, c, options );
+    cuscomplex val2 = integrate_triple_hankel_mod( n1, n2, n3, a, b, c, options );
     return ( val1 + val2 ) / 2.0;
 }
 
@@ -531,11 +533,12 @@ cuscomplex triple_hankel_h(
                                 TripleHankelIO&     options
                             )
 {
+    options.verbose = false;
     options.hkind0  = 2;
     options.hkind1  = 1;
-    cuscomplex val1 = integrate_triple_hankel( n1, n2, n3, a, b, c, options );
+    cuscomplex val1 = integrate_triple_hankel_mod( n1, n2, n3, a, b, c, options );
     options.hkind1  = 2;
-    cuscomplex val2 = integrate_triple_hankel( n1, n2, n3, a, b, c, options );
+    cuscomplex val2 = integrate_triple_hankel_mod( n1, n2, n3, a, b, c, options );
     return ( val1 + val2 ) / 2.0;
 }
 

@@ -326,3 +326,89 @@ PanelData<T, Config>::PanelData(
                             );
 
 }
+
+
+template<typename T, typename Config>
+std::size_t PanelData<T, Config>::memory_bytes( void ) const
+{
+    std::size_t total = 0;
+    total += this->field_points.size( ) * sizeof( cusfloat );
+    total += this->pot_incident.size( ) * sizeof( T );
+    total += this->pot_rad.size( ) * sizeof( T );
+    total += this->pot_diff.size( ) * sizeof( T );
+    total += this->pot_total.size( ) * sizeof( T );
+    total += this->pot_total_2.size( ) * sizeof( T );
+    total += this->pot_modes.size( ) * sizeof( T );
+    total += this->press_incident.size( ) * sizeof( T );
+    total += this->press_rad.size( ) * sizeof( T );
+    total += this->press_diff.size( ) * sizeof( T );
+    total += this->press_total.size( ) * sizeof( T );
+    total += this->vel_dn_incident.size( ) * sizeof( T );
+    total += this->vel_dn_rad.size( ) * sizeof( T );
+    total += this->vel_dn_diff.size( ) * sizeof( T );
+    total += this->vel_dn_total.size( ) * sizeof( T );
+    total += this->vel_x_incident.size( ) * sizeof( T );
+    total += this->vel_y_incident.size( ) * sizeof( T );
+    total += this->vel_z_incident.size( ) * sizeof( T );
+    total += this->vel_x_rad.size( ) * sizeof( T );
+    total += this->vel_y_rad.size( ) * sizeof( T );
+    total += this->vel_z_rad.size( ) * sizeof( T );
+    total += this->vel_x_diff.size( ) * sizeof( T );
+    total += this->vel_y_diff.size( ) * sizeof( T );
+    total += this->vel_z_diff.size( ) * sizeof( T );
+    total += this->vel_x_total.size( ) * sizeof( T );
+    total += this->vel_y_total.size( ) * sizeof( T );
+    total += this->vel_z_total.size( ) * sizeof( T );
+    total += this->vel_x_modes.size( ) * sizeof( T );
+    total += this->vel_y_modes.size( ) * sizeof( T );
+    total += this->vel_z_modes.size( ) * sizeof( T );
+    total += this->wev_total.size( ) * sizeof( T );
+    total += this->wev_rel_total.size( ) * sizeof( T );
+    return total;
+}
+
+
+template<typename T, typename Config>
+void PanelData<T, Config>::append_memory_report(
+                                                    std::vector<MemoryReportEntry>& entries,
+                                                    const std::string& prefix
+                                                ) const
+{
+    auto add_tensor = [&](const std::string& name, std::size_t bytes)
+    {
+        add_memory_entry( entries, memory_report_path( prefix, name ), bytes );
+    };
+
+    add_tensor( "field_points", this->field_points.size( ) * sizeof( cusfloat ) );
+    add_tensor( "pot_incident", this->pot_incident.size( ) * sizeof( T ) );
+    add_tensor( "pot_rad", this->pot_rad.size( ) * sizeof( T ) );
+    add_tensor( "pot_diff", this->pot_diff.size( ) * sizeof( T ) );
+    add_tensor( "pot_total", this->pot_total.size( ) * sizeof( T ) );
+    add_tensor( "pot_total_2", this->pot_total_2.size( ) * sizeof( T ) );
+    add_tensor( "pot_modes", this->pot_modes.size( ) * sizeof( T ) );
+    add_tensor( "press_incident", this->press_incident.size( ) * sizeof( T ) );
+    add_tensor( "press_rad", this->press_rad.size( ) * sizeof( T ) );
+    add_tensor( "press_diff", this->press_diff.size( ) * sizeof( T ) );
+    add_tensor( "press_total", this->press_total.size( ) * sizeof( T ) );
+    add_tensor( "vel_dn_incident", this->vel_dn_incident.size( ) * sizeof( T ) );
+    add_tensor( "vel_dn_rad", this->vel_dn_rad.size( ) * sizeof( T ) );
+    add_tensor( "vel_dn_diff", this->vel_dn_diff.size( ) * sizeof( T ) );
+    add_tensor( "vel_dn_total", this->vel_dn_total.size( ) * sizeof( T ) );
+    add_tensor( "vel_x_incident", this->vel_x_incident.size( ) * sizeof( T ) );
+    add_tensor( "vel_y_incident", this->vel_y_incident.size( ) * sizeof( T ) );
+    add_tensor( "vel_z_incident", this->vel_z_incident.size( ) * sizeof( T ) );
+    add_tensor( "vel_x_rad", this->vel_x_rad.size( ) * sizeof( T ) );
+    add_tensor( "vel_y_rad", this->vel_y_rad.size( ) * sizeof( T ) );
+    add_tensor( "vel_z_rad", this->vel_z_rad.size( ) * sizeof( T ) );
+    add_tensor( "vel_x_diff", this->vel_x_diff.size( ) * sizeof( T ) );
+    add_tensor( "vel_y_diff", this->vel_y_diff.size( ) * sizeof( T ) );
+    add_tensor( "vel_z_diff", this->vel_z_diff.size( ) * sizeof( T ) );
+    add_tensor( "vel_x_total", this->vel_x_total.size( ) * sizeof( T ) );
+    add_tensor( "vel_y_total", this->vel_y_total.size( ) * sizeof( T ) );
+    add_tensor( "vel_z_total", this->vel_z_total.size( ) * sizeof( T ) );
+    add_tensor( "vel_x_modes", this->vel_x_modes.size( ) * sizeof( T ) );
+    add_tensor( "vel_y_modes", this->vel_y_modes.size( ) * sizeof( T ) );
+    add_tensor( "vel_z_modes", this->vel_z_modes.size( ) * sizeof( T ) );
+    add_tensor( "wev_total", this->wev_total.size( ) * sizeof( T ) );
+    add_tensor( "wev_rel_total", this->wev_rel_total.size( ) * sizeof( T ) );
+}

@@ -210,6 +210,92 @@ MorisonElement::RDDMorison* MorisonElement::get_rdd( void ) const
 }
 
 
+std::size_t MorisonElement::memory_bytes( void ) const
+{
+    std::size_t total = sizeof( MorisonElement );
+    total += this->_field_points_l.size( ) * sizeof( cusfloat );
+    total += this->_field_points_g.size( ) * sizeof( cusfloat );
+    if ( this->_rdd_morison != nullptr )
+    {
+        total += this->_rdd_morison->memory_bytes( );
+    }
+    if ( this->_ca_axial != nullptr )
+    {
+        total += this->_ca_axial->memory_bytes( );
+    }
+    if ( this->_ca_trans != nullptr )
+    {
+        total += this->_ca_trans->memory_bytes( );
+    }
+    if ( this->_ca_vert != nullptr )
+    {
+        total += this->_ca_vert->memory_bytes( );
+    }
+    if ( this->_cd_axial != nullptr )
+    {
+        total += this->_cd_axial->memory_bytes( );
+    }
+    if ( this->_cd_trans != nullptr )
+    {
+        total += this->_cd_trans->memory_bytes( );
+    }
+    if ( this->_cd_vert != nullptr )
+    {
+        total += this->_cd_vert->memory_bytes( );
+    }
+    return total;
+}
+
+
+void MorisonElement::append_memory_report(
+                                            std::vector<MemoryReportEntry>& entries,
+                                            const std::string& prefix
+                                        ) const
+{
+    add_memory_entry( entries, memory_report_path( prefix, "object" ), sizeof( MorisonElement ) );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "field_points_l" ),
+                        this->_field_points_l.size( ) * sizeof( cusfloat )
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "field_points_g" ),
+                        this->_field_points_g.size( ) * sizeof( cusfloat )
+                    );
+
+    if ( this->_rdd_morison != nullptr )
+    {
+        this->_rdd_morison->append_memory_report( entries, memory_report_path( prefix, "rdd" ) );
+    }
+
+    if ( this->_ca_axial != nullptr )
+    {
+        this->_ca_axial->append_memory_report( entries, memory_report_path( prefix, "ca_axial" ) );
+    }
+    if ( this->_ca_trans != nullptr )
+    {
+        this->_ca_trans->append_memory_report( entries, memory_report_path( prefix, "ca_trans" ) );
+    }
+    if ( this->_ca_vert != nullptr )
+    {
+        this->_ca_vert->append_memory_report( entries, memory_report_path( prefix, "ca_vert" ) );
+    }
+    if ( this->_cd_axial != nullptr )
+    {
+        this->_cd_axial->append_memory_report( entries, memory_report_path( prefix, "cd_axial" ) );
+    }
+    if ( this->_cd_trans != nullptr )
+    {
+        this->_cd_trans->append_memory_report( entries, memory_report_path( prefix, "cd_trans" ) );
+    }
+    if ( this->_cd_vert != nullptr )
+    {
+        this->_cd_vert->append_memory_report( entries, memory_report_path( prefix, "cd_vert" ) );
+    }
+}
+
+
 void    MorisonElement::_initialize_element( 
                                                 MpiConfig*          mpi_config_,
                                                 Input*              input_,

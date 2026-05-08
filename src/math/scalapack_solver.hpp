@@ -33,6 +33,7 @@
 // Include local libraries
 #include "../../src/math/math_interface.hpp"
 #include "../../src/mpi_interface.hpp"
+#include "../tools/memory_report.hpp"
 
 
 template <class T>
@@ -111,6 +112,13 @@ public:
                                 T* subsysmat, 
                                 T* subrhs 
                     );
+
+    std::size_t memory_bytes( void ) const;
+
+    void append_memory_report(
+                                    std::vector<MemoryReportEntry>& entries,
+                                    const std::string& prefix
+                                ) const;
 };
 
 
@@ -436,6 +444,52 @@ void ScalapackSolver<T>::Solve(T* subsysmat, T* subrhs)
         std::cout << "Scalapack solver finished abnormally with code: " << info << std::endl;
         throw std::runtime_error( "" );
     }
+}
+
+
+template <class T>
+std::size_t ScalapackSolver<T>::memory_bytes( void ) const
+{
+    std::size_t total = 0;
+    if ( this->descA != nullptr )
+    {
+        total += 9 * sizeof( MKL_INT );
+    }
+    if ( this->descB != nullptr )
+    {
+        total += 9 * sizeof( MKL_INT );
+    }
+    if ( this->ipiv != nullptr )
+    {
+        total += static_cast<std::size_t>( this->num_rows_local + this->num_block_size ) * sizeof( MKL_INT );
+    }
+    return total;
+}
+
+
+template <class T>
+void ScalapackSolver<T>::append_memory_report(
+                                                std::vector<MemoryReportEntry>& entries,
+                                                const std::string& prefix
+                                            ) const
+{
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "descA" ),
+                        ( this->descA != nullptr ) ? 9 * sizeof( MKL_INT ) : 0
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "descB" ),
+                        ( this->descB != nullptr ) ? 9 * sizeof( MKL_INT ) : 0
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "ipiv" ),
+                        ( this->ipiv != nullptr )
+                            ? static_cast<std::size_t>( this->num_rows_local + this->num_block_size ) * sizeof( MKL_INT )
+                            : 0
+                    );
 }
 
 // Define custom types to have more handy ways to 

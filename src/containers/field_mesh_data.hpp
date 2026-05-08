@@ -27,6 +27,7 @@
 #include "../inout/hdf5_time_series_exporter_interface.hpp"
 #include "../mesh/mesh.hpp"
 #include "../math/custensor/custensor.hpp"
+#include "../tools/memory_report.hpp"
 
 
 template<typename T, typename ModeComp>
@@ -80,6 +81,13 @@ public:
     cut::CusTensor<cusfloat>* get_field_data_vector( std::size_t heading_index );
 
     RadDiffData<T, ModeComp>* get_rdd( void ) const;
+
+    std::size_t memory_bytes( void ) const;
+
+    void append_memory_report(
+                                    std::vector<MemoryReportEntry>& entries,
+                                    const std::string& prefix
+                                ) const;
 
 };
 

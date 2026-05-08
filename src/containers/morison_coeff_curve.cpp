@@ -121,3 +121,43 @@ void MorisonCoeffCurve::_parse_input_file(
     this->_y_data = std::move( y_data_ );
 
 }
+
+
+std::size_t MorisonCoeffCurve::memory_bytes( void ) const
+{
+    std::size_t total = sizeof( MorisonCoeffCurve );
+    total += this->_x_data.size( ) * sizeof( cusfloat );
+    total += this->_y_data.size( ) * sizeof( cusfloat );
+    if ( this->_interp != nullptr )
+    {
+        total += this->_interp->memory_bytes( );
+    }
+    return total;
+}
+
+
+void MorisonCoeffCurve::append_memory_report(
+                                                std::vector<MemoryReportEntry>& entries,
+                                                const std::string& prefix
+                                            ) const
+{
+    add_memory_entry( entries, memory_report_path( prefix, "object" ), sizeof( MorisonCoeffCurve ) );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "x_data" ),
+                        this->_x_data.size( ) * sizeof( cusfloat )
+                    );
+    add_memory_entry(
+                        entries,
+                        memory_report_path( prefix, "y_data" ),
+                        this->_y_data.size( ) * sizeof( cusfloat )
+                    );
+    if ( this->_interp != nullptr )
+    {
+        add_memory_entry(
+                            entries,
+                            memory_report_path( prefix, "interp_spline_coeffs" ),
+                            this->_interp->memory_bytes( )
+                        );
+    }
+}

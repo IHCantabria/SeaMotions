@@ -25,6 +25,7 @@
 #include "../config.hpp"
 #include "../inout/input.hpp"
 #include "mpi_config.hpp"
+#include "../tools/memory_report.hpp"
 
 
 struct SimulationData
@@ -71,6 +72,8 @@ public:
     cuscomplex*     mdrift_body_vel_x_total             = nullptr;
     cuscomplex*     mdrift_body_vel_y_total             = nullptr;
     cuscomplex*     mdrift_body_vel_z_total             = nullptr;
+    int             mdrift_body_heads_np                = 0;
+    int             mdrift_body_raddif_np               = 0;
     cuscomplex*     mdrift_fs_pot_fk                    = nullptr;
     cuscomplex*     mdrift_fs_pot_raddif                = nullptr;
     cuscomplex*     mdrift_fs_pot_total                 = nullptr;
@@ -105,6 +108,8 @@ public:
     cuscomplex*     mdrift_wl_pot_raddif                = nullptr;
     cuscomplex*     mdrift_wl_pot_total                 = nullptr;
     cuscomplex*     mdrift_wl_rel_we                    = nullptr;
+    int             mdrift_wl_heads_np                  = 0;
+    int             mdrift_wl_raddif_np                 = 0;
     cuscomplex*     mdrift_wl_vel_x_fk                  = nullptr;
     cuscomplex*     mdrift_wl_vel_y_fk                  = nullptr;
     cuscomplex*     mdrift_wl_vel_z_fk                  = nullptr;
@@ -263,6 +268,11 @@ public:
     void    add_qtf_data(
                                         int freqs_np
                         );
+
+    void    append_memory_report(
+                                        std::vector<MemoryReportEntry>& entries,
+                                        const std::string& prefix
+                                ) const;
 
     void    add_qtf_direct_data(
                                         int body_panels_tnp,

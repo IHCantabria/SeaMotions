@@ -35,6 +35,7 @@
 #include "../../src/containers/source_node.hpp"
 #include "../../src/math/math_tools.hpp"
 #include "../../src/tools.hpp"
+#include "../../src/tools/memory_report.hpp"
 #include "annulus_nodes.hpp"
 
 // Define panels type
@@ -184,6 +185,13 @@ public:
     virtual ~Mesh( 
                                         void 
                 );
+
+   std::size_t memory_bytes( void ) const;
+
+   void append_memory_report(
+                                std::vector<MemoryReportEntry>& entries,
+                                const std::string& prefix
+                        ) const;
 
         /**
          * @brief Create a Mesh populated only with nodes from an annulus node cloud.

@@ -27,6 +27,7 @@
 #include "../../containers/mpi_timer.hpp"
 #include "frequency_solver.hpp"
 #include "../../cli_header_banner.hpp"
+#include "../../tools/cli_options.hpp"
 #include "../../inout/input.hpp"
 #include "../../tools.hpp"
 #include "../../version.hpp"
@@ -36,12 +37,29 @@
 int main( int argc, char* argv[] )
 {
     // Read command line arguments
-    if (!check_num_cmd_args(argc, 1))
+    CliOptions cli_options = parse_cli_options( argc, argv );
+    const std::string program_name = ( argc > 0 && argv[0] ) ? argv[0] : "seamotions_freq";
+
+    if ( cli_options.show_help )
     {
+        print_cli_usage( std::cout, program_name );
+        return 0;
+    }
+
+    if ( !cli_options.error.empty( ) )
+    {
+        std::cerr << cli_options.error << std::endl;
+        print_cli_usage( std::cerr, program_name );
         return 1;
     }
 
-    std::string case_fopath(argv[1]);
+    if ( cli_options.case_path.empty( ) )
+    {
+        print_cli_usage( std::cerr, program_name );
+        return 1;
+    }
+
+    std::string case_fopath( cli_options.case_path );
 
     /*****************************************/
     /****** Initialize MPI environment *******/
@@ -78,6 +96,7 @@ int main( int argc, char* argv[] )
     /*****************************************/
     Input input;
     input.load( case_fopath );
+    input.apply_cli_options( cli_options );
     
 
     /*****************************************/

@@ -360,10 +360,13 @@ set(
 # Pack tools module files
 set(
         tools_module_files
+        ${CMAKE_SOURCE_DIR}/src/tools/cli_options.hpp
+        ${CMAKE_SOURCE_DIR}/src/tools/cli_options.cpp
+        ${CMAKE_SOURCE_DIR}/src/static_tools.hpp
         ${CMAKE_SOURCE_DIR}/src/tools.hpp
         ${CMAKE_SOURCE_DIR}/src/tools.cpp
         ${CMAKE_SOURCE_DIR}/src/tools.txx
-        ${CMAKE_SOURCE_DIR}/src/static_tools.hpp
+        ${CMAKE_SOURCE_DIR}/src/tools/memory_report.hpp
     )
 
 # Pack waves module files
