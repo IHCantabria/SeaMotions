@@ -25,29 +25,47 @@
 
 /***************************************************************/
 /******* Alias Vector Classes (2D foldable time types) *********/
-/*** Instantiate ChebyshevEvaluatorBaseVector for each       ***/
-/*** 2D coefficient set.  Template parameters:              ***/
+/*** 1-D (Y = log_mu) evaluators for use AFTER calling       ***/
+/*** fold_time_residual_x<TD>(beta).  Each alias wraps        ***/
+/*** ChebyshevEvaluatorBase1DVector which reads the mutable  ***/
+/*** folded-storage of ChebyshevTraits<TD> (populated by the ***/
+/*** fold call) to evaluate the collapsed 1-D database.      ***/
+/***                                                          ***/
+/*** Template parameters:                                    ***/
 /***   N         – number of evaluation points per call     ***/
 /***   mode_loop – loop-unrolling / SIMD mode selector      ***/
 /***************************************************************/
 
 template<std::size_t N, int mode_loop>
-using dGdtCEV       = ChebyshevEvaluatorBaseVector<ChebyshevTraits<dGdtC>,    N, mode_loop>;
+using dGdtCEV       = ChebyshevEvaluatorBase1DVector<ChebyshevTraits<dGdtC>,    N, mode_loop>;
 
 template<std::size_t N, int mode_loop>
-using dGdttCEV      = ChebyshevEvaluatorBaseVector<ChebyshevTraits<dGdttC>,   N, mode_loop>;
+using dGdttCEV      = ChebyshevEvaluatorBase1DVector<ChebyshevTraits<dGdttC>,   N, mode_loop>;
 
 template<std::size_t N, int mode_loop>
-using dGdtxCEV      = ChebyshevEvaluatorBaseVector<ChebyshevTraits<dGdtxC>,   N, mode_loop>;
+using dGdtxCEV      = ChebyshevEvaluatorBase1DVector<ChebyshevTraits<dGdtxC>,   N, mode_loop>;
 
 template<std::size_t N, int mode_loop>
-using dGdtxxCEV     = ChebyshevEvaluatorBaseVector<ChebyshevTraits<dGdtxxC>,  N, mode_loop>;
+using dGdtxxCEV     = ChebyshevEvaluatorBase1DVector<ChebyshevTraits<dGdtxxC>,  N, mode_loop>;
 
 template<std::size_t N, int mode_loop>
-using dGdttxCEV     = ChebyshevEvaluatorBaseVector<ChebyshevTraits<dGdttxC>,  N, mode_loop>;
+using dGdttxCEV     = ChebyshevEvaluatorBase1DVector<ChebyshevTraits<dGdttxC>,  N, mode_loop>;
 
 template<std::size_t N, int mode_loop>
-using dGdttxxCEV    = ChebyshevEvaluatorBaseVector<ChebyshevTraits<dGdttxxC>, N, mode_loop>;
+using dGdttxxCEV    = ChebyshevEvaluatorBase1DVector<ChebyshevTraits<dGdttxxC>, N, mode_loop>;
+
+/***************************************************************/
+/******* Alias Scalar Classes (2D foldable → 1D residual)*******/
+/*** Single-point 1-D (Y = log_mu) evaluators for use AFTER  ***/
+/*** fold_time_residual_x<TD>(beta).                         ***/
+/***************************************************************/
+
+using dGdtCE        = ChebyshevEvaluatorBase1D<ChebyshevTraits<dGdtC>>;
+using dGdttCE       = ChebyshevEvaluatorBase1D<ChebyshevTraits<dGdttC>>;
+using dGdtxCE       = ChebyshevEvaluatorBase1D<ChebyshevTraits<dGdtxC>>;
+using dGdtxxCE      = ChebyshevEvaluatorBase1D<ChebyshevTraits<dGdtxxC>>;
+using dGdttxCE      = ChebyshevEvaluatorBase1D<ChebyshevTraits<dGdttxC>>;
+using dGdttxxCE     = ChebyshevEvaluatorBase1D<ChebyshevTraits<dGdttxxC>>;
 
 /***************************************************************/
 /******* Alias Scalar Classes (1D time types)            *******/

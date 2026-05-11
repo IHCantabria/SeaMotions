@@ -73,138 +73,136 @@
 // Pull in eval_time_1d<AT>, the G0 basis functions, and ChebyshevTraits
 // specialisations for all time-domain types.
 #include "time_domain_evaluator.hpp"
+// Pull in fold_time_residual_x and ChebyshevTraits infrastructure.
+#include "integrals_database.hpp"
 
 
 // ===========================================================================
-// BetaFoldedResidual<TD>
+// FoldedResidualSnapshot<NS>
 // ===========================================================================
-// Precomputes the beta-direction of the 2D Chebyshev residual for each Gauss
-// point, leaving a 1D expansion in log10(mu) per mu-patch that can be
-// evaluated very cheaply at runtime.
+// Value-type snapshot of the mutable fold-X storage held in
+// ChebyshevTraits<NS> immediately after a fold_time_residual_x<NS>(beta)
+// call.  Storing one snapshot per Gauss point allows BetaFoldedResidual to
+// cache all Gauss-point fold results independently of the global static
+// storage, which can only hold one beta value at a time.
+//
+// NS must be a raw-data type instantiated with CHEBYSHEV_TIME_2DF_TRAITS.
 // ===========================================================================
-template<typename TD>
-class BetaFoldedResidual
+template<typename NS>
+struct FoldedResidualSnapshot
 {
-public:
-    // Construct from a set of Gauss beta values.
-    explicit BetaFoldedResidual( const std::vector<cusfloat>& beta_gauss )
+    using CT = ChebyshevTraits<NS>;
+
+    static constexpr std::size_t NY  = CT::ny_blocks_f;
+    static constexpr std::size_t NFC = CT::max_f_coeffs;
+
+    cusfloat    coeffs_f[NFC]          = {};
+    std::size_t ncy_f[NFC]             = {};
+    std::size_t blocks_start_f[NY]     = {};
+    std::size_t blocks_np_f[NY]        = {};
+    std::size_t blocks_max_order_f[NY] = {};
+    cusfloat    y_min_region_f[NY]     = {};
+    cusfloat    dy_region_f[NY]        = {};
+
+    // Capture the current global-static fold result from ChebyshevTraits<NS>.
+    // Call immediately after fold_time_residual_x<NS>(beta).
+    void capture()
     {
-        const int ng = static_cast<int>( beta_gauss.size() );
-
-        // Number of uniform patches in each direction
-        const int nx_blocks = static_cast<int>( std::round(
-            ( TD::x_max_global - TD::x_min_global ) / TD::dx_min_region ) );
-        const int ny_blocks = static_cast<int>( std::round(
-            ( TD::y_max_global - TD::y_min_global ) / TD::dy_min_region ) );
-
-        num_gauss_ = ng;
-        ny_blocks_ = ny_blocks;
-        patches_.resize( static_cast<std::size_t>( ng * ny_blocks ) );
-
-        for ( int g = 0; g < ng; ++g )
+        for ( std::size_t i = 0; i < NFC; ++i )
         {
-            // Clamp beta to the valid domain and locate its x-patch
-            const cusfloat xc = std::max( std::min( beta_gauss[g],
-                                                     TD::x_max_global ),
-                                           TD::x_min_global );
-            int nx = static_cast<int>(
-                std::floor( ( xc - TD::x_min_global ) / TD::dx_min_region ) );
-            nx = std::min( std::max( nx, 0 ), nx_blocks - 1 );
-
-            for ( int ny = 0; ny < ny_blocks; ++ny )
-            {
-                // 2D block index (row-major: x varies slowest)
-                const int nt = nx * ny_blocks + ny;
-
-                const std::size_t sp = TD::blocks_start[nt];
-                const std::size_t np = TD::blocks_coeffs_np[nt];
-                const int         mo = static_cast<int>( TD::blocks_max_cheby_order[nt] );
-
-                // Map beta into the per-block normalised coordinate [-1, 1]
-                const cusfloat xm =
-                    static_cast<cusfloat>( 2.0 )
-                    * ( xc - TD::x_min_region[nt] ) / TD::dx_region[nt]
-                    - static_cast<cusfloat>( 1.0 );
-
-                // Evaluate T_0(xm) .. T_mo(xm)
-                cusfloat poly_x[ TD::max_cheby_order + 1 ];
-                chebyshev_poly_upto_order(
-                    static_cast<std::size_t>( mo ), xm, poly_x );
-
-                // Fold the beta dimension:
-                //   folded[k] = sum_{j : ncy[sp+j]==k} coeffs[sp+j] * T_{ncx[sp+j]}(xm)
-                cusfloat folded[ TD::max_cheby_order + 1 ] = {};
-                for ( std::size_t j = 0; j < np; ++j )
-                {
-                    folded[ TD::ncy[sp + j] ] +=
-                        TD::coeffs[sp + j] * poly_x[ TD::ncx[sp + j] ];
-                }
-
-                // Store patch metadata (y = log_mu direction)
-                PatchInfo& pi       = patches_[
-                    static_cast<std::size_t>( g * ny_blocks + ny ) ];
-                pi.x_min            = TD::y_min_region[nt];
-                pi.dx               = TD::dy_region[nt];
-                pi.start            = static_cast<int>( flat_coeffs_.size() );
-                pi.num_terms        = mo + 1;   // dense, includes possible zeros
-
-                // Append to flat coefficient storage
-                for ( int k = 0; k <= mo; ++k )
-                    flat_coeffs_.push_back( folded[k] );
-            }
+            coeffs_f[i] = CT::coeffs_f[i];
+            ncy_f[i]    = CT::ncy_f[i];
+        }
+        for ( std::size_t i = 0; i < NY; ++i )
+        {
+            blocks_start_f[i]     = CT::blocks_start_f[i];
+            blocks_np_f[i]        = CT::blocks_np_f[i];
+            blocks_max_order_f[i] = CT::blocks_max_order_f[i];
+            y_min_region_f[i]     = CT::y_min_region_f[i];
+            dy_region_f[i]        = CT::dy_region_f[i];
         }
     }
 
-    // Evaluate the 1D folded residual for Gauss point g at log10(mu).
-    cusfloat evaluate( int g, cusfloat log_mu ) const
+    // Evaluate the 1-D (Y = log_mu) Chebyshev expansion at mu.
+    // Applies log-scale if NS::y_log_scale is true (which it is for all
+    // standard time-domain types where y = log10(mu)).
+    cusfloat evaluate( cusfloat mu ) const
     {
-        const cusfloat yc = std::max( std::min( log_mu,
-                                                 TD::y_max_global ),
-                                       TD::y_min_global );
+        cusfloat ys = ( NS::y_log_scale ) ? std::log10( mu ) : mu;
+        ys = std::max( std::min( ys, NS::y_max_global ), NS::y_min_global );
 
-        // Locate the mu-patch
         int ny = static_cast<int>(
-            std::floor( ( yc - TD::y_min_global ) / TD::dy_min_region ) );
-        ny = std::min( std::max( ny, 0 ), ny_blocks_ - 1 );
+            std::floor( ( ys - NS::y_min_global ) / NS::dy_min_region ) );
+        ny = std::max( 0, std::min( ny, static_cast<int>( NY ) - 1 ) );
 
-        const PatchInfo& pi = patches_[
-            static_cast<std::size_t>( g * ny_blocks_ + ny ) ];
+        const std::size_t sp        = blocks_start_f[ny];
+        const std::size_t np        = blocks_np_f[ny];
+        const std::size_t max_order = blocks_max_order_f[ny];
+        const cusfloat    y_min     = y_min_region_f[ny];
+        const cusfloat    dy        = dy_region_f[ny];
+        const cusfloat    ym        = 2.0f * ( ys - y_min ) / dy - 1.0f;
 
-        // Normalised mu coordinate
-        const cusfloat ym =
-            static_cast<cusfloat>( 2.0 )
-            * ( yc - pi.x_min ) / pi.dx
-            - static_cast<cusfloat>( 1.0 );
+        cusfloat poly_y[ NS::max_cheby_order + 1 ];
+        chebyshev_poly_upto_order( max_order, ym, poly_y );
 
-        // 1D Chebyshev evaluation
-        cusfloat poly_y[ TD::max_cheby_order + 1 ];
-        chebyshev_poly_upto_order(
-            static_cast<std::size_t>( pi.num_terms - 1 ), ym, poly_y );
+        cusfloat result = 0.0f;
+        for ( std::size_t j = 0; j < np; ++j )
+            result += coeffs_f[sp + j] * poly_y[ ncy_f[sp + j] ];
 
-        const cusfloat* c  = flat_coeffs_.data() + pi.start;
-        cusfloat        res = static_cast<cusfloat>( 0.0 );
-        for ( int k = 0; k < pi.num_terms; ++k )
-            res += c[k] * poly_y[k];
+        return result;
+    }
+};
 
-        return res;
+
+// ===========================================================================
+// BetaFoldedResidual<NS>
+// ===========================================================================
+// Precomputes the beta direction of the 2D Chebyshev residual for each
+// Gauss point using fold_time_residual_x<NS>, then captures the resulting
+// 1-D (Y = log_mu) state into a per-Gauss FoldedResidualSnapshot<NS>.
+// Run-time evaluation is a cheap 1-D Chebyshev sum (no 2-D lookup).
+//
+// NS must be a raw-data type instantiated with CHEBYSHEV_TIME_2DF_TRAITS.
+//
+// Note: fold_time_residual_x writes to GLOBAL-STATIC storage, so calling
+// this constructor from multiple threads for the same NS type concurrently
+// is NOT safe.  Constructors for different NS types may run concurrently.
+// ===========================================================================
+template<typename NS>
+class BetaFoldedResidual
+{
+public:
+    explicit BetaFoldedResidual( const std::vector<cusfloat>& beta_gauss )
+    {
+        snapshots_.resize( beta_gauss.size() );
+        for ( std::size_t g = 0; g < beta_gauss.size(); ++g )
+        {
+            // Fold the beta dimension into the global-static storage of
+            // ChebyshevTraits<NS>, then capture a private copy.
+            fold_time_residual_x<NS>( beta_gauss[g] );
+            snapshots_[g].capture();
+        }
     }
 
-    int num_gauss()  const { return num_gauss_; }
-    int ny_blocks()  const { return ny_blocks_; }
+    // Evaluate the 1-D folded residual for Gauss point g at viscosity mu.
+    cusfloat evaluate( int g, cusfloat mu ) const
+    {
+        return snapshots_[ static_cast<std::size_t>( g ) ].evaluate( mu );
+    }
+
+    // Evaluate using log10(mu) directly (convenience overload used by tests).
+    cusfloat evaluate_log( int g, cusfloat log_mu ) const
+    {
+        // FoldedResidualSnapshot::evaluate applies log-scale internally, so
+        // we must pass the raw mu value; compute it here from log_mu.
+        return snapshots_[ static_cast<std::size_t>( g ) ]
+               .evaluate( std::pow( 10.0f, log_mu ) );
+    }
+
+    int num_gauss() const { return static_cast<int>( snapshots_.size() ); }
 
 private:
-    struct PatchInfo
-    {
-        cusfloat x_min;     ///< log_mu minimum of the patch
-        cusfloat dx;        ///< log_mu width of the patch
-        int      start;     ///< index into flat_coeffs_
-        int      num_terms; ///< number of stored 1D Chebyshev coefficients
-    };
-
-    int                    num_gauss_;
-    int                    ny_blocks_;
-    std::vector<PatchInfo> patches_;      ///< [g * ny_blocks_ + ny]
-    std::vector<cusfloat>  flat_coeffs_;  ///< densely packed folded coefficients
+    std::vector<FoldedResidualSnapshot<NS>> snapshots_;
 };
 
 
@@ -528,16 +526,16 @@ public:
     cusfloat evaluate( int g, cusfloat mu ) const
     {
         return g0_.evaluate( g, mu )
-             + residual_.evaluate( g, std::log10( mu ) );
+             + residual_.evaluate( g, mu );
     }
 
     cusfloat evaluate_G0      ( int g, cusfloat mu ) const { return g0_.evaluate( g, mu ); }
-    cusfloat evaluate_residual( int g, cusfloat mu ) const { return residual_.evaluate( g, std::log10( mu ) ); }
+    cusfloat evaluate_residual( int g, cusfloat mu ) const { return residual_.evaluate( g, mu ); }
 
     int num_gauss() const { return residual_.num_gauss(); }
 
 private:
-    BetaFoldedResidual<TDT>           residual_;
+    BetaFoldedResidual<dGdtC>         residual_;
     G0Gauss1AlphaEvaluator<TDT, A0T>  g0_;
 };
 
@@ -561,16 +559,16 @@ public:
     cusfloat evaluate( int g, cusfloat mu ) const
     {
         return g0_.evaluate( g, mu )
-             + residual_.evaluate( g, std::log10( mu ) );
+             + residual_.evaluate( g, mu );
     }
 
     cusfloat evaluate_G0      ( int g, cusfloat mu ) const { return g0_.evaluate( g, mu ); }
-    cusfloat evaluate_residual( int g, cusfloat mu ) const { return residual_.evaluate( g, std::log10( mu ) ); }
+    cusfloat evaluate_residual( int g, cusfloat mu ) const { return residual_.evaluate( g, mu ); }
 
     int num_gauss() const { return residual_.num_gauss(); }
 
 private:
-    BetaFoldedResidual<TDT>                    residual_;
+    BetaFoldedResidual<dGdtxC>                 residual_;
     G0Gauss3AlphaEvaluator<TDT, A0T, A1T, A2T> g0_;
 };
 
@@ -594,16 +592,16 @@ public:
     cusfloat evaluate( int g, cusfloat mu ) const
     {
         return g0_.evaluate( g, mu )
-             + residual_.evaluate( g, std::log10( mu ) );
+             + residual_.evaluate( g, mu );
     }
 
     cusfloat evaluate_G0      ( int g, cusfloat mu ) const { return g0_.evaluate( g, mu ); }
-    cusfloat evaluate_residual( int g, cusfloat mu ) const { return residual_.evaluate( g, std::log10( mu ) ); }
+    cusfloat evaluate_residual( int g, cusfloat mu ) const { return residual_.evaluate( g, mu ); }
 
     int num_gauss() const { return residual_.num_gauss(); }
 
 private:
-    BetaFoldedResidual<TDT>                    residual_;
+    BetaFoldedResidual<dGdtxxC>                residual_;
     G0Gauss3AlphaEvaluator<TDT, A0T, A1T, A2T> g0_;
 };
 
@@ -627,16 +625,16 @@ public:
     cusfloat evaluate( int g, cusfloat mu ) const
     {
         return g0_.evaluate( g, mu )
-             + residual_.evaluate( g, std::log10( mu ) );
+             + residual_.evaluate( g, mu );
     }
 
     cusfloat evaluate_G0      ( int g, cusfloat mu ) const { return g0_.evaluate( g, mu ); }
-    cusfloat evaluate_residual( int g, cusfloat mu ) const { return residual_.evaluate( g, std::log10( mu ) ); }
+    cusfloat evaluate_residual( int g, cusfloat mu ) const { return residual_.evaluate( g, mu ); }
 
     int num_gauss() const { return residual_.num_gauss(); }
 
 private:
-    BetaFoldedResidual<TDT>                    residual_;
+    BetaFoldedResidual<dGdttC>                 residual_;
     G0Gauss3AlphaEvaluator<TDT, A0T, A1T, A2T> g0_;
 };
 
@@ -660,16 +658,16 @@ public:
     cusfloat evaluate( int g, cusfloat mu ) const
     {
         return g0_.evaluate( g, mu )
-             + residual_.evaluate( g, std::log10( mu ) );
+             + residual_.evaluate( g, mu );
     }
 
     cusfloat evaluate_G0      ( int g, cusfloat mu ) const { return g0_.evaluate( g, mu ); }
-    cusfloat evaluate_residual( int g, cusfloat mu ) const { return residual_.evaluate( g, std::log10( mu ) ); }
+    cusfloat evaluate_residual( int g, cusfloat mu ) const { return residual_.evaluate( g, mu ); }
 
     int num_gauss() const { return residual_.num_gauss(); }
 
 private:
-    BetaFoldedResidual<TDT>                    residual_;
+    BetaFoldedResidual<dGdttxC>                residual_;
     G0Gauss3AlphaEvaluator<TDT, A0T, A1T, A2T> g0_;
 };
 
@@ -693,15 +691,15 @@ public:
     cusfloat evaluate( int g, cusfloat mu ) const
     {
         return g0_.evaluate( g, mu )
-             + residual_.evaluate( g, std::log10( mu ) );
+             + residual_.evaluate( g, mu );
     }
 
     cusfloat evaluate_G0      ( int g, cusfloat mu ) const { return g0_.evaluate( g, mu ); }
-    cusfloat evaluate_residual( int g, cusfloat mu ) const { return residual_.evaluate( g, std::log10( mu ) ); }
+    cusfloat evaluate_residual( int g, cusfloat mu ) const { return residual_.evaluate( g, mu ); }
 
     int num_gauss() const { return residual_.num_gauss(); }
 
 private:
-    BetaFoldedResidual<TDT>                    residual_;
+    BetaFoldedResidual<dGdttxxC>               residual_;
     G0Gauss3AlphaEvaluator<TDT, A0T, A1T, A2T> g0_;
 };

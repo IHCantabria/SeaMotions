@@ -31,15 +31,16 @@ struct ChebyshevTraits;
 /***************************************************************/
 /******* Trait specializations: 2D foldable time types *********/
 /*** (dGdt, dGdtt, dGdtx, dGdtxx, dGdttx, dGdttxx)          ***/
-/*** Uses CHEBYSHEV_TIME_2D_TRAITS: exposes 2D region grids,  ***/
-/*** G0 near-field correction data, ncx (no ncy).            ***/
+/*** Uses CHEBYSHEV_TIME_2DF_TRAITS: exposes full 2D read-only***/
+/*** metadata, G0 near-field correction data, and mutable     ***/
+/*** inline-static storage for fold_time_residual_x results. ***/
 /***************************************************************/
-CHEBYSHEV_TIME_2D_TRAITS( dGdtC   )
-CHEBYSHEV_TIME_2D_TRAITS( dGdttC  )
-CHEBYSHEV_TIME_2D_TRAITS( dGdtxC  )
-CHEBYSHEV_TIME_2D_TRAITS( dGdtxxC )
-CHEBYSHEV_TIME_2D_TRAITS( dGdttxC )
-CHEBYSHEV_TIME_2D_TRAITS( dGdttxxC)
+CHEBYSHEV_TIME_2DF_TRAITS( dGdtC   )
+CHEBYSHEV_TIME_2DF_TRAITS( dGdttC  )
+CHEBYSHEV_TIME_2DF_TRAITS( dGdtxC  )
+CHEBYSHEV_TIME_2DF_TRAITS( dGdtxxC )
+CHEBYSHEV_TIME_2DF_TRAITS( dGdttxC )
+CHEBYSHEV_TIME_2DF_TRAITS( dGdttxxC)
 
 /***************************************************************/
 /******* Trait specializations: 1D time types             ******/

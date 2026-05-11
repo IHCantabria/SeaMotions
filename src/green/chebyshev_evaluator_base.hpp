@@ -350,3 +350,169 @@ struct ChebyshevEvaluatorBase
         }
     }
 };
+
+
+// ============================================================================
+// 1-D scalar evaluator for the folded-X residual database.
+//
+// Evaluates the Y (log_mu) direction using the mutable inline-static arrays
+// populated by fold_time_residual_x<NS>(beta):
+//   Derived::coeffs_f, Derived::ncy_f
+//   Derived::blocks_start_f, Derived::blocks_np_f, Derived::blocks_max_order_f
+//   Derived::y_min_region_f, Derived::dy_region_f
+//   Derived::ny_blocks_f, Derived::dy_min_region
+//   Derived::y_log_scale, Derived::y_min_global, Derived::y_max_global
+// ============================================================================
+template<typename Derived>
+struct ChebyshevEvaluatorBase1D
+{
+    static cusfloat evaluate( cusfloat y )
+    {
+        // Apply log-scale to the input if required (e.g. y = mu → log10(mu))
+        cusfloat ys = y;
+        if constexpr ( Derived::y_log_scale )
+        {
+            ys = std::log10( y );
+        }
+
+        // Clamp to domain bounds
+        ys = std::max( std::min( ys, Derived::y_max_global ), Derived::y_min_global );
+
+        // Locate the Y-patch
+        int ny = static_cast<int>( std::floor( ( ys - Derived::y_min_global ) / Derived::dy_min_region ) );
+        ny = std::max( 0, std::min( ny, static_cast<int>( Derived::ny_blocks_f ) - 1 ) );
+
+        // Retrieve block properties from folded storage
+        const std::size_t sp        = Derived::blocks_start_f[ny];
+        const std::size_t np        = Derived::blocks_np_f[ny];
+        const std::size_t max_order = Derived::blocks_max_order_f[ny];
+        const cusfloat    y_min     = Derived::y_min_region_f[ny];
+        const cusfloat    dy        = Derived::dy_region_f[ny];
+
+        // Map ys to [-1, 1]
+        const cusfloat ym = 2.0 * ( ys - y_min ) / dy - 1.0;
+
+        // Evaluate Chebyshev polynomials in Y up to max_order
+        cusfloat poly_y[ Derived::max_cheby_order + 1 ];
+        chebyshev_poly_upto_order( max_order, ym, poly_y );
+
+        // Accumulate: sum_j  coeffs_f[j] * T_{ncy_f[j]}(ym)
+        cusfloat result = 0.0;
+        for ( std::size_t j = 0; j < np; ++j )
+        {
+            result += Derived::coeffs_f[sp + j] * poly_y[ Derived::ncy_f[sp + j] ];
+        }
+
+        // Apply log-scale correction to the result if required
+        if constexpr ( Derived::fcn_log_scale )
+        {
+            result = std::pow( 10.0, result );
+        }
+
+        return result;
+    }
+};
+
+
+// ============================================================================
+// 1-D vector evaluator for the folded-X residual database.
+//
+// Evaluates N Y-values simultaneously using the same mutable folded storage
+// as ChebyshevEvaluatorBase1D.  Template parameters follow the same convention
+// as ChebyshevEvaluatorBaseVector: N is the compile-time capacity and
+// mode_loop selects the STATIC_LOOP branch (1 = unrolled, else runtime-n).
+// ============================================================================
+template<typename Derived, std::size_t N, int mode_loop>
+struct ChebyshevEvaluatorBase1DVector
+{
+    static void evaluate( const std::size_t n, cusfloat* y, cusfloat* result )
+    {
+        // ---- scale inputs ----
+        cusfloat ys[N];
+        STATIC_COPY( n, N, y, ys );
+        if constexpr ( Derived::y_log_scale )
+        {
+            STATIC_LOOP( n, N, ys[i] = std::log10( ys[i] ); )
+        }
+
+        // ---- clamp to domain bounds ----
+        STATIC_LOOP( n, N, ys[i] = std::max( std::min( ys[i], Derived::y_max_global ), Derived::y_min_global ); )
+
+        // ---- locate Y-patches ----
+        std::size_t ny_idx[N];
+        STATIC_LOOP( n, N,
+            {
+                int ny = static_cast<int>( std::floor( ( ys[i] - Derived::y_min_global ) / Derived::dy_min_region ) );
+                ny     = std::max( 0, std::min( ny, static_cast<int>( Derived::ny_blocks_f ) - 1 ) );
+                ny_idx[i] = static_cast<std::size_t>( ny );
+            }
+        )
+
+        // ---- check whether all points land in the same Y-patch ----
+        bool is_single = true;
+        STATIC_LOOP( n - 1, N - 1,
+            {
+                if ( ny_idx[0] != ny_idx[i + 1] )
+                {
+                    is_single = false;
+                    break;
+                }
+            }
+        )
+
+        if ( is_single )
+        {
+            // Fast path: all points in the same Y-patch
+            const std::size_t ny        = ny_idx[0];
+            const std::size_t sp        = Derived::blocks_start_f[ny];
+            const std::size_t np        = Derived::blocks_np_f[ny];
+            const std::size_t max_order = Derived::blocks_max_order_f[ny];
+            const cusfloat    y_min     = Derived::y_min_region_f[ny];
+            const cusfloat    dy        = Derived::dy_region_f[ny];
+
+            // Map all points to [-1, 1]
+            cusfloat ym[N];
+            STATIC_LOOP( n, N, ym[i] = 2.0 * ( ys[i] - y_min ) / dy - 1.0; )
+
+            // Chebyshev polynomials for each evaluation point
+            static cusfloat poly_y[ N * ( Derived::max_cheby_order + 1 ) ];
+            chebyshev_poly_upto_order<N, mode_loop>( n, max_order, ym, poly_y );
+
+            // Accumulate
+            STATIC_LOOP( n, N, result[i] = 0.0; )
+            for ( std::size_t j = 0; j < np; ++j )
+            {
+                const cusfloat   cj   = Derived::coeffs_f[sp + j];
+                const std::size_t oj  = Derived::ncy_f[sp + j];
+                STATIC_LOOP( n, N, result[i] += cj * poly_y[ oj * n + i ]; )
+            }
+        }
+        else
+        {
+            // General path: evaluate each point separately
+            for ( std::size_t i = 0; i < n; ++i )
+            {
+                const std::size_t ny        = ny_idx[i];
+                const std::size_t sp        = Derived::blocks_start_f[ny];
+                const std::size_t np        = Derived::blocks_np_f[ny];
+                const std::size_t max_order = Derived::blocks_max_order_f[ny];
+                const cusfloat    y_min     = Derived::y_min_region_f[ny];
+                const cusfloat    dy        = Derived::dy_region_f[ny];
+
+                const cusfloat ym = 2.0 * ( ys[i] - y_min ) / dy - 1.0;
+
+                cusfloat poly_y[ Derived::max_cheby_order + 1 ];
+                chebyshev_poly_upto_order( max_order, ym, poly_y );
+
+                result[i] = 0.0;
+                for ( std::size_t j = 0; j < np; ++j )
+                {
+                    result[i] += Derived::coeffs_f[sp + j] * poly_y[ Derived::ncy_f[sp + j] ];
+                }
+            }
+        }
+
+        // ---- apply log-scale correction to results ----
+        STATIC_COND( Derived::fcn_log_scale, STATIC_LOOP( n, N, result[i] = std::pow( 10.0, result[i] ); ) )
+    }
+};

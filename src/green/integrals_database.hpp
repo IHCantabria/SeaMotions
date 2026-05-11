@@ -277,6 +277,116 @@ inline void fold_database_2d( cusfloat Y )
 }
 
 
+// ============================================================================
+// fold_time_residual_x<TD>(beta)
+//
+// Folds the X (beta) dimension of a 2D time-domain Chebyshev database
+// evaluated at a fixed Gauss-point beta, producing a 1D (Y = log_mu)
+// dataset stored in the mutable inline-static members of ChebyshevTraits<TD>.
+//
+// Prerequisites
+//   TD must be instantiated with CHEBYSHEV_TIME_2DF_TRAITS.
+//   ChebyshevTraits<TD> must provide ny_blocks_f, max_f_coeffs,
+//   coeffs_f, ncy_f, blocks_start_f, blocks_np_f, blocks_max_order_f,
+//   y_min/max/dy_region_f, as well as the read-only TD::c, TD::ncx,
+//   TD::ncy, TD::blocks_start, TD::blocks_coeffs_np, TD::x_min_region,
+//   TD::dx_region, TD::x_min_global, TD::dx_min_region, TD::max_cheby_order.
+//
+// Precondition: beta must lie in [TD::x_min_global, TD::x_max_global].
+//
+// Thread safety: writes to global-static storage → NOT thread-safe when
+// multiple instances use the same TD type simultaneously.
+// ============================================================================
+template<typename TD>
+inline void fold_time_residual_x( cusfloat beta )
+{
+    using CT = ChebyshevTraits<TD>;
+
+    // Log-scale beta if the X-axis is logarithmic (not the case for the
+    // standard time-domain types, but kept for generality)
+    cusfloat bx = beta;
+    if constexpr ( TD::x_log_scale )
+    {
+        bx = std::log10( beta );
+    }
+
+    // Clamp to X-domain bounds
+    bx = std::min( std::max( bx, TD::x_min_global + 1E-6f ), TD::x_max_global - 1E-6f );
+
+    // Find the X-patch that contains bx
+    int nx = static_cast<int>( std::floor( ( bx - TD::x_min_global ) / TD::dx_min_region ) );
+    nx = std::min( std::max( nx, 0 ), static_cast<int>( CT::nx_blocks_f ) - 1 );
+
+    // Reference block index for this X-patch (using Y-patch ny=0)
+    // All Y-patches within the same X-patch share identical x_min_region/dx_region.
+    const std::size_t ref_block = static_cast<std::size_t>( nx ) * CT::ny_blocks_f;
+    const cusfloat    x_min     = TD::x_min_region[ref_block];
+    const cusfloat    dx        = TD::dx_region[ref_block];
+
+    // Map bx to the normalised coordinate [-1, 1] for this X-patch
+    const cusfloat xm = 2.0f * ( bx - x_min ) / dx - 1.0f;
+
+    // Precompute Chebyshev polynomials in X up to the global maximum order
+    cusfloat poly_x[ TD::max_cheby_order + 1 ];
+    chebyshev_poly_upto_order( static_cast<std::size_t>( TD::max_cheby_order ), xm, poly_x );
+
+    // ---------- fold: for each Y-patch compute 1-D coefficients in Y ----------
+    std::size_t count_f = 0;
+
+    for ( std::size_t ny = 0; ny < CT::ny_blocks_f; ++ny )
+    {
+        const std::size_t block_idx = static_cast<std::size_t>( nx ) * CT::ny_blocks_f + ny;
+        const std::size_t bs        = TD::blocks_start[block_idx];
+        const std::size_t bnp       = TD::blocks_coeffs_np[block_idx];
+
+        // Record start of this Y-patch in the folded buffer
+        CT::blocks_start_f[ny]   = count_f;
+        CT::y_min_region_f[ny]   = TD::y_min_region[block_idx];
+        CT::y_max_region_f[ny]   = TD::y_max_region[block_idx];
+        CT::dy_region_f[ny]      = TD::dy_region[block_idx];
+
+        if ( bnp == 0 )
+        {
+            CT::blocks_np_f[ny]        = 0;
+            CT::blocks_max_order_f[ny] = 0;
+            continue;
+        }
+
+        // Temporary accumulation buffer indexed by NCY order (size: max_cheby_order+1)
+        cusfloat    temp_c[TD::max_cheby_order + 1] = {};
+        bool        has_ncy[TD::max_cheby_order + 1] = {};
+        std::size_t max_ncy_order = 0;
+
+        for ( std::size_t k = 0; k < bnp; ++k )
+        {
+            const std::size_t ncy_k = TD::ncy[bs + k];
+            const std::size_t ncx_k = TD::ncx[bs + k];
+            temp_c[ncy_k] += TD::c[bs + k] * poly_x[ncx_k];
+            has_ncy[ncy_k] = true;
+            if ( ncy_k > max_ncy_order ) max_ncy_order = ncy_k;
+        }
+
+        // Write non-trivially-absent NCY entries into folded storage
+        // (all NCY values that appear in the block, even if their accumulated
+        //  coefficient happens to be near zero, are written for consistency)
+        std::size_t local_np = 0;
+        for ( std::size_t j = 0; j <= max_ncy_order; ++j )
+        {
+            if ( has_ncy[j] )
+            {
+                CT::coeffs_f[count_f] = temp_c[j];
+                CT::ncy_f[count_f]    = j;
+                ++count_f;
+                ++local_np;
+            }
+        }
+
+        CT::blocks_np_f[ny]        = local_np;
+        CT::blocks_max_order_f[ny] = max_ncy_order;
+    }
+}
+
+
 template<typename IDB>
 inline void fold_database_3d( cusfloat H )
 {
