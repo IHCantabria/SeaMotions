@@ -435,6 +435,40 @@ add_test(
         )
 
 
+# Add test to validate the Newmark-Beta time integrator
+set(
+        test_newmark_beta_src
+        test_newmark_beta.cpp
+        ../../src/config.hpp
+        ${math_module_files}
+    )
+
+add_executable( test_newmark_beta_cmd ${test_newmark_beta_src} )
+set_mkl_lib_target( test_newmark_beta_cmd )
+
+add_test(
+            NAME test_newmark_beta
+            COMMAND test_newmark_beta_cmd
+        )
+
+
+# Add test to validate the Generalized-Alpha time integrator
+set(
+        test_generalized_alpha_src
+        test_generalized_alpha.cpp
+        ../../src/config.hpp
+        ${math_module_files}
+    )
+
+add_executable( test_generalized_alpha_cmd ${test_generalized_alpha_src} )
+set_mkl_lib_target( test_generalized_alpha_cmd )
+
+add_test(
+            NAME test_generalized_alpha
+            COMMAND test_generalized_alpha_cmd
+        )
+
+
 # Add test to check MklVector class
 set(
         test_cusvector_src
