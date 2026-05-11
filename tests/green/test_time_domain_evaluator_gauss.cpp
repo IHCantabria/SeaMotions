@@ -98,7 +98,7 @@ static void test_gauss_construction()
 static void test_residual_fold_finite()
 {
     const std::vector<cusfloat> betas = make_test_betas();
-    BetaFoldedResidual<ChebyshevTraits<dGdtC>> res( betas );
+    BetaFoldedResidual<dGdtC> res( betas );
 
     const cusfloat mus[] = { 1e-4f, 1e-3f, 1e-2f, 5e-2f, 2e-1f };
     const int nm = 5;
@@ -108,8 +108,7 @@ static void test_residual_fold_finite()
     {
         for ( int im = 0; im < nm; ++im )
         {
-            const cusfloat log_mu = std::log10( mus[im] );
-            const cusfloat val    = res.evaluate( g, log_mu );
+            const cusfloat val    = res.evaluate( g, mus[im] );
             check( std::isfinite( val ),
                    "test_residual_fold_finite: non-finite folded residual" );
         }
