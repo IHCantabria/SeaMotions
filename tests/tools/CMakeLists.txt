@@ -469,6 +469,23 @@ add_test(
         )
 
 
+# Add test to validate the Generalized-Alpha nonlinear time integrator
+set(
+        test_generalized_alpha_nl_src
+        test_generalized_alpha_nl.cpp
+        ../../src/config.hpp
+        ${math_module_files}
+    )
+
+add_executable( test_generalized_alpha_nl_cmd ${test_generalized_alpha_nl_src} )
+set_mkl_lib_target( test_generalized_alpha_nl_cmd )
+
+add_test(
+            NAME test_generalized_alpha_nl
+            COMMAND test_generalized_alpha_nl_cmd
+        )
+
+
 # Add test to check MklVector class
 set(
         test_cusvector_src
