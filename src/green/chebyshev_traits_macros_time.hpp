@@ -58,4 +58,5 @@ struct ChebyshevTraits<NS>                                                      
     static constexpr            std::size_t     num_c                       = NS::num_c;                        \
     static constexpr const      cusfloat*       coeffs                      = NS::c;                            \
     static constexpr const      std::size_t*    ncx                         = NS::ncx;                          \
+    static constexpr const      std::size_t*    ncy                         = NS::ncy;                          \
 };                                                                                                              \
