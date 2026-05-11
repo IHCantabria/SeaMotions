@@ -1,7 +1,7 @@
 #ifndef __dGdttA1_coeffs_hpp
 #define __dGdttA1_coeffs_hpp
 
-#include "../../config.hpp"
+#include "../../../config.hpp"
 
 struct dGdttA1C
 {
