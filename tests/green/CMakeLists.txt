@@ -668,3 +668,61 @@ add_test(
             COMMAND test_time_domain_evaluator_cmd
             ${test_time_domain_evaluator_args}
         )
+
+
+# Add test for the Gauss-point-optimised time-domain evaluators
+set(
+        test_time_domain_evaluator_gauss_src
+        test_time_domain_evaluator_gauss.cpp
+        "../../src/config.hpp"
+        ${containers_module_files}
+        ${inout_module_files}
+        ${interfaces_module_files}
+        ${panel_geometry_src}
+        ${green_module_files}
+        ${math_module_files}
+        ${mesh_module_files}
+        ${raos_module_files}
+        ${tools_module_files}
+        ${version_module_files}
+        ${waves_module_files}
+    )
+
+add_executable(
+                    test_time_domain_evaluator_gauss_cmd
+                    ${test_time_domain_evaluator_gauss_src}
+                )
+set_mkl_lib_target( test_time_domain_evaluator_gauss_cmd )
+set_hdf5_target( test_time_domain_evaluator_gauss_cmd )
+
+# Reuse the same reference data files as test_time_domain_evaluator
+set(
+        test_time_domain_evaluator_gauss_args
+        # Total function reference  (argv[1..6])
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdt.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdtx.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdtxx.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdtt.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdttx.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdttxx.dat"
+        # G0-only reference  (argv[7..12])
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdt_G0.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdtx_G0.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdtxx_G0.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdtt_G0.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdttx_G0.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdttxx_G0.dat"
+        # Residual-only reference  (argv[13..18])
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdt_residual.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdtx_residual.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdtxx_residual.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdtt_residual.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdttx_residual.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdttxx_residual.dat"
+    )
+
+add_test(
+            NAME    test_time_domain_evaluator_gauss
+            COMMAND test_time_domain_evaluator_gauss_cmd
+            ${test_time_domain_evaluator_gauss_args}
+        )
