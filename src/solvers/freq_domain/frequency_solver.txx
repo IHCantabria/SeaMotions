@@ -160,11 +160,13 @@ inline void _store_indirect_kochin_data(
                 for ( std::size_t dof_id = 0; dof_id < dofs_np; ++dof_id )
                 {
                     std::size_t rao_idx = ih * ( bodies_np * dofs_np ) + body_id * dofs_np + dof_id;
-                    std::size_t src_idx = dof_id * source_nodes_np + static_cast<std::size_t>( source_id );
+                     // Radiation intensities are now per (body, DOF): column = body_id * dofs_np + dof_id
+                    std::size_t src_idx = ( body_id * dofs_np + dof_id ) * source_nodes_np + static_cast<std::size_t>( source_id );
                     pert_src[pert_idx] += cuscomplex( 0.0, -ang_freq ) * raos[rao_idx] * intensities[src_idx];
                 }
 
-                pert_src[pert_idx] += intensities[( dofs_np + ih ) * source_nodes_np + static_cast<std::size_t>( source_id )];
+                // Diffraction intensities start at column dofs_np * bodies_np
+                pert_src[pert_idx] += intensities[( dofs_np * bodies_np + ih ) * source_nodes_np + static_cast<std::size_t>( source_id )];
             }
         }
     }
@@ -183,16 +185,21 @@ inline void _store_indirect_kochin_data(
     }
 
     std::size_t kochin_rad_offset = freq_index * static_cast<std::size_t>( sim_data->qtf_kochin_rad_np );
-    for ( std::size_t dof_id = 0; dof_id < dofs_np; ++dof_id )
+    // Loop over all (body, DOF) radiation mode pairs
+    for ( std::size_t ib = 0; ib < bodies_np; ++ib )
     {
-        calculate_kochin_coefficients(
-                                        input,
-                                        mesh_gp,
-                                        &kochin,
-                                        &( intensities[dof_id * source_nodes_np] ),
-                                        &( sim_data->qtf_kochin_rad_cos_freqs[kochin_rad_offset + dof_id * kochin_rad_stride] ),
-                                        &( sim_data->qtf_kochin_rad_sin_freqs[kochin_rad_offset + dof_id * kochin_rad_stride] )
-                                    );
+        for ( std::size_t dof_id = 0; dof_id < dofs_np; ++dof_id )
+        {
+            const std::size_t mode_id = ib * dofs_np + dof_id;
+            calculate_kochin_coefficients(
+                                            input,
+                                            mesh_gp,
+                                            &kochin,
+                                            &( intensities[mode_id * source_nodes_np] ),
+                                            &( sim_data->qtf_kochin_rad_cos_freqs[kochin_rad_offset + mode_id * kochin_rad_stride] ),
+                                            &( sim_data->qtf_kochin_rad_sin_freqs[kochin_rad_offset + mode_id * kochin_rad_stride] )
+                                        );
+        }
     }
 }
 
@@ -768,7 +775,7 @@ void FrequencySolver<N, mode_pf>::_calculate_first_order_coeffs(
     
     // Storage results
     // MpiTimer storage_timer;
-    const std::size_t field_count = this->kernel->size( ) * ( this->input->dofs_np + this->input->heads_np );
+    const std::size_t field_count = this->kernel->size( ) * ( this->input->dofs_np * this->input->bodies_np + this->input->heads_np );
     auto reduce_field = [this, field_count](cuscomplex* src, cuscomplex* dst)
     {
         MPI_Reduce(
@@ -2108,14 +2115,11 @@ void FrequencySolver<N, mode_pf>::_initialize_mesh_groups( void )
     
     // Group all meshes in a vector
     Mesh** all_meshes = new Mesh*[input->bodies_np];
-    int _count_mesh = 0;
     for ( int i=0; i<this->input->bodies_np; i++ )
     {
-        if ( this->input->bodies[i]->is_mesh_total )
-        {
-            all_meshes[_count_mesh] = this->input->bodies[i]->mesh_total;
-        }
-        _count_mesh++;
+        all_meshes[i] = this->input->bodies[i]->is_mesh_total
+                            ? this->input->bodies[i]->mesh_total
+                            : nullptr;
     }
 
     // Create new mesh from the meshes of all objects

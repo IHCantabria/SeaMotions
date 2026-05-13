@@ -89,7 +89,7 @@ Output::Output(
 
     // Storage field data dataset dimensions
     this->_ds_fd[0]     = input->angfreqs_np;
-    this->_ds_fd[1]     = input->dofs_np + input->heads_np;
+    this->_ds_fd[1]     = input->dofs_np * input->bodies_np + input->heads_np;
     this->_ds_fd[2]     = this->_total_panels_np;
 
     // Storage wave exciting dataset dimensions for the ith body
@@ -1164,7 +1164,7 @@ void    Output::save_fields_data(
     hsize_t offset[_DS_FD_NP]       = { static_cast<hsize_t>( freq_index ), 0, 0 };
     int index                       = 0;
 
-    for ( int i=0; i<( this->_input->dofs_np + this->_input->heads_np ); i++ )
+    for ( int i=0; i<( this->_input->dofs_np * this->_input->bodies_np + this->_input->heads_np ); i++ )
     {
         // Transform complex values to amplitude and phase
         for ( int j=0; j<this->_total_panels_np; j++ )

@@ -78,6 +78,24 @@ int     MeshGroup::get_body_id(
 }
 
 
+int     MeshGroup::get_body_id_sn(
+                                            int sn_idx
+                                  )
+{
+    // Loop over meshes to find the one that contains the source node
+    for ( int i=0; i<this->meshes_np; i++ )
+    {
+        if ( sn_idx >= this->source_nodes_cnp[i] && sn_idx < this->source_nodes_cnp[i+1] )
+        {
+            return i;
+        }
+    }
+
+    // If no mesh is found, return an error value
+    return static_cast<int>(-1);
+}
+
+
         MeshGroup::MeshGroup(
                                             Mesh**  meshes_in,
                                             int     meshes_np_in,
@@ -153,7 +171,10 @@ int     MeshGroup::get_body_id(
     // Allocate space to have a continium list of panels and
     // source nodes
     this->panels        = new PanelGeom*[this->panels_tnp];
-    this->panels_wl     = new PanelGeom*[this->panels_wl_tnp];
+    if ( this->_is_wl_points )
+    {
+        this->panels_wl = new PanelGeom*[this->panels_wl_tnp];
+    }
     this->source_nodes  = new SourceNode*[this->source_nodes_tnp];
     
     // Loop over meshes to copy all the references into the new vectors

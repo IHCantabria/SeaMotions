@@ -107,7 +107,7 @@ void    calculate_diffraction_forces_lin(
                             else
                             {
                                 index_1                     = (
-                                                                    input->dofs_np * mesh_gp->panels_tnp 
+                                                                    input->dofs_np * input->bodies_np * mesh_gp->panels_tnp 
                                                                     +
                                                                     ih0 * mesh_gp->panels_tnp
                                                                     +

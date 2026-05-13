@@ -78,11 +78,13 @@ void    calculate_hydromechanic_coeffs_lin(
                         if ( mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->type == PanelTypeE::DIFFRAC )
                         {
                             // Integrate pressure over panel
-                            index_1                 = mesh_gp->panels_cnp[jb] + ie + mesh_gp->panels_tnp * id;
+                            // index_1: potential at panel of body `ib` (panels_cnp[ib]+ie) for radiation
+                            // mode of body `jb` oscillating in DOF `jd`. Column = (jb*dofs_np+jd).
+                            index_1                 = mesh_gp->panels_cnp[ib] + ie + mesh_gp->panels_tnp * ( jb * dofs_np + jd );
                             press_i                 = ( 
                                                             panels_pot[index_1] 
                                                             * 
-                                                            mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->normal_vec[jd] 
+                                                            mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->normal_vec[id] 
                                                             * 
                                                             mesh_gp->panels[mesh_gp->panels_cnp[ib]+ie]->area
                                                         );

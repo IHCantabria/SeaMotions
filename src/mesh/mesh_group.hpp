@@ -78,5 +78,10 @@ public:
     int     get_body_id(  
                                     int panel_id
                                 );
+
+    // Return the body index that owns source node 'sn_idx' (using source_nodes_cnp)
+    int     get_body_id_sn(
+                                    int sn_idx
+                                );
     
 };

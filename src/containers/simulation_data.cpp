@@ -369,8 +369,9 @@ SimulationData::SimulationData(
                                 )
 {
     // Storage input arguments into class attributes
+    this->bodies_np             = bodies_np_in;
     this->dofs_np               = dofs_np_in;
-    this->fields_np             = rows_np * ( dofs_np_in + heads_np_in );
+    this->fields_np             = rows_np * ( dofs_np_in * bodies_np_in + heads_np_in );
     this->fields_so_np          = rows_np * ( heads_np_in * heads_np_in );
     this->heads_np              = heads_np_in;
     this->hydmech_np            = pow2s( dofs_np_in * bodies_np_in );

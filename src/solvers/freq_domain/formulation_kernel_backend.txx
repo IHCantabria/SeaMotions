@@ -668,7 +668,7 @@ void FormulationKernelBackend<N, mode_pf, recalc_steady>::_build_rhs(
     // Declare local variables
     cusfloat    ang_freq_2  = w * w;
     int         col_count   = 0;
-    int         dofs_offset = this->_input->dofs_np * this->_pot_gp->sysmat_nrows;
+    int         dofs_offset = this->_input->dofs_np * this->_mesh_gp->meshes_np * this->_pot_gp->sysmat_nrows;
     int         index       = 0;
     int         index_rm    = 0;
     PanelGeom*  panel_j     = nullptr;
@@ -683,7 +683,7 @@ void FormulationKernelBackend<N, mode_pf, recalc_steady>::_build_rhs(
     cusfloat    k           = w2k( w, this->_input->water_depth, this->_input->grav_acc );
 
     // Clear potential rhs to avoid spurious valures
-    STATIC_COND( ONLY_PF, clear_vector( this->_pf_gp->sysmat_nrows * ( this->_input->dofs_np + this->_input->heads_np ), this->_ppf_rhs ); )
+    STATIC_COND( ONLY_PF, clear_vector( this->_pf_gp->sysmat_nrows * ( this->_input->dofs_np * this->_mesh_gp->meshes_np + this->_input->heads_np ), this->_ppf_rhs ); )
 
     // Calculate potential formulation rhs
     if constexpr( ONLY_PF )
@@ -691,6 +691,8 @@ void FormulationKernelBackend<N, mode_pf, recalc_steady>::_build_rhs(
         for ( int i=this->_solver->start_col_0; i<this->_solver->end_col_0; i++ )
         {
             source_i    = this->_mesh_gp->source_nodes[i];
+            // Determine which body owns this source panel
+            const int   ib_src  = this->_mesh_gp->get_body_id_sn( i );
             row_count   = 0;
             for ( int j=this->_solver->start_row_0; j<this->_solver->end_row_0; j++ )
             {
@@ -698,9 +700,10 @@ void FormulationKernelBackend<N, mode_pf, recalc_steady>::_build_rhs(
 
                 if ( source_i->panel->type == PanelTypeE::DIFFRAC )
                 {
+                    // Radiation: each body-DOF pair gets its own column
                     for ( int id=0; id<this->_input->dofs_np; id++ )
                     {
-                        index                   = id * this->_pf_gp->sysmat_nrows + j; 
+                        index                   = ( ib_src * this->_input->dofs_np + id ) * this->_pf_gp->sysmat_nrows + j; 
                         this->_ppf_rhs[index]   += (
                                                         source_i->normal_vec[id]
                                                         *
@@ -804,7 +807,7 @@ void FormulationKernelBackend<N, mode_pf, recalc_steady>::_build_rhs(
         MPI_Allreduce(
                             this->_ppf_rhs,
                             this->_pf_gp->field_values,
-                            this->_pf_gp->sysmat_nrows * ( this->_input->dofs_np + this->_input->heads_np ),
+                            this->_pf_gp->sysmat_nrows * ( this->_input->dofs_np * this->_mesh_gp->meshes_np + this->_input->heads_np ),
                             mpi_cuscomplex,
                             MPI_SUM,
                             MPI_COMM_WORLD
@@ -812,27 +815,28 @@ void FormulationKernelBackend<N, mode_pf, recalc_steady>::_build_rhs(
     }
 
 
-    // Calculate source formulation rhs
-    for ( int i=0; i<this->_input->dofs_np; i++ )
+    // Calculate source formulation rhs — radiation: one column per (body, DOF) pair
+    for ( int ib_col=0; ib_col<this->_mesh_gp->meshes_np; ib_col++ )
     {
-        for ( int j=this->_solver->start_row_0; j<this->_solver->end_row_0; j++ )
+        for ( int id=0; id<this->_input->dofs_np; id++ )
         {
-            panel_j = this->_mesh_gp->source_nodes[j]->panel;
-            index   = i * this->_sf_gp->sysmat_nrows + j;
-            if ( panel_j->type == PanelTypeE::DIFFRAC )
+            for ( int j=this->_solver->start_row_0; j<this->_solver->end_row_0; j++ )
             {
-                this->_sf_gp->field_values[index] = ( 
-                                                        this->_mesh_gp->source_nodes[j]->normal_vec[i]
-                                                        *
-                                                        this->_mesh_gp->source_nodes[j]->panel->is_move_f
-                                                    );
-
+                panel_j         = this->_mesh_gp->source_nodes[j]->panel;
+                const int ib_j  = this->_mesh_gp->get_body_id_sn( j );
+                index           = ( ib_col * this->_input->dofs_np + id ) * this->_sf_gp->sysmat_nrows + j;
+                if ( panel_j->type == PanelTypeE::DIFFRAC )
+                {
+                    // BN: only panels of body ib_col contribute to radiation mode (ib_col, id)
+                    this->_sf_gp->field_values[index] = ( ib_j == ib_col )
+                        ? ( this->_mesh_gp->source_nodes[j]->normal_vec[id] * this->_mesh_gp->source_nodes[j]->panel->is_move_f )
+                        : cuscomplex( 0.0, 0.0 );
+                }
+                else if ( panel_j->type == PanelTypeE::INT_LID )
+                {
+                    this->_sf_gp->field_values[index] = 0.0;
+                }
             }
-            else if ( panel_j->type == PanelTypeE::INT_LID )
-            {
-                this->_sf_gp->field_values[index] = 0.0;
-            }
-
         }
     }
 
@@ -1591,13 +1595,13 @@ void FormulationKernelBackend<N, mode_pf, recalc_steady>::_build_wave_matrixes_2
     STATIC_COND( !(ONLY_PF),    this->_pot_gp->clear_sysmat( );         )
     STATIC_COND( !(ONLY_PF),    this->_pot_gp->clear_field_values( );   )
 
-    STATIC_COND( ONLY_PF, clear_vector( this->_pf_gp->sysmat_nrows * ( this->_input->dofs_np + this->_input->heads_np ), this->_ppf_rhs ); )
+    STATIC_COND( ONLY_PF, clear_vector( this->_pf_gp->sysmat_nrows * ( this->_input->dofs_np * this->_mesh_gp->meshes_np + this->_input->heads_np ), this->_ppf_rhs ); )
 
     // Declare local variables
     cusfloat    ang_freq_2              = w * w;
     int         col_count               = 0;
-    int         dofs_offset_pf          = this->_input->dofs_np * this->_pf_gp->sysmat_nrows;
-    int         dofs_offset_sf          = this->_input->dofs_np * this->_sf_gp->sysmat_nrows;
+    int         dofs_offset_pf          = this->_input->dofs_np * this->_mesh_gp->meshes_np * this->_pf_gp->sysmat_nrows;
+    int         dofs_offset_sf          = this->_input->dofs_np * this->_mesh_gp->meshes_np * this->_sf_gp->sysmat_nrows;
     auto        gwf_interf              = this->_gwfcns_interf;
     int         index                   = 0;
     int         index_cm                = 0;
@@ -1626,12 +1630,14 @@ void FormulationKernelBackend<N, mode_pf, recalc_steady>::_build_wave_matrixes_2
     cusfloat    nu                      = pow2s( w ) / this->_input->grav_acc;
 
     // Clear potential rhs to avoid spurious valures
-    STATIC_COND( ONLY_PF, clear_vector( this->_pf_gp->sysmat_nrows * ( this->_input->dofs_np + this->_input->heads_np ), this->_ppf_rhs ); )
+    STATIC_COND( ONLY_PF, clear_vector( this->_pf_gp->sysmat_nrows * ( this->_input->dofs_np * this->_mesh_gp->meshes_np + this->_input->heads_np ), this->_ppf_rhs ); )
 
     for ( int i=this->_solver->start_col_0; i<this->_solver->end_col_0; i++ )
     {
         // Get memory address of the ith panel
         source_i = this->_mesh_gp->source_nodes[i];
+        // Determine which body owns this source panel
+        const int ib_src = this->_mesh_gp->get_body_id_sn( i );
         gwf_interf.set_source_i( source_i, 1.0 );
 
         // Loop over rows to calcualte the influence of the panel
@@ -1740,9 +1746,10 @@ void FormulationKernelBackend<N, mode_pf, recalc_steady>::_build_wave_matrixes_2
             {
                 if ( source_i->panel->type == PanelTypeE::DIFFRAC )
                 {
+                    // Radiation: column is (ib_src * dofs_np + id) — per body, per DOF
                     for ( int id=0; id<this->_input->dofs_np; id++ )
                     {
-                        index                   = id * this->_pf_gp->sysmat_nrows + j;
+                        index                   = ( ib_src * this->_input->dofs_np + id ) * this->_pf_gp->sysmat_nrows + j;
                         this->_ppf_rhs[index]   += (
                                                         source_i->normal_vec[id]
                                                         *
@@ -1849,34 +1856,36 @@ void FormulationKernelBackend<N, mode_pf, recalc_steady>::_build_wave_matrixes_2
                     MPI_Allreduce(
                                         this->_ppf_rhs,
                                         this->_pf_gp->field_values,
-                                        this->_pf_gp->sysmat_nrows * ( this->_input->dofs_np + this->_input->heads_np ),
+                                        this->_pf_gp->sysmat_nrows * ( this->_input->dofs_np * this->_mesh_gp->meshes_np + this->_input->heads_np ),
                                         mpi_cuscomplex,
                                         MPI_SUM,
                                         MPI_COMM_WORLD
                                     );
                 )
 
-    // Calculate source formulation rhs
-    for ( int i=0; i<this->_input->dofs_np; i++ )
+    // Calculate source formulation rhs — radiation: one column per (body, DOF) pair
+    for ( int ib_col=0; ib_col<this->_mesh_gp->meshes_np; ib_col++ )
     {
-        for ( int j=this->_solver->start_row_0; j<this->_solver->end_row_0; j++ )
+        for ( int id=0; id<this->_input->dofs_np; id++ )
         {
-            panel_j = this->_mesh_gp->source_nodes[j]->panel;
-            index   = i * this->_sf_gp->sysmat_nrows + j;
-            if ( panel_j->type == PanelTypeE::DIFFRAC )
+            for ( int j=this->_solver->start_row_0; j<this->_solver->end_row_0; j++ )
             {
-                this->_sf_gp->field_values[index] = (
-                                                        this->_mesh_gp->source_nodes[j]->normal_vec[i]
-                                                        *
-                                                        this->_mesh_gp->source_nodes[j]->panel->is_move_f
-                                                    );
-
+                panel_j             = this->_mesh_gp->source_nodes[j]->panel;
+                const int ib_j      = this->_mesh_gp->get_body_id_sn( j );
+                index               = ( ib_col * this->_input->dofs_np + id ) * this->_sf_gp->sysmat_nrows + j;
+                if ( panel_j->type == PanelTypeE::DIFFRAC )
+                {
+                    // BN: only panels of body ib_col contribute to radiation mode (ib_col, id)
+                    this->_sf_gp->field_values[index] = ( ib_j == ib_col )
+                        ? ( this->_mesh_gp->source_nodes[j]->normal_vec[id]
+                            * this->_mesh_gp->source_nodes[j]->panel->is_move_f )
+                        : cuscomplex( 0.0, 0.0 );
+                }
+                else if ( panel_j->type == PanelTypeE::INT_LID )
+                {
+                    this->_sf_gp->field_values[index] = 0.0;
+                }
             }
-            else if ( panel_j->type == PanelTypeE::INT_LID )
-            {
-                this->_sf_gp->field_values[index] = 0.0;
-            }
-
         }
     }
 
@@ -2208,7 +2217,7 @@ void FormulationKernelBackend<N, mode_pf, recalc_steady>::compute_fields(
     // Calculate wave dependent parameters
     cusfloat    nu              = pow2s( ang_freq ) / grav_acc;
 
-    std::vector<cuscomplex> pot_vals( this->_input->dofs_np + this->_input->heads_np, cuscomplex( 0.0, 0.0 ) );
+    std::vector<cuscomplex> pot_vals( this->_input->dofs_np * body_np + this->_input->heads_np, cuscomplex( 0.0, 0.0 ) );
                                 
 
     // Compute diffraction and radiation fields at the field points
@@ -2403,13 +2412,14 @@ void FormulationKernelBackend<N, mode_pf, recalc_steady>::compute_fields(
                 for ( std::size_t idh=0; idh<heads_np; idh++ )
                 {
                     // Get indexes to locate and to storage data
-                    index_sc    = ( dofs_np + idh ) * sources_np + k;
+                    // Diffraction column: dofs_np * bodies_np + idh
+                    index_sc    = ( dofs_np * body_np + idh ) * sources_np + k;
                     index_fd    = store_freqs * freq_index * ( heads_np * fp_np ) + idh * fp_np + j;
 
                     // Get source value for the current position
                     source_val  = this->_sf_gp->field_values[index_sc];
 
-                    pot_vals[this->_input->dofs_np + idh] += pot_term * source_val;
+                    pot_vals[this->_input->dofs_np * body_np + idh] += pot_term * source_val;
 
                     // Calculate diffraction field contribution
                     STATIC_COND( ONLY_FCN,   pot_aux    = pot_term     * source_val;   )
@@ -2437,12 +2447,13 @@ void FormulationKernelBackend<N, mode_pf, recalc_steady>::compute_fields(
                     {
                         // Get indexes to locate and to storage data
                         index_ax    = idh * ( dofs_np * body_np ) + body_id * dofs_np + idd;
-                        index_sc    = idd * sources_np + k;
+                        // Radiation column: body_id * dofs_np + idd
+                        index_sc    = ( body_id * dofs_np + idd ) * sources_np + k;
                         
                         // Get source value for the current position
                         source_val  = this->_sf_gp->field_values[index_sc];
 
-                        pot_vals[idd] += pot_term * source_val;
+                        pot_vals[body_id * dofs_np + idd] += pot_term * source_val;
 
                         // Get current RAO value
                         rao_val     = raos[ index_ax ];
@@ -2663,7 +2674,7 @@ FormulationKernelBackend<N, mode_pf, recalc_steady>::FormulationKernelBackend(
     // Instantiate Scalapack solver
     this->_solver       = new   SclCmpx( 
                                             this->_mesh_gp->source_nodes_tnp,
-                                            this->_input->dofs_np + this->_input->heads_np,
+                                            this->_input->dofs_np * this->_mesh_gp->meshes_np + this->_input->heads_np,
                                             this->_mpi_config->procs_total,
                                             this->_mpi_config->proc_rank,
                                             this->_mpi_config->proc_root,
@@ -2680,7 +2691,7 @@ FormulationKernelBackend<N, mode_pf, recalc_steady>::FormulationKernelBackend(
                                             this->_mesh_gp->panels_tnp,
                                             this->ipm_cols_np,
                                             this->_mesh_gp->meshes_np,
-                                            ( this->_input->dofs_np + this->_input->heads_np ),
+                                            ( this->_input->dofs_np * this->_mesh_gp->meshes_np + this->_input->heads_np ),
                                             0,
                                             this->_mesh_gp->panels_tnp-1,
                                             this->ipm_sc,
@@ -2695,7 +2706,7 @@ FormulationKernelBackend<N, mode_pf, recalc_steady>::FormulationKernelBackend(
                                                             this->_mesh_gp->panels_tnp,
                                                             this->ipm_cols_np,
                                                             this->_mesh_gp->meshes_np,
-                                                            ( this->_input->dofs_np + this->_input->heads_np ),
+                                                            ( this->_input->dofs_np * this->_mesh_gp->meshes_np + this->_input->heads_np ),
                                                             0,
                                                             this->_mesh_gp->panels_tnp-1,
                                                             this->ipm_sc,
@@ -2705,7 +2716,7 @@ FormulationKernelBackend<N, mode_pf, recalc_steady>::FormulationKernelBackend(
                                                         );
                 )
 
-    std::size_t  fo_len = this->_input->dofs_np + this->_input->heads_np;
+    std::size_t  fo_len = static_cast<std::size_t>( this->_input->dofs_np * this->_mesh_gp->meshes_np ) + this->_input->heads_np;
     std::size_t  so_len = this->_input->heads_np * this->_input->heads_np;
     std::size_t  pf_len = ( ( mode_pf > 0 ) && ( so_len > fo_len ) ) ? so_len : fo_len;
     STATIC_COND( 

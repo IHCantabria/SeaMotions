@@ -44,6 +44,7 @@ public:
     // Declare class attributes
     cusfloat*       added_mass                          = nullptr;
     cusfloat*       added_mass_p0                       = nullptr;
+    int             bodies_np                           = 0;
     cusfloat*       damping_rad                         = nullptr;
     cusfloat*       damping_rad_p0                      = nullptr;
     int             dofs_np                             = 0;
