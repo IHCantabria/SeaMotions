@@ -172,7 +172,14 @@ template<typename NS>
 class BetaFoldedResidual
 {
 public:
+    BetaFoldedResidual() = default;
+
     explicit BetaFoldedResidual( const std::vector<cusfloat>& beta_gauss )
+    {
+        initialize( beta_gauss );
+    }
+
+    void initialize( const std::vector<cusfloat>& beta_gauss )
     {
         snapshots_.resize( beta_gauss.size() );
         for ( std::size_t g = 0; g < beta_gauss.size(); ++g )
@@ -405,9 +412,18 @@ public:
     using F0FcnPtr = cusfloat (*)( cusfloat, cusfloat );
     using F1FcnPtr = cusfloat (*)( cusfloat, cusfloat );
 
+    G0Gauss1AlphaEvaluator() = default;
+
     G0Gauss1AlphaEvaluator( const std::vector<cusfloat>& beta_gauss,
                              F0FcnPtr                     f0_fcn,
                              F1FcnPtr                     f1_fcn )
+    {
+        initialize( beta_gauss, f0_fcn, f1_fcn );
+    }
+
+    void initialize( const std::vector<cusfloat>& beta_gauss,
+                     F0FcnPtr                     f0_fcn,
+                     F1FcnPtr                     f1_fcn )
     {
         cache_.resize( beta_gauss.size() );
         for ( std::size_t g = 0; g < beta_gauss.size(); ++g )
@@ -453,9 +469,18 @@ public:
     using F0FcnPtr = cusfloat (*)( cusfloat, cusfloat );
     using F1FcnPtr = cusfloat (*)( cusfloat, cusfloat );
 
+    G0Gauss3AlphaEvaluator() = default;
+
     G0Gauss3AlphaEvaluator( const std::vector<cusfloat>& beta_gauss,
                              F0FcnPtr                     f0_fcn,
                              F1FcnPtr                     f1_fcn )
+    {
+        initialize( beta_gauss, f0_fcn, f1_fcn );
+    }
+
+    void initialize( const std::vector<cusfloat>& beta_gauss,
+                     F0FcnPtr                     f0_fcn,
+                     F1FcnPtr                     f1_fcn )
     {
         cache_.resize( beta_gauss.size() );
         for ( std::size_t g = 0; g < beta_gauss.size(); ++g )
@@ -518,10 +543,18 @@ class GaussEval_dGdt
     using A0T  = ChebyshevTraits<dGdtA0C>;
 
 public:
+    GaussEval_dGdt() = default;
+
     explicit GaussEval_dGdt( const std::vector<cusfloat>& beta_gauss )
         : residual_( beta_gauss )
         , g0_( beta_gauss, dGdt_G0_F0, dGdt_G0_F1 )
     {}
+
+    void initialize( const std::vector<cusfloat>& beta_gauss )
+    {
+        residual_.initialize( beta_gauss );
+        g0_.initialize( beta_gauss, dGdt_G0_F0, dGdt_G0_F1 );
+    }
 
     cusfloat evaluate( int g, cusfloat mu ) const
     {
@@ -551,10 +584,18 @@ class GaussEval_dGdtx
     using A2T  = ChebyshevTraits<dGdtxA2C>;
 
 public:
+    GaussEval_dGdtx() = default;
+
     explicit GaussEval_dGdtx( const std::vector<cusfloat>& beta_gauss )
         : residual_( beta_gauss )
         , g0_( beta_gauss, dGdtx_G0_F0, dGdtx_G0_F1 )
     {}
+
+    void initialize( const std::vector<cusfloat>& beta_gauss )
+    {
+        residual_.initialize( beta_gauss );
+        g0_.initialize( beta_gauss, dGdtx_G0_F0, dGdtx_G0_F1 );
+    }
 
     cusfloat evaluate( int g, cusfloat mu ) const
     {
@@ -584,10 +625,18 @@ class GaussEval_dGdtxx
     using A2T  = ChebyshevTraits<dGdtxxA2C>;
 
 public:
+    GaussEval_dGdtxx() = default;
+
     explicit GaussEval_dGdtxx( const std::vector<cusfloat>& beta_gauss )
         : residual_( beta_gauss )
         , g0_( beta_gauss, dGdtxx_G0_F0, dGdtxx_G0_F1 )
     {}
+
+    void initialize( const std::vector<cusfloat>& beta_gauss )
+    {
+        residual_.initialize( beta_gauss );
+        g0_.initialize( beta_gauss, dGdtxx_G0_F0, dGdtxx_G0_F1 );
+    }
 
     cusfloat evaluate( int g, cusfloat mu ) const
     {
@@ -617,10 +666,18 @@ class GaussEval_dGdtt
     using A2T  = ChebyshevTraits<dGdttA2C>;
 
 public:
+    GaussEval_dGdtt() = default;
+
     explicit GaussEval_dGdtt( const std::vector<cusfloat>& beta_gauss )
         : residual_( beta_gauss )
         , g0_( beta_gauss, dGdtt_G0_F0, dGdtt_G0_F1 )
     {}
+
+    void initialize( const std::vector<cusfloat>& beta_gauss )
+    {
+        residual_.initialize( beta_gauss );
+        g0_.initialize( beta_gauss, dGdtt_G0_F0, dGdtt_G0_F1 );
+    }
 
     cusfloat evaluate( int g, cusfloat mu ) const
     {
@@ -650,10 +707,18 @@ class GaussEval_dGdttx
     using A2T  = ChebyshevTraits<dGdttxA2C>;
 
 public:
+    GaussEval_dGdttx() = default;
+
     explicit GaussEval_dGdttx( const std::vector<cusfloat>& beta_gauss )
         : residual_( beta_gauss )
         , g0_( beta_gauss, dGdttx_G0_F0, dGdttx_G0_F1 )
     {}
+
+    void initialize( const std::vector<cusfloat>& beta_gauss )
+    {
+        residual_.initialize( beta_gauss );
+        g0_.initialize( beta_gauss, dGdttx_G0_F0, dGdttx_G0_F1 );
+    }
 
     cusfloat evaluate( int g, cusfloat mu ) const
     {
@@ -683,10 +748,18 @@ class GaussEval_dGdttxx
     using A2T  = ChebyshevTraits<dGdttxxA2C>;
 
 public:
+    GaussEval_dGdttxx() = default;
+
     explicit GaussEval_dGdttxx( const std::vector<cusfloat>& beta_gauss )
         : residual_( beta_gauss )
         , g0_( beta_gauss, dGdttxx_G0_F0, dGdttxx_G0_F1 )
     {}
+
+    void initialize( const std::vector<cusfloat>& beta_gauss )
+    {
+        residual_.initialize( beta_gauss );
+        g0_.initialize( beta_gauss, dGdttxx_G0_F0, dGdttxx_G0_F1 );
+    }
 
     cusfloat evaluate( int g, cusfloat mu ) const
     {
@@ -702,4 +775,366 @@ public:
 private:
     BetaFoldedResidual<dGdttxxC>               residual_;
     G0Gauss3AlphaEvaluator<TDT, A0T, A1T, A2T> g0_;
+};
+
+
+// ===========================================================================
+// Direct 2D evaluators  (no Gauss precomputation)
+// ===========================================================================
+//
+// These evaluators use the full 2D Chebyshev residual lookup and the
+// complete G0 basis functions at runtime.  They are stateless: construction
+// requires no data and evaluate() accepts (beta, mu) directly instead of a
+// precomputed Gauss-point index.
+//
+// Use these when the beta values are not known at construction time (e.g.
+// when beta is a runtime-varying argument or when only a few evaluations are
+// needed and the Gauss precomputation overhead is not justified).
+//
+// Interface mirrors GaussEval_* but with signature
+//   evaluate( cusfloat beta, cusfloat mu )
+// instead of
+//   evaluate( int gauss_index, cusfloat mu )
+// ===========================================================================
+
+// ---------------------------------------------------------------------------
+// Direct2DEval_dGdt
+// ---------------------------------------------------------------------------
+class Direct2DEval_dGdt
+{
+public:
+    Direct2DEval_dGdt() = default;
+
+    // --- scalar interface ---
+    cusfloat evaluate( cusfloat beta, cusfloat mu ) const
+    {
+        return eval_dGdt( beta, mu );
+    }
+
+    cusfloat evaluate_G0( cusfloat beta, cusfloat mu ) const
+    {
+        return eval_dGdt_G0( beta, mu );
+    }
+
+    cusfloat evaluate_residual( cusfloat beta, cusfloat mu ) const
+    {
+        return eval_dGdt_residual( beta, mu );
+    }
+
+    // --- vectorised interface (n ≤ N points) ---
+    // beta[] and mu[] are raw (not log-scaled); log10(mu) is applied internally.
+    template<std::size_t N, int mode_loop = 0>
+    void evaluate( std::size_t n, const cusfloat* beta, const cusfloat* mu,
+                   cusfloat* result ) const
+    {
+        cusfloat log_mu[N];
+        for ( std::size_t i = 0; i < n; ++i ) log_mu[i] = std::log10( mu[i] );
+        eval_time_residual_2d_vec<ChebyshevTraits<dGdtC>, N, mode_loop>(
+            n, beta, log_mu, result );
+        for ( std::size_t i = 0; i < n; ++i )
+            result[i] += eval_dGdt_G0( beta[i], mu[i] );
+    }
+
+    template<std::size_t N, int mode_loop = 0>
+    void evaluate_G0( std::size_t n, const cusfloat* beta, const cusfloat* mu,
+                      cusfloat* result ) const
+    {
+        for ( std::size_t i = 0; i < n; ++i )
+            result[i] = eval_dGdt_G0( beta[i], mu[i] );
+    }
+
+    template<std::size_t N, int mode_loop = 0>
+    void evaluate_residual( std::size_t n, const cusfloat* beta, const cusfloat* mu,
+                            cusfloat* result ) const
+    {
+        cusfloat log_mu[N];
+        for ( std::size_t i = 0; i < n; ++i ) log_mu[i] = std::log10( mu[i] );
+        eval_time_residual_2d_vec<ChebyshevTraits<dGdtC>, N, mode_loop>(
+            n, beta, log_mu, result );
+    }
+};
+
+
+// ---------------------------------------------------------------------------
+// Direct2DEval_dGdtx
+// ---------------------------------------------------------------------------
+class Direct2DEval_dGdtx
+{
+public:
+    Direct2DEval_dGdtx() = default;
+
+    // --- scalar interface ---
+    cusfloat evaluate( cusfloat beta, cusfloat mu ) const
+    {
+        return eval_dGdtx( beta, mu );
+    }
+
+    cusfloat evaluate_G0( cusfloat beta, cusfloat mu ) const
+    {
+        return eval_dGdtx_G0( beta, mu );
+    }
+
+    cusfloat evaluate_residual( cusfloat beta, cusfloat mu ) const
+    {
+        return eval_dGdtx_residual( beta, mu );
+    }
+
+    // --- vectorised interface ---
+    template<std::size_t N, int mode_loop = 0>
+    void evaluate( std::size_t n, const cusfloat* beta, const cusfloat* mu,
+                   cusfloat* result ) const
+    {
+        cusfloat log_mu[N];
+        for ( std::size_t i = 0; i < n; ++i ) log_mu[i] = std::log10( mu[i] );
+        eval_time_residual_2d_vec<ChebyshevTraits<dGdtxC>, N, mode_loop>(
+            n, beta, log_mu, result );
+        for ( std::size_t i = 0; i < n; ++i )
+            result[i] += eval_dGdtx_G0( beta[i], mu[i] );
+    }
+
+    template<std::size_t N, int mode_loop = 0>
+    void evaluate_G0( std::size_t n, const cusfloat* beta, const cusfloat* mu,
+                      cusfloat* result ) const
+    {
+        for ( std::size_t i = 0; i < n; ++i )
+            result[i] = eval_dGdtx_G0( beta[i], mu[i] );
+    }
+
+    template<std::size_t N, int mode_loop = 0>
+    void evaluate_residual( std::size_t n, const cusfloat* beta, const cusfloat* mu,
+                            cusfloat* result ) const
+    {
+        cusfloat log_mu[N];
+        for ( std::size_t i = 0; i < n; ++i ) log_mu[i] = std::log10( mu[i] );
+        eval_time_residual_2d_vec<ChebyshevTraits<dGdtxC>, N, mode_loop>(
+            n, beta, log_mu, result );
+    }
+};
+
+
+// ---------------------------------------------------------------------------
+// Direct2DEval_dGdtxx
+// ---------------------------------------------------------------------------
+class Direct2DEval_dGdtxx
+{
+public:
+    Direct2DEval_dGdtxx() = default;
+
+    // --- scalar interface ---
+    cusfloat evaluate( cusfloat beta, cusfloat mu ) const
+    {
+        return eval_dGdtxx( beta, mu );
+    }
+
+    cusfloat evaluate_G0( cusfloat beta, cusfloat mu ) const
+    {
+        return eval_dGdtxx_G0( beta, mu );
+    }
+
+    cusfloat evaluate_residual( cusfloat beta, cusfloat mu ) const
+    {
+        return eval_dGdtxx_residual( beta, mu );
+    }
+
+    // --- vectorised interface ---
+    template<std::size_t N, int mode_loop = 0>
+    void evaluate( std::size_t n, const cusfloat* beta, const cusfloat* mu,
+                   cusfloat* result ) const
+    {
+        cusfloat log_mu[N];
+        for ( std::size_t i = 0; i < n; ++i ) log_mu[i] = std::log10( mu[i] );
+        eval_time_residual_2d_vec<ChebyshevTraits<dGdtxxC>, N, mode_loop>(
+            n, beta, log_mu, result );
+        for ( std::size_t i = 0; i < n; ++i )
+            result[i] += eval_dGdtxx_G0( beta[i], mu[i] );
+    }
+
+    template<std::size_t N, int mode_loop = 0>
+    void evaluate_G0( std::size_t n, const cusfloat* beta, const cusfloat* mu,
+                      cusfloat* result ) const
+    {
+        for ( std::size_t i = 0; i < n; ++i )
+            result[i] = eval_dGdtxx_G0( beta[i], mu[i] );
+    }
+
+    template<std::size_t N, int mode_loop = 0>
+    void evaluate_residual( std::size_t n, const cusfloat* beta, const cusfloat* mu,
+                            cusfloat* result ) const
+    {
+        cusfloat log_mu[N];
+        for ( std::size_t i = 0; i < n; ++i ) log_mu[i] = std::log10( mu[i] );
+        eval_time_residual_2d_vec<ChebyshevTraits<dGdtxxC>, N, mode_loop>(
+            n, beta, log_mu, result );
+    }
+};
+
+
+// ---------------------------------------------------------------------------
+// Direct2DEval_dGdtt
+// ---------------------------------------------------------------------------
+class Direct2DEval_dGdtt
+{
+public:
+    Direct2DEval_dGdtt() = default;
+
+    // --- scalar interface ---
+    cusfloat evaluate( cusfloat beta, cusfloat mu ) const
+    {
+        return eval_dGdtt( beta, mu );
+    }
+
+    cusfloat evaluate_G0( cusfloat beta, cusfloat mu ) const
+    {
+        return eval_dGdtt_G0( beta, mu );
+    }
+
+    cusfloat evaluate_residual( cusfloat beta, cusfloat mu ) const
+    {
+        return eval_dGdtt_residual( beta, mu );
+    }
+
+    // --- vectorised interface ---
+    template<std::size_t N, int mode_loop = 0>
+    void evaluate( std::size_t n, const cusfloat* beta, const cusfloat* mu,
+                   cusfloat* result ) const
+    {
+        cusfloat log_mu[N];
+        for ( std::size_t i = 0; i < n; ++i ) log_mu[i] = std::log10( mu[i] );
+        eval_time_residual_2d_vec<ChebyshevTraits<dGdttC>, N, mode_loop>(
+            n, beta, log_mu, result );
+        for ( std::size_t i = 0; i < n; ++i )
+            result[i] += eval_dGdtt_G0( beta[i], mu[i] );
+    }
+
+    template<std::size_t N, int mode_loop = 0>
+    void evaluate_G0( std::size_t n, const cusfloat* beta, const cusfloat* mu,
+                      cusfloat* result ) const
+    {
+        for ( std::size_t i = 0; i < n; ++i )
+            result[i] = eval_dGdtt_G0( beta[i], mu[i] );
+    }
+
+    template<std::size_t N, int mode_loop = 0>
+    void evaluate_residual( std::size_t n, const cusfloat* beta, const cusfloat* mu,
+                            cusfloat* result ) const
+    {
+        cusfloat log_mu[N];
+        for ( std::size_t i = 0; i < n; ++i ) log_mu[i] = std::log10( mu[i] );
+        eval_time_residual_2d_vec<ChebyshevTraits<dGdttC>, N, mode_loop>(
+            n, beta, log_mu, result );
+    }
+};
+
+
+// ---------------------------------------------------------------------------
+// Direct2DEval_dGdttx
+// ---------------------------------------------------------------------------
+class Direct2DEval_dGdttx
+{
+public:
+    Direct2DEval_dGdttx() = default;
+
+    // --- scalar interface ---
+    cusfloat evaluate( cusfloat beta, cusfloat mu ) const
+    {
+        return eval_dGdttx( beta, mu );
+    }
+
+    cusfloat evaluate_G0( cusfloat beta, cusfloat mu ) const
+    {
+        return eval_dGdttx_G0( beta, mu );
+    }
+
+    cusfloat evaluate_residual( cusfloat beta, cusfloat mu ) const
+    {
+        return eval_dGdttx_residual( beta, mu );
+    }
+
+    // --- vectorised interface ---
+    template<std::size_t N, int mode_loop = 0>
+    void evaluate( std::size_t n, const cusfloat* beta, const cusfloat* mu,
+                   cusfloat* result ) const
+    {
+        cusfloat log_mu[N];
+        for ( std::size_t i = 0; i < n; ++i ) log_mu[i] = std::log10( mu[i] );
+        eval_time_residual_2d_vec<ChebyshevTraits<dGdttxC>, N, mode_loop>(
+            n, beta, log_mu, result );
+        for ( std::size_t i = 0; i < n; ++i )
+            result[i] += eval_dGdttx_G0( beta[i], mu[i] );
+    }
+
+    template<std::size_t N, int mode_loop = 0>
+    void evaluate_G0( std::size_t n, const cusfloat* beta, const cusfloat* mu,
+                      cusfloat* result ) const
+    {
+        for ( std::size_t i = 0; i < n; ++i )
+            result[i] = eval_dGdttx_G0( beta[i], mu[i] );
+    }
+
+    template<std::size_t N, int mode_loop = 0>
+    void evaluate_residual( std::size_t n, const cusfloat* beta, const cusfloat* mu,
+                            cusfloat* result ) const
+    {
+        cusfloat log_mu[N];
+        for ( std::size_t i = 0; i < n; ++i ) log_mu[i] = std::log10( mu[i] );
+        eval_time_residual_2d_vec<ChebyshevTraits<dGdttxC>, N, mode_loop>(
+            n, beta, log_mu, result );
+    }
+};
+
+
+// ---------------------------------------------------------------------------
+// Direct2DEval_dGdttxx
+// ---------------------------------------------------------------------------
+class Direct2DEval_dGdttxx
+{
+public:
+    Direct2DEval_dGdttxx() = default;
+
+    // --- scalar interface ---
+    cusfloat evaluate( cusfloat beta, cusfloat mu ) const
+    {
+        return eval_dGdttxx( beta, mu );
+    }
+
+    cusfloat evaluate_G0( cusfloat beta, cusfloat mu ) const
+    {
+        return eval_dGdttxx_G0( beta, mu );
+    }
+
+    cusfloat evaluate_residual( cusfloat beta, cusfloat mu ) const
+    {
+        return eval_dGdttxx_residual( beta, mu );
+    }
+
+    // --- vectorised interface ---
+    template<std::size_t N, int mode_loop = 0>
+    void evaluate( std::size_t n, const cusfloat* beta, const cusfloat* mu,
+                   cusfloat* result ) const
+    {
+        cusfloat log_mu[N];
+        for ( std::size_t i = 0; i < n; ++i ) log_mu[i] = std::log10( mu[i] );
+        eval_time_residual_2d_vec<ChebyshevTraits<dGdttxxC>, N, mode_loop>(
+            n, beta, log_mu, result );
+        for ( std::size_t i = 0; i < n; ++i )
+            result[i] += eval_dGdttxx_G0( beta[i], mu[i] );
+    }
+
+    template<std::size_t N, int mode_loop = 0>
+    void evaluate_G0( std::size_t n, const cusfloat* beta, const cusfloat* mu,
+                      cusfloat* result ) const
+    {
+        for ( std::size_t i = 0; i < n; ++i )
+            result[i] = eval_dGdttxx_G0( beta[i], mu[i] );
+    }
+
+    template<std::size_t N, int mode_loop = 0>
+    void evaluate_residual( std::size_t n, const cusfloat* beta, const cusfloat* mu,
+                            cusfloat* result ) const
+    {
+        cusfloat log_mu[N];
+        for ( std::size_t i = 0; i < n; ++i ) log_mu[i] = std::log10( mu[i] );
+        eval_time_residual_2d_vec<ChebyshevTraits<dGdttxxC>, N, mode_loop>(
+            n, beta, log_mu, result );
+    }
 };

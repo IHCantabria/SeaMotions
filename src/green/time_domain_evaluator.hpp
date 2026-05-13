@@ -456,3 +456,271 @@ inline cusfloat eval_dGdttxx_residual( cusfloat beta, cusfloat mu )
     using TD = ChebyshevTraits<dGdttxxC>;
     return eval_time_residual_2d<TD>( beta, std::log10( mu ) );
 }
+
+
+// ---------------------------------------------------------------------------
+// Vectorized 2D residual evaluator for time-domain types.
+//
+// Processes n ≤ N points in one call.  The block hash uses dx_min_region /
+// dy_min_region (NOT intervals_np, which is 1 for all time-domain types).
+//
+// When all n points fall in the same 2D block the call is forwarded to
+// evaluate_chebyshev_polynomials_2d_vector_t<TD,N,mode_loop>, which can
+// exploit SIMD / loop-unrolling via the mode_loop template parameter.
+// Otherwise each point is evaluated independently with the scalar path.
+//
+// Template parameters:
+//   TD        – ChebyshevTraits specialisation for the desired function
+//               (e.g. ChebyshevTraits<dGdtC>)
+//   N         – compile-time maximum vector width (must be ≥ n at runtime)
+//   mode_loop – 0 = runtime loop, 1 = compile-time unrolled loop (passed
+//               through to evaluate_chebyshev_polynomials_2d_vector_t)
+//
+// Inputs (all length-n arrays):
+//   beta   – beta values (linear, not log-scaled)
+//   log_mu – log10(mu) values (already log-scaled, matching the y-axis)
+//   result – output array of length n; written in place
+// ---------------------------------------------------------------------------
+template<typename TD, std::size_t N, int mode_loop = 0>
+void eval_time_residual_2d_vec( std::size_t     n,
+                                const cusfloat* beta,
+                                const cusfloat* log_mu,
+                                cusfloat*       result )
+{
+    // Precompute block counts (constexpr-friendly via static local)
+    const int nx_blocks = static_cast<int>( std::round(
+        ( TD::x_max_global - TD::x_min_global ) / TD::dx_min_region ) );
+    const int ny_blocks = static_cast<int>( std::round(
+        ( TD::y_max_global - TD::y_min_global ) / TD::dy_min_region ) );
+
+    // Per-point: clamp → hash → map to [-1, 1]
+    cusfloat    xs[N],  ys[N];
+    cusfloat    xm[N],  ym[N];
+    std::size_t sp[N],  np_b[N], nt[N];
+
+    for ( std::size_t i = 0; i < n; ++i )
+    {
+        xs[i] = std::max( std::min( beta[i],   TD::x_max_global ), TD::x_min_global );
+        ys[i] = std::max( std::min( log_mu[i], TD::y_max_global ), TD::y_min_global );
+
+        int inx = static_cast<int>( std::floor( ( xs[i] - TD::x_min_global ) / TD::dx_min_region ) );
+        int iny = static_cast<int>( std::floor( ( ys[i] - TD::y_min_global ) / TD::dy_min_region ) );
+        inx = std::min( std::max( inx, 0 ), nx_blocks - 1 );
+        iny = std::min( std::max( iny, 0 ), ny_blocks - 1 );
+
+        nt[i]   = static_cast<std::size_t>( inx * ny_blocks + iny );
+        sp[i]   = TD::blocks_start[nt[i]];
+        np_b[i] = TD::blocks_coeffs_np[nt[i]];
+
+        xm[i] = static_cast<cusfloat>( 2.0 )
+                * ( xs[i] - TD::x_min_region[nt[i]] ) / TD::dx_region[nt[i]]
+                - static_cast<cusfloat>( 1.0 );
+        ym[i] = static_cast<cusfloat>( 2.0 )
+                * ( ys[i] - TD::y_min_region[nt[i]] ) / TD::dy_region[nt[i]]
+                - static_cast<cusfloat>( 1.0 );
+    }
+
+    // Fast path: all points in the same block → use vectorised inner kernel
+    bool single_block = true;
+    for ( std::size_t i = 1; i < n; ++i )
+    {
+        if ( nt[i] != nt[0] ) { single_block = false; break; }
+    }
+
+    if ( single_block )
+    {
+        evaluate_chebyshev_polynomials_2d_vector_t<TD, N, mode_loop>(
+            sp[0], np_b[0], nt[0], n, xm, ym, result );
+    }
+    else
+    {
+        for ( std::size_t i = 0; i < n; ++i )
+        {
+            evaluate_chebyshev_polynomials_2d_t<TD>(
+                sp[i], np_b[i], nt[i], xm[i], ym[i], result[i] );
+        }
+    }
+}
+
+
+// ---------------------------------------------------------------------------
+// Vectorized full/component evaluators  (free-function wrappers)
+//
+// These mirror the scalar eval_dGdt / eval_dGdt_G0 / eval_dGdt_residual
+// functions but process n ≤ N points in one call.
+//
+// Template parameters:
+//   N         – compile-time maximum vector width (must be ≥ n at runtime)
+//   mode_loop – forwarded to eval_time_residual_2d_vec / the vectorised
+//               Chebyshev kernel (0 = runtime, 1 = compile-time unrolled)
+//
+// All functions take raw mu[] (not log-scaled); log10 is applied internally.
+// The _residual_vec variants accept log_mu[] directly to avoid recomputing
+// the logarithm when the caller already has it.
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Helper: compute log10(mu[i]) into log_mu[i] for i < n
+// ---------------------------------------------------------------------------
+template<std::size_t N>
+inline void compute_log_mu( std::size_t n, const cusfloat* mu, cusfloat* log_mu )
+{
+    for ( std::size_t i = 0; i < n; ++i )
+        log_mu[i] = std::log10( mu[i] );
+}
+
+
+// -- dGdt --
+template<std::size_t N, int mode_loop = 0>
+void eval_dGdt_vec( std::size_t n, const cusfloat* beta, const cusfloat* mu, cusfloat* result )
+{
+    using TD  = ChebyshevTraits<dGdtC>;
+    cusfloat log_mu[N];
+    compute_log_mu<N>( n, mu, log_mu );
+    eval_time_residual_2d_vec<TD, N, mode_loop>( n, beta, log_mu, result );
+    for ( std::size_t i = 0; i < n; ++i )
+        result[i] += eval_dGdt_G0( beta[i], mu[i] );
+}
+
+template<std::size_t N, int mode_loop = 0>
+void eval_dGdt_G0_vec( std::size_t n, const cusfloat* beta, const cusfloat* mu, cusfloat* result )
+{
+    for ( std::size_t i = 0; i < n; ++i )
+        result[i] = eval_dGdt_G0( beta[i], mu[i] );
+}
+
+template<std::size_t N, int mode_loop = 0>
+void eval_dGdt_residual_vec( std::size_t n, const cusfloat* beta, const cusfloat* log_mu, cusfloat* result )
+{
+    eval_time_residual_2d_vec<ChebyshevTraits<dGdtC>, N, mode_loop>( n, beta, log_mu, result );
+}
+
+
+// -- dGdtx --
+template<std::size_t N, int mode_loop = 0>
+void eval_dGdtx_vec( std::size_t n, const cusfloat* beta, const cusfloat* mu, cusfloat* result )
+{
+    using TD  = ChebyshevTraits<dGdtxC>;
+    cusfloat log_mu[N];
+    compute_log_mu<N>( n, mu, log_mu );
+    eval_time_residual_2d_vec<TD, N, mode_loop>( n, beta, log_mu, result );
+    for ( std::size_t i = 0; i < n; ++i )
+        result[i] += eval_dGdtx_G0( beta[i], mu[i] );
+}
+
+template<std::size_t N, int mode_loop = 0>
+void eval_dGdtx_G0_vec( std::size_t n, const cusfloat* beta, const cusfloat* mu, cusfloat* result )
+{
+    for ( std::size_t i = 0; i < n; ++i )
+        result[i] = eval_dGdtx_G0( beta[i], mu[i] );
+}
+
+template<std::size_t N, int mode_loop = 0>
+void eval_dGdtx_residual_vec( std::size_t n, const cusfloat* beta, const cusfloat* log_mu, cusfloat* result )
+{
+    eval_time_residual_2d_vec<ChebyshevTraits<dGdtxC>, N, mode_loop>( n, beta, log_mu, result );
+}
+
+
+// -- dGdtxx --
+template<std::size_t N, int mode_loop = 0>
+void eval_dGdtxx_vec( std::size_t n, const cusfloat* beta, const cusfloat* mu, cusfloat* result )
+{
+    using TD  = ChebyshevTraits<dGdtxxC>;
+    cusfloat log_mu[N];
+    compute_log_mu<N>( n, mu, log_mu );
+    eval_time_residual_2d_vec<TD, N, mode_loop>( n, beta, log_mu, result );
+    for ( std::size_t i = 0; i < n; ++i )
+        result[i] += eval_dGdtxx_G0( beta[i], mu[i] );
+}
+
+template<std::size_t N, int mode_loop = 0>
+void eval_dGdtxx_G0_vec( std::size_t n, const cusfloat* beta, const cusfloat* mu, cusfloat* result )
+{
+    for ( std::size_t i = 0; i < n; ++i )
+        result[i] = eval_dGdtxx_G0( beta[i], mu[i] );
+}
+
+template<std::size_t N, int mode_loop = 0>
+void eval_dGdtxx_residual_vec( std::size_t n, const cusfloat* beta, const cusfloat* log_mu, cusfloat* result )
+{
+    eval_time_residual_2d_vec<ChebyshevTraits<dGdtxxC>, N, mode_loop>( n, beta, log_mu, result );
+}
+
+
+// -- dGdtt --
+template<std::size_t N, int mode_loop = 0>
+void eval_dGdtt_vec( std::size_t n, const cusfloat* beta, const cusfloat* mu, cusfloat* result )
+{
+    using TD  = ChebyshevTraits<dGdttC>;
+    cusfloat log_mu[N];
+    compute_log_mu<N>( n, mu, log_mu );
+    eval_time_residual_2d_vec<TD, N, mode_loop>( n, beta, log_mu, result );
+    for ( std::size_t i = 0; i < n; ++i )
+        result[i] += eval_dGdtt_G0( beta[i], mu[i] );
+}
+
+template<std::size_t N, int mode_loop = 0>
+void eval_dGdtt_G0_vec( std::size_t n, const cusfloat* beta, const cusfloat* mu, cusfloat* result )
+{
+    for ( std::size_t i = 0; i < n; ++i )
+        result[i] = eval_dGdtt_G0( beta[i], mu[i] );
+}
+
+template<std::size_t N, int mode_loop = 0>
+void eval_dGdtt_residual_vec( std::size_t n, const cusfloat* beta, const cusfloat* log_mu, cusfloat* result )
+{
+    eval_time_residual_2d_vec<ChebyshevTraits<dGdttC>, N, mode_loop>( n, beta, log_mu, result );
+}
+
+
+// -- dGdttx --
+template<std::size_t N, int mode_loop = 0>
+void eval_dGdttx_vec( std::size_t n, const cusfloat* beta, const cusfloat* mu, cusfloat* result )
+{
+    using TD  = ChebyshevTraits<dGdttxC>;
+    cusfloat log_mu[N];
+    compute_log_mu<N>( n, mu, log_mu );
+    eval_time_residual_2d_vec<TD, N, mode_loop>( n, beta, log_mu, result );
+    for ( std::size_t i = 0; i < n; ++i )
+        result[i] += eval_dGdttx_G0( beta[i], mu[i] );
+}
+
+template<std::size_t N, int mode_loop = 0>
+void eval_dGdttx_G0_vec( std::size_t n, const cusfloat* beta, const cusfloat* mu, cusfloat* result )
+{
+    for ( std::size_t i = 0; i < n; ++i )
+        result[i] = eval_dGdttx_G0( beta[i], mu[i] );
+}
+
+template<std::size_t N, int mode_loop = 0>
+void eval_dGdttx_residual_vec( std::size_t n, const cusfloat* beta, const cusfloat* log_mu, cusfloat* result )
+{
+    eval_time_residual_2d_vec<ChebyshevTraits<dGdttxC>, N, mode_loop>( n, beta, log_mu, result );
+}
+
+
+// -- dGdttxx --
+template<std::size_t N, int mode_loop = 0>
+void eval_dGdttxx_vec( std::size_t n, const cusfloat* beta, const cusfloat* mu, cusfloat* result )
+{
+    using TD  = ChebyshevTraits<dGdttxxC>;
+    cusfloat log_mu[N];
+    compute_log_mu<N>( n, mu, log_mu );
+    eval_time_residual_2d_vec<TD, N, mode_loop>( n, beta, log_mu, result );
+    for ( std::size_t i = 0; i < n; ++i )
+        result[i] += eval_dGdttxx_G0( beta[i], mu[i] );
+}
+
+template<std::size_t N, int mode_loop = 0>
+void eval_dGdttxx_G0_vec( std::size_t n, const cusfloat* beta, const cusfloat* mu, cusfloat* result )
+{
+    for ( std::size_t i = 0; i < n; ++i )
+        result[i] = eval_dGdttxx_G0( beta[i], mu[i] );
+}
+
+template<std::size_t N, int mode_loop = 0>
+void eval_dGdttxx_residual_vec( std::size_t n, const cusfloat* beta, const cusfloat* log_mu, cusfloat* result )
+{
+    eval_time_residual_2d_vec<ChebyshevTraits<dGdttxxC>, N, mode_loop>( n, beta, log_mu, result );
+}
