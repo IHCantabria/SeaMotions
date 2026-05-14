@@ -34,19 +34,22 @@ void    RigidBodyMesh::_auto_flush(
                                         void
                                     )
 {
-    // Define file names
-    std::string finame( "auto_flush_mesh" );
-
-    // Add seed number to file name
-    std::stringstream ss;
-    ss << finame << "_iter_" << this->_auto_flush_seed;
-    finame = ss.str( );
-
-    // Write mesh
-    this->write_underwater_panels( this->_auto_flush_fopath, finame );
-
-    // Advance seed number
-    this->_auto_flush_seed++;
+    if ( this->_is_auto_flush )
+    {
+        // Define file names
+        std::string finame( "auto_flush_mesh" );
+    
+        // Add seed number to file name
+        std::stringstream ss;
+        ss << finame << "_iter_" << this->_auto_flush_seed;
+        finame = ss.str( );
+    
+        // Write mesh
+        this->write_underwater_panels( this->_auto_flush_fopath, finame );
+    
+        // Advance seed number
+        this->_auto_flush_seed++;
+    }
 
 }
 
@@ -178,7 +181,8 @@ RigidBodyMesh::RigidBodyMesh(
                                 bool                is_fix,
                                 PanelTypeE          panel_type,
                                 cusfloat            draft_in,
-                                std::string         auto_flush_fopath
+                                std::string         auto_flush_fopath,
+                                bool                auto_flush
                             ): Mesh(
                                         file_path,
                                         body_name,
@@ -190,7 +194,7 @@ RigidBodyMesh::RigidBodyMesh(
 {
     // Manage and storage constructor optional data
     this->_auto_flush_fopath    = auto_flush_fopath;
-    this->_is_auto_flush        = true;
+    this->_is_auto_flush        = auto_flush;
 
     // Call constructor delegate
     this->_build( cog_in, draft_in );

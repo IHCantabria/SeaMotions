@@ -104,7 +104,8 @@ public:
                                         bool                is_fix,
                                         PanelTypeE          panel_type,
                                         cusfloat            draft_in,
-                                        std::string         auto_flush_fopath
+                                        std::string         auto_flush_fopath,
+                                        bool                auto_flush = false
                     );
 
     ~RigidBodyMesh( );
