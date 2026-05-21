@@ -22,6 +22,7 @@
 #include <array>
 #include <cmath>
 #include <functional>
+#include <iomanip>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -631,6 +632,9 @@ void TimeSolver<N, NGPT>::run( )
     const int max_hist = n_steps;
     this->_sigma_hist.reserve( max_hist );
 
+    // Print a progress line roughly every 1 % of the total steps
+    const int print_interval = std::max( 1, n_steps / 100 );
+
     for ( int step=0; step<n_steps; step++ )
     {
         const cusfloat t = static_cast<cusfloat>( step ) * dt;
@@ -715,6 +719,31 @@ void TimeSolver<N, NGPT>::run( )
         // 7. Write output
         // -----------------------------------------------------------------
         this->_output_step( t, step );
+
+        // -----------------------------------------------------------------
+        // 8. Console progress report
+        // -----------------------------------------------------------------
+        if ( step == 0 || ( step + 1 ) % print_interval == 0 || step == n_steps - 1 )
+        {
+            const int pct = static_cast<int>( 100.0 * ( step + 1 ) / n_steps );
+
+            std::cout << std::fixed << std::setprecision( 4 );
+            std::cout << "   Step " << std::setw( 6 ) << ( step + 1 ) << "/" << n_steps
+                      << "  [" << std::setw( 3 ) << pct << "%]"
+                      << "  t = " << std::setw( 10 ) << t << " s";
+
+            for ( int ib = 0; ib < bodies_np; ib++ )
+            {
+                std::cout << "  |  Body " << ib << ": [";
+                for ( int id = 0; id < dofs_np; id++ )
+                {
+                    if ( id > 0 ) { std::cout << ", "; }
+                    std::cout << std::setw( 12 ) << this->_body_pos[ib][id];
+                }
+                std::cout << " ]";
+            }
+            std::cout << "\n";
+        }
     }
 
     std::cout << " -> Time-domain simulation complete." << std::endl;
