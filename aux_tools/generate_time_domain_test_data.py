@@ -107,6 +107,7 @@ CPP_BETA_MAX = {
     "dGdtt"  : 19.0,
     "dGdttx" : 30.0,
     "dGdttxx": 30.0,
+    "dGdttt" : 19.0,  # same domain as dGdtt (x_max = 19)
 }
 
 # HDF5 file → function name mapping
@@ -117,6 +118,7 @@ DB_MAP = [
     ( "Gtt.h5",   "dGdtt"   ),
     ( "Gttx.h5",  "dGdttx"  ),
     ( "Gttxx.h5", "dGdttxx" ),
+    ( "Gttt.h5",  "dGdttt"  ),
 ]
 
 
@@ -242,6 +244,7 @@ def _get_A_evaluators( fcn_name: str ):
         "dGdtt"   : ["dGdttA0.hpp",  "dGdttA1.hpp",  "dGdttA2.hpp"],
         "dGdttx"  : ["dGdttxA0.hpp", "dGdttxA1.hpp", "dGdttxA2.hpp"],
         "dGdttxx" : ["dGdttxxA0.hpp","dGdttxxA1.hpp","dGdttxxA2.hpp"],
+        "dGdttt"  : ["dGdtttA0.hpp"],
     }
     return [ _make_1d_evaluator( os.path.join( d, fn ) ) for fn in a_files[fcn_name] ]
 
@@ -310,6 +313,72 @@ def _dGdttxx_G0_basis( beta: float, mu: float, alpha: float = 0.0 ) -> float:
     return ( -beta * beta / 4.0 ) * _dGdttx_G0_basis( beta, mu, alpha )
 
 
+def _dGdttt_G0_basis( beta: float, mu: float, alpha: float = 0.0 ) -> float:
+    """
+    Third time-derivative G0 basis: d³G0/dt³
+
+    Matches C++ dGdttt_G0_basis(beta, mu, alpha):
+      G0''' = lt'' * fj + 2 * lt' * fj' + lt * fj''
+
+    where:
+      scale = pi/(16*sqrt(2))
+      x     = beta^2/8 + alpha
+      lt    = scale * beta^3 * exp(-beta^2*mu/4)
+      lt'   = scale * beta^2 * exp(-beta^2*mu/4) * (3 - beta^2*mu/2)
+      lt''  = scale * beta   * exp(-beta^2*mu/4) * (6 - 7*beta^2*mu/2 + beta^4*mu^2/4)
+      fj    = J_{1/4}*J_{-1/4} + J_{3/4}*J_{-3/4}         (evaluated at x)
+      h     = J_{-1/4}*J_{5/4} + 2*J_{3/4}*J_{1/4} + J_{7/4}*J_{-3/4}
+      fj'   = -(beta/4) * h
+      dh    = 0.5*J_{-5/4}*J_{5/4} + 1.5*fj + 0.5*J_{7/4}*J_{-7/4}
+            - 1.5*J_{3/4}*J_{5/4} - 1.5*J_{7/4}*J_{1/4}
+            - 0.5*J_{-1/4}*J_{9/4} - 0.5*J_{11/4}*J_{-3/4}
+      fj''  = -(h/4 + beta^2/16 * dh)
+    """
+    if beta < 1e-1:
+        return 0.0
+
+    x    = beta * beta / 8.0 + alpha
+    expt = np.exp( -beta * beta * mu / 4.0 )
+    b2   = beta * beta
+    b3   = b2 * beta
+    b4   = b2 * b2
+    scale = np.pi / ( 16.0 * np.sqrt( 2.0 ) )
+
+    def J( nu, z ):
+        val = float( _JV( nu, z ) )
+        return 0.0 if np.isnan( val ) else val
+
+    fj = J(  0.25, x ) * J( -0.25, x ) + J(  0.75, x ) * J( -0.75, x )
+    h  = ( J( -0.25, x ) * J(  1.25, x )
+         + 2.0 * J(  0.75, x ) * J(  0.25, x )
+         + J(  1.75, x ) * J( -0.75, x ) )
+    dh = ( 0.5  * J( -1.25, x ) * J(  1.25, x )
+         + 1.5  * fj
+         + 0.5  * J(  1.75, x ) * J( -1.75, x )
+         - 1.5  * J(  0.75, x ) * J(  1.25, x )
+         - 1.5  * J(  1.75, x ) * J(  0.25, x )
+         - 0.5  * J( -0.25, x ) * J(  2.25, x )
+         - 0.5  * J(  2.75, x ) * J( -0.75, x ) )
+
+    # Derivatives of lt w.r.t. mu (all share scale * expt)
+    lt_pp = scale * beta * expt * ( 6.0 - 3.5 * b2 * mu + 0.25 * b4 * mu * mu )
+    lt_p  = scale * b2   * expt * ( 3.0 - 0.5 * b2 * mu )
+    lt    = scale * b3   * expt
+
+    # fj'  w.r.t. x; note d/dt = (beta/4) * d/dx
+    fj_p = -( beta / 4.0 ) * h
+    # fj'' w.r.t. x (second derivative w.r.t. t requires chain rule factor (beta/4)^2)
+    # Combined as in C++: fj'' = -(h/4 + beta^2/16 * dh) ... but those are d/dx terms
+    # Full second t-derivative: (beta/4)^2 * d^2fj/dx^2
+    # d(fj)/dx = h  (definition), d^2(fj)/dx^2 = dh
+    # So fj'' (wrt t) = -(h*(beta/4)^2 * ... ) -- reproduce C++ formula exactly
+    fj_pp_coeff = -( h / 4.0 + b2 / 16.0 * dh )
+    # The C++ fj'' = -(h/4 + b^2/16 * dh) already incorporates the chain-rule
+    # factor correctly (see generate_infdepth_coeffs_time.py derivation)
+
+    return float( lt_pp * fj + 2.0 * lt_p * fj_p + lt * fj_pp_coeff )
+
+
 # ---------------------------------------------------------------------------
 # G0 amplitude functions — loaded lazily from coefficient header files
 # ---------------------------------------------------------------------------
@@ -321,6 +390,7 @@ _G0_ALPHA_SHIFTS = {
     "dGdtt"   : [ 1e-3, 1e-2, 1e-1 ],
     "dGdttx"  : [ 1e-3, 1e-2, 1e-1 ],
     "dGdttxx" : [ 1e-3, 1e-2, 1e-1 ],
+    "dGdttt"  : [ 0.0 ],
 }
 
 _G0_BASIS_FCN = {
@@ -330,6 +400,7 @@ _G0_BASIS_FCN = {
     "dGdtt"   : _dGdtt_G0_basis,
     "dGdttx"  : _dGdttx_G0_basis,
     "dGdttxx" : _dGdttxx_G0_basis,
+    "dGdttt"  : _dGdttt_G0_basis,
 }
 
 _A_EVALUATORS_CACHE: dict = {}

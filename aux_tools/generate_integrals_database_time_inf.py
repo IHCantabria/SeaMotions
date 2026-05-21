@@ -2062,6 +2062,108 @@ def fit_residual_dGdttxx( folder_path: str, show_figs=True, is_square_ref=True, 
     return ref_level, chfhpa
 
 
+def fit_residual_dGdttt( folder_path: str, show_figs=False, is_square_ref=True, show_summary_fig=False ) -> None:
+    # Define fit properties
+    # Define boundary values
+    fit_props                   = FitProperties( )
+    fit_props.dims              = 2
+    fit_props.region_name       = "dGdttt"
+    fit_props.cheby_order_x     = 40
+    fit_props.cheby_order_y     = 15
+    fit_props.fcn_log_scale     = False
+    fit_props.x_hpatch_np       = 30
+    fit_props.x_log_scale       = False
+    fit_props.x_max             = 19.0
+    fit_props.x_min             = 0.0
+    fit_props.y_hpatch_np       = 4
+    fit_props.y_log_scale       = True
+    fit_props.y_max             = np.log10( 0.9998 )
+    fit_props.y_min             = -4.0
+    fit_props.cheby_abs_tol     = 1E-1
+    fit_props.cheby_abs_tol_f   = 2
+    fit_props.cheby_rel_tol     = 1E-3
+    fit_props.cheby_rel_tol_f   = 2
+    fit_props.x_map_fcn         = lambda x: x
+    fit_props.y_map_fcn         = lambda y: y
+    fit_props.max_ref_level     = 10
+    fit_props.alpha_shift       = np.array( [ 0.0 ] )
+
+    fit_props.num_x             = fit_props.cheby_order_x + 1
+    fit_props.num_x_fit         = fit_props.cheby_order_x + 1
+    fit_props.num_y             = fit_props.cheby_order_y + 1
+    fit_props.num_y_fit         = fit_props.cheby_order_y + 1
+
+    fit_props.generate_fitting_matrix( )
+
+    # Load database
+    fipath = os.path.join( get_integrals_database_fopath( ), "1_time_domain", "Gttt.h5" )
+    with h5py.File( fipath, "r" ) as fid:
+        mu          = fid[ "mu" ][:]
+        beta        = fid[ "beta" ][:]
+        data_raw    = fid[ "fcn" ][:]
+
+    X, Y = np.meshgrid( beta, mu, indexing="ij" )
+    plt.contourf( X, Y, data_raw, levels=100 )
+    plt.colorbar( )
+    plt.show( )
+
+    # Define G0 interpolation properties
+    target_fcn      = dGdttt_G0
+    interp_raw      = sp.interpolate.RegularGridInterpolator( ( beta, mu ), data_raw )
+
+    define_G0_fit_properties( fit_props, 1, mu, points_dist="linear" )
+
+    # Calculate residual function in between G and G0*
+    data, chfhpa    = calculate_residual_G0( fit_props, target_fcn, interp_raw, data_raw, beta, mu )
+
+    # Plot residual function
+    plot_residual_function( beta, mu, data_raw, data )
+
+    # Interpolate database
+    fit_function_raw        = sp.interpolate.RegularGridInterpolator( ( beta, mu ), data )
+    fit_function            = lambda x, y: fit_function_raw( ( x, y ) )
+
+    # Create root FitRegion
+    ref_level               = RefLevel( copy.copy( fit_props ) )
+
+    # Create first fit to feed root refinement level
+    ref_level.add_data( *fit_integral_2d( fit_function, fit_props, show_figs=show_figs ) )
+
+    y_levels = np.array( [ -4.0, -3.0, -2.0, -1.0, np.log10( 0.9998 ) ] )
+    y_tol_f  = np.array( [  1.0,  1.0,  1.0,  1.0] )
+    for i in range( fit_props.x_hpatch_np ):
+        for j in range( fit_props.y_hpatch_np ):
+            fit_props_i                 = copy.copy( ref_level.fit_props )
+            fit_props_i.x_max           = ( i + 1 )
+            fit_props_i.x_min           = i
+            fit_props_i.y_max           = y_levels[j+1]
+            fit_props_i.y_min           = y_levels[j]
+            fit_props_i.cheby_abs_tol_f = fit_props.cheby_abs_tol_f * y_tol_f[j]
+            fit_props_i.cheby_rel_tol_f = fit_props.cheby_rel_tol_f * y_tol_f[j]
+            
+            ref_level_i                 = RefLevel( fit_props_i, parent=ref_level )
+
+            # Create first fit to feed root refinement level
+            ref_level_i.add_data( *fit_integral_2d( fit_function, fit_props_i, show_figs=show_figs ) )
+
+            # Start adaptive refinement loop
+            if not ref_level_i.check_tolerances( ) and ref_level_i.level < ref_level_i.fit_props.max_ref_level:
+                fit_residual_2D_adaptive_interface( fit_function, ref_level_i, is_square_ref=is_square_ref, show_figs=show_figs )
+
+            # Storage child data
+            ref_level.child.append( ref_level_i )
+
+    # Set starting position
+    ref_level.set_start_index( 0 )
+
+    # Plot results summary
+    ref_level.show_summary( folder_path, log_scale=True )
+
+    print( ref_level )
+
+    return ref_level, chfhpa
+
+
 def generate_dGdt( show_summary_fig=False, show_figs=False )->None:
     # Define case type
     case_type   = "dGdt"
@@ -2190,6 +2292,28 @@ def generate_dGdttxx( show_summary_fig=False, show_figs=False )->None:
 
     # Fit coefficients
     fit_region, chfhpa = fit_residual_dGdttxx( fopath_fit, show_summary_fig=show_summary_fig, show_figs=show_figs )
+
+    # Write coefficients
+    write_coeffs_module_adaptive_2d_only_header( fit_region, fopath, case_type, is_time=True )
+
+    for i,mi in enumerate( chfhpa.get_interpolators( ) ):
+        write_coeffs_module_adaptive_1d_only_header( mi.get_fit_fcn( ), fopath, f"{case_type}A{i:d}" )
+
+
+def generate_dGdttt( show_summary_fig=False, show_figs=False )->None:
+    # Define case type
+    case_type   = "dGdttt"
+
+    # Define folder path to storage fit results
+    fopath      = os.path.join( get_integrals_database_fit_fopath( ), "1_time_domain" )
+    fopath_fit  = os.path.join( fopath, f"{case_type}_fit_results" )
+
+    # Check if fit results folder exits
+    if not os.path.isdir( fopath_fit ):
+        os.makedirs( fopath_fit )
+
+    # Fit coefficients
+    fit_region, chfhpa = fit_residual_dGdttt( fopath_fit, show_summary_fig=show_summary_fig, show_figs=show_figs )
 
     # Write coefficients
     write_coeffs_module_adaptive_2d_only_header( fit_region, fopath, case_type, is_time=True )
@@ -2577,12 +2701,57 @@ def dGdtt_G0( beta: np.ndarray, mu: float, alpha=0.0 ) -> np.ndarray:
     yt[pos] = 0.0
     dt      = 5e-2
     pos     = beta < dt
-    num_pos = np.where( pos )[0][-1]
-    yt[pos] = yt[num_pos] / dt * beta[pos]
+    if pos.any( ):
+        num_pos  = np.where( pos )[0][-1]
+        yt[pos] = yt[num_pos] / dt * beta[pos]
     
     T2      = yt * expt
 
     return lt * ( T1 + T2 )
+
+
+def dGdtt_G0_num( beta: np.ndarray, mu: float, alpha=0.0 ) -> np.ndarray:
+    """
+    Numerical check: second time derivative of G_G0 via np.diff on dGdt_G0.
+
+    Approximates ∂²G0/∂t² by applying np.diff to the analytical dGdt_G0 values and
+    dividing by the corresponding beta steps. The result is forward-differenced and
+    returned on the same grid as beta (the last point is filled by repeating the
+    second-to-last value).
+
+    Parameters
+    ----------
+    beta : np.ndarray
+        1D array of dimensionless time values β (must be uniformly or non-uniformly
+        spaced, but at least 2 points).
+    mu : float
+        Geometry parameter in [0, 1].
+    alpha : float, optional
+        Phase shift forwarded to dGdt_G0. Default is 0.0.
+
+    Returns
+    -------
+    np.ndarray
+        Numerical approximation of ∂²G0/∂t² with the same length as beta.
+
+    Notes
+    -----
+    Intended for verification of the analytical dGdtt_G0 implementation.
+    For a dense, uniform beta grid the two should agree to within ~O(Δβ).
+
+    Examples
+    --------
+    >>> beta = np.linspace(0.1, 10, 2000)
+    >>> mu = 0.5
+    >>> d2_ana = dGdtt_G0(beta, mu)
+    >>> d2_num = dGdtt_G0_num(beta, mu)
+    >>> max_err = np.max(np.abs(d2_ana - d2_num))
+    """
+    f     = dGdt_G0( beta, mu, alpha=alpha )
+    dbeta = np.diff( beta )
+    df    = np.diff( f ) / dbeta
+    # Forward-difference result has N-1 points; repeat the last entry to match length
+    return np.append( df, df[-1] )
 
 
 def dGdttx_G0( beta: np.ndarray, mu: float, alpha=0.0 ) -> np.ndarray:
@@ -2649,6 +2818,166 @@ def dGdttxx_G0( beta: np.ndarray, mu: float, alpha=0.0 ) -> np.ndarray:
     Implemented via the analytic μ-dependence factor as (−β²/4) times dGdttx_G0.
     """
     return ( -beta**2.0 / 4.0 ) * dGdttx_G0( beta, mu, alpha=alpha )
+
+
+def dGdt_G02( beta: np.ndarray, mu: float, alpha=0.0 ) -> np.ndarray:
+    """
+    First time derivative of G_G0 — modular implementation.
+
+    Evaluates ∂G0/∂t as the direct product of the two primitive building blocks:
+
+        dGdt_G02(β, μ) = g0_exp_term(β, μ) · g0_bessel_term(β)
+
+    where:
+        g0_exp_term(β, μ) = π β³ / (16 √2) · exp(−μ β² / 4)
+        g0_bessel_term(β) = J_{1/4}(x) J_{-1/4}(x) + J_{3/4}(x) J_{-3/4}(x),  x = β²/8
+
+    This is analytically identical to dGdt_G0 but is implemented using the modular
+    helper functions and carries no numerical guards (no NaN patching, no small-β
+    clipping).  It serves as the base of the modular derivative chain
+    dGdt_G02 → dGdtt_G02 → dGdttt_G0.
+
+    Parameters
+    ----------
+    beta : np.ndarray
+        1D array of dimensionless time values β ≥ 0.
+    mu : float
+        Geometry parameter μ ∈ [0, 1] (e.g., z/r or cos θ).
+    alpha : float, optional
+        Accepted for interface compatibility; currently unused (g0_bessel_term
+        is always evaluated with α = 0).  Default 0.0.
+
+    Returns
+    -------
+    np.ndarray
+        ∂G0/∂t evaluated at the provided β points.
+
+    See Also
+    --------
+    dGdt_G0    : Same formula with additional numerical guards for production use.
+    dGdtt_G02  : First β-derivative of this function (second time derivative of G0).
+    g0_exp_term, g0_bessel_term : Constituent building blocks.
+
+    Examples
+    --------
+    >>> beta = np.linspace(0.1, 10, 200)
+    >>> mu = 0.5
+    >>> dgdt = dGdt_G02(beta, mu)
+    """
+    lt          = g0_exp_term( beta, mu )
+    fj          = g0_bessel_term( beta )
+
+    return lt * fj
+
+
+def dGdtt_G02( beta: np.ndarray, mu: float, alpha=0.0 ) -> np.ndarray:
+    """
+    Second time derivative of G_G0 — modular implementation via product rule.
+
+    Evaluates ∂²G0/∂t² by differentiating dGdt_G02 = lt(β, μ) · fj(β) with respect
+    to β, where lt = g0_exp_term and fj = g0_bessel_term:
+
+        dGdtt_G02(β, μ) = lt'(β, μ) · fj(β) + lt(β, μ) · fj'(β)
+
+    with:
+        lt'  = dg0_exp_term_dbeta(β, μ)   = π β² / (16 √2) · e^{−μβ²/4} · (3 − μβ²/2)
+        fj'  = dg0_bessel_term_dbeta(β)   (see that function's docstring for formula)
+
+    This is analytically identical to dGdtt_G0 but uses the modular helper functions
+    and carries no numerical guards.  It is the middle link of the chain
+    dGdt_G02 → dGdtt_G02 → dGdttt_G0.
+
+    Parameters
+    ----------
+    beta : np.ndarray
+        1D array of dimensionless time values β ≥ 0.
+    mu : float
+        Geometry parameter μ ∈ [0, 1] (e.g., z/r or cos θ).
+    alpha : float, optional
+        Accepted for interface compatibility; currently unused.  Default 0.0.
+
+    Returns
+    -------
+    np.ndarray
+        ∂²G0/∂t² evaluated at the provided β points.
+
+    See Also
+    --------
+    dGdtt_G0   : Same formula with additional numerical guards for production use.
+    dGdt_G02   : The function being differentiated.
+    dGdttt_G0  : β-derivative of this function (third time derivative of G0).
+
+    Examples
+    --------
+    >>> beta = np.linspace(0.1, 10, 200)
+    >>> mu = 0.5
+    >>> d2 = dGdtt_G02(beta, mu)
+    """
+    lt          = g0_exp_term( beta, mu )
+    fj          = g0_bessel_term( beta )
+    lt_dbeta    = dg0_exp_term_dbeta( beta, mu )
+    fj_dbeta    = dg0_bessel_term_dbeta( beta )
+
+    return lt_dbeta * fj + lt * fj_dbeta
+
+
+def dGdttt_G0( beta: np.ndarray, mu: float, alpha=0.0 ) -> np.ndarray:
+    """
+    Third time derivative of G_G0 — modular implementation via product rule.
+
+    Evaluates ∂³G0/∂t³ by differentiating dGdtt_G02 = lt' · fj + lt · fj' once more
+    with respect to β, which yields (by the product rule applied to each term):
+
+        dGdttt_G0(β, μ) = lt''(β, μ) · fj(β)
+                        + 2 · lt'(β, μ) · fj'(β)
+                        +     lt(β, μ)  · fj''(β)
+
+    where:
+        lt   = g0_exp_term(β, μ)          = π β³ / (16 √2) · exp(−μβ²/4)
+        lt'  = dg0_exp_term_dbeta(β, μ)
+        lt'' = d2g0_exp_term_dbeta2(β, μ)
+        fj   = g0_bessel_term(β)
+        fj'  = dg0_bessel_term_dbeta(β)
+        fj'' = d2g0_bessel_term_dbeta2(β)
+
+    This is the top link of the modular derivative chain
+    dGdt_G02 → dGdtt_G02 → dGdttt_G0.
+    No numerical guards are applied.
+
+    Parameters
+    ----------
+    beta : np.ndarray
+        1D array of dimensionless time values β ≥ 0.
+    mu : float
+        Geometry parameter μ ∈ [0, 1] (e.g., z/r or cos θ).
+    alpha : float, optional
+        Accepted for interface compatibility; currently unused.  Default 0.0.
+
+    Returns
+    -------
+    np.ndarray
+        ∂³G0/∂t³ evaluated at the provided β points.
+
+    See Also
+    --------
+    dGdtt_G02 : The function being differentiated.
+    g0_exp_term, dg0_exp_term_dbeta, d2g0_exp_term_dbeta2 : Exponential building blocks.
+    g0_bessel_term, dg0_bessel_term_dbeta, d2g0_bessel_term_dbeta2 : Bessel building blocks.
+
+    Examples
+    --------
+    >>> beta = np.linspace(0.1, 10, 200)
+    >>> mu = 0.5
+    >>> d3 = dGdttt_G0(beta, mu)
+    """
+    lt          = g0_exp_term( beta, mu )
+    fj          = g0_bessel_term( beta )
+    lt_dbeta    = dg0_exp_term_dbeta( beta, mu )
+    fj_dbeta    = dg0_bessel_term_dbeta( beta )
+    lt_dbeta2   = d2g0_exp_term_dbeta2( beta, mu )
+    fj_dbeta2   = d2g0_bessel_term_dbeta2( beta )
+
+    return lt_dbeta2 * fj + 2.0 * lt_dbeta * fj_dbeta + lt * fj_dbeta2
 
 
 def map_to_interval( a: float, b: float, t: np.ndarray ) -> None:
@@ -2750,10 +3079,694 @@ def plot_residual_function( beta: np.ndarray, mu: np.ndarray, data_raw: np.ndarr
     plt.show( )
 
 
+def g0_exp_term( beta: np.ndarray, mu: float ) -> np.ndarray:
+    """
+    Exponential envelope term that appears in the infinite-depth time-domain Green's function.
+
+        g0_exp_term(β, μ) = π β³ / (16 √2) · exp(−μ β² / 4)
+
+    Parameters
+    ----------
+    beta : np.ndarray
+        1D array of dimensionless time values β.
+    mu : float
+        Dimensionless depth / spreading parameter μ ≥ 0.
+
+    Returns
+    -------
+    np.ndarray
+        g0_exp_term(β, μ) evaluated at each β point.
+    """
+    return np.pi * beta**3.0 / ( 16.0 * np.sqrt( 2.0 ) ) * np.exp( -mu * beta**2.0 / 4.0 )
+
+
+def dg0_exp_term_dbeta( beta: np.ndarray, mu: float ) -> np.ndarray:
+    """
+    Analytical first derivative of g0_exp_term(β, μ) with respect to β.
+
+    Starting from g0_exp_term = π β³ / (16 √2) · exp(−μ β² / 4), the product rule gives:
+
+        dg0_exp/dβ = π β² / (16 √2) · exp(−μ β² / 4) · (3 − μ β² / 2)
+
+    Parameters
+    ----------
+    beta : np.ndarray
+        1D array of dimensionless time values β.
+    mu : float
+        Dimensionless depth / spreading parameter μ ≥ 0.
+
+    Returns
+    -------
+    np.ndarray
+        dg0_exp_term/dβ evaluated at each β point.
+    """
+    return ( np.pi * beta**2.0 / ( 16.0 * np.sqrt( 2.0 ) )
+             * np.exp( -mu * beta**2.0 / 4.0 )
+             * ( 3.0 - mu * beta**2.0 / 2.0 ) )
+
+
+def d2g0_exp_term_dbeta2( beta: np.ndarray, mu: float ) -> np.ndarray:
+    """
+    Analytical second derivative of g0_exp_term(β, μ) with respect to β.
+
+    Differentiating dg0_exp/dβ = π β² / (16 √2) · exp(−μ β² / 4) · (3 − μ β² / 2)
+    once more via the product rule gives:
+
+        d²g0_exp/dβ² = π β / (16 √2) · exp(−μ β² / 4) · (6 − 7 μ β² / 2 + μ² β⁴ / 4)
+
+    Parameters
+    ----------
+    beta : np.ndarray
+        1D array of dimensionless time values β.
+    mu : float
+        Dimensionless depth / spreading parameter μ ≥ 0.
+
+    Returns
+    -------
+    np.ndarray
+        d²g0_exp_term/dβ² evaluated at each β point.
+    """
+    return ( np.pi * beta / ( 16.0 * np.sqrt( 2.0 ) )
+             * np.exp( -mu * beta**2.0 / 4.0 )
+             * ( 6.0 - 7.0 * mu * beta**2.0 / 2.0 + mu**2.0 * beta**4.0 / 4.0 ) )
+
+
+def g0_bessel_term( beta: np.ndarray, alpha: float = 0.0 ) -> np.ndarray:
+    """
+    Bessel-product term that appears in the infinite-depth time-domain Green's function.
+
+        g0_bessel_term(β) = J_{1/4}(x) J_{-1/4}(x) + J_{3/4}(x) J_{-3/4}(x),   x = β²/8.
+
+    Parameters
+    ----------
+    beta : np.ndarray
+        1D array of dimensionless time values β.
+    alpha : float, optional
+        Small phase shift added inside the Bessel argument (x → x + α).  Default 0.0.
+
+    Returns
+    -------
+    np.ndarray
+        g0_bessel_term(β) evaluated at each β point.
+    """
+    x  = beta**2.0 / 8.0 + alpha
+    bt = jv(  1/4, x ) * jv( -1/4, x ) + jv( 3/4, x ) * jv( -3/4, x )
+    pos      = np.isnan( bt )
+    bt[pos]  = 0.0
+    pos      = beta < 1e-1
+    bt[pos]  = 0.0
+    return bt
+
+
+def dg0_bessel_term_dbeta( beta: np.ndarray, alpha: float = 0.0 ) -> np.ndarray:
+    """
+    Analytical derivative of g0_bessel_term(β) with respect to β.
+
+    g0_bessel_term(β) = J_{1/4}(x) J_{-1/4}(x) + J_{3/4}(x) J_{-3/4}(x),  x = β²/8.
+
+    Derivation uses the Bessel recurrence J'_ν(x) = (J_{ν-1}(x) − J_{ν+1}(x)) / 2
+    together with the chain rule  dx/dβ = β/4, giving:
+
+        dg0/dβ = (β/8) · [ J_{-5/4} J_{1/4}
+                          + 2 J_{-1/4} J_{-3/4}
+                          +   J_{3/4}  J_{-7/4}
+                          − 2 J_{3/4}  J_{1/4}
+                          −   J_{-1/4} J_{5/4}     ← NOT J_{1/4} J_{5/4}
+                          −   J_{7/4}  J_{-3/4} ]
+
+    Parameters
+    ----------
+    beta : np.ndarray
+        1D array of dimensionless time values β.
+    alpha : float, optional
+        Small phase shift added inside the Bessel arguments (x → x + α) for
+        numerical stability near x ≈ 0.  Default is 0.0.
+
+    Returns
+    -------
+    np.ndarray
+        dg0/dβ evaluated at each β point.
+    """
+    x  = beta**2.0 / 8.0 + alpha
+    bt = ( beta / 8.0 ) * (
+          jv( -5/4, x ) * jv(  1/4, x )     # J_{-5/4} J_{1/4}
+        + 2.0 * jv( -1/4, x ) * jv( -3/4, x )  # 2 J_{-1/4} J_{-3/4}
+        + jv(  3/4, x ) * jv( -7/4, x )     # J_{3/4} J_{-7/4}
+        - 2.0 * jv(  3/4, x ) * jv(  1/4, x )  # 2 J_{3/4} J_{1/4}
+        - jv( -1/4, x ) * jv(  5/4, x )     # J_{-1/4} J_{5/4}  (≠ J_{1/4} J_{5/4}!)
+        - jv(  7/4, x ) * jv( -3/4, x )     # J_{7/4} J_{-3/4}
+    )
+    pos      = np.isnan( bt )
+    bt[pos]  = 0.0
+    pos      = beta < 1e-1
+    bt[pos]  = 0.0
+    return bt
+    # Note: applying the Bessel cross-product identities (DLMF 10.5.2/10.5.3) the
+    # six-term expression above collapses to the simpler equivalent form:
+    #     dg0/dβ = -(β/4) · [ J_{-1/4} J_{5/4} + 2 J_{3/4} J_{1/4} + J_{7/4} J_{-3/4} ]
+    # which is exploited in d2g0_bessel_term_dbeta2 below.
+
+
+def d2g0_bessel_term_dbeta2( beta: np.ndarray, alpha: float = 0.0 ) -> np.ndarray:
+    """
+    Analytical second derivative of g0_bessel_term(β) with respect to β.
+
+    Uses the compact intermediate form found by applying the Bessel cross-product
+    identities (DLMF 10.5.2/10.5.3) to dg0/dβ:
+
+        dg0/dβ = -(β/4) · h(x),
+        h(x) = J_{-1/4} J_{5/4} + 2 J_{3/4} J_{1/4} + J_{7/4} J_{-3/4}
+
+    Differentiating once more via the product rule and chain rule dx/dβ = β/4:
+
+        d²g0/dβ² = -(1/4) h(x) - (β²/16) dh/dx
+
+    where dh/dx is obtained from the Bessel recurrence J'_ν = (J_{ν-1} − J_{ν+1}) / 2:
+
+        dh/dx =  1/2  J_{-5/4} J_{5/4}
+              +  3/2  g0(x)           ← g0 = J_{1/4} J_{-1/4} + J_{3/4} J_{-3/4}
+              +  1/2  J_{7/4}  J_{-7/4}
+              −  3/2  J_{3/4}  J_{5/4}
+              −  3/2  J_{7/4}  J_{1/4}
+              −  1/2  J_{-1/4} J_{9/4}
+              −  1/2  J_{11/4} J_{-3/4}
+
+    Parameters
+    ----------
+    beta : np.ndarray
+        1D array of dimensionless time values β.
+    alpha : float, optional
+        Small phase shift added inside the Bessel arguments (x → x + α) for
+        numerical stability near x ≈ 0.  Default is 0.0.
+
+    Returns
+    -------
+    np.ndarray
+        d²g0/dβ² evaluated at each β point.
+    """
+    x   = beta**2.0 / 8.0 + alpha
+    h   = (       jv( -1/4, x ) * jv(  5/4, x )
+            + 2.0*jv(  3/4, x ) * jv(  1/4, x )
+            +     jv(  7/4, x ) * jv( -3/4, x ) )
+    bt  = jv(  1/4, x ) * jv( -1/4, x ) + jv( 3/4, x ) * jv( -3/4, x )  # g0 term
+    dh  = ( 0.5 * jv( -5/4, x ) * jv(  5/4, x )   # 1/2 J_{-5/4} J_{5/4}
+          + 1.5 * bt                                # 3/2 g0
+          + 0.5 * jv(  7/4, x ) * jv( -7/4, x )   # 1/2 J_{7/4} J_{-7/4}
+          - 1.5 * jv(  3/4, x ) * jv(  5/4, x )   # 3/2 J_{3/4} J_{5/4}
+          - 1.5 * jv(  7/4, x ) * jv(  1/4, x )   # 3/2 J_{7/4} J_{1/4}
+          - 0.5 * jv( -1/4, x ) * jv(  9/4, x )   # 1/2 J_{-1/4} J_{9/4}
+          - 0.5 * jv( 11/4, x ) * jv( -3/4, x ) ) # 1/2 J_{11/4} J_{-3/4}
+    result          = -( h / 4.0 + beta**2.0 / 16.0 * dh )
+    pos             = np.isnan( result )
+    result[pos]     = 0.0
+    pos             = beta < 1e-1
+    result[pos]     = 0.0
+    return result
+
+
+def check_g0_bessel_term( beta_min: float = 0.1, beta_max: float = 30.0,
+                           n: int = 200_000, show: bool = True ) -> None:
+    """
+    Numerical-differentiation checks for g0_bessel_term and its analytical
+    derivatives dg0_bessel_term_dbeta and d2g0_bessel_term_dbeta2.
+
+    Produces three figures:
+      1. First-derivative comparison (analytical vs np.diff) + Bessel components y0..z3.
+      2. Zero-combination search among y0..z3 and verification plot.
+      3. Second-derivative comparison (analytical vs np.diff) + error.
+
+    Parameters
+    ----------
+    beta_min, beta_max : float
+        Range of β for the fine grid used in the np.diff checks.
+    n : int
+        Number of grid points.
+    show : bool
+        If True, call plt.show() after each figure.
+    """
+    import itertools as it
+    import matplotlib.pyplot as plt
+
+    beta = np.linspace( beta_min, beta_max, n )
+    b2   = ( beta[1:] + beta[:-1] ) / 2.0
+    x    = beta**2.0 / 8.0
+
+    g0  = g0_bessel_term( beta )
+    dg0 = dg0_bessel_term_dbeta( beta )
+
+    y0 = jv( -5/4, x ) * jv(  1/4, x )
+    y1 = jv( -1/4, x ) * jv( -3/4, x )
+    y2 = jv( -1/4, x ) * jv( -3/4, x )
+    y3 = jv(  3/4, x ) * jv( -7/4, x )
+    z0 = jv(  3/4, x ) * jv(  1/4, x )
+    z1 = jv( -1/4, x ) * jv(  5/4, x )   # J_{-1/4} J_{5/4}
+    z2 = jv(  7/4, x ) * jv( -3/4, x )
+    z3 = jv(  3/4, x ) * jv(  1/4, x )
+
+    # ── Figure 1: first-derivative + Bessel components ────────────────────────
+    fig1 = plt.figure( figsize=(10, 7) )
+
+    ax0 = fig1.add_subplot( 311 )
+    ax0.plot( beta, dg0, label=r"$\frac{dg_0}{d\beta}$ (analytical)" )
+    ax0.plot( b2, np.diff( g0 ) / np.diff( beta ), '--',
+              label=r"$\frac{dg_0}{d\beta}$ (numerical, np.diff)" )
+    ax0.set_xlabel( r'$\beta$' )
+    ax0.set_title( r'Analytical vs numerical derivative of '
+                   r'$g_0 = J_{1/4}J_{-1/4} + J_{3/4}J_{-3/4}$' )
+    ax0.legend( loc='upper right' )
+    ax0.grid( True )
+
+    ax1 = fig1.add_subplot( 312 )
+    ax1.plot( beta, y0, label=r'y0: $J_{-5/4} J_{1/4}$' )
+    ax1.plot( beta, y1, label=r'y1: $J_{1/4} J_{-3/4}$' )
+    ax1.plot( beta, y2, label=r'y2: $J_{-1/4} J_{-3/4}$' )
+    ax1.plot( beta, y3, label=r'y3: $J_{3/4} J_{-7/4}$' )
+    ax1.plot( beta, z0, label=r'z0: $J_{3/4} J_{1/4}$' )
+    ax1.plot( beta, z1, label=r'z1: $J_{-1/4} J_{5/4}$' )
+    ax1.plot( beta, z2, label=r'z2: $J_{7/4} J_{-3/4}$' )
+    ax1.plot( beta, z3, label=r'z3: $J_{3/4} J_{-1/4}$' )
+    ax1.set_xlabel( r'$\beta$' )
+    ax1.set_title( r'Bessel products in G0 and its derivatives' )
+    ax1.legend( loc='upper right' )
+    ax1.grid( True )
+
+    ax2 = fig1.add_subplot( 313 )
+    ax2.plot( beta, y0, label=r'y0-z0: $J_{-5/4} J_{1/4} - J_{3/4} J_{1/4}$' )
+    ax2.plot( beta, y1, label=r'y0-z1: $J_{-5/4} J_{1/4} - J_{3/4} J_{1/4}$' )
+    ax2.plot( beta, y2, label=r'y0-z2: $J_{-5/4} J_{1/4} - J_{3/4} J_{1/4}$' )
+    ax2.plot( beta, y3, label=r'y0-z3: $J_{-5/4} J_{1/4} - J_{3/4} J_{1/4}$' )
+    ax2.set_xlabel( r'$\beta$' )
+    ax2.set_title( r'Difference between Bessel products' )
+    ax2.legend( loc='upper right' )
+    ax2.grid( True )
+
+    plt.tight_layout( )
+    if show:
+        plt.show( )
+
+    # ── Zero-combination search among y0..z3 ──────────────────────────────────
+    x_s   = np.linspace( 0.5, 30.0, 2000 )
+    cv    = np.array([
+        jv( -5/4, x_s ) * jv(  1/4, x_s ),   # 0 · y0
+        jv( -1/4, x_s ) * jv( -3/4, x_s ),   # 1 · y1
+        jv( -1/4, x_s ) * jv( -3/4, x_s ),   # 2 · y2
+        jv(  3/4, x_s ) * jv( -7/4, x_s ),   # 3 · y3
+        jv(  3/4, x_s ) * jv(  1/4, x_s ),   # 4 · z0
+        jv(  1/4, x_s ) * jv(  5/4, x_s ),   # 5 · z1
+        jv(  7/4, x_s ) * jv( -3/4, x_s ),   # 6 · z2
+        jv(  3/4, x_s ) * jv(  1/4, x_s ),   # 7 · z3
+    ])
+    cnames = ['y0', 'y1', 'y2', 'y3', 'z0', 'z1', 'z2', 'z3']
+    nc, tol = len( cnames ), 1e-4
+
+    found = []
+    for size in range( 2, 6 ):
+        for idx in it.combinations( range(nc), size ):
+            v     = cv[ list(idx) ]
+            s_ref = np.max( np.abs( v ) )
+            if s_ref < 1e-15:
+                continue
+            for signs in it.product( (1, -1), repeat=size-1 ):
+                s     = np.array( [1, *signs], dtype=float )
+                combo = s @ v
+                if np.max( np.abs( combo ) ) / s_ref < tol:
+                    label = ' + '.join(
+                        cnames[i] if sg > 0 else f'-{cnames[i]}'
+                        for i, sg in zip( idx, s )
+                    )
+                    found.append( ( label, idx, s ) )
+
+    print( '\nZero combinations found:' )
+    for lbl, _, _ in found:
+        print( f'    {lbl} = 0' )
+
+    cv_full = np.array([
+        jv( -5/4, x ) * jv(  1/4, x ),
+        jv( -1/4, x ) * jv( -3/4, x ),
+        jv( -1/4, x ) * jv( -3/4, x ),
+        jv(  3/4, x ) * jv( -7/4, x ),
+        jv(  3/4, x ) * jv(  1/4, x ),
+        jv(  1/4, x ) * jv(  5/4, x ),
+        jv(  7/4, x ) * jv( -3/4, x ),
+        jv(  3/4, x ) * jv(  1/4, x ),
+    ])
+
+    fig2, ax = plt.subplots( figsize=(10, 5) )
+    for lbl, idx, s in found:
+        ax.plot( beta, s @ cv_full[ list(idx) ], label=lbl )
+    ax.axhline( 0, color='k', linewidth=0.8, linestyle='--' )
+    ax.set_xlabel( r'$\beta$' )
+    ax.set_ylabel( 'combination value' )
+    ax.set_title( 'Zero combinations (should lie on the dashed line)' )
+    ax.legend( loc='upper right', fontsize=8 )
+    ax.grid( True )
+    plt.tight_layout( )
+    if show:
+        plt.show( )
+
+    # ── Second-derivative check ───────────────────────────────────────────────
+    d2g0_ana = d2g0_bessel_term_dbeta2( beta )
+    d2g0_num = np.diff( dg0 ) / np.diff( beta )
+
+    err2     = d2g0_ana[:-1] - d2g0_num
+    max_err2 = np.max( np.abs( err2 ) )
+    print( f'\nd2g0/dβ² max abs error (analytical vs np.diff): {max_err2:.3e}' )
+
+    fig3, axes3 = plt.subplots( 2, 1, figsize=(10, 7), sharex=True )
+
+    axes3[0].plot( beta, d2g0_ana, label=r'$d^2g_0/d\beta^2$ (analytical)' )
+    axes3[0].plot( b2, d2g0_num, '--',
+                   label=r'$d^2g_0/d\beta^2$ (numerical, np.diff on $dg_0/d\beta$)' )
+    axes3[0].set_ylabel( r'$d^2g_0/d\beta^2$' )
+    axes3[0].set_title( r'Second derivative of $g_0 = J_{1/4}J_{-1/4} + J_{3/4}J_{-3/4}$' )
+    axes3[0].legend( loc='upper right' )
+    axes3[0].grid( True )
+
+    axes3[1].plot( b2, err2 )
+    axes3[1].set_xlabel( r'$\beta$' )
+    axes3[1].set_ylabel( r'd2g0 analytical $-$ numerical' )
+    axes3[1].set_title( rf'Difference  (max abs = {max_err2:.3e})' )
+    axes3[1].grid( True )
+
+    plt.tight_layout( )
+    if show:
+        plt.show( )
+
+
+def check_g0_exp_term( mu: float = 0.5, beta_min: float = 0.1,
+                       beta_max: float = 30.0, n: int = 200_000,
+                       show: bool = True ) -> None:
+    """
+    Numerical-differentiation checks for g0_exp_term and its analytical
+    derivatives dg0_exp_term_dbeta and d2g0_exp_term_dbeta2.
+
+    Produces one 3×2 figure: left column shows the function and its first and
+    second derivatives (analytical overlaid with np.diff); right column shows
+    the corresponding errors.
+
+    Parameters
+    ----------
+    mu : float
+        Dimensionless depth / spreading parameter μ ≥ 0.
+    beta_min, beta_max : float
+        Range of β for the fine grid.
+    n : int
+        Number of grid points.
+    show : bool
+        If True, call plt.show() after the figure.
+    """
+    import matplotlib.pyplot as plt
+
+    beta = np.linspace( beta_min, beta_max, n )
+    b2   = ( beta[1:] + beta[:-1] ) / 2.0
+
+    g0_exp       = g0_exp_term( beta, mu )
+    dg0_exp_ana  = dg0_exp_term_dbeta( beta, mu )
+    d2g0_exp_ana = d2g0_exp_term_dbeta2( beta, mu )
+
+    dg0_exp_num  = np.diff( g0_exp      ) / np.diff( beta )
+    d2g0_exp_num = np.diff( dg0_exp_ana ) / np.diff( beta )
+
+    err_d1 = dg0_exp_ana[:-1]  - dg0_exp_num
+    err_d2 = d2g0_exp_ana[:-1] - d2g0_exp_num
+    print( f'\ng0_exp_term  d1 max abs error: {np.max(np.abs(err_d1)):.3e}' )
+    print( f'g0_exp_term  d2 max abs error: {np.max(np.abs(err_d2)):.3e}' )
+
+    fig, axes = plt.subplots( 3, 2, figsize=(14, 10), sharex='col' )
+
+    # ── left column: function and derivatives ─────────────────────────────────
+    axes[0, 0].plot( beta, g0_exp )
+    axes[0, 0].set_ylabel( r'$g_0^{\rm exp}$' )
+    axes[0, 0].set_title(
+        r'$g_0^{\rm exp}(\beta,\mu)=\frac{\pi\beta^3}{16\sqrt{2}}e^{-\mu\beta^2/4}$'
+        + rf'   ($\mu={mu}$)' )
+    axes[0, 0].grid( True )
+
+    axes[1, 0].plot( beta, dg0_exp_ana,  label='analytical' )
+    axes[1, 0].plot( b2,   dg0_exp_num, '--', label='np.diff' )
+    axes[1, 0].set_ylabel( r'$dg_0^{\rm exp}/d\beta$' )
+    axes[1, 0].set_title( r'First derivative' )
+    axes[1, 0].legend( loc='upper right' )
+    axes[1, 0].grid( True )
+
+    axes[2, 0].plot( beta, d2g0_exp_ana,  label='analytical' )
+    axes[2, 0].plot( b2,   d2g0_exp_num, '--', label='np.diff' )
+    axes[2, 0].set_xlabel( r'$\beta$' )
+    axes[2, 0].set_ylabel( r'$d^2g_0^{\rm exp}/d\beta^2$' )
+    axes[2, 0].set_title( r'Second derivative' )
+    axes[2, 0].legend( loc='upper right' )
+    axes[2, 0].grid( True )
+
+    # ── right column: errors ──────────────────────────────────────────────────
+    axes[0, 1].axis( 'off' )   # placeholder
+
+    axes[1, 1].plot( b2, err_d1 )
+    axes[1, 1].set_ylabel( r'analytical $-$ np.diff' )
+    axes[1, 1].set_title( rf'First derivative error  (max = {np.max(np.abs(err_d1)):.3e})' )
+    axes[1, 1].grid( True )
+
+    axes[2, 1].plot( b2, err_d2 )
+    axes[2, 1].set_xlabel( r'$\beta$' )
+    axes[2, 1].set_ylabel( r'analytical $-$ np.diff' )
+    axes[2, 1].set_title( rf'Second derivative error  (max = {np.max(np.abs(err_d2)):.3e})' )
+    axes[2, 1].grid( True )
+
+    plt.tight_layout( )
+    if show:
+        plt.show( )
+
+
+def check_dGdttt_G0( mu: float = 0.5, beta_min: float = 0.1,
+                     beta_max: float = 30.0, n: int = 200_000,
+                     show: bool = True ) -> None:
+    """
+    Numerical-differentiation check for dGdttt_G0.
+
+    Verifies the analytical third time derivative ∂³G0/∂t³ by comparing it
+    against a numerical approximation obtained via np.diff on dGdtt_G0.
+
+    Produces one 2-panel figure: the top panel overlays the analytical result
+    with the numerical np.diff estimate; the bottom panel shows their pointwise
+    difference.
+
+    Parameters
+    ----------
+    mu : float
+        Geometry parameter μ ∈ [0, 1] (e.g., z/r or cos(θ)).  Default 0.5.
+    beta_min, beta_max : float
+        Range of β for the fine grid.  Defaults: 0.1 and 30.0.
+    n : int
+        Number of grid points.  Default 200 000.
+    show : bool
+        If True, call plt.show() after the figure.
+    """
+    import matplotlib.pyplot as plt
+
+    beta = np.linspace( beta_min, beta_max, n )
+    b2   = ( beta[1:] + beta[:-1] ) / 2.0
+
+    d3_ana = dGdttt_G0(  beta, mu )
+    d3_num = np.diff( dGdtt_G02( beta, mu ) ) / np.diff( beta )
+
+    err     = d3_ana[:-1] - d3_num
+    max_err = np.max( np.abs( err ) )
+    print( f'\ndGdttt_G0  max abs error (analytical vs np.diff on dGdtt_G02): {max_err:.3e}' )
+
+    fig, axes = plt.subplots( 2, 1, figsize=(10, 7), sharex=True )
+
+    axes[0].plot( beta, d3_ana, label=r'$\partial^3 G_0/\partial t^3$ (analytical)' )
+    axes[0].plot( b2, d3_num, '--',
+                  label=r'$\partial^3 G_0/\partial t^3$ (numerical, np.diff on dGdtt\_G02)' )
+    axes[0].set_ylabel( r'$\partial^3 G_0/\partial t^3$' )
+    axes[0].set_title( rf'dGdttt\_G0 vs np.diff(dGdtt\_G02)  ($\mu={mu}$)' )
+    axes[0].legend( loc='upper right' )
+    axes[0].grid( True )
+
+    axes[1].plot( b2, err )
+    axes[1].set_xlabel( r'$\beta$' )
+    axes[1].set_ylabel( r'analytical $-$ np.diff' )
+    axes[1].set_title( rf'Difference  (max abs = {max_err:.3e})' )
+    axes[1].grid( True )
+
+    plt.tight_layout( )
+    if show:
+        plt.show( )
+
+
+def check_G0_derivative_chain( mu: float = 0.5, beta_min: float = 0.1,
+                               beta_max: float = 30.0, n: int = 200_000,
+                               show: bool = True ) -> None:
+    """
+    Consistency check across the dGdt_G02 → dGdtt_G02 → dGdttt_G0 chain.
+
+    Verifies that each function in the analytical chain agrees with a
+    np.diff-based numerical derivative of the previous one:
+
+      dGdtt_G02(β)  ≈  np.diff( dGdt_G02(β)  ) / np.diff(β)
+      dGdttt_G0(β)  ≈  np.diff( dGdtt_G02(β) ) / np.diff(β)
+
+    Produces a 3×2 figure: left column overlays analytical vs numerical;
+    right column shows the pointwise errors.  Max abs errors are also printed.
+
+    Parameters
+    ----------
+    mu : float
+        Geometry parameter μ ∈ [0, 1].  Default 0.5.
+    beta_min, beta_max : float
+        Range of β for the fine grid.  Defaults: 0.1 and 30.0.
+    n : int
+        Number of grid points.  Default 200 000.
+    show : bool
+        If True, call plt.show() after the figure.
+    """
+    import matplotlib.pyplot as plt
+
+    beta = np.linspace( beta_min, beta_max, n )
+    b2   = ( beta[1:] + beta[:-1] ) / 2.0
+
+    f0   = dGdt_G02(  beta, mu )   # G0 = lt * fj
+    f1   = dGdtt_G02( beta, mu )   # first derivative
+    f2   = dGdttt_G0( beta, mu )   # second derivative
+
+    f1_num = np.diff( f0 ) / np.diff( beta )
+    f2_num = np.diff( f1 ) / np.diff( beta )
+
+    err1     = f1[:-1] - f1_num
+    err2     = f2[:-1] - f2_num
+    max_err1 = np.max( np.abs( err1 ) )
+    max_err2 = np.max( np.abs( err2 ) )
+    print( f'\nG0 chain  dGdtt_G02  max abs error (vs np.diff(dGdt_G02)):  {max_err1:.3e}' )
+    print( f'G0 chain  dGdttt_G0  max abs error (vs np.diff(dGdtt_G02)): {max_err2:.3e}' )
+
+    fig, axes = plt.subplots( 3, 2, figsize=(14, 10) )
+
+    # ── row 0: dGdt_G02 (no numerical counterpart to compare) ─────────────────
+    axes[0, 0].plot( beta, f0 )
+    axes[0, 0].set_ylabel( r'$dG^{(0)}/dt$' )
+    axes[0, 0].set_title( rf'dGdt\_G02  ($\mu={mu}$)' )
+    axes[0, 0].grid( True )
+    axes[0, 1].axis( 'off' )
+
+    # ── row 1: dGdtt_G02 ──────────────────────────────────────────────────────
+    axes[1, 0].plot( beta, f1, label=r"dGdtt\_G02 (analytical)" )
+    axes[1, 0].plot( b2, f1_num, '--',
+                     label=r'np.diff(dGdt\_G02) / $\Delta\beta$' )
+    axes[1, 0].set_ylabel( r"$d^2G^{(0)}/dt^2$" )
+    axes[1, 0].set_title( r'dGdtt\_G02 vs np.diff(dGdt\_G02)' )
+    axes[1, 0].legend( loc='upper right' )
+    axes[1, 0].grid( True )
+
+    axes[1, 1].plot( b2, err1 )
+    axes[1, 1].set_ylabel( r'analytical $-$ np.diff' )
+    axes[1, 1].set_title( rf'Error  (max abs = {max_err1:.3e})' )
+    axes[1, 1].grid( True )
+
+    # ── row 2: dGdttt_G0 ──────────────────────────────────────────────────────
+    axes[2, 0].plot( beta, f2, label=r"dGdttt\_G0 (analytical)" )
+    axes[2, 0].plot( b2, f2_num, '--',
+                     label=r'np.diff(dGdtt\_G02) / $\Delta\beta$' )
+    axes[2, 0].set_xlabel( r'$\beta$' )
+    axes[2, 0].set_ylabel( r"$d^3G^{(0)}/dt^3$" )
+    axes[2, 0].set_title( r'dGdttt\_G0 vs np.diff(dGdtt\_G02)' )
+    axes[2, 0].legend( loc='upper right' )
+    axes[2, 0].grid( True )
+
+    axes[2, 1].plot( b2, err2 )
+    axes[2, 1].set_xlabel( r'$\beta$' )
+    axes[2, 1].set_ylabel( r'analytical $-$ np.diff' )
+    axes[2, 1].set_title( rf'Error  (max abs = {max_err2:.3e})' )
+    axes[2, 1].grid( True )
+
+    plt.tight_layout( )
+    if show:
+        plt.show( )
+
+
+def check_old_vs_new_G0( mu: float = 0.5, beta_min: float = 0.1,
+                         beta_max: float = 30.0, n: int = 200_000,
+                         show: bool = True ) -> None:
+    """
+    Compare old and new implementations of the G0 time-derivative chain.
+
+    Checks whether the old analytic functions agree with the new modular ones:
+
+      dGdt_G0   vs  dGdt_G02    (first time derivative)
+      dGdtt_G0  vs  dGdtt_G02   (second time derivative)
+
+    Produces a 2×2 figure: left column overlays old vs new; right column shows
+    the pointwise difference.  Max abs differences are also printed.
+
+    Parameters
+    ----------
+    mu : float
+        Geometry parameter μ ∈ [0, 1].  Default 0.5.
+    beta_min, beta_max : float
+        Range of β.  Defaults: 0.1 and 30.0.
+    n : int
+        Number of grid points.  Default 200 000.
+    show : bool
+        If True, call plt.show() after the figure.
+    """
+    import matplotlib.pyplot as plt
+
+    beta = np.linspace( beta_min, beta_max, n )
+
+    f1_old = dGdt_G0(  beta, mu )
+    f1_new = dGdt_G02( beta, mu )
+    f2_old = dGdtt_G0(  beta, mu )
+    f2_new = dGdtt_G02( beta, mu )
+
+    diff1     = f1_old - f1_new
+    diff2     = f2_old - f2_new
+    max_diff1 = np.max( np.abs( diff1 ) )
+    max_diff2 = np.max( np.abs( diff2 ) )
+    print( f'\ndGdt_G0  vs dGdt_G02   max abs diff: {max_diff1:.3e}' )
+    print( f'dGdtt_G0 vs dGdtt_G02  max abs diff: {max_diff2:.3e}' )
+
+    fig, axes = plt.subplots( 2, 2, figsize=(14, 8), sharex=True )
+
+    # ── row 0: first derivative ───────────────────────────────────────────────
+    axes[0, 0].plot( beta, f1_old, label='dGdt\\_G0  (old)' )
+    axes[0, 0].plot( beta, f1_new, '--', label='dGdt\\_G02 (new)' )
+    axes[0, 0].set_ylabel( r'$\partial G_0/\partial t$' )
+    axes[0, 0].set_title( rf'First derivative  ($\mu={mu}$)' )
+    axes[0, 0].legend( loc='upper right' )
+    axes[0, 0].grid( True )
+
+    axes[0, 1].plot( beta, diff1 )
+    axes[0, 1].set_ylabel( r'old $-$ new' )
+    axes[0, 1].set_title( rf'dGdt: old $-$ new  (max abs = {max_diff1:.3e})' )
+    axes[0, 1].grid( True )
+
+    # ── row 1: second derivative ──────────────────────────────────────────────
+    axes[1, 0].plot( beta, f2_old, label='dGdtt\\_G0  (old)' )
+    axes[1, 0].plot( beta, f2_new, '--', label='dGdtt\\_G02 (new)' )
+    axes[1, 0].set_xlabel( r'$\beta$' )
+    axes[1, 0].set_ylabel( r'$\partial^2 G_0/\partial t^2$' )
+    axes[1, 0].set_title( r'Second derivative' )
+    axes[1, 0].legend( loc='upper right' )
+    axes[1, 0].grid( True )
+
+    axes[1, 1].plot( beta, diff2 )
+    axes[1, 1].set_xlabel( r'$\beta$' )
+    axes[1, 1].set_ylabel( r'old $-$ new' )
+    axes[1, 1].set_title( rf'dGdtt: old $-$ new  (max abs = {max_diff2:.3e})' )
+    axes[1, 1].grid( True )
+
+    plt.tight_layout( )
+    if show:
+        plt.show( )
+
+
 if __name__ == "__main__":
-    generate_dGdt( )
-    generate_dGdtx( )
-    generate_dGdtxx( )
-    generate_dGdtt( )
-    generate_dGdttx( )
-    generate_dGdttxx( )
+    # generate_dGdt( )
+    # generate_dGdtx( )
+    # generate_dGdtxx( )
+    # generate_dGdtt( )
+    # generate_dGdttx( )
+    # generate_dGdttxx( )
+    generate_dGdttt( )
+
+    # check_dGdttt_G0( )
+    # check_G0_derivative_chain( )
+    # check_old_vs_new_G0( )

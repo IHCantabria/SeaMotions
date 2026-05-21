@@ -240,6 +240,28 @@ def fbbttt( lam: np.ndarray, mu: float, beta: float ) -> np.ndarray:
 #######################################################################
 ############### Define F_beta_beta time derivatives ###################
 #######################################################################
+def fbbb_lt( mu ) -> float:
+    return 1.0
+
+def fbbb( lam: np.ndarray, mu: float, beta: float ) -> np.ndarray:
+    return - lam**(3/2) * np.sin( np.sqrt( lam ) * beta ) * fkernel_bbb( lam, mu )
+
+
+def fbbbt( lam: np.ndarray, mu: float, beta: float ) -> np.ndarray:
+    return - lam**2.0 * np.cos( np.sqrt( lam ) * beta ) * fkernel_bbb( lam, mu )
+
+
+def fbbbtt( lam: np.ndarray, mu: float, beta: float ) -> np.ndarray:
+    return lam**(5/2) * np.sin( np.sqrt( lam ) * beta ) * fkernel_bbb( lam, mu )
+
+
+def fbbbttt( lam: np.ndarray, mu: float, beta: float ) -> np.ndarray:
+    return lam**3.0 * np.cos( np.sqrt( lam ) * beta ) * fkernel_bbb( lam, mu )
+
+
+#######################################################################
+############### Define F_beta_beta time derivatives ###################
+#######################################################################
 def fbbm0_lt( mu ) -> float:
     return -1.0
 
@@ -361,6 +383,10 @@ def fkernel_b( lam: np.ndarray, mu: float ) -> np.ndarray:
 
 
 def fkernel_bb( lam: np.ndarray, mu: float ) -> np.ndarray:
+    return np.exp( -lam * mu ) * besselj( 0, lam * feta( mu ) )
+
+
+def fkernel_bbb( lam: np.ndarray, mu: float ) -> np.ndarray:
     return np.exp( -lam * mu ) * besselj( 0, lam * feta( mu ) )
 
 
@@ -724,6 +750,33 @@ def calculate_Gttxx( fopath: str ) -> None:
     fipath      = os.path.join( fopath, finame )
     save_data( fipath, beta, mu, f, ft, ftt, fttt )
     print( " -> Calculating Gttxx: DONE" )
+
+
+def calculate_Gttt( fopath: str ) -> None:
+    print( "Calculating Gttt" )
+    # Calculate Fb
+    nu0                 = 0
+    l0                  = 3/2
+    lt                  = calculate_leading_term( 
+                                                    calculate_initial_conditions_integration_fbbb,
+                                                    lambda mu: calculate_initial_conditions_integration_gen( mu, nu0, l0, np.ones( ( 4,  ) ), True ),
+                                                    True
+                                                )
+    f, ft, ftt, fttt    = integrate_over_time( 
+                                                lambda mu: calculate_initial_conditions_integration_gen( mu, nu0, l0, lt, True ),
+                                                fbbb_lt,
+                                                l0,
+                                                nu0
+                                            )
+    
+    # Get calculation matrix to pass storage system
+    beta, mu    = get_calculation_matrix( )
+    
+    # Save data
+    finame      = "Gttt.h5"
+    fipath      = os.path.join( fopath, finame )
+    save_data( fipath, beta, mu, f, ft, ftt, fttt )
+    print( " -> Calculating Gttt: DONE" )
 
 
 def calculate_initial_conditions_integration_gen( mu, nu: int, l: float, lt: float, first_odd: bool ) -> list:
@@ -1126,6 +1179,59 @@ def calculate_initial_conditions_integration_fbb( mu, is_ode=True, is_show_fcn=F
     kerneldt1   = lambda ul: fbbt( ul, mu, 0.0 )
     kerneldt2   = lambda ul: fbbtt( ul, mu, 0.0 )
     kerneldt3   = lambda ul: fbbttt( ul, mu, 0.0 )
+
+    # Show function if any
+    if is_show_fcn:
+        fig, ax = plt.subplots( 4, 1, sharex=True )
+
+        fig.suptitle( "Target function: Fbb" )
+        
+        time = np.linspace( 0, 1e7, int( 1e7 ) )
+
+        ax[0].plot( time, kernel( time ) )
+        ax[0].set_xlabel( "lambda" )
+        ax[0].set_ylabel( "kernel" )
+
+        ax[1].plot( time, kerneldt1( time ) )
+        ax[1].set_xlabel( "lambda" )
+        ax[1].set_ylabel( "kerneldt1" )
+
+        ax[2].plot( time, kerneldt2( time ) )
+        ax[2].set_xlabel( "lambda" )
+        ax[2].set_ylabel( "kerneldt2" )
+
+        ax[3].plot( time, kerneldt3( time ) )
+        ax[3].set_xlabel( "lambda" )
+        ax[3].set_ylabel( "kerneldt3" )
+
+        plt.show( )
+        return
+
+    # Calculate initial values
+    if is_ode:
+        A0      = integrate_like_ode( kernel, timeb[0], timeb[1] )
+        A0dt1   = integrate_like_ode( kerneldt1, timeb[0], timeb[1] )
+        A0dt2   = integrate_like_ode( kerneldt2, timeb[0], timeb[1] )
+        A0dt3   = integrate_like_ode( kerneldt3, timeb[0], timeb[1] )
+		
+    else:
+        A0      = integrate_adapt_fcn( kernel, timeb[0], timeb[1], ref_step=10 )[0]
+        A0dt1   = integrate_adapt_fcn( kerneldt1, timeb[0], timeb[1], ref_step=10 )[0]
+        A0dt2   = integrate_adapt_fcn( kerneldt2, timeb[0], timeb[1], ref_step=10 )[0]
+        A0dt3   = integrate_adapt_fcn( kerneldt3, timeb[0], timeb[1], ref_step=10 )[0]
+
+    return A0, A0dt1, A0dt2, A0dt3
+
+
+def calculate_initial_conditions_integration_fbbb( mu, is_ode=True, is_show_fcn=False ) -> list:
+    # Define time bounds
+    timeb       = np.array( [ 0.0, 1e4 ] )
+
+    # Define kernel functions
+    kernel      = lambda ul: fbbb( ul, mu, 0.0 )
+    kerneldt1   = lambda ul: fbbbt( ul, mu, 0.0 )
+    kerneldt2   = lambda ul: fbbbtt( ul, mu, 0.0 )
+    kerneldt3   = lambda ul: fbbbttt( ul, mu, 0.0 )
 
     # Show function if any
     if is_show_fcn:
@@ -1648,10 +1754,11 @@ def save_data( fipath: str, beta: np.ndarray, mu: np.ndarray, f: np.ndarray, ft:
 
 if __name__ == "__main__":
     this_path   = os.path.dirname( os.path.abspath( __file__ ) )
-    folder_path = os.path.join( this_path, "..", "aux_data", "1_time_domain" )
-    calculate_Gt( folder_path )
-    calculate_Gtx( folder_path )
-    calculate_Gtxx( folder_path )
-    calculate_Gtt( folder_path )
-    calculate_Gttx( folder_path )
-    calculate_Gttxx( folder_path )
+    folder_path = os.path.join( this_path, "..", "aux_data", "0_integrals_database", "1_time_domain" )
+    # calculate_Gt( folder_path )
+    # calculate_Gtx( folder_path )
+    # calculate_Gtxx( folder_path )
+    # calculate_Gtt( folder_path )
+    # calculate_Gttx( folder_path )
+    # calculate_Gttxx( folder_path )
+    calculate_Gttt( folder_path )
