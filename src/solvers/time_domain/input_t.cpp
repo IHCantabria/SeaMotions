@@ -252,16 +252,6 @@ void InputT::read_body(
     read_signal     = read_channel_value( infile, body->lid_type );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
-    // Read usage of external lid
-    target_signal   = "UseExtLid";
-    read_signal     = read_channel_value( infile, body->use_ext_lid );
-    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
-
-    // Read external lid damping factor
-    target_signal   = "ExtLidDF";
-    read_signal     = read_channel_value( infile, body->ext_lid_damp_f );
-    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
-
     //////////////////////////////////////////////
     /********** Morison Coefficients ************/
     //////////////////////////////////////////////
@@ -328,29 +318,6 @@ void InputT::read_body(
         body->is_mesh_int_lid   = true;
         body->mesh_items_np++;
         _mesh_total.push_back( body->mesh_int_lid );
-    }
-
-    // Load external lid if required
-    if ( body->use_ext_lid )
-    {
-        std::stringstream sse;
-        sse << body->mesh_body_name << "_ext_lid";
-
-        body->mesh_ext_lid  = new Mesh(
-                                            mesh_fipath_.string( ),
-                                            sse.str( ),
-                                            body->cog,
-                                            body->is_fix,
-                                            PanelTypeE::EXT_LID
-                                        );
-        body->mesh_items_np++;
-
-        for ( std::size_t i=0; i<static_cast<std::size_t>( body->mesh_ext_lid->elems_np ); i++ )
-        {
-            body->mesh_ext_lid->panels[i]->set_ext_lid_damp_f( body->ext_lid_damp_f );
-        }
-
-        _mesh_total.push_back( body->mesh_ext_lid );
     }
 
     // QTF free surface is NOT loaded in the time domain solver
