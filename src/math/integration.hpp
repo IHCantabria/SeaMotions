@@ -148,6 +148,28 @@ template<
                                                                         );
 
 template<
+            typename T, 
+            typename U,
+            int NGP,
+            int NGPT
+        >                                   void        quadrature_panel_time_t(
+                                                                                        T*                  panel,
+                                                                                        U&                  target_fcn,
+                                                                                        cusfloat            t0,
+                                                                                        cusfloat            t1,
+                                                                                        cusfloat&           result_G_dtn,
+                                                                                        cusfloat&           result_G_dtx,
+                                                                                        cusfloat&           result_G_dty,
+                                                                                        cusfloat&           result_G_dtz,
+                                                                                        cusfloat&           result_G_dtt,
+                                                                                        cusfloat&           result_G_dttn,
+                                                                                        cusfloat&           result_G_dttx,
+                                                                                        cusfloat&           result_G_dtty,
+                                                                                        cusfloat&           result_G_dttz,
+                                                                                        bool                verbose=false
+                                                                        );
+
+template<
             typename Functor
         >                                   cusfloat    romberg_quadrature(   
                                                                                         Functor         f, 

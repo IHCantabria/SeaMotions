@@ -418,6 +418,92 @@ void        quadrature_panel_t(
 }
 
 
+template<typename T, typename U, int NGP, int NGPT>
+void        quadrature_panel_time_t(
+                                        T*                  panel,
+                                        U&                  target_fcn,
+                                        cusfloat            t0,
+                                        cusfloat            t1,
+                                        cusfloat&           result_G_dtn,
+                                        cusfloat&           result_G_dtx,
+                                        cusfloat&           result_G_dty,
+                                        cusfloat&           result_G_dtz,
+                                        cusfloat&           result_G_dtt,
+                                        cusfloat&           result_G_dttn,
+                                        cusfloat&           result_G_dttx,
+                                        cusfloat&           result_G_dtty,
+                                        cusfloat&           result_G_dttz,
+                                        bool                verbose
+                                    )
+{
+    const cusfloat half_dt = static_cast<cusfloat>( 0.5 ) * ( t1 - t0 );
+    const cusfloat mid_t   = static_cast<cusfloat>( 0.5 ) * ( t0 + t1 );
+
+    result_G_dtn    = 0.0;
+    result_G_dtx    = 0.0;
+    result_G_dty    = 0.0;
+    result_G_dtz    = 0.0;
+    result_G_dtt    = 0.0;
+    result_G_dttn   = 0.0;
+    result_G_dttx   = 0.0;
+    result_G_dtty   = 0.0;
+    result_G_dttz   = 0.0;
+
+    cusfloat tmp_G_dtn, tmp_G_dtx, tmp_G_dty, tmp_G_dtz;
+    cusfloat tmp_G_dtt, tmp_G_dttn, tmp_G_dttx, tmp_G_dtty, tmp_G_dttz;
+
+    for ( int kt = 0; kt < NGPT; ++kt )
+    {
+        const cusfloat xi_t = GaussPointsT<1, NGPT>::roots_x[kt];
+        const cusfloat wt   = GaussPointsT<1, NGPT>::weights_x[kt];
+        const cusfloat t_k  = mid_t + xi_t * half_dt;
+
+        target_fcn.set_time_diff( t_k );
+
+        target_fcn.operator()(
+                                            panel->xl,
+                                            panel->yl,
+                                            panel->gauss_points_global_x,
+                                            panel->gauss_points_global_y,
+                                            panel->gauss_points_global_z,
+                                            verbose
+                                        );
+
+        tmp_G_dtn   = 0.0;
+        tmp_G_dtx   = 0.0;
+        tmp_G_dty   = 0.0;
+        tmp_G_dtz   = 0.0;
+        tmp_G_dtt   = 0.0;
+        tmp_G_dttn  = 0.0;
+        tmp_G_dttx  = 0.0;
+        tmp_G_dtty  = 0.0;
+        tmp_G_dttz  = 0.0;
+
+        gauss2d_loop<NGP>( tmp_G_dtn,  [&](int i){ return target_fcn.dG_dtn[i]; }, panel );
+        gauss2d_loop<NGP>( tmp_G_dtx,  [&](int i){ return target_fcn.dG_dtx[i]; }, panel );
+        gauss2d_loop<NGP>( tmp_G_dty,  [&](int i){ return target_fcn.dG_dty[i]; }, panel );
+        gauss2d_loop<NGP>( tmp_G_dtz,  [&](int i){ return target_fcn.dG_dtz[i]; }, panel );
+        gauss2d_loop<NGP>( tmp_G_dtt,  [&](int i){ return target_fcn.dG_dtt[i]; }, panel );
+        gauss2d_loop<NGP>( tmp_G_dttn, [&](int i){ return target_fcn.dG_dttn[i]; }, panel );
+        gauss2d_loop<NGP>( tmp_G_dttx, [&](int i){ return target_fcn.dG_dttx[i]; }, panel );
+        gauss2d_loop<NGP>( tmp_G_dtty, [&](int i){ return target_fcn.dG_dtty[i]; }, panel );
+        gauss2d_loop<NGP>( tmp_G_dttz, [&](int i){ return target_fcn.dG_dttz[i]; }, panel );
+
+        const cusfloat scale = wt * half_dt;
+        result_G_dtn    += scale * tmp_G_dtn;
+        result_G_dtx    += scale * tmp_G_dtx;
+        result_G_dty    += scale * tmp_G_dty;
+        result_G_dtz    += scale * tmp_G_dtz;
+        result_G_dtt    += scale * tmp_G_dtt;
+        result_G_dttn   += scale * tmp_G_dttn;
+        result_G_dttx   += scale * tmp_G_dttx;
+        result_G_dtty   += scale * tmp_G_dtty;
+        result_G_dttz   += scale * tmp_G_dttz;
+
+    }
+}
+
+
 template<typename Functor>
 cusfloat romberg_quadrature(
                                 Functor f, 
