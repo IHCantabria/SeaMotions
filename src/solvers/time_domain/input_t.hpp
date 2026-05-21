@@ -95,7 +95,8 @@ public:
     cusfloat                    grav_acc            = 9.81;
     cusfloat                    water_depth         = 50.0;
     cusfloat                    wave_amp            = 0.0;     // wave amplitude [m]  (0 = no incident wave)
-    cusfloat                    ang_freq            = 0.0;     // angular frequency [rad/s] (0 = no incident wave)
+    cusfloat                    wave_period         = 0.0;     // wave period [s]     (0 = no incident wave)
+    cusfloat                    ang_freq            = 0.0;     // angular frequency [rad/s] derived from wave_period
 
     // Paths
     std::string                 case_fopath         = "";
@@ -110,6 +111,7 @@ public:
 
     // Methods
     void    load( const std::string& folder_path );
+    void    initialize( );
 
     static  void    read_body(
                                     const std::string& folder_path,

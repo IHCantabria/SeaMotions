@@ -61,6 +61,9 @@ void InputT::load( const std::string& folder_path )
 
     // Read bodies
     this->read_bodies( folder_path );
+
+    // Initialize class
+    this->initialize( );
 }
 
 
@@ -383,11 +386,6 @@ void InputT::read_case( const std::string& folder_path )
     read_signal     = read_channel_value( infile, this->dt );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
-    // Read heading
-    target_signal   = "Head";
-    read_signal     = read_channel_value( infile, this->head );
-    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
-
     //////////////////////////////////////////////
     /************** Body Definition *************/
     //////////////////////////////////////////////
@@ -498,15 +496,28 @@ void InputT::read_case( const std::string& folder_path )
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read wave amplitude
-    target_signal   = "WaveAmp";
+    target_signal   = "WaveA";
     read_signal     = read_channel_value( infile, this->wave_amp );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
-    // Read wave angular frequency
-    target_signal   = "AngFreq";
-    read_signal     = read_channel_value( infile, this->ang_freq );
+    // Read wave period
+    target_signal   = "WaveP";
+    read_signal     = read_channel_value( infile, this->wave_period );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read wave heading
+    target_signal   = "Head";
+    read_signal     = read_channel_value( infile, this->head );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Close file unit
     infile.close( );
+}
+
+
+void InputT::initialize( )
+{
+    this->ang_freq = ( this->wave_period > static_cast<cusfloat>( 0.0 ) )
+                        ? ( static_cast<cusfloat>( 2.0 ) * PI / this->wave_period )
+                        : static_cast<cusfloat>( 0.0 );
 }
