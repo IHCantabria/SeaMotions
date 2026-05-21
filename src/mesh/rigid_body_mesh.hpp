@@ -36,6 +36,8 @@ private:
     cusfloat*                   _x_backup           = nullptr;      // X node positions back-up. Used to recalculate data when performing affine transformations
     cusfloat*                   _y_backup           = nullptr;      // Y node positions back-up. Used to recalculate data when performing affine transformations
     cusfloat*                   _z_backup           = nullptr;      // Z node positions back-up. Used to recalculate data when performing affine transformations
+    bool                        _underwater_checked = false;        // True once check_underwater_panels() has been called at least once
+    std::vector<int>            _uw_panel_indices   ;               // Indices (into panels[]) of fully-underwater original panels, cached by check_underwater_panels()
 
     /* Define private methods */
 
@@ -83,7 +85,8 @@ public:
     cusfloat                    draft           = 0.0;          // Draft of the floater w.r.t to the keel
     int                         fs_nodes_np     = 0;            // Number of nodes added by the free surface refinement process
     std::vector<PanelGeom*>     fs_panels;                      // New panels generated to refine the mesh around free surface and to cut it cleanly
-    int                         fs_panels_np = 0;               // Number of panels aded by the free surface refinement process
+    int                         fs_panels_np    = 0;            // Number of panels aded by the free surface refinement process
+    int                         uw_elems_np     = 0;            // Number of fully-underwater original panels (updated by check_underwater_panels())
 
     /* Define class constructor */
     RigidBodyMesh( ) = default;
@@ -106,6 +109,22 @@ public:
                                         cusfloat            draft_in,
                                         std::string         auto_flush_fopath,
                                         bool                auto_flush = false
+                    );
+
+    /**
+     * @brief Construct from an existing Mesh (e.g. a pre-loaded mesh_total).
+     *
+     * Copies all node/panel data from @p src_mesh via the Mesh copy constructor
+     * and initialises the rigid-body motion back-up buffers.
+     *
+     * @param src_mesh  Source mesh to copy geometry from.
+     * @param cog_in    Centre of gravity (3 components) used as the rotation pivot.
+     * @param draft_in  Nominal draft of the body [m] (used for reference only).
+     */
+    RigidBodyMesh(
+                                        const Mesh&         src_mesh,
+                                        cusfloat*           cog_in,
+                                        cusfloat            draft_in
                     );
 
     ~RigidBodyMesh( );

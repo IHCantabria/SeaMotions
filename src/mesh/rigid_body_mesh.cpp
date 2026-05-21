@@ -74,15 +74,36 @@ void RigidBodyMesh::check_underwater_panels(
                                                 void
                                             )
 {
-    // Loop over all panel to check the location zone
+    // ------------------------------------------------------------------
+    // 1. Classify every original panel as fully-UW (-1), FS-intersecting
+    //    (0) or fully-above (+1).
+    // ------------------------------------------------------------------
     for ( int i=0; i<this->elems_np; i++ )
     {
         this->panels[i]->check_underwater<NUM_GP>( );
     }
 
-    // Loop over free surface panels and divide them to have the
-    // underwater ones
-    this->fs_panels_np = 0;
+    // ------------------------------------------------------------------
+    // 2. Build the cache of fully-underwater panel indices so that
+    //    get_elems_np() / get_panel() can serve only the panels that
+    //    belong in the BEM system.
+    // ------------------------------------------------------------------
+    this->_uw_panel_indices.clear( );
+    this->uw_elems_np = 0;
+    for ( int i=0; i<this->elems_np; i++ )
+    {
+        if ( this->panels[i]->location_zone < 0 )   // fully underwater
+        {
+            this->_uw_panel_indices.push_back( i );
+            this->uw_elems_np++;
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // 3. Refine panels that cross the free surface so that only their
+    //    submerged half enters the BEM.
+    // ------------------------------------------------------------------
+    this->fs_panels_np  = 0;
     int last_node_index = this->nodes_np;
     for ( int i=0; i<this->elems_np; i++ )
     {
@@ -109,9 +130,10 @@ void RigidBodyMesh::check_underwater_panels(
         }
     }
 
-    this->fs_nodes_np = last_node_index - this->nodes_np;
+    this->fs_nodes_np       = last_node_index - this->nodes_np;
+    this->_underwater_checked = true;
 
-    // Flush mesh
+    // Flush mesh (debug)
     this->_auto_flush( );
 
 }
@@ -121,7 +143,17 @@ int     RigidBodyMesh::get_elems_np(
                                         void
                                     ) const
 {
-    return this->elems_np + this->fs_panels_np;
+    // Before check_underwater_panels() is called behave exactly like the base
+    // Mesh class (all panels, no FS refinement).
+    if ( !this->_underwater_checked )
+    {
+        return this->elems_np;
+    }
+
+    // After the underwater check: expose only the BEM-relevant panels:
+    //   • uw_elems_np  fully-submerged original panels
+    //   • fs_panels_np submerged halves of FS-intersecting panels
+    return this->uw_elems_np + this->fs_panels_np;
 }                        
 
 
@@ -202,6 +234,17 @@ RigidBodyMesh::RigidBodyMesh(
 }
 
 
+RigidBodyMesh::RigidBodyMesh(
+                                const Mesh&         src_mesh,
+                                cusfloat*           cog_in,
+                                cusfloat            draft_in
+                            ): Mesh( src_mesh )     // deep-copy all node/panel data
+{
+    // Initialise rigid-body motion back-up buffers from the copied geometry
+    this->_build( cog_in, draft_in );
+}
+
+
 RigidBodyMesh::~RigidBodyMesh(
                                 void
                             )
@@ -278,17 +321,21 @@ PanelGeom* RigidBodyMesh::get_panel(
                                                     const int   idx
                                     ) const
 {
-    PanelGeom*  p = nullptr;
-    if ( idx > ( this->elems_np - 1 ) )
+    // Before check_underwater_panels(): fall back to base class behaviour
+    // (ordered list of all original panels).
+    if ( !this->_underwater_checked )
     {
-        p = this->fs_panels[ idx - this->elems_np ];
-    }
-    else
-    {
-        p = this->panels[idx];
+        return this->panels[idx];
     }
 
-    return p;
+    // After check: the virtual panel list is:
+    //   [0 .. uw_elems_np-1]          → fully-underwater original panels
+    //   [uw_elems_np .. total-1]       → FS-refined (submerged-half) panels
+    if ( idx < this->uw_elems_np )
+    {
+        return this->panels[ this->_uw_panel_indices[idx] ];
+    }
+    return this->fs_panels[ idx - this->uw_elems_np ];
 }
 
 
@@ -298,6 +345,11 @@ void    RigidBodyMesh::_reset_fs_intersect(
 {
     this->fs_nodes_np   = 0;
     this->fs_panels_np  = 0;
+    // The underwater panel cache is invalidated together with the FS
+    // refinement; it will be rebuilt by the next check_underwater_panels().
+    this->uw_elems_np   = 0;
+    this->_uw_panel_indices.clear( );
+    this->_underwater_checked = false;
 }
 
 
