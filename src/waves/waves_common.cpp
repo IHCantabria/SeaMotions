@@ -130,6 +130,150 @@ cuscomplex  wave_potential_fo_space_dz(
 }
 
 
+cusfloat    wave_potential_fo_time( 
+                                            cusfloat aw,
+                                            cusfloat w,
+                                            cusfloat k,
+                                            cusfloat h,
+                                            cusfloat g,
+                                            cusfloat x,
+                                            cusfloat y,
+                                            cusfloat z,
+                                            cusfloat mu,
+                                            cusfloat t
+                                    )
+{
+    cusfloat    phi_0   = aw * g / w * cosh_cosh_factor( k, h, z );
+    return phi_0 * std::sin( k * ( x * std::cos( mu ) + y * std::sin( mu ) ) - w * t );
+}
+
+
+cusfloat    wave_potential_fo_time_dx( 
+                                            cusfloat aw,
+                                            cusfloat w,
+                                            cusfloat k,
+                                            cusfloat h,
+                                            cusfloat g,
+                                            cusfloat x,
+                                            cusfloat y,
+                                            cusfloat z,
+                                            cusfloat mu,
+                                            cusfloat t
+                                        )
+{
+    cusfloat    phi_0   = aw * g / w * cosh_cosh_factor( k, h, z );
+    return phi_0 * std::cos( k * ( x * std::cos( mu ) + y * std::sin( mu ) ) - w * t ) * k * std::cos( mu );
+}
+
+
+cusfloat    wave_potential_fo_time_dy( 
+                                            cusfloat aw,
+                                            cusfloat w,
+                                            cusfloat k,
+                                            cusfloat h,
+                                            cusfloat g,
+                                            cusfloat x,
+                                            cusfloat y,
+                                            cusfloat z,
+                                            cusfloat mu,
+                                            cusfloat t
+                                        )
+{
+    cusfloat    phi_0   = aw * g / w * cosh_cosh_factor( k, h, z );
+    return phi_0 * std::cos( k * ( x * std::cos( mu ) + y * std::sin( mu ) ) - w * t ) * k * std::sin( mu );
+}
+
+
+cusfloat    wave_potential_fo_time_dz( 
+                                            cusfloat aw,
+                                            cusfloat w,
+                                            cusfloat k,
+                                            cusfloat h,
+                                            cusfloat g,
+                                            cusfloat x,
+                                            cusfloat y,
+                                            cusfloat z,
+                                            cusfloat mu,
+                                            cusfloat t
+                                        )
+{
+    cusfloat    phi_0   = aw * g / w * sinh_cosh_factor( k, h, z );
+    return phi_0 * std::sin( k * ( x * std::cos( mu ) + y * std::sin( mu ) ) - w * t ) * k;
+}
+
+
+cusfloat    wave_potential_fo_time_dt( 
+                                            cusfloat aw,
+                                            cusfloat w,
+                                            cusfloat k,
+                                            cusfloat h,
+                                            cusfloat g,
+                                            cusfloat x,
+                                            cusfloat y,
+                                            cusfloat z,
+                                            cusfloat mu,
+                                            cusfloat t
+                                        )
+{
+    cusfloat    phi_0   = aw * g * cosh_cosh_factor( k, h, z );
+    return - phi_0 * std::cos( k * ( x * std::cos( mu ) + y * std::sin( mu ) ) - w * t );
+}
+
+
+cusfloat    wave_potential_fo_time_dtdx( 
+                                            cusfloat aw,
+                                            cusfloat w,
+                                            cusfloat k,
+                                            cusfloat h,
+                                            cusfloat g,
+                                            cusfloat x,
+                                            cusfloat y,
+                                            cusfloat z,
+                                            cusfloat mu,
+                                            cusfloat t
+                                        )
+{
+    cusfloat    phi_0   = aw * g * cosh_cosh_factor( k, h, z );
+    return phi_0 * std::sin( k * ( x * std::cos( mu ) + y * std::sin( mu ) ) - w * t ) * k * std::cos( mu );
+}
+
+
+cusfloat    wave_potential_fo_time_dtdy( 
+                                            cusfloat aw,
+                                            cusfloat w,
+                                            cusfloat k,
+                                            cusfloat h,
+                                            cusfloat g,
+                                            cusfloat x,
+                                            cusfloat y,
+                                            cusfloat z,
+                                            cusfloat mu,
+                                            cusfloat t
+                                        )
+{
+    cusfloat    phi_0   = aw * g * cosh_cosh_factor( k, h, z );
+    return phi_0 * std::sin( k * ( x * std::cos( mu ) + y * std::sin( mu ) ) - w * t ) * k * std::sin( mu );
+}
+
+
+cusfloat    wave_potential_fo_time_dtdz( 
+                                            cusfloat aw,
+                                            cusfloat w,
+                                            cusfloat k,
+                                            cusfloat h,
+                                            cusfloat g,
+                                            cusfloat x,
+                                            cusfloat y,
+                                            cusfloat z,
+                                            cusfloat mu,
+                                            cusfloat t
+                                        )
+{
+    cusfloat    phi_0   = aw * g * sinh_cosh_factor( k, h, z );
+    return - phi_0 * std::cos( k * ( x * std::cos( mu ) + y * std::sin( mu ) ) - w * t ) * k;
+}
+
+
 cuscomplex  wave_potential_so_space( 
                                         cusfloat            x,
                                         cusfloat            y,

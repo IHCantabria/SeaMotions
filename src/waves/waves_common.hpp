@@ -81,6 +81,119 @@ cuscomplex  wave_potential_fo_space_dz(
                                             cusfloat mu
                                         );
 
+
+cusfloat    wave_potential_fo_time( 
+                                            cusfloat aw,
+                                            cusfloat w,
+                                            cusfloat k,
+                                            cusfloat h,
+                                            cusfloat g,
+                                            cusfloat x,
+                                            cusfloat y,
+                                            cusfloat z,
+                                            cusfloat mu,
+                                            cusfloat t
+                                    );
+
+
+cusfloat    wave_potential_fo_time_dx( 
+                                            cusfloat aw,
+                                            cusfloat w,
+                                            cusfloat k,
+                                            cusfloat h,
+                                            cusfloat g,
+                                            cusfloat x,
+                                            cusfloat y,
+                                            cusfloat z,
+                                            cusfloat mu,
+                                            cusfloat t
+                                        );
+
+
+cusfloat    wave_potential_fo_time_dy( 
+                                            cusfloat aw,
+                                            cusfloat w,
+                                            cusfloat k,
+                                            cusfloat h,
+                                            cusfloat g,
+                                            cusfloat x,
+                                            cusfloat y,
+                                            cusfloat z,
+                                            cusfloat mu,
+                                            cusfloat t
+                                        );
+
+                                
+cusfloat    wave_potential_fo_time_dz( 
+                                            cusfloat aw,
+                                            cusfloat w,
+                                            cusfloat k,
+                                            cusfloat h,
+                                            cusfloat g,
+                                            cusfloat x,
+                                            cusfloat y,
+                                            cusfloat z,
+                                            cusfloat mu,
+                                            cusfloat t
+                                        );
+
+
+cusfloat    wave_potential_fo_time_dt( 
+                                            cusfloat aw,
+                                            cusfloat w,
+                                            cusfloat k,
+                                            cusfloat h,
+                                            cusfloat g,
+                                            cusfloat x,
+                                            cusfloat y,
+                                            cusfloat z,
+                                            cusfloat mu,
+                                            cusfloat t
+                                        );
+
+
+cusfloat    wave_potential_fo_time_dtdx( 
+                                            cusfloat aw,
+                                            cusfloat w,
+                                            cusfloat k,
+                                            cusfloat h,
+                                            cusfloat g,
+                                            cusfloat x,
+                                            cusfloat y,
+                                            cusfloat z,
+                                            cusfloat mu,
+                                            cusfloat t
+                                        );
+
+
+cusfloat    wave_potential_fo_time_dtdy( 
+                                            cusfloat aw,
+                                            cusfloat w,
+                                            cusfloat k,
+                                            cusfloat h,
+                                            cusfloat g,
+                                            cusfloat x,
+                                            cusfloat y,
+                                            cusfloat z,
+                                            cusfloat mu,
+                                            cusfloat t
+                                        );
+
+
+cusfloat    wave_potential_fo_time_dtdz( 
+                                            cusfloat aw,
+                                            cusfloat w,
+                                            cusfloat k,
+                                            cusfloat h,
+                                            cusfloat g,
+                                            cusfloat x,
+                                            cusfloat y,
+                                            cusfloat z,
+                                            cusfloat mu,
+                                            cusfloat t
+                                        );
+
+
 cuscomplex  wave_potential_so_space( 
                                             cusfloat            x,
                                             cusfloat            y,
