@@ -113,6 +113,21 @@ public:
                                 T* subrhs 
                     );
 
+    /**
+     * @brief Back-substitute into an already-factorized matrix (LU stored by a prior Solve call).
+     *
+     * Calls pgetrs with 'N' transpose.  The caller is responsible for ensuring
+     * that @p lu_sysmat contains the LU factors (and the solver's ipiv vector is
+     * populated) from a prior Solve() call on the same matrix.
+     *
+     * @param lu_sysmat  Local distributed block containing LU factors (unchanged).
+     * @param subrhs     On entry: RHS vector; on exit: solution vector.
+     */
+    void    SolveWithStoredLU(
+                                T* lu_sysmat,
+                                T* subrhs
+                             );
+
     std::size_t memory_bytes( void ) const;
 
     void append_memory_report(
@@ -448,6 +463,27 @@ void ScalapackSolver<T>::Solve(T* subsysmat, T* subrhs)
 
 
 template <class T>
+void ScalapackSolver<T>::SolveWithStoredLU( T* lu_sysmat, T* subrhs )
+{
+    char        trans    = 'N';
+    MKL_INT     startrow = 1;
+
+    MPI_Barrier( this->global_comm );
+    pgetrs<T>( &trans, &num_rows, &num_cols_rhs,
+               lu_sysmat, &startrow, &startrow, descA, this->ipiv,
+               subrhs,   &startrow, &startrow, descB, &info );
+    MPI_Barrier( this->global_comm );
+
+    if ( info != 0 )
+    {
+        std::cerr << "ERROR - Scalapack SolveWithStoredLU" << std::endl;
+        std::cerr << "pgetrs finished abnormally with code: " << info << std::endl;
+        throw std::runtime_error( "" );
+    }
+}
+
+
+template <class T>
 std::size_t ScalapackSolver<T>::memory_bytes( void ) const
 {
     std::size_t total = 0;
@@ -495,3 +531,4 @@ void ScalapackSolver<T>::append_memory_report(
 // Define custom types to have more handy ways to 
 // work with ScalapackSolver implementations
 typedef ScalapackSolver<cuscomplex> SclCmpx;
+typedef ScalapackSolver<cusfloat>   SclReal;
