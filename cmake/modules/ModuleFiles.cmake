@@ -388,3 +388,15 @@ set(
         ${CMAKE_SOURCE_DIR}/src/version.hpp
         ${CMAKE_SOURCE_DIR}/src/version.cpp
 )
+
+# Pack SeaMotions Time-domain Solver files
+set(
+        sm_time_module_files
+        ${CMAKE_SOURCE_DIR}/src/solvers/time_domain/seamotions_time.cpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/time_domain/input_t.hpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/time_domain/input_t.cpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/time_domain/formulation_kernel_backend_t.hpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/time_domain/formulation_kernel_backend_t.txx
+        ${CMAKE_SOURCE_DIR}/src/solvers/time_domain/time_solver.hpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/time_domain/time_solver.txx
+    )
