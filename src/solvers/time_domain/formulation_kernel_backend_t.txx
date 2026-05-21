@@ -197,8 +197,6 @@ void FormulationKernelBackendT<N, NGPT>::_build_steady_matrix( )
     cusfloat    vel_total_sf[ndim];     clear_vector( ndim, vel_total_sf );
     cusfloat    pot_0 = 0.0, pot_1 = 0.0;
 
-    const cusfloat water_depth = this->_input->water_depth;
-
     // Collect all panel centres (replicated on every process)
     cusfloat* field_points = generate_empty_vector<cusfloat>( 3 * np );
     for ( int i=0; i<np; i++ )
