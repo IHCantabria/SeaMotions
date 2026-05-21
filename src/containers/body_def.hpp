@@ -34,6 +34,7 @@ struct BodyDef
 public:
     // Define class attributes
     cusfloat                        cog[3]                  = { 0.0, 0.0, 0.0 };
+    int                             dof_restrictions[6]     = { 0, 0, 0, 0, 0, 0 };  ///< Per-DOF kinematic restrictions (0=free, 1=fixed): surge, sway, heave, roll, pitch, yaw
     cusfloat                        ext_lid_damp_f          = 0.0;
     cusfloat                        inertia[6]              = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
     bool                            interia_by_rad          = false;
