@@ -37,6 +37,7 @@ struct ChebyshevTraits;
 /***************************************************************/
 CHEBYSHEV_TIME_2DF_TRAITS( dGdtC   )
 CHEBYSHEV_TIME_2DF_TRAITS( dGdttC  )
+CHEBYSHEV_TIME_2DF_TRAITS( dGdtttC )
 CHEBYSHEV_TIME_2DF_TRAITS( dGdtxC  )
 CHEBYSHEV_TIME_2DF_TRAITS( dGdtxxC )
 CHEBYSHEV_TIME_2DF_TRAITS( dGdttxC )
@@ -70,3 +71,5 @@ CHEBYSHEV_1D_TRAITS( dGdttxA2C )
 CHEBYSHEV_1D_TRAITS( dGdttxxA0C)
 CHEBYSHEV_1D_TRAITS( dGdttxxA1C)
 CHEBYSHEV_1D_TRAITS( dGdttxxA2C)
+
+CHEBYSHEV_1D_TRAITS( dGdtttA0C )

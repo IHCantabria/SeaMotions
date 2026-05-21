@@ -395,6 +395,143 @@ inline cusfloat dGdttxx_G0_F1( cusfloat beta, cusfloat alpha )
            * dGdttx_G0_F1( beta, alpha );
 }
 
+// ---------------------------------------------------------------------------
+// dGdttt  (one alpha shift; quadratic μ dependence)
+//
+// The G0 basis has structure:
+//   dGdttt_G0 = (F0 + F1·μ + F2·μ²) · exp(−β²μ/4)
+//
+// Derived from dGdttt_G0 = lt'' · fj + 2 lt' · fj' + lt · fj'' by collecting
+// powers of μ (see time_domain_evaluator.hpp for the full scalar formula):
+//
+//   F0 = scale · [6β · fj − (7/4)β³ · h − β⁵ · dh/16]
+//   F1 = scale · [−(7/2)β³ · fj + (1/4)β⁵ · h]
+//   F2 = scale · (1/4)β⁵ · fj
+//
+// where scale = π/(16√2),  x = β²/8,
+//   fj = J_{1/4} J_{-1/4} + J_{3/4} J_{-3/4}
+//   h  = J_{-1/4} J_{5/4} + 2 J_{3/4} J_{1/4} + J_{7/4} J_{-3/4}
+//   dh/dx = 1/2 J_{-5/4} J_{5/4} + 3/2 fj + 1/2 J_{7/4} J_{-7/4}
+//         − 3/2 J_{3/4} J_{5/4} − 3/2 J_{7/4} J_{1/4}
+//         − 1/2 J_{-1/4} J_{9/4} − 1/2 J_{11/4} J_{-3/4}
+// ---------------------------------------------------------------------------
+inline cusfloat dGdttt_G0_F0( cusfloat beta, cusfloat alpha )
+{
+    if ( beta < static_cast<cusfloat>( 1e-1 ) )
+        return static_cast<cusfloat>( 0.0 );
+
+    const cusfloat scale = static_cast<cusfloat>( PI )
+                           / ( static_cast<cusfloat>( 16.0 )
+                               * static_cast<cusfloat>( std::sqrt( 2.0 ) ) );
+    cusfloat x = beta * beta / static_cast<cusfloat>( 8.0 ) + alpha;
+    if ( x < static_cast<cusfloat>( 1e-6 ) ) x = static_cast<cusfloat>( 0.0 );
+
+    using std::cyl_bessel_j;
+
+    cusfloat fj = cyl_bessel_j( static_cast<cusfloat>(  0.25 ), x )
+                * cyl_bessel_j( static_cast<cusfloat>( -0.25 ), x )
+                + cyl_bessel_j( static_cast<cusfloat>(  0.75 ), x )
+                * cyl_bessel_j( static_cast<cusfloat>( -0.75 ), x );
+    if ( std::isnan( fj ) ) fj = static_cast<cusfloat>( 0.0 );
+
+    cusfloat h =       cyl_bessel_j( static_cast<cusfloat>( -0.25 ), x )
+                     * cyl_bessel_j( static_cast<cusfloat>(  1.25 ), x )
+               + static_cast<cusfloat>( 2.0 )
+                     * cyl_bessel_j( static_cast<cusfloat>(  0.75 ), x )
+                     * cyl_bessel_j( static_cast<cusfloat>(  0.25 ), x )
+               +       cyl_bessel_j( static_cast<cusfloat>(  1.75 ), x )
+                     * cyl_bessel_j( static_cast<cusfloat>( -0.75 ), x );
+    if ( std::isnan( h ) ) h = static_cast<cusfloat>( 0.0 );
+
+    cusfloat dh =
+          static_cast<cusfloat>( 0.5 ) * cyl_bessel_j( static_cast<cusfloat>( -1.25 ), x )
+                                        * cyl_bessel_j( static_cast<cusfloat>(  1.25 ), x )
+        + static_cast<cusfloat>( 1.5 ) * fj
+        + static_cast<cusfloat>( 0.5 ) * cyl_bessel_j( static_cast<cusfloat>(  1.75 ), x )
+                                        * cyl_bessel_j( static_cast<cusfloat>( -1.75 ), x )
+        - static_cast<cusfloat>( 1.5 ) * cyl_bessel_j( static_cast<cusfloat>(  0.75 ), x )
+                                        * cyl_bessel_j( static_cast<cusfloat>(  1.25 ), x )
+        - static_cast<cusfloat>( 1.5 ) * cyl_bessel_j( static_cast<cusfloat>(  1.75 ), x )
+                                        * cyl_bessel_j( static_cast<cusfloat>(  0.25 ), x )
+        - static_cast<cusfloat>( 0.5 ) * cyl_bessel_j( static_cast<cusfloat>( -0.25 ), x )
+                                        * cyl_bessel_j( static_cast<cusfloat>(  2.25 ), x )
+        - static_cast<cusfloat>( 0.5 ) * cyl_bessel_j( static_cast<cusfloat>(  2.75 ), x )
+                                        * cyl_bessel_j( static_cast<cusfloat>( -0.75 ), x );
+    if ( std::isnan( dh ) ) dh = static_cast<cusfloat>( 0.0 );
+
+    const cusfloat b2 = beta * beta;
+    const cusfloat b3 = b2 * beta;
+    const cusfloat b5 = b3 * b2;
+
+    // F0 = scale * [6β·fj − (7/4)β³·h − β⁵·dh/16]
+    return scale * (  static_cast<cusfloat>( 6.0 ) * beta * fj
+                    - static_cast<cusfloat>( 1.75 ) * b3 * h
+                    - b5 * dh / static_cast<cusfloat>( 16.0 ) );
+}
+
+inline cusfloat dGdttt_G0_F1( cusfloat beta, cusfloat alpha )
+{
+    if ( beta < static_cast<cusfloat>( 1e-1 ) )
+        return static_cast<cusfloat>( 0.0 );
+
+    const cusfloat scale = static_cast<cusfloat>( PI )
+                           / ( static_cast<cusfloat>( 16.0 )
+                               * static_cast<cusfloat>( std::sqrt( 2.0 ) ) );
+    cusfloat x = beta * beta / static_cast<cusfloat>( 8.0 ) + alpha;
+    if ( x < static_cast<cusfloat>( 1e-6 ) ) x = static_cast<cusfloat>( 0.0 );
+
+    using std::cyl_bessel_j;
+
+    cusfloat fj = cyl_bessel_j( static_cast<cusfloat>(  0.25 ), x )
+                * cyl_bessel_j( static_cast<cusfloat>( -0.25 ), x )
+                + cyl_bessel_j( static_cast<cusfloat>(  0.75 ), x )
+                * cyl_bessel_j( static_cast<cusfloat>( -0.75 ), x );
+    if ( std::isnan( fj ) ) fj = static_cast<cusfloat>( 0.0 );
+
+    cusfloat h =       cyl_bessel_j( static_cast<cusfloat>( -0.25 ), x )
+                     * cyl_bessel_j( static_cast<cusfloat>(  1.25 ), x )
+               + static_cast<cusfloat>( 2.0 )
+                     * cyl_bessel_j( static_cast<cusfloat>(  0.75 ), x )
+                     * cyl_bessel_j( static_cast<cusfloat>(  0.25 ), x )
+               +       cyl_bessel_j( static_cast<cusfloat>(  1.75 ), x )
+                     * cyl_bessel_j( static_cast<cusfloat>( -0.75 ), x );
+    if ( std::isnan( h ) ) h = static_cast<cusfloat>( 0.0 );
+
+    const cusfloat b2 = beta * beta;
+    const cusfloat b3 = b2 * beta;
+    const cusfloat b5 = b3 * b2;
+
+    // F1 = scale * [−(7/2)β³·fj + (1/4)β⁵·h]
+    return scale * ( -static_cast<cusfloat>( 3.5 ) * b3 * fj
+                   + b5 * h / static_cast<cusfloat>( 4.0 ) );
+}
+
+inline cusfloat dGdttt_G0_F2( cusfloat beta, cusfloat alpha )
+{
+    if ( beta < static_cast<cusfloat>( 1e-1 ) )
+        return static_cast<cusfloat>( 0.0 );
+
+    const cusfloat scale = static_cast<cusfloat>( PI )
+                           / ( static_cast<cusfloat>( 16.0 )
+                               * static_cast<cusfloat>( std::sqrt( 2.0 ) ) );
+    cusfloat x = beta * beta / static_cast<cusfloat>( 8.0 ) + alpha;
+    if ( x < static_cast<cusfloat>( 1e-6 ) ) x = static_cast<cusfloat>( 0.0 );
+
+    using std::cyl_bessel_j;
+
+    cusfloat fj = cyl_bessel_j( static_cast<cusfloat>(  0.25 ), x )
+                * cyl_bessel_j( static_cast<cusfloat>( -0.25 ), x )
+                + cyl_bessel_j( static_cast<cusfloat>(  0.75 ), x )
+                * cyl_bessel_j( static_cast<cusfloat>( -0.75 ), x );
+    if ( std::isnan( fj ) ) fj = static_cast<cusfloat>( 0.0 );
+
+    const cusfloat b2 = beta * beta;
+    const cusfloat b5 = b2 * b2 * beta;
+
+    // F2 = scale * (1/4)β⁵·fj
+    return scale * b5 * fj / static_cast<cusfloat>( 4.0 );
+}
+
 
 // ===========================================================================
 // G0Gauss1AlphaEvaluator<TD, A0T>
@@ -518,6 +655,69 @@ private:
         cusfloat F0[3];
         cusfloat F1[3];
     };
+    std::vector<GaussData> cache_;
+};
+
+
+// ===========================================================================
+// G0Gauss1Alpha3TermEvaluator<TD, A0T>
+// ===========================================================================
+// Precomputed G0 evaluator for functions with one alpha shift and a quadratic
+// μ-dependence (currently dGdttt).
+//
+// The G0 basis has the structure:
+//   G0(β, μ) = A0(log10(μ)) · (F0 + F1·μ + F2·μ²) · exp(−β²μ/4)
+//
+// Precomputed per Gauss point:  c = β²/4,  F0,  F1,  F2
+// Runtime evaluation uses Horner's method for the polynomial part.
+// ===========================================================================
+template<typename TD, typename A0T>
+class G0Gauss1Alpha3TermEvaluator
+{
+public:
+    using F0FcnPtr = cusfloat (*)( cusfloat, cusfloat );
+    using F1FcnPtr = cusfloat (*)( cusfloat, cusfloat );
+    using F2FcnPtr = cusfloat (*)( cusfloat, cusfloat );
+
+    G0Gauss1Alpha3TermEvaluator() = default;
+
+    G0Gauss1Alpha3TermEvaluator( const std::vector<cusfloat>& beta_gauss,
+                                  F0FcnPtr f0_fcn,
+                                  F1FcnPtr f1_fcn,
+                                  F2FcnPtr f2_fcn )
+    {
+        initialize( beta_gauss, f0_fcn, f1_fcn, f2_fcn );
+    }
+
+    void initialize( const std::vector<cusfloat>& beta_gauss,
+                     F0FcnPtr f0_fcn,
+                     F1FcnPtr f1_fcn,
+                     F2FcnPtr f2_fcn )
+    {
+        cache_.resize( beta_gauss.size() );
+        for ( std::size_t g = 0; g < beta_gauss.size(); ++g )
+        {
+            const cusfloat beta = beta_gauss[g];
+            GaussData&     d    = cache_[g];
+            d.c  = beta * beta / static_cast<cusfloat>( 4.0 );
+            d.F0 = f0_fcn( beta, TD::G0_alpha_shift[0] );
+            d.F1 = f1_fcn( beta, TD::G0_alpha_shift[0] );
+            d.F2 = f2_fcn( beta, TD::G0_alpha_shift[0] );
+        }
+    }
+
+    cusfloat evaluate( int g, cusfloat mu ) const
+    {
+        const GaussData& d      = cache_[static_cast<std::size_t>( g )];
+        const cusfloat   log_mu = std::log10( mu );
+        const cusfloat   A0     = eval_time_1d<A0T>( log_mu );
+        const cusfloat   e      = std::exp( -d.c * mu );
+        // Horner: (F0 + F1·μ + F2·μ²) · exp(−c·μ)
+        return A0 * e * ( d.F0 + mu * ( d.F1 + mu * d.F2 ) );
+    }
+
+private:
+    struct GaussData { cusfloat c, F0, F1, F2; };
     std::vector<GaussData> cache_;
 };
 
@@ -775,6 +975,45 @@ public:
 private:
     BetaFoldedResidual<dGdttxxC>               residual_;
     G0Gauss3AlphaEvaluator<TDT, A0T, A1T, A2T> g0_;
+};
+
+
+// ---------------------------------------------------------------------------
+// dGdttt
+// ---------------------------------------------------------------------------
+class GaussEval_dGdttt
+{
+    using TDT  = ChebyshevTraits<dGdtttC>;
+    using A0T  = ChebyshevTraits<dGdtttA0C>;
+
+public:
+    GaussEval_dGdttt() = default;
+
+    explicit GaussEval_dGdttt( const std::vector<cusfloat>& beta_gauss )
+        : residual_( beta_gauss )
+        , g0_( beta_gauss, dGdttt_G0_F0, dGdttt_G0_F1, dGdttt_G0_F2 )
+    {}
+
+    void initialize( const std::vector<cusfloat>& beta_gauss )
+    {
+        residual_.initialize( beta_gauss );
+        g0_.initialize( beta_gauss, dGdttt_G0_F0, dGdttt_G0_F1, dGdttt_G0_F2 );
+    }
+
+    cusfloat evaluate( int g, cusfloat mu ) const
+    {
+        return g0_.evaluate( g, mu )
+             + residual_.evaluate( g, mu );
+    }
+
+    cusfloat evaluate_G0      ( int g, cusfloat mu ) const { return g0_.evaluate( g, mu ); }
+    cusfloat evaluate_residual( int g, cusfloat mu ) const { return residual_.evaluate( g, mu ); }
+
+    int num_gauss() const { return residual_.num_gauss(); }
+
+private:
+    BetaFoldedResidual<dGdtttC>                     residual_;
+    G0Gauss1Alpha3TermEvaluator<TDT, A0T>            g0_;
 };
 
 
@@ -1135,6 +1374,63 @@ public:
         cusfloat log_mu[N];
         for ( std::size_t i = 0; i < n; ++i ) log_mu[i] = std::log10( mu[i] );
         eval_time_residual_2d_vec<ChebyshevTraits<dGdttxxC>, N, mode_loop>(
+            n, beta, log_mu, result );
+    }
+};
+
+
+// ---------------------------------------------------------------------------
+// Direct2DEval_dGdttt
+// ---------------------------------------------------------------------------
+class Direct2DEval_dGdttt
+{
+public:
+    Direct2DEval_dGdttt() = default;
+
+    // --- scalar interface ---
+    cusfloat evaluate( cusfloat beta, cusfloat mu ) const
+    {
+        return eval_dGdttt( beta, mu );
+    }
+
+    cusfloat evaluate_G0( cusfloat beta, cusfloat mu ) const
+    {
+        return eval_dGdttt_G0( beta, mu );
+    }
+
+    cusfloat evaluate_residual( cusfloat beta, cusfloat mu ) const
+    {
+        return eval_dGdttt_residual( beta, mu );
+    }
+
+    // --- vectorised interface ---
+    template<std::size_t N, int mode_loop = 0>
+    void evaluate( std::size_t n, const cusfloat* beta, const cusfloat* mu,
+                   cusfloat* result ) const
+    {
+        cusfloat log_mu[N];
+        for ( std::size_t i = 0; i < n; ++i ) log_mu[i] = std::log10( mu[i] );
+        eval_time_residual_2d_vec<ChebyshevTraits<dGdtttC>, N, mode_loop>(
+            n, beta, log_mu, result );
+        for ( std::size_t i = 0; i < n; ++i )
+            result[i] += eval_dGdttt_G0( beta[i], mu[i] );
+    }
+
+    template<std::size_t N, int mode_loop = 0>
+    void evaluate_G0( std::size_t n, const cusfloat* beta, const cusfloat* mu,
+                      cusfloat* result ) const
+    {
+        for ( std::size_t i = 0; i < n; ++i )
+            result[i] = eval_dGdttt_G0( beta[i], mu[i] );
+    }
+
+    template<std::size_t N, int mode_loop = 0>
+    void evaluate_residual( std::size_t n, const cusfloat* beta, const cusfloat* mu,
+                            cusfloat* result ) const
+    {
+        cusfloat log_mu[N];
+        for ( std::size_t i = 0; i < n; ++i ) log_mu[i] = std::log10( mu[i] );
+        eval_time_residual_2d_vec<ChebyshevTraits<dGdtttC>, N, mode_loop>(
             n, beta, log_mu, result );
     }
 };

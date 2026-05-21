@@ -16,6 +16,8 @@
 #include "./inf_depth_coeffs/time/dGdttxxA0.hpp"
 #include "./inf_depth_coeffs/time/dGdttxxA1.hpp"
 #include "./inf_depth_coeffs/time/dGdttxxA2.hpp"
+#include "./inf_depth_coeffs/time/dGdttt.hpp"
+#include "./inf_depth_coeffs/time/dGdtttA0.hpp"
 #include "./inf_depth_coeffs/time/dGdtx.hpp"
 #include "./inf_depth_coeffs/time/dGdtxA0.hpp"
 #include "./inf_depth_coeffs/time/dGdtxA1.hpp"

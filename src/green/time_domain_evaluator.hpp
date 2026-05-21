@@ -229,6 +229,98 @@ inline cusfloat dGdttxx_G0_basis( cusfloat beta, cusfloat mu, cusfloat alpha )
     return ( -beta * beta / static_cast<cusfloat>( 4.0 ) ) * dGdttx_G0_basis( beta, mu, alpha );
 }
 
+// d^3G/dt^3  G0 basis
+//
+// Derived by differentiating dGdtt_G02 = lt' * fj + lt * fj' once more
+// via the product rule (matching the Python dGdttt_G0 implementation):
+//
+//   dGdttt_G0 = lt'' * fj + 2 * lt' * fj' + lt * fj''
+//
+// where:
+//   lt    = π β³/(16√2) · exp(−μβ²/4)
+//   lt'   = π β²/(16√2) · exp(−μβ²/4) · (3 − μβ²/2)
+//   lt''  = π β /(16√2) · exp(−μβ²/4) · (6 − 7μβ²/2 + μ²β⁴/4)
+//   fj    = J_{1/4}(x) J_{−1/4}(x) + J_{3/4}(x) J_{−3/4}(x),   x = β²/8
+//   fj'   = −(β/4) · h,   h = J_{−1/4} J_{5/4} + 2 J_{3/4} J_{1/4} + J_{7/4} J_{−3/4}
+//   fj''  = −(h/4 + β²/16 · dh/dx)
+//           dh/dx = 1/2 J_{−5/4} J_{5/4} + 3/2 fj + 1/2 J_{7/4} J_{−7/4}
+//                 − 3/2 J_{3/4}  J_{5/4} − 3/2 J_{7/4} J_{1/4}
+//                 − 1/2 J_{−1/4} J_{9/4} − 1/2 J_{11/4} J_{−3/4}
+inline cusfloat dGdttt_G0_basis( cusfloat beta, cusfloat mu, cusfloat alpha )
+{
+    if ( beta < static_cast<cusfloat>( 1e-1 ) )
+        return static_cast<cusfloat>( 0.0 );
+
+    const cusfloat scale = static_cast<cusfloat>( PI )
+                           / ( static_cast<cusfloat>( 16.0 )
+                               * static_cast<cusfloat>( std::sqrt( 2.0 ) ) );
+    const cusfloat expt  = std::exp( -beta * beta * mu / static_cast<cusfloat>( 4.0 ) );
+    cusfloat x = beta * beta / static_cast<cusfloat>( 8.0 ) + alpha;
+    if ( x < static_cast<cusfloat>( 1e-6 ) )
+        x = static_cast<cusfloat>( 0.0 );
+
+    using std::cyl_bessel_j;
+
+    // fj = J_{1/4} J_{-1/4} + J_{3/4} J_{-3/4}
+    cusfloat fj = cyl_bessel_j( static_cast<cusfloat>(  0.25 ), x )
+                * cyl_bessel_j( static_cast<cusfloat>( -0.25 ), x )
+                + cyl_bessel_j( static_cast<cusfloat>(  0.75 ), x )
+                * cyl_bessel_j( static_cast<cusfloat>( -0.75 ), x );
+    if ( std::isnan( fj ) ) fj = static_cast<cusfloat>( 0.0 );
+
+    // h = J_{-1/4} J_{5/4} + 2 J_{3/4} J_{1/4} + J_{7/4} J_{-3/4}
+    cusfloat h =       cyl_bessel_j( static_cast<cusfloat>( -0.25 ), x )
+                     * cyl_bessel_j( static_cast<cusfloat>(  1.25 ), x )
+               + static_cast<cusfloat>( 2.0 )
+                     * cyl_bessel_j( static_cast<cusfloat>(  0.75 ), x )
+                     * cyl_bessel_j( static_cast<cusfloat>(  0.25 ), x )
+               +       cyl_bessel_j( static_cast<cusfloat>(  1.75 ), x )
+                     * cyl_bessel_j( static_cast<cusfloat>( -0.75 ), x );
+    if ( std::isnan( h ) ) h = static_cast<cusfloat>( 0.0 );
+
+    // fj' = -(β/4) * h
+    const cusfloat fj_p = ( -beta / static_cast<cusfloat>( 4.0 ) ) * h;
+
+    // dh/dx
+    cusfloat dh =
+          static_cast<cusfloat>( 0.5 ) * cyl_bessel_j( static_cast<cusfloat>( -1.25 ), x )
+                                        * cyl_bessel_j( static_cast<cusfloat>(  1.25 ), x )
+        + static_cast<cusfloat>( 1.5 ) * fj
+        + static_cast<cusfloat>( 0.5 ) * cyl_bessel_j( static_cast<cusfloat>(  1.75 ), x )
+                                        * cyl_bessel_j( static_cast<cusfloat>( -1.75 ), x )
+        - static_cast<cusfloat>( 1.5 ) * cyl_bessel_j( static_cast<cusfloat>(  0.75 ), x )
+                                        * cyl_bessel_j( static_cast<cusfloat>(  1.25 ), x )
+        - static_cast<cusfloat>( 1.5 ) * cyl_bessel_j( static_cast<cusfloat>(  1.75 ), x )
+                                        * cyl_bessel_j( static_cast<cusfloat>(  0.25 ), x )
+        - static_cast<cusfloat>( 0.5 ) * cyl_bessel_j( static_cast<cusfloat>( -0.25 ), x )
+                                        * cyl_bessel_j( static_cast<cusfloat>(  2.25 ), x )
+        - static_cast<cusfloat>( 0.5 ) * cyl_bessel_j( static_cast<cusfloat>(  2.75 ), x )
+                                        * cyl_bessel_j( static_cast<cusfloat>( -0.75 ), x );
+    if ( std::isnan( dh ) ) dh = static_cast<cusfloat>( 0.0 );
+
+    // fj'' = -(h/4 + β²/16 * dh)
+    const cusfloat b2    = beta * beta;
+    const cusfloat fj_pp = -( h / static_cast<cusfloat>( 4.0 )
+                             + b2 / static_cast<cusfloat>( 16.0 ) * dh );
+
+    // lt, lt', lt'' (exponential envelope and its β-derivatives)
+    const cusfloat b3   = b2 * beta;
+    const cusfloat b4   = b2 * b2;
+    const cusfloat lt   = scale * b3 * expt;
+    const cusfloat lt_p = scale * b2 * expt
+                          * ( static_cast<cusfloat>( 3.0 )
+                              - mu * b2 / static_cast<cusfloat>( 2.0 ) );
+    const cusfloat lt_pp = scale * beta * expt
+                           * ( static_cast<cusfloat>( 6.0 )
+                               - static_cast<cusfloat>( 7.0 ) * mu * b2
+                                 / static_cast<cusfloat>( 2.0 )
+                               + mu * mu * b4 / static_cast<cusfloat>( 4.0 ) );
+
+    return lt_pp * fj
+         + static_cast<cusfloat>( 2.0 ) * lt_p * fj_p
+         + lt * fj_pp;
+}
+
 
 // ---------------------------------------------------------------------------
 // G0 contribution evaluator
@@ -360,6 +452,17 @@ inline cusfloat eval_dGdttxx( cusfloat beta, cusfloat mu )
     return G0 + residual;
 }
 
+// -- dGdttt --
+inline cusfloat eval_dGdttt( cusfloat beta, cusfloat mu )
+{
+    using TD  = ChebyshevTraits<dGdtttC>;
+    using A0T = ChebyshevTraits<dGdtttA0C>;
+
+    const cusfloat G0       = eval_G0_1alpha<TD, A0T, dGdttt_G0_basis>( beta, mu );
+    const cusfloat residual = eval_time_residual_2d<TD>( beta, std::log10( mu ) );
+    return G0 + residual;
+}
+
 
 // ---------------------------------------------------------------------------
 // Component-only evaluators (for debugging and decomposed unit tests)
@@ -454,6 +557,19 @@ inline cusfloat eval_dGdttxx_G0( cusfloat beta, cusfloat mu )
 inline cusfloat eval_dGdttxx_residual( cusfloat beta, cusfloat mu )
 {
     using TD = ChebyshevTraits<dGdttxxC>;
+    return eval_time_residual_2d<TD>( beta, std::log10( mu ) );
+}
+
+// dGdttt
+inline cusfloat eval_dGdttt_G0( cusfloat beta, cusfloat mu )
+{
+    using TD  = ChebyshevTraits<dGdtttC>;
+    using A0T = ChebyshevTraits<dGdtttA0C>;
+    return eval_G0_1alpha<TD, A0T, dGdttt_G0_basis>( beta, mu );
+}
+inline cusfloat eval_dGdttt_residual( cusfloat beta, cusfloat mu )
+{
+    using TD = ChebyshevTraits<dGdtttC>;
     return eval_time_residual_2d<TD>( beta, std::log10( mu ) );
 }
 
@@ -723,4 +839,30 @@ template<std::size_t N, int mode_loop = 0>
 void eval_dGdttxx_residual_vec( std::size_t n, const cusfloat* beta, const cusfloat* log_mu, cusfloat* result )
 {
     eval_time_residual_2d_vec<ChebyshevTraits<dGdttxxC>, N, mode_loop>( n, beta, log_mu, result );
+}
+
+
+// -- dGdttt --
+template<std::size_t N, int mode_loop = 0>
+void eval_dGdttt_vec( std::size_t n, const cusfloat* beta, const cusfloat* mu, cusfloat* result )
+{
+    using TD  = ChebyshevTraits<dGdtttC>;
+    cusfloat log_mu[N];
+    compute_log_mu<N>( n, mu, log_mu );
+    eval_time_residual_2d_vec<TD, N, mode_loop>( n, beta, log_mu, result );
+    for ( std::size_t i = 0; i < n; ++i )
+        result[i] += eval_dGdttt_G0( beta[i], mu[i] );
+}
+
+template<std::size_t N, int mode_loop = 0>
+void eval_dGdttt_G0_vec( std::size_t n, const cusfloat* beta, const cusfloat* mu, cusfloat* result )
+{
+    for ( std::size_t i = 0; i < n; ++i )
+        result[i] = eval_dGdttt_G0( beta[i], mu[i] );
+}
+
+template<std::size_t N, int mode_loop = 0>
+void eval_dGdttt_residual_vec( std::size_t n, const cusfloat* beta, const cusfloat* log_mu, cusfloat* result )
+{
+    eval_time_residual_2d_vec<ChebyshevTraits<dGdtttC>, N, mode_loop>( n, beta, log_mu, result );
 }
