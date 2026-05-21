@@ -110,19 +110,23 @@ int     MeshGroup::get_body_id(
     }
     
     // Loop over meshes to have their dimension
+    // NOTE: get_elems_np() and get_panel() are called via virtual dispatch so that
+    // derived classes (e.g. RigidBodyMesh) can expose only their underwater panels
+    // (fully-submerged originals + free-surface-refined halves) without changing
+    // the MeshGroup interface.
     this->panels_cnp[0]         = 0;
     this->panels_raddif_cnp[0]  = 0;
     this->source_nodes_cnp[0]   = 0;
     for ( int i=0; i<this->meshes_np; i++ )
     {
-        // Get mesh group panels list dimensions
-        this->panels_np[i]          = this->meshes[i]->elems_np;
+        // Get mesh group panels list dimensions (virtual: honours RigidBodyMesh)
+        this->panels_np[i]          = this->meshes[i]->get_elems_np( );
         this->panels_cnp[i+1]       = this->panels_cnp[i] + this->panels_np[i];
 
         this->panels_raddif_np[i]   = 0;
-        for ( int j=0; j<this->meshes[i]->elems_np; j++ )
+        for ( int j=0; j<this->meshes[i]->get_elems_np( ); j++ )
         {
-            if ( this->meshes[i]->panels[j]->type == PanelTypeE::DIFFRAC )
+            if ( this->meshes[i]->get_panel( j )->type == PanelTypeE::DIFFRAC )
             {
                 this->panels_raddif_np[i] += 1;
             }
@@ -157,14 +161,16 @@ int     MeshGroup::get_body_id(
     this->source_nodes  = new SourceNode*[this->source_nodes_tnp];
     
     // Loop over meshes to copy all the references into the new vectors
+    // Use virtual get_panel() so RigidBodyMesh can supply its filtered
+    // underwater panel set (fully-submerged + FS-refined panels).
     int start_index = 0;
     for ( int i=0; i<this->meshes_np; i++ )
     {
-        // Loop over panels to copy its reference
+        // Loop over panels to copy its reference (virtual dispatch)
         start_index = this->panels_cnp[i];
-        for ( int j=0; j<this->meshes[i]->elems_np; j++ )
+        for ( int j=0; j<this->meshes[i]->get_elems_np( ); j++ )
         {
-            this->panels[start_index+j] = this->meshes[i]->panels[j];
+            this->panels[start_index+j] = this->meshes[i]->get_panel( j );
         }
 
         // Loop over panels wl to copy its reference
