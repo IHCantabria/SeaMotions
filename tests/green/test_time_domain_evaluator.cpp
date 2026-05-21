@@ -224,6 +224,62 @@ static void test_G0_basis_chain()
 
 
 // ---------------------------------------------------------------------------
+// Test 4b – G0 basis function dGdttt_G0_basis
+//
+// dGdttt is the third time-derivative of G0.  It introduces a quadratic μ
+// dependence so we verify:
+//   - beta < 0.1 returns 0
+//   - non-zero finite result for beta = 5.0
+//   - result changes when mu changes (quadratic μ term must be active)
+// ---------------------------------------------------------------------------
+static void test_G0_basis_dGdttt()
+{
+    // Should return 0 for small beta
+    {
+        const cusfloat val = dGdttt_G0_basis( static_cast<cusfloat>( 0.05 ),
+                                              static_cast<cusfloat>( 0.5 ),
+                                              static_cast<cusfloat>( 0.0 ) );
+        check( val == static_cast<cusfloat>( 0.0 ),
+               "test_G0_basis_dGdttt: beta < 0.1 should return 0" );
+    }
+
+    // Should return a finite non-zero value for beta = 5.0
+    {
+        const cusfloat val = dGdttt_G0_basis( static_cast<cusfloat>( 5.0 ),
+                                              static_cast<cusfloat>( 0.5 ),
+                                              static_cast<cusfloat>( 0.0 ) );
+        check( std::isfinite( val ), "test_G0_basis_dGdttt: expected finite result" );
+        check( val != static_cast<cusfloat>( 0.0 ), "test_G0_basis_dGdttt: expected non-zero result" );
+    }
+
+    // mu dependence: different mu values must give different results
+    {
+        const cusfloat beta = static_cast<cusfloat>( 5.0 );
+        const cusfloat v1   = dGdttt_G0_basis( beta, static_cast<cusfloat>( 1e-4 ), static_cast<cusfloat>( 0.0 ) );
+        const cusfloat v2   = dGdttt_G0_basis( beta, static_cast<cusfloat>( 1e-1 ), static_cast<cusfloat>( 0.0 ) );
+        check( v1 != v2, "test_G0_basis_dGdttt: result must depend on mu" );
+    }
+
+    // Finite over a representative grid
+    {
+        const cusfloat betas[] = { 0.5f, 2.0f, 5.0f, 10.0f, 18.0f };
+        const cusfloat mus[]   = { 1e-4f, 1e-2f, 0.3f, 0.9f };
+        constexpr int nb = 5, nm = 4;
+        for ( int ib = 0; ib < nb; ++ib )
+        for ( int im = 0; im < nm; ++im )
+        {
+            const cusfloat v = dGdttt_G0_basis( betas[ib], mus[im],
+                                                static_cast<cusfloat>( 0.0 ) );
+            check( std::isfinite( v ),
+                   "test_G0_basis_dGdttt: non-finite result in grid" );
+        }
+    }
+
+    std::cout << "PASS test_G0_basis_dGdttt" << std::endl;
+}
+
+
+// ---------------------------------------------------------------------------
 // Test 5 – residual is finite over a representative grid
 // ---------------------------------------------------------------------------
 static void test_residual_finite()
@@ -304,6 +360,9 @@ static void test_all_evaluators_finite()
     check( std::isfinite( eval_dGdttx ( beta, mu ) ), "eval_dGdttx returned non-finite"  );
     check( std::isfinite( eval_dGdttxx( beta, mu ) ), "eval_dGdttxx returned non-finite" );
 
+    // dGdttt shares the dGdtt beta domain (x_max = 19), beta = 5 is in range
+    check( std::isfinite( eval_dGdttt( beta, mu ) ), "eval_dGdttt returned non-finite" );
+
     std::cout << "PASS test_all_evaluators_finite" << std::endl;
 }
 
@@ -348,6 +407,9 @@ static constexpr RefTolerance TOL_dGdtxx_residual  = { 5e+1,  1e+6 };
 static constexpr RefTolerance TOL_dGdtt_residual   = { 2e-1,  1e+2 };
 static constexpr RefTolerance TOL_dGdttx_residual  = { 5e+0,  1e+2 };
 static constexpr RefTolerance TOL_dGdttxx_residual = { 5e+1,  1e+6 };
+// dGdttt: same beta domain as dGdtt (x_max = 19); use matching absolute tolerance
+static constexpr RefTolerance TOL_dGdttt           = { 5e+0,  5e-4 };  // 3rd t-deriv: larger fit error than dGdtt
+static constexpr RefTolerance TOL_dGdttt_residual  = { 5e+0,  1e+2 };
 
 // Evaluator function pointer type
 using EvalFn = cusfloat (*)( cusfloat, cusfloat );
@@ -470,6 +532,7 @@ int main( int argc, char* argv[] )
     test_1d_A_evaluator();
     test_G0_basis_dGdt();
     test_G0_basis_chain();
+    test_G0_basis_dGdttt();
     test_residual_finite();
     test_combined_dGdt();
     test_all_evaluators_finite();
@@ -488,10 +551,13 @@ int main( int argc, char* argv[] )
         }
     }
 
-    // Reference-data tests (require 6 file-path arguments)
-    if ( argc < 7 )
+    // Reference-data tests (require 7 file-path arguments)
+    // argv[1..7]   = total (G0 + residual) reference files
+    // argv[8..14]  = G0-only reference files
+    // argv[15..21] = residual-only reference files
+    if ( argc < 8 )
     {
-        std::cout << "NOTE: No reference data files provided (need 6 paths). "
+        std::cout << "NOTE: No reference data files provided (need 7 paths). "
                      "Skipping reference comparison tests." << std::endl;
     }
     else
@@ -502,28 +568,31 @@ int main( int argc, char* argv[] )
         test_against_reference( argv[4], "dGdtt",   eval_dGdtt,   TOL_dGdtt,   diff_dir );
         test_against_reference( argv[5], "dGdttx",  eval_dGdttx,  TOL_dGdttx,  diff_dir );
         test_against_reference( argv[6], "dGdttxx", eval_dGdttxx, TOL_dGdttxx, diff_dir );
+        test_against_reference( argv[7], "dGdttt",  eval_dGdttt,  TOL_dGdttt,  diff_dir );
     }
 
-    // Decomposed G0 + residual tests (require 6 total + 6 G0 + 6 residual = 18 paths)
-    // argv[ 7..12] = G0 reference files
-    // argv[13..18] = residual reference files
-    if ( argc >= 19 )
+    // Decomposed G0 + residual tests (require 7 total + 7 G0 + 7 residual = 21 paths)
+    // argv[ 8..14] = G0 reference files
+    // argv[15..21] = residual reference files
+    if ( argc >= 22 )
     {
         // G0-only evaluators vs Python-computed analytic G0 reference
-        test_against_reference( argv[7],  "dGdt_G0",    eval_dGdt_G0,    TOL_dGdt,    diff_dir );
-        test_against_reference( argv[8],  "dGdtx_G0",   eval_dGdtx_G0,   TOL_dGdtx,   diff_dir );
-        test_against_reference( argv[9],  "dGdtxx_G0",  eval_dGdtxx_G0,  TOL_dGdtxx,  diff_dir );
-        test_against_reference( argv[10], "dGdtt_G0",   eval_dGdtt_G0,   TOL_dGdtt,   diff_dir );
-        test_against_reference( argv[11], "dGdttx_G0",  eval_dGdttx_G0,  TOL_dGdttx,  diff_dir );
-        test_against_reference( argv[12], "dGdttxx_G0", eval_dGdttxx_G0, TOL_dGdttxx, diff_dir );
+        test_against_reference( argv[8],  "dGdt_G0",    eval_dGdt_G0,    TOL_dGdt,    diff_dir );
+        test_against_reference( argv[9],  "dGdtx_G0",   eval_dGdtx_G0,   TOL_dGdtx,   diff_dir );
+        test_against_reference( argv[10], "dGdtxx_G0",  eval_dGdtxx_G0,  TOL_dGdtxx,  diff_dir );
+        test_against_reference( argv[11], "dGdtt_G0",   eval_dGdtt_G0,   TOL_dGdtt,   diff_dir );
+        test_against_reference( argv[12], "dGdttx_G0",  eval_dGdttx_G0,  TOL_dGdttx,  diff_dir );
+        test_against_reference( argv[13], "dGdttxx_G0", eval_dGdttxx_G0, TOL_dGdttxx, diff_dir );
+        test_against_reference( argv[14], "dGdttt_G0",  eval_dGdttt_G0,  TOL_dGdttt,  diff_dir );
 
         // Residual-only evaluators vs (fcn_db - G0_python) reference
-        test_against_reference( argv[13], "dGdt_residual",    eval_dGdt_residual,    TOL_dGdt_residual,    diff_dir );
-        test_against_reference( argv[14], "dGdtx_residual",   eval_dGdtx_residual,   TOL_dGdtx_residual,   diff_dir );
-        test_against_reference( argv[15], "dGdtxx_residual",  eval_dGdtxx_residual,  TOL_dGdtxx_residual,  diff_dir );
-        test_against_reference( argv[16], "dGdtt_residual",   eval_dGdtt_residual,   TOL_dGdtt_residual,   diff_dir );
-        test_against_reference( argv[17], "dGdttx_residual",  eval_dGdttx_residual,  TOL_dGdttx_residual,  diff_dir );
-        test_against_reference( argv[18], "dGdttxx_residual", eval_dGdttxx_residual, TOL_dGdttxx_residual, diff_dir );
+        test_against_reference( argv[15], "dGdt_residual",    eval_dGdt_residual,    TOL_dGdt_residual,    diff_dir );
+        test_against_reference( argv[16], "dGdtx_residual",   eval_dGdtx_residual,   TOL_dGdtx_residual,   diff_dir );
+        test_against_reference( argv[17], "dGdtxx_residual",  eval_dGdtxx_residual,  TOL_dGdtxx_residual,  diff_dir );
+        test_against_reference( argv[18], "dGdtt_residual",   eval_dGdtt_residual,   TOL_dGdtt_residual,   diff_dir );
+        test_against_reference( argv[19], "dGdttx_residual",  eval_dGdttx_residual,  TOL_dGdttx_residual,  diff_dir );
+        test_against_reference( argv[20], "dGdttxx_residual", eval_dGdttxx_residual, TOL_dGdttxx_residual, diff_dir );
+        test_against_reference( argv[21], "dGdttt_residual",  eval_dGdttt_residual,  TOL_dGdttt_residual,  diff_dir );
     }
 
     std::cout << "All tests PASSED." << std::endl;

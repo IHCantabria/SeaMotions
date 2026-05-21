@@ -640,27 +640,30 @@ set_hdf5_target( test_time_domain_evaluator_cmd )
 
 set(
         test_time_domain_evaluator_args
-        # Total function reference  (argv[1..6])
+        # Total function reference  (argv[1..7])
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdt.dat"
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdtx.dat"
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdtxx.dat"
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdtt.dat"
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdttx.dat"
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdttxx.dat"
-        # G0-only reference  (argv[7..12])
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdttt.dat"
+        # G0-only reference  (argv[8..14])
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdt_G0.dat"
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdtx_G0.dat"
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdtxx_G0.dat"
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdtt_G0.dat"
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdttx_G0.dat"
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdttxx_G0.dat"
-        # Residual-only reference  (argv[13..18])
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdttt_G0.dat"
+        # Residual-only reference  (argv[15..21])
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdt_residual.dat"
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdtx_residual.dat"
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdtxx_residual.dat"
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdtt_residual.dat"
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdttx_residual.dat"
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdttxx_residual.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdttt_residual.dat"
     )
 
 add_test(
@@ -698,27 +701,30 @@ set_hdf5_target( test_time_domain_evaluator_gauss_cmd )
 # Reuse the same reference data files as test_time_domain_evaluator
 set(
         test_time_domain_evaluator_gauss_args
-        # Total function reference  (argv[1..6])
+        # Total function reference  (argv[1..7])
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdt.dat"
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdtx.dat"
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdtxx.dat"
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdtt.dat"
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdttx.dat"
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdttxx.dat"
-        # G0-only reference  (argv[7..12])
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdttt.dat"
+        # G0-only reference  (argv[8..14])
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdt_G0.dat"
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdtx_G0.dat"
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdtxx_G0.dat"
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdtt_G0.dat"
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdttx_G0.dat"
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdttxx_G0.dat"
-        # Residual-only reference  (argv[13..18])
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdttt_G0.dat"
+        # Residual-only reference  (argv[15..21])
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdt_residual.dat"
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdtx_residual.dat"
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdtxx_residual.dat"
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdtt_residual.dat"
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdttx_residual.dat"
         "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdttxx_residual.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdttt_residual.dat"
     )
 
 add_test(

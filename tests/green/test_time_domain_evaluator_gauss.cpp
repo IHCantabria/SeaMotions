@@ -80,6 +80,7 @@ static void test_gauss_construction()
     GaussEval_dGdtt   ev_dGdtt  ( betas );
     GaussEval_dGdttx  ev_dGdttx ( betas );
     GaussEval_dGdttxx ev_dGdttxx( betas );
+    GaussEval_dGdttt  ev_dGdttt ( betas );
 
     check( ev_dGdt.num_gauss()    == ng, "test_gauss_construction: dGdt    wrong Gauss count" );
     check( ev_dGdtx.num_gauss()   == ng, "test_gauss_construction: dGdtx   wrong Gauss count" );
@@ -87,6 +88,7 @@ static void test_gauss_construction()
     check( ev_dGdtt.num_gauss()   == ng, "test_gauss_construction: dGdtt   wrong Gauss count" );
     check( ev_dGdttx.num_gauss()  == ng, "test_gauss_construction: dGdttx  wrong Gauss count" );
     check( ev_dGdttxx.num_gauss() == ng, "test_gauss_construction: dGdttxx wrong Gauss count" );
+    check( ev_dGdttt.num_gauss()  == ng, "test_gauss_construction: dGdttt  wrong Gauss count" );
 
     std::cout << "PASS test_gauss_construction" << std::endl;
 }
@@ -219,6 +221,57 @@ static void test_G0_factor_chain()
 
 
 // ---------------------------------------------------------------------------
+// Test 4c – G0 three-term (quadratic μ) factorisation for dGdttt
+//
+// Verify that for each (beta, mu):
+//   (F0 + F1*μ + F2*μ²) * exp(-β²μ/4)
+//   == dGdttt_G0_basis(beta, mu, alpha=0)
+//
+// This confirms that dGdttt_G0_F0/F1/F2 correctly factor out the μ
+// dependence, which is the assumption that G0Gauss1Alpha3TermEvaluator
+// relies on.
+// ---------------------------------------------------------------------------
+static void test_G0_3term_factorisation()
+{
+    const cusfloat betas[]  = { 0.5f, 2.0f, 5.0f, 10.0f, 18.0f };
+    const cusfloat mus[]    = { 1e-4f, 1e-2f, 0.3f, 0.9f };
+    constexpr int nb = 5, nm = 4;
+    constexpr cusfloat tol = static_cast<cusfloat>( 1e-5 );
+
+    // dGdttt has a single alpha shift == 0
+    const cusfloat alpha = static_cast<cusfloat>( 0.0 );
+
+    for ( int ib = 0; ib < nb; ++ib )
+    for ( int im = 0; im < nm; ++im )
+    {
+        const cusfloat beta = betas[ib];
+        const cusfloat mu   = mus[im];
+
+        const cusfloat c    = beta * beta / static_cast<cusfloat>( 4.0 );
+        const cusfloat e    = std::exp( -c * mu );
+        const cusfloat F0   = dGdttt_G0_F0( beta, alpha );
+        const cusfloat F1   = dGdttt_G0_F1( beta, alpha );
+        const cusfloat F2   = dGdttt_G0_F2( beta, alpha );
+
+        check( std::isfinite( F0 ), "test_G0_3term_factorisation: F0 is not finite" );
+        check( std::isfinite( F1 ), "test_G0_3term_factorisation: F1 is not finite" );
+        check( std::isfinite( F2 ), "test_G0_3term_factorisation: F2 is not finite" );
+
+        // Reconstruct from factored form using Horner
+        const cusfloat reconstructed = ( F0 + mu * ( F1 + mu * F2 ) ) * e;
+
+        // Reference from original basis function
+        const cusfloat reference = dGdttt_G0_basis( beta, mu, alpha );
+
+        check( near( reconstructed, reference, tol ),
+               "test_G0_3term_factorisation: F0/F1/F2 factorisation does not match dGdttt_G0_basis" );
+    }
+
+    std::cout << "PASS test_G0_3term_factorisation" << std::endl;
+}
+
+
+// ---------------------------------------------------------------------------
 // Test 5 – GaussEval_*::evaluate agrees with the original free functions
 //
 // GaussEval_*::evaluate(g, mu) must produce exactly (up to floating-point
@@ -238,6 +291,7 @@ static void test_gauss_vs_original()
     GaussEval_dGdtt   ev_dGdtt  ( betas );
     GaussEval_dGdttx  ev_dGdttx ( betas );
     GaussEval_dGdttxx ev_dGdttxx( betas );
+    GaussEval_dGdttt  ev_dGdttt ( betas );
 
     const cusfloat mus[] = { 1e-4f, 1e-3f, 1e-2f, 0.1f };
     constexpr int nm = 4;
@@ -275,6 +329,10 @@ static void test_gauss_vs_original()
                    "test_gauss_vs_original: dGdttx mismatch" );
             check( near( ev_dGdttxx.evaluate( g, mu ), ref_dGdttxx, rel_tol, abs_tol ),
                    "test_gauss_vs_original: dGdttxx mismatch" );
+
+            const cusfloat ref_dGdttt = eval_dGdttt( beta, mu );
+            check( near( ev_dGdttt.evaluate( g, mu ), ref_dGdttt, rel_tol, abs_tol ),
+                   "test_gauss_vs_original: dGdttt mismatch" );
         }
     }
 
@@ -296,6 +354,7 @@ static void test_component_sum()
     GaussEval_dGdtt   ev_dGdtt  ( betas );
     GaussEval_dGdttx  ev_dGdttx ( betas );
     GaussEval_dGdttxx ev_dGdttxx( betas );
+    GaussEval_dGdttt  ev_dGdttt ( betas );
 
     const cusfloat mus[] = { 1e-3f, 1e-2f, 0.1f };
     constexpr int nm = 3;
@@ -323,6 +382,7 @@ static void test_component_sum()
             check_sum( ev_dGdtt,   "test_component_sum: dGdtt   G0+residual != total" );
             check_sum( ev_dGdttx,  "test_component_sum: dGdttx  G0+residual != total" );
             check_sum( ev_dGdttxx, "test_component_sum: dGdttxx G0+residual != total" );
+            check_sum( ev_dGdttt,  "test_component_sum: dGdttt  G0+residual != total" );
         }
     }
 
@@ -331,10 +391,11 @@ static void test_component_sum()
 
 
 // ---------------------------------------------------------------------------
-// Test 7 – all six evaluators produce finite values across a wide grid
+// Test 7 – all evaluators produce finite values across a wide grid
 // ---------------------------------------------------------------------------
 static void test_all_evaluators_finite()
 {
+    // All evaluators except dGdttt can use the full beta range [0, 30]
     const std::vector<cusfloat> betas = { 0.5f, 2.0f, 5.0f, 10.0f, 15.0f, 22.0f, 27.0f };
 
     GaussEval_dGdt    ev_dGdt   ( betas );
@@ -344,9 +405,14 @@ static void test_all_evaluators_finite()
     GaussEval_dGdttx  ev_dGdttx ( betas );
     GaussEval_dGdttxx ev_dGdttxx( betas );
 
+    // dGdttt has beta domain [0, 19] — use a separate, smaller set
+    const std::vector<cusfloat> betas_ttt = { 0.5f, 2.0f, 5.0f, 8.0f, 12.0f, 17.0f };
+    GaussEval_dGdttt  ev_dGdttt ( betas_ttt );
+
     const cusfloat mus[] = { 1e-4f, 1e-3f, 1e-2f, 5e-2f, 2e-1f };
     constexpr int nm = 5;
-    const int ng = static_cast<int>( betas.size() );
+    const int ng     = static_cast<int>( betas.size() );
+    const int ng_ttt = static_cast<int>( betas_ttt.size() );
 
     for ( int g = 0; g < ng; ++g )
     {
@@ -360,6 +426,14 @@ static void test_all_evaluators_finite()
             check( std::isfinite( ev_dGdtt.evaluate  ( g, mu ) ), "test_all_evaluators_finite: dGdtt"   );
             check( std::isfinite( ev_dGdttx.evaluate ( g, mu ) ), "test_all_evaluators_finite: dGdttx"  );
             check( std::isfinite( ev_dGdttxx.evaluate( g, mu ) ), "test_all_evaluators_finite: dGdttxx" );
+        }
+    }
+    for ( int g = 0; g < ng_ttt; ++g )
+    {
+        for ( int im = 0; im < nm; ++im )
+        {
+            const cusfloat mu = mus[im];
+            check( std::isfinite( ev_dGdttt.evaluate( g, mu ) ), "test_all_evaluators_finite: dGdttt" );
         }
     }
 
@@ -392,6 +466,9 @@ static constexpr RefTolerance TOL_dGdtxx_residual  = { 5e+1,  1e+6 };
 static constexpr RefTolerance TOL_dGdtt_residual   = { 2e-1,  1e+2 };
 static constexpr RefTolerance TOL_dGdttx_residual  = { 5e+0,  1e+2 };
 static constexpr RefTolerance TOL_dGdttxx_residual = { 5e+1,  1e+6 };
+// dGdttt: same domain as dGdtt (beta_max=19), use matching tolerances
+static constexpr RefTolerance TOL_dGdttt           = { 5e+0,  5e-4 };  // 3rd t-deriv: larger fit error than dGdtt
+static constexpr RefTolerance TOL_dGdttt_residual  = { 5e+0,  1e+2 };
 
 // Generic Gauss-evaluator test: the evaluator instance is already constructed
 // with the beta values read from the reference file; we build a new evaluator
@@ -535,6 +612,7 @@ int main( int argc, char* argv[] )
     test_residual_fold_finite();
     test_G0_F0_F1_finite();
     test_G0_factor_chain();
+    test_G0_3term_factorisation();
     test_gauss_vs_original();
     test_component_sum();
     test_all_evaluators_finite();
@@ -557,9 +635,14 @@ int main( int argc, char* argv[] )
     // argv[13..18] = residual-only reference files
     // (same file set as test_time_domain_evaluator)
 
-    if ( argc < 7 )
+    // --- Reference-data tests ---
+    // argv[1..7]   = total (G0 + residual) reference files
+    // argv[8..14]  = G0-only reference files
+    // argv[15..21] = residual-only reference files
+
+    if ( argc < 8 )
     {
-        std::cout << "NOTE: No reference data files provided (need 6 paths). "
+        std::cout << "NOTE: No reference data files provided (need 7 paths). "
                      "Skipping reference comparison tests." << std::endl;
     }
     else
@@ -570,28 +653,31 @@ int main( int argc, char* argv[] )
         test_gauss_against_reference<GaussEval_dGdtt  >( argv[4], "dGdtt",   &GaussEval_dGdtt::evaluate,   TOL_dGdtt,   diff_dir );
         test_gauss_against_reference<GaussEval_dGdttx >( argv[5], "dGdttx",  &GaussEval_dGdttx::evaluate,  TOL_dGdttx,  diff_dir );
         test_gauss_against_reference<GaussEval_dGdttxx>( argv[6], "dGdttxx", &GaussEval_dGdttxx::evaluate, TOL_dGdttxx, diff_dir );
+        test_gauss_against_reference<GaussEval_dGdttt >( argv[7], "dGdttt",  &GaussEval_dGdttt::evaluate,  TOL_dGdttt,  diff_dir );
     }
 
-    if ( argc >= 13 )
+    if ( argc >= 15 )
     {
         // G0-only
-        test_gauss_against_reference<GaussEval_dGdt   >( argv[7],  "dGdt_G0",    &GaussEval_dGdt::evaluate_G0,    TOL_dGdt,    diff_dir );
-        test_gauss_against_reference<GaussEval_dGdtx  >( argv[8],  "dGdtx_G0",   &GaussEval_dGdtx::evaluate_G0,   TOL_dGdtx,   diff_dir );
-        test_gauss_against_reference<GaussEval_dGdtxx >( argv[9],  "dGdtxx_G0",  &GaussEval_dGdtxx::evaluate_G0,  TOL_dGdtxx,  diff_dir );
-        test_gauss_against_reference<GaussEval_dGdtt  >( argv[10], "dGdtt_G0",   &GaussEval_dGdtt::evaluate_G0,   TOL_dGdtt,   diff_dir );
-        test_gauss_against_reference<GaussEval_dGdttx >( argv[11], "dGdttx_G0",  &GaussEval_dGdttx::evaluate_G0,  TOL_dGdttx,  diff_dir );
-        test_gauss_against_reference<GaussEval_dGdttxx>( argv[12], "dGdttxx_G0", &GaussEval_dGdttxx::evaluate_G0, TOL_dGdttxx, diff_dir );
+        test_gauss_against_reference<GaussEval_dGdt   >( argv[8],  "dGdt_G0",    &GaussEval_dGdt::evaluate_G0,    TOL_dGdt,    diff_dir );
+        test_gauss_against_reference<GaussEval_dGdtx  >( argv[9],  "dGdtx_G0",   &GaussEval_dGdtx::evaluate_G0,   TOL_dGdtx,   diff_dir );
+        test_gauss_against_reference<GaussEval_dGdtxx >( argv[10], "dGdtxx_G0",  &GaussEval_dGdtxx::evaluate_G0,  TOL_dGdtxx,  diff_dir );
+        test_gauss_against_reference<GaussEval_dGdtt  >( argv[11], "dGdtt_G0",   &GaussEval_dGdtt::evaluate_G0,   TOL_dGdtt,   diff_dir );
+        test_gauss_against_reference<GaussEval_dGdttx >( argv[12], "dGdttx_G0",  &GaussEval_dGdttx::evaluate_G0,  TOL_dGdttx,  diff_dir );
+        test_gauss_against_reference<GaussEval_dGdttxx>( argv[13], "dGdttxx_G0", &GaussEval_dGdttxx::evaluate_G0, TOL_dGdttxx, diff_dir );
+        test_gauss_against_reference<GaussEval_dGdttt >( argv[14], "dGdttt_G0",  &GaussEval_dGdttt::evaluate_G0,  TOL_dGdttt,  diff_dir );
     }
 
-    if ( argc >= 19 )
+    if ( argc >= 22 )
     {
         // Residual-only
-        test_gauss_against_reference<GaussEval_dGdt   >( argv[13], "dGdt_residual",    &GaussEval_dGdt::evaluate_residual,    TOL_dGdt_residual,    diff_dir );
-        test_gauss_against_reference<GaussEval_dGdtx  >( argv[14], "dGdtx_residual",   &GaussEval_dGdtx::evaluate_residual,   TOL_dGdtx_residual,   diff_dir );
-        test_gauss_against_reference<GaussEval_dGdtxx >( argv[15], "dGdtxx_residual",  &GaussEval_dGdtxx::evaluate_residual,  TOL_dGdtxx_residual,  diff_dir );
-        test_gauss_against_reference<GaussEval_dGdtt  >( argv[16], "dGdtt_residual",   &GaussEval_dGdtt::evaluate_residual,   TOL_dGdtt_residual,   diff_dir );
-        test_gauss_against_reference<GaussEval_dGdttx >( argv[17], "dGdttx_residual",  &GaussEval_dGdttx::evaluate_residual,  TOL_dGdttx_residual,  diff_dir );
-        test_gauss_against_reference<GaussEval_dGdttxx>( argv[18], "dGdttxx_residual", &GaussEval_dGdttxx::evaluate_residual, TOL_dGdttxx_residual, diff_dir );
+        test_gauss_against_reference<GaussEval_dGdt   >( argv[15], "dGdt_residual",    &GaussEval_dGdt::evaluate_residual,    TOL_dGdt_residual,    diff_dir );
+        test_gauss_against_reference<GaussEval_dGdtx  >( argv[16], "dGdtx_residual",   &GaussEval_dGdtx::evaluate_residual,   TOL_dGdtx_residual,   diff_dir );
+        test_gauss_against_reference<GaussEval_dGdtxx >( argv[17], "dGdtxx_residual",  &GaussEval_dGdtxx::evaluate_residual,  TOL_dGdtxx_residual,  diff_dir );
+        test_gauss_against_reference<GaussEval_dGdtt  >( argv[18], "dGdtt_residual",   &GaussEval_dGdtt::evaluate_residual,   TOL_dGdtt_residual,   diff_dir );
+        test_gauss_against_reference<GaussEval_dGdttx >( argv[19], "dGdttx_residual",  &GaussEval_dGdttx::evaluate_residual,  TOL_dGdttx_residual,  diff_dir );
+        test_gauss_against_reference<GaussEval_dGdttxx>( argv[20], "dGdttxx_residual", &GaussEval_dGdttxx::evaluate_residual, TOL_dGdttxx_residual, diff_dir );
+        test_gauss_against_reference<GaussEval_dGdttt >( argv[21], "dGdttt_residual",  &GaussEval_dGdttt::evaluate_residual,  TOL_dGdttt_residual,  diff_dir );
     }
 
     std::cout << "All tests PASSED." << std::endl;
