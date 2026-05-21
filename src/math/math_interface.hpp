@@ -417,6 +417,23 @@ template<>
 inline const auto& pgetrf<std::complex<double>> = pzgetrf;
 
 
+// Interface for ScaLapack triangular solve routines (LU back-substitution)
+template<typename T>
+inline const auto& pgetrs = psgetrs;
+
+template<>
+inline const auto& pgetrs<float> = psgetrs;
+
+template<>
+inline const auto& pgetrs<double> = pdgetrs;
+
+template<>
+inline const auto& pgetrs<std::complex<float>> = pcgetrs;
+
+template<>
+inline const auto& pgetrs<std::complex<double>> = pzgetrs;
+
+
 // Interface for ScaLapack matrix norm routines
 template<typename T>
 inline const auto& plange = pdlange;
