@@ -23,6 +23,8 @@
 // Include local modules
 #include "../containers/source_node.hpp"
 #include "../green/pulsating_fin_depth.hpp"
+#include "../green/time_domain_evaluator.hpp"
+#include "../math/math_tools.hpp"
 #include "../waves/wave_dispersion_fo.hpp"
 
 
@@ -32,7 +34,6 @@ struct GWTFcnsInterfaceT
 protected:
     // Define protected attributes
     cusfloat                    _beta[N];
-    cusfloat                    _dG_dn[N];
     cusfloat                    _dX[N];
     cusfloat                    _dY[N];
     cusfloat                    _dZ[N];
@@ -41,9 +42,12 @@ protected:
     cusfloat                    _ftab[N];
     cusfloat                    _ftab_dmu[N];
     cusfloat                    _ftab_dt[N];
+    cusfloat                    _ftab_dtt[N];
+    cusfloat                    _ftab_dtmu[N];
     cusfloat                    _grav_acc               = 9.81;
     cusfloat                    _mu[N];
     cusfloat                    _lt[N];
+    cusfloat                    _lt2[N];
     cusfloat                    _R[N];
     cusfloat                    _R2[N];
     cusfloat                    _R3[N];
@@ -55,10 +59,15 @@ protected:
 
 public:
     // Define public attributes
-    cusfloat    G[N];         // Green function value
-    cusfloat    dG_dx[N];     // Green function x derivative
-    cusfloat    dG_dy[N];     // Green function y derivative
-    cusfloat    dG_dz[N];     // Green function z derivative
+    cusfloat    dG_dtn[N];      // Green function first order time normal derivative
+    cusfloat    dG_dtx[N];      // Green function first order time x derivative
+    cusfloat    dG_dty[N];      // Green function first order time y derivative
+    cusfloat    dG_dtz[N];      // Green function first order time z derivative
+    cusfloat    dG_dtt[N];      // Green function second order time derivative
+    cusfloat    dG_dttn[N];     // Green function second order time normal derivative
+    cusfloat    dG_dttx[N];     // Green function second order time x derivative
+    cusfloat    dG_dtty[N];     // Green function second order time y derivative
+    cusfloat    dG_dttz[N];     // Green function second order time z derivative
 
     // Define constructors and destructors
     GWTFcnsInterfaceT( )   = default;
@@ -71,7 +80,6 @@ public:
                 );
 
     // Define class methods
-    template<auto Kernel>
     void        operator()( 
                                     cusfloat*   xi,
                                     cusfloat*   eta,
@@ -87,7 +95,7 @@ public:
 
     void        set_source_i(
                                     SourceNode* source_node,
-                                    cuscomplex  source_value
+                                    cusfloat    source_value
 
                             );
 

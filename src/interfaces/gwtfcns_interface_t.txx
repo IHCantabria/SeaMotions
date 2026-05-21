@@ -23,6 +23,7 @@
 #include "../math/shape_functions.hpp"
 #include "../math/math_tools.hpp"
 #include "../math/math_interface.hpp"
+#include "../green/time_domain_evaluator.hpp"
 
 
 template<std::size_t N>
@@ -41,7 +42,6 @@ GWTFcnsInterfaceT<N>::GWTFcnsInterfaceT(
 
 
 template<std::size_t N>
-template<auto Kernel>
 void        GWTFcnsInterfaceT<N>::operator()( 
                                                         cusfloat*   ,
                                                         cusfloat*   ,
@@ -86,7 +86,8 @@ void        GWTFcnsInterfaceT<N>::operator()(
     // Calculate leading term
     for ( std::size_t i=0; i<N; i++ )
     {
-        this->_lt[i] = 2.0 * std::sqrt( this->_grav_acc / this->_R[i] );
+        this->_lt[i]  = 2.0 * std::sqrt( this->_grav_acc / this->_R[i] );
+        this->_lt2[i] = 2.0 * this->_grav_acc / this->_R2[i];
     }
 
     // Calculate beta and mu
@@ -97,32 +98,41 @@ void        GWTFcnsInterfaceT<N>::operator()(
     }
 
     // Calculate tabulated integrals
-    clear_vector<N>( this->_ftab );
-    clear_vector<N>( this->_ftab_dmu );
-    clear_vector<N>( this->_ftab_dt );
+    clear_vector<cusfloat, N>( this->_ftab );
+    clear_vector<cusfloat, N>( this->_ftab_dmu );
+    clear_vector<cusfloat, N>( this->_ftab_dt );
 
-    eval_dGdt_vec<N, STATIC_LOOP_ON( N, this->_beta, this->_mu, this->_ftab );
-    eval_dGdtx_vec<N, STATIC_LOOP_ON( N, this->_beta, this->_mu, this->_ftab_dmu );
-    eval_dGdtt_vec<N, STATIC_LOOP_ON( N, this->_beta, this->_mu, this->_ftab_dt );
-
-    // Calculate G
-    for ( std::size_t i=0; i<N; i++ )
-    {
-        this->G[i] = this->_lt[i] * this->_ftab[i];
-    }
+    eval_dGdt_vec<N, STATIC_LOOP_ON>( N, this->_beta, this->_mu, this->_ftab );
+    eval_dGdtx_vec<N, STATIC_LOOP_ON>( N, this->_beta, this->_mu, this->_ftab_dmu );
+    eval_dGdtt_vec<N, STATIC_LOOP_ON>( N, this->_beta, this->_mu, this->_ftab_dt );
+    eval_dGdttx_vec<N, STATIC_LOOP_ON>( N, this->_beta, this->_mu, this->_ftab_dtmu );
+    eval_dGdttt_vec<N, STATIC_LOOP_ON>( N, this->_beta, this->_mu, this->_ftab_dtt );
 
     // Calculate X, Y and Z cartesian coordinates derivatives
-    cusfloat dc = 0.0;
+    cusfloat a = 0.0;
+    cusfloat b = 0.0;
+    cusfloat c = 0.0;
     for ( std::size_t i=0; i<N; i++ )
     {
-        dc              = this->_lt[i] * (
-                                                -( this->_ftab[i] + this->_beta[i] * this->_ftab_dt[i] ) / this->_R2[i]
-                                                +
-                                                this->_ftab_dmu[i] * ( this->_dZp[i] / this->_R3[i] );
-                                            );
-        this->dG_dx[i] = this->_dX[i] * dc;
-        this->dG_dy[i] = this->_dY[i] * dc;
-        this->dG_dz[i] = this->_dZ[i] * dc + this->_lt[i] * this->_ftab_dmu[i] / this->_R[i];
+        // Calculate first order time derivative
+        a                   = - this->_lt[i] / this->_R2[i];
+        b                   = -1.5 * this->_ftab[i];
+        c                   = - 0.5 * this->_beta[i] * this->_ftab_dt[i] + this->_ftab_dmu[i] * this->_dZp[i] / this->_R[i];
+        this->dG_dtx[i]     = a * ( b + this->_dX[i] * c );
+        this->dG_dty[i]     = a * ( b + this->_dY[i] * c );
+        this->dG_dtz[i]     = a * ( b + this->_dZ[i] * c ) + this->_lt[i] * this->_ftab_dmu[i] / this->_R[i];
+
+        // Calculate second order time derivative
+        a                   = - this->_lt2[i] * ( 
+                                                    - 2.0 * this->_ftab_dt[i]
+                                                    - 0.5 * this->_beta[i] * this->_ftab_dtt[i]
+                                                    + this->_ftab_dtmu[i] * this->_dZp[i] / this->_R[i]
+                                                ) / this->_R2[i];
+        this->dG_dtt[i]     = - this->_lt2[i] * this->_ftab_dt[i];
+        this->dG_dttx[i]    = a * this->_dX[i];
+        this->dG_dtty[i]    = a * this->_dY[i];
+        this->dG_dttz[i]    = a * this->_dZ[i] + this->_lt2[i] * this->_ftab_dtmu[i] / this->_R[i];
+
     }
 
     // Calculate normal derivate
@@ -132,13 +142,22 @@ void        GWTFcnsInterfaceT<N>::operator()(
 
     for ( std::size_t i=0; i<N; i++ )
     {
-        this->dG_dn[i] = (
+        this->dG_dtn[i] = (
                             - 
-                            this->dG_dx[i] * nx_pf
+                            this->dG_dtx[i] * nx_pf
                             -
-                            this->dG_dy[i] * ny_pf
+                            this->dG_dty[i] * ny_pf
                             +
-                            this->dG_dz[i] * nz_pf
+                            this->dG_dtz[i] * nz_pf
+                        );
+
+        this->dG_dttn[i] = (
+                            - 
+                            this->dG_dttx[i] * nx_pf
+                            -
+                            this->dG_dtty[i] * ny_pf
+                            +
+                            this->dG_dttz[i] * nz_pf
                         );
     }
     
@@ -159,7 +178,7 @@ void    GWTFcnsInterfaceT<N>::set_field_point(
 template<std::size_t N>
 void    GWTFcnsInterfaceT<N>::set_source_i(
                                             SourceNode* source_node,
-                                            cuscomplex  source_value
+                                            cusfloat    source_value
                                     )
 {
     this->_source_i     = source_node;
