@@ -284,9 +284,10 @@ void TimeSolver<N, NGPT>::_initialize_structural_dynamics( )
         CSRMatrix* damp_mat = new CSRMatrix( dofs_np, damp_dense );
 
         // Per-DOF kinematic restrictions read from the body definition file
-        // (0 = free, 1 = fixed per DOF: surge, sway, heave, roll, pitch, yaw).
-        // BodyDef owns the array; do not free it here.
-        int* restrictions = this->_input->bodies[ib]->dof_restrictions;
+        // (false = free, true = fixed per DOF: surge, sway, heave, roll, pitch, yaw).
+        // Convert bool[6] to int[6] as required by GeneralizedAlpha.
+        int restrictions[6];
+        for ( int k=0; k<6; k++ ) restrictions[k] = this->_input->bodies[ib]->dof_restrictions[k] ? 1 : 0;
 
         cusfloat* y0_pos = this->_body_pos[ib].data( );
         cusfloat* y0_vel = this->_body_vel[ib].data( );
