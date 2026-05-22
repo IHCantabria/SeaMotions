@@ -506,7 +506,7 @@ void InputT::read_case( const std::string& folder_path )
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     // Read wave heading
-    target_signal   = "Head";
+    target_signal   = "WaveH";
     read_signal     = read_channel_value( infile, this->wave_heading );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
