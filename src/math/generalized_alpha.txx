@@ -122,10 +122,14 @@ void    GeneralizedAlpha<T>::_build(
         "Error after MKL_SPARSE_D_CREATE_CSR - stiff_mat \n"
     );
 
-    // Storage restrictions pointer if not done previously
+    // Storage restrictions pointer if not done previously.
+    // Always make an internal copy so that the caller's buffer does not
+    // need to outlive this object.
     if ( !this->_is_restrictions )
     {
-        this->_restrictions = restrictions;
+        this->_restrictions    = generate_empty_vector<int>( this->rows_np );
+        this->_is_restrictions = true;
+        for ( int _i=0; _i<this->rows_np; _i++ ) this->_restrictions[_i] = restrictions[_i];
     }
 
     // Check for restrictions in input kinematics
