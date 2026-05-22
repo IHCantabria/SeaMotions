@@ -494,7 +494,7 @@ void FormulationKernelBackendT<N, NGPT>::compute_potential_derivatives( )
         const cusfloat aw = this->_input->wave_amp;
         const cusfloat h  = this->_input->water_depth;
         const cusfloat g  = this->_input->grav_acc;
-        const cusfloat mu = this->_input->head * PI / static_cast<cusfloat>( 180.0 );
+        const cusfloat mu = this->_input->wave_heading * PI / static_cast<cusfloat>( 180.0 );
         const cusfloat t  = this->_t_current;
 
         if ( aw > static_cast<cusfloat>( 0.0 ) && w > static_cast<cusfloat>( 0.0 ) )

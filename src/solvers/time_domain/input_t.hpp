@@ -69,7 +69,7 @@ public:
     // Solver controls
     cusfloat                    sim_time            = 100.0;
     cusfloat                    dt                  = 0.01;
-    cusfloat                    head                = 0.0;     // heading in degrees
+    cusfloat                    wave_heading        = 0.0;     // heading in degrees
 
     // Body definitions
     std::vector<std::string>    bodies_finame       ;

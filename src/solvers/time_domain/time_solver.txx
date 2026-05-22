@@ -476,7 +476,7 @@ void TimeSolver<N, NGPT>::_compute_body_vel_bc(
     const cusfloat g  = this->_input->grav_acc;
 
     // Convert heading from degrees to radians
-    const cusfloat mu = this->_input->head * PI / static_cast<cusfloat>( 180.0 );
+    const cusfloat mu = this->_input->wave_heading * PI / static_cast<cusfloat>( 180.0 );
 
     const bool has_wave = ( aw > static_cast<cusfloat>( 0.0 ) && w > static_cast<cusfloat>( 0.0 ) );
 
