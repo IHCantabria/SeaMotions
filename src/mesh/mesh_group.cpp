@@ -194,6 +194,53 @@ int     MeshGroup::get_body_id(
 }
 
 
+void MeshGroup::define_source_nodes( int poly_order )
+{
+    // Free previously owned SourceNode objects (if this method was called before)
+    if ( this->_owns_source_nodes && this->source_nodes != nullptr )
+    {
+        for ( int i=0; i<this->source_nodes_tnp; i++ )
+        {
+            delete this->source_nodes[i];
+        }
+    }
+    delete [] this->source_nodes;
+    this->source_nodes      = nullptr;
+    this->source_nodes_tnp  = 0;
+    this->_owns_source_nodes = false;
+
+    if ( poly_order != 0 )
+    {
+        std::cerr << "MeshGroup::define_source_nodes: only poly_order=0 is currently supported." << std::endl;
+        throw std::runtime_error( "MeshGroup::define_source_nodes: unsupported poly_order" );
+    }
+
+    // One source node per panel (poly_order == 0): source_nodes[j] <-> panels[j]
+    this->source_nodes_tnp = this->panels_tnp;
+    this->source_nodes     = new SourceNode*[this->source_nodes_tnp];
+
+    cusfloat* position = nullptr;
+    cusfloat* normals  = nullptr;
+
+    for ( int i=0; i<this->panels_tnp; i++ )
+    {
+        PanelGeom* panel = this->panels[i];
+        panel->calculate_source_nodes( poly_order, nullptr );
+        panel->get_source_nodes_data( position, normals );
+        this->source_nodes[i] = new SourceNode(
+                                                    panel,
+                                                    poly_order,
+                                                    0,
+                                                    0,
+                                                    position,
+                                                    normals
+                                               );
+    }
+
+    this->_owns_source_nodes = true;
+}
+
+
         MeshGroup::~MeshGroup(
                                             void
                             )
@@ -202,6 +249,13 @@ int     MeshGroup::get_body_id(
     delete [] this->panels;
     delete [] this->panels_np;
     delete [] this->panels_cnp;
+    if ( this->_owns_source_nodes && this->source_nodes != nullptr )
+    {
+        for ( int i=0; i<this->source_nodes_tnp; i++ )
+        {
+            delete this->source_nodes[i];
+        }
+    }
     delete [] this->source_nodes;
     delete [] this->source_nodes_np;
     delete [] this->source_nodes_cnp;

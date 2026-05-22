@@ -178,6 +178,9 @@ void TimeSolver<N, NGPT>::_initialize_mesh_group( )
 
     // Define mirror panels for image sources (finite water depth)
     this->_mesh_gp->define_mirror_panels( );
+
+    // Build source nodes 1-to-1 with the filtered underwater panel set
+    this->_mesh_gp->define_source_nodes( 0 );
 }
 
 
@@ -367,6 +370,9 @@ void TimeSolver<N, NGPT>::_rebuild_mesh_group( )
     delete [] rb_as_mesh;
 
     this->_mesh_gp->define_mirror_panels( );
+
+    // Rebuild source nodes for the new panel geometry
+    this->_mesh_gp->define_source_nodes( 0 );
 
     // Rebuild the BEM steady matrix for the new panel geometry.
     this->_kernel = new FormulationKernelBackendT<N, NGPT>( );

@@ -30,7 +30,8 @@
 struct MeshGroup
 {
 private:
-    bool            _is_wl_points       = false;
+    bool            _is_wl_points           = false;
+    bool            _owns_source_nodes      = false;    ///< true when source_nodes[] entries were allocated by define_source_nodes()
     
 public:
     // Define class attributes
@@ -73,6 +74,22 @@ public:
     // Define class methods
     void    define_mirror_panels(
                                     void
+                                );
+
+    /**
+     * @brief Build source nodes from the MeshGroup's own panels[] array.
+     *
+     * Must be called after the MeshGroup is fully built (and after
+     * define_mirror_panels() if mirror panels are needed).  Only
+     * poly_order == 0 (one source node per panel at the panel centre)
+     * is currently supported.  The resulting source_nodes[] array is
+     * 1-to-1 with panels[]: source_nodes[j] corresponds to panels[j].
+     *
+     * The MeshGroup takes ownership of the created SourceNode objects
+     * and frees them on destruction or when this method is called again.
+     */
+    void    define_source_nodes(
+                                    int     poly_order
                                 );
 
     int     get_body_id(  
