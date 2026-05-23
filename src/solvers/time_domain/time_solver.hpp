@@ -113,6 +113,12 @@ private:
     // Structural mass matrix per body (6×6, diagonal)
     std::vector<std::array<cusfloat, 36>>   _struct_mass;
 
+    // CSRMatrix objects whose arrays are referenced by the MKL sparse handles
+    // inside _gen_alpha.  They must outlive the GeneralizedAlpha objects.
+    std::vector<CSRMatrix*>     _csr_mass;
+    std::vector<CSRMatrix*>     _csr_stiff;
+    std::vector<CSRMatrix*>     _csr_damp;
+
     // Reusable scratch buffer for body kinematic + wave BC (avoids per-step heap allocation).
     // Sized to np each step via assign(); capacity is retained between steps.
     std::vector<cusfloat>                   _body_vel_bc;

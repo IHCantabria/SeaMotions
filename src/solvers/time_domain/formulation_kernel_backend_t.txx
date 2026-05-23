@@ -277,6 +277,8 @@ void FormulationKernelBackendT<N, NGPT>::build_rhs(
     const int np     = this->_n_panels;
     const int n_hist = static_cast<int>( sigma_hist.size( ) );
 
+    std::cout << "  [DBG build_rhs] entry np=" << np << " n_hist=" << n_hist << "\n" << std::flush;
+
     // Cache current time for use by compute_potential_derivatives()
     this->_t_current = t_current;
 
@@ -306,6 +308,7 @@ void FormulationKernelBackendT<N, NGPT>::build_rhs(
     // Each process handles its local source columns [start_col_0, end_col_0)
     // Contributions from all processes are summed via MPI_Allreduce.
     // -----------------------------------------------------------------------
+    std::cout << "  [DBG build_rhs] Duhamel loop start\n" << std::flush;
     for ( int k=0; k<n_hist; k++ )
     {
         const cusfloat t_lag_end   = t_current - static_cast<cusfloat>( k     ) * dt;
@@ -369,6 +372,7 @@ void FormulationKernelBackendT<N, NGPT>::build_rhs(
         }
     }
 
+    std::cout << "  [DBG build_rhs] Duhamel loop done, MPI_Allreduce start\n" << std::flush;
     // Sum partial RHS contributions from all processes
     MPI_Allreduce(
                     MPI_IN_PLACE,
@@ -423,6 +427,8 @@ void FormulationKernelBackendT<N, NGPT>::build_rhs(
                     MPI_SUM,
                     MPI_COMM_WORLD
                  );
+
+    std::cout << "  [DBG build_rhs] done\n" << std::flush;
 }
 
 
@@ -430,6 +436,7 @@ template<std::size_t N, int NGPT>
 void FormulationKernelBackendT<N, NGPT>::solve( )
 {
     const int np = this->_n_panels;
+    std::cout << "  [DBG solve] entry np=" << np << "\n" << std::flush;
 
     // Copy clean steady sysmat into working buffer (pgesv overwrites it with LU factors)
     const std::size_t sysmat_np = static_cast<std::size_t>( this->_solver->num_rows_local )
@@ -443,6 +450,7 @@ void FormulationKernelBackendT<N, NGPT>::solve( )
 
     // Distributed solve: A * sigma = rhs  (ScaLAPACK pgesv: factorize + back-sub)
     this->_solver->Solve( this->_sysmat, this->_sigma );
+    std::cout << "  [DBG solve] Solve(sigma) done\n" << std::flush;
 
     // Broadcast sigma to all processes for consistency
     MPI_Bcast(
@@ -452,6 +460,7 @@ void FormulationKernelBackendT<N, NGPT>::solve( )
                 this->_mpi_config->proc_root,
                 MPI_COMM_WORLD
              );
+    std::cout << "  [DBG solve] Bcast(sigma) done\n" << std::flush;
 
     // -----------------------------------------------------------------
     // Solve for sigma_dt: A * sigma_dt = rhs_dt
@@ -462,6 +471,7 @@ void FormulationKernelBackendT<N, NGPT>::solve( )
     copy_vector( np, this->_rhs_dt, this->_sigma_dt );
 
     this->_solver->SolveWithStoredLU( this->_sysmat, this->_sigma_dt );
+    std::cout << "  [DBG solve] SolveWithStoredLU(sigma_dt) done\n" << std::flush;
 
     MPI_Bcast(
                 this->_sigma_dt,
@@ -470,6 +480,7 @@ void FormulationKernelBackendT<N, NGPT>::solve( )
                 this->_mpi_config->proc_root,
                 MPI_COMM_WORLD
              );
+    std::cout << "  [DBG solve] done\n" << std::flush;
 }
 
 
@@ -485,6 +496,7 @@ void FormulationKernelBackendT<N, NGPT>::compute_potential_derivatives( )
     // are available at each collocation point for pressure and force evaluation.
 
     const int np = this->_n_panels;
+    std::cout << "  [DBG cpd] entry np=" << np << "\n" << std::flush;
 
     // ----------------------------------------------------------------
     // (a) Incident wave contributions (skipped when no wave is active)
@@ -553,6 +565,7 @@ void FormulationKernelBackendT<N, NGPT>::compute_potential_derivatives( )
         }
 
         // Outer loop: local source columns owned by this MPI process
+        std::cout << "  [DBG cpd] steady Green loop start\n" << std::flush;
         for ( int i=this->_solver->start_col_0; i<this->_solver->end_col_0; i++ )
         {
             PanelGeom* panel_i_s   = this->_mesh_gp->panels[i];
@@ -603,6 +616,7 @@ void FormulationKernelBackendT<N, NGPT>::compute_potential_derivatives( )
         }
 
         // Reduce partial sums across all MPI processes
+        std::cout << "  [DBG cpd] steady loop done, MPI_Allreduce start\n" << std::flush;
         MPI_Allreduce( MPI_IN_PLACE, this->_acc_phi_dt, np, mpi_cusfloat, MPI_SUM, MPI_COMM_WORLD );
         MPI_Allreduce( MPI_IN_PLACE, this->_acc_phi_dx, np, mpi_cusfloat, MPI_SUM, MPI_COMM_WORLD );
         MPI_Allreduce( MPI_IN_PLACE, this->_acc_phi_dy, np, mpi_cusfloat, MPI_SUM, MPI_COMM_WORLD );
@@ -617,4 +631,6 @@ void FormulationKernelBackendT<N, NGPT>::compute_potential_derivatives( )
             this->_phi_dz[j] += this->_acc_phi_dz[j];
         }
     }
+
+    std::cout << "  [DBG cpd] done\n" << std::flush;
 }

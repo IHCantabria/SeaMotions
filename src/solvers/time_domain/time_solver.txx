@@ -83,6 +83,15 @@ TimeSolver<N, NGPT>::~TimeSolver( )
     }
     this->_gen_alpha.clear( );
 
+    // Clean up CSRMatrix objects (must be freed after _gen_alpha since MKL
+    // sparse handles inside GA hold raw pointers into their arrays)
+    for ( auto* m : this->_csr_mass  ) { delete m; }
+    for ( auto* m : this->_csr_stiff ) { delete m; }
+    for ( auto* m : this->_csr_damp  ) { delete m; }
+    this->_csr_mass.clear( );
+    this->_csr_stiff.clear( );
+    this->_csr_damp.clear( );
+
     // Clean up mesh group
     if ( this->_mesh_gp != nullptr )
     {
@@ -267,9 +276,9 @@ void TimeSolver<N, NGPT>::_initialize_structural_dynamics( )
         mass_dense[ 0] = mb;                // surge
         mass_dense[ 7] = mb;                // sway
         mass_dense[14] = mb;                // heave
-        mass_dense[21] = ria[0];            // roll
-        mass_dense[28] = ria[1];            // pitch
-        mass_dense[35] = ria[2];            // yaw
+        mass_dense[21] = ria[0];            // roll  (Ixx)
+        mass_dense[28] = ria[3];            // pitch (Iyy)
+        mass_dense[35] = ria[5];            // yaw   (Izz)
 
         CSRMatrix* mass_mat = new CSRMatrix( dofs_np, mass_dense );
 
@@ -311,9 +320,12 @@ void TimeSolver<N, NGPT>::_initialize_structural_dynamics( )
                                                                         restrictions
                                                                     );
 
-        delete mass_mat;
-        delete stiff_mat;
-        delete damp_mat;
+        // MKL sparse matrix handles inside GeneralizedAlpha hold raw pointers
+        // into the CSRMatrix arrays.  Keep the CSRMatrix objects alive for the
+        // lifetime of the solver; they are deleted in ~TimeSolver().
+        this->_csr_mass.push_back( mass_mat );
+        this->_csr_stiff.push_back( stiff_mat );
+        this->_csr_damp.push_back( damp_mat );
     }
 }
 
@@ -474,6 +486,7 @@ void TimeSolver<N, NGPT>::_compute_body_vel_bc(
                                                 )
 {
     const int np = this->_kernel->get_n_panels( );
+    std::cout << "  [DBG _vel_bc] entry np=" << np << "\n" << std::flush;
     bc.assign( np, static_cast<cusfloat>( 0.0 ) );
     bc2.assign( np, static_cast<cusfloat>( 0.0 ) );
 
@@ -548,6 +561,7 @@ void TimeSolver<N, NGPT>::_compute_body_vel_bc(
 template<std::size_t N, int NGPT>
 void TimeSolver<N, NGPT>::_update_mesh_positions( )
 {
+    std::cout << "  [DBG _update_mesh] entry\n" << std::flush;
     const int bodies_np = this->_input->bodies_np;
     bool any_moved = false;
 
@@ -562,6 +576,7 @@ void TimeSolver<N, NGPT>::_update_mesh_positions( )
         // Apply rigid-body motion: rotate about the CoG then translate.
         // RigidBodyMesh::move() always starts from the original (backup)
         // node positions, so accumulated floating-point errors are avoided.
+        std::cout << "  [DBG _update_mesh] body " << ib << " -> move()\n" << std::flush;
         this->_rb_meshes[ib]->move(
                                         pos[0],  // surge  (dx)
                                         pos[1],  // sway   (dy)
@@ -573,6 +588,7 @@ void TimeSolver<N, NGPT>::_update_mesh_positions( )
 
         // Reclassify panels: underwater / FS-intersecting / above and
         // regenerate the free-surface-refined panel set.
+        std::cout << "  [DBG _update_mesh] body " << ib << " -> check_underwater_panels()\n" << std::flush;
         this->_rb_meshes[ib]->check_underwater_panels( );
 
         any_moved = true;
@@ -582,8 +598,10 @@ void TimeSolver<N, NGPT>::_update_mesh_positions( )
     // panel geometry across all bodies that have moved.
     if ( any_moved )
     {
+        std::cout << "  [DBG _update_mesh] -> _rebuild_mesh_group()\n" << std::flush;
         this->_rebuild_mesh_group( );
     }
+    std::cout << "  [DBG _update_mesh] done\n" << std::flush;
 }
 
 
@@ -649,18 +667,21 @@ void TimeSolver<N, NGPT>::run( )
         // -----------------------------------------------------------------
         // 1. Update mesh positions (rigid-body kinematics)
         // -----------------------------------------------------------------
+        std::cout << "[DBG] step=" << step << "  (1) _update_mesh_positions\n" << std::flush;
         this->_update_mesh_positions( );
 
         // -----------------------------------------------------------------
         // 2. Build RHS using Duhamel convolution over sigma history
         //    + body kinematic BC + incident wave diffraction BC
         // -----------------------------------------------------------------
+        std::cout << "[DBG] step=" << step << "  (2a) _compute_body_vel_bc\n" << std::flush;
         this->_compute_body_vel_bc( 
                                         t, 
                                         this->_body_vel_bc, 
                                         this->_body_acc_bc 
                                     );
 
+        std::cout << "[DBG] step=" << step << "  (2b) build_rhs\n" << std::flush;
         this->_kernel->build_rhs( 
                                         t, 
                                         this->_sigma_hist, 
@@ -672,9 +693,11 @@ void TimeSolver<N, NGPT>::run( )
         // -----------------------------------------------------------------
         // 3. Solve for current source intensities sigma(t)
         // -----------------------------------------------------------------
+        std::cout << "[DBG] step=" << step << "  (3) solve\n" << std::flush;
         this->_kernel->solve( );
 
         // Store current sigma in history (newest at front)
+        std::cout << "[DBG] step=" << step << "  (3b) sigma_hist.insert\n" << std::flush;
         const int   np          = this->_kernel->get_n_panels( );
         const cusfloat* sigma   = this->_kernel->get_sigma( );
         this->_sigma_hist.insert(
@@ -687,12 +710,14 @@ void TimeSolver<N, NGPT>::run( )
         //    used to calculate the pressure over the panels and then the 
         //    hydrodynamic forces.
         // -----------------------------------------------------------------
+        std::cout << "[DBG] step=" << step << "  (4) compute_potential_derivatives\n" << std::flush;
         this->_kernel->compute_potential_derivatives( );
 
         // -----------------------------------------------------------------
         // 5. Compute hydrodynamic forces from sigma into the member vectors
         //    (_hydro_forces[ib] is referenced directly by _fext_structs[ib])
         // -----------------------------------------------------------------
+        std::cout << "[DBG] step=" << step << "  (5) compute_hydro_forces\n" << std::flush;
         for ( int ib=0; ib<bodies_np; ib++ )
         {
             this->_compute_hydro_forces( ib, this->_hydro_forces[ib].data( ) );
@@ -711,6 +736,7 @@ void TimeSolver<N, NGPT>::run( )
             auto& ga = *this->_gen_alpha[ib];
 
             // Advance one time step
+            std::cout << "[DBG] step=" << step << "  (6) ga.step body=" << ib << "\n" << std::flush;
             ga.step( );
 
             // Read back updated displacement / velocity / acceleration
@@ -725,6 +751,7 @@ void TimeSolver<N, NGPT>::run( )
         // -----------------------------------------------------------------
         // 7. Write output
         // -----------------------------------------------------------------
+        std::cout << "[DBG] step=" << step << "  (7) _output_step\n" << std::flush;
         this->_output_step( t, step );
 
         // -----------------------------------------------------------------

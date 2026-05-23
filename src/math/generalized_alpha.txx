@@ -676,6 +676,8 @@ GeneralizedAlpha<T>::~GeneralizedAlpha( void )
 template<typename T>
 void GeneralizedAlpha<T>::step( void )
 {
+    std::cout << "  [DBG ga.step] entry rows_np=" << this->rows_np << "\n" << std::flush;
+
     // Generate matrix descriptor for the mkl operation
     // routines
     struct matrix_descr descrA;
@@ -704,6 +706,7 @@ void GeneralizedAlpha<T>::step( void )
     // t_{n+1-alpha_f} = t_n + (1-alpha_f)*dt
     cusfloat t_alpha_f = this->time + ( 1.0 - this->alpha_f ) * this->time_step;
 
+    std::cout << "  [DBG ga.step] calling fext_fcn t_alpha_f=" << t_alpha_f << "\n" << std::flush;
     ( *this->fext_fcn )(
                             t_alpha_f,
                             this->time_step,
@@ -716,6 +719,7 @@ void GeneralizedAlpha<T>::step( void )
     // Apply restrictions to external forces
     this->_apply_restrictions( this->rhs );
 
+    std::cout << "  [DBG ga.step] fext done, applying MKL sparse ops\n" << std::flush;
     // Add stiffness contribution
     // OPERATION -> RHS += -K*u_pos
     // VECTOR CONTENTS -> RHS = F(t_{n+1-alpha_f}) - K*u_pos
@@ -732,6 +736,7 @@ void GeneralizedAlpha<T>::step( void )
         "Error after MKL_SPARSE_D_MV - RHS += -K*u_pos \n"
     );
 
+    std::cout << "  [DBG ga.step] -K*u_pos done\n" << std::flush;
     // Add velocity contribution via stiff_damp_vel matrix
     // OPERATION -> RHS += -SDV*u_vel
     // VECTOR CONTENTS -> RHS = F(t_{n+1-alpha_f}) - K*u_pos - SDV*u_vel
@@ -748,6 +753,7 @@ void GeneralizedAlpha<T>::step( void )
         "Error after MKL_SPARSE_D_MV - RHS += -SDV*u_vel \n"
     );
 
+    std::cout << "  [DBG ga.step] -SDV*u_vel done\n" << std::flush;
     // Add acceleration contribution via stiff_damp_acc matrix
     // OPERATION -> RHS += -SDA*u_acc
     // VECTOR CONTENTS -> RHS = F(t_{n+1-alpha_f}) - K*u_pos - SDV*u_vel - SDA*u_acc
@@ -764,11 +770,21 @@ void GeneralizedAlpha<T>::step( void )
         "Error after MKL_SPARSE_D_MV - RHS += -SDA*u_acc \n"
     );
 
+    std::cout << "  [DBG ga.step] -SDA*u_acc done" << std::flush;
+    // Print rhs and y_acc_old before solve
+    std::cout << ", rhs:";
+    for ( int _di=0; _di<this->rows_np; _di++ ) std::cout << " " << this->rhs[_di];
+    std::cout << "\n  [DBG ga.step] y_acc_old:";
+    for ( int _di=0; _di<this->rows_np; _di++ ) std::cout << " " << this->y_acc_old[_di];
+    std::cout << "\n" << std::flush;
     //////////////////////////////////////////////////////////////////
     ///////////////// CALCULATE NEW KINEMATICS ///////////////////////
     //////////////////////////////////////////////////////////////////
     // Solve: LHS * a_{n+1} = RHS
     this->linsolve->solve( this->rhs, this->y_acc );
+    std::cout << "  [DBG ga.step] linsolve done, y_acc:";
+    for ( int _di=0; _di<this->rows_np; _di++ ) std::cout << " " << this->y_acc[_di];
+    std::cout << "\n" << std::flush;
 
     // Calculate u_gamma as the combination of the gamma parameter
     // and the old and new accelerations
@@ -832,6 +848,8 @@ void GeneralizedAlpha<T>::step( void )
     // Apply restrictions to predicted kinematics
     this->_apply_restrictions( this->y_vel );
     this->_apply_restrictions( this->y_acc );
+
+    std::cout << "  [DBG ga.step] done, new time=" << ( this->time + this->time_step ) << "\n" << std::flush;
 
     //////////////////////////////////////////////////////////////////
     /////////////// UPDATE INTEGRATION VARIABLES /////////////////////

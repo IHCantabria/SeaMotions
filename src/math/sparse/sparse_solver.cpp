@@ -226,5 +226,14 @@ void SparseSolver::solve(double* rhs, double* sol)
         std::cout << " - ERROR during solution: " << error << std::endl;
         exit (103);
     }
+
+    // [DBG] Print solution vector after PARDISO phase 33
+    std::cout << "  [DBG SparseSolver::solve] sol after PARDISO (n=" << this->sysmat->rows_np << "):";
+    for ( int _di=0; _di<this->sysmat->rows_np; _di++ )
+        std::cout << " " << sol[_di];
+    std::cout << "\n" << std::flush;
+    std::cout << "  [DBG SparseSolver::solve] perturbed pivots=" << this->iparm[13]
+              << " pos-def pivots=" << this->iparm[21]
+              << " neg pivots=" << this->iparm[22] << "\n" << std::flush;
         
 }
