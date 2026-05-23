@@ -308,6 +308,8 @@ void FormulationKernelBackendT<N, NGPT>::build_rhs(
     // Each process handles its local source columns [start_col_0, end_col_0)
     // Contributions from all processes are summed via MPI_Allreduce.
     // -----------------------------------------------------------------------
+    if ( this->_input->use_duhamel )
+    {
     std::cout << "  [DBG build_rhs] Duhamel loop start\n" << std::flush;
     for ( int k=0; k<n_hist; k++ )
     {
@@ -427,6 +429,8 @@ void FormulationKernelBackendT<N, NGPT>::build_rhs(
                     MPI_SUM,
                     MPI_COMM_WORLD
                  );
+
+    } // end if ( use_duhamel )
 
     std::cout << "  [DBG build_rhs] done\n" << std::flush;
 }

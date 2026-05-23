@@ -386,6 +386,11 @@ void InputT::read_case( const std::string& folder_path )
     read_signal     = read_channel_value( infile, this->dt );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
+    // Read Duhamel (radiation memory) integral switch
+    target_signal   = "IsMemEff";
+    read_signal     = read_channel_value( infile, this->use_duhamel );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
     //////////////////////////////////////////////
     /************** Body Definition *************/
     //////////////////////////////////////////////

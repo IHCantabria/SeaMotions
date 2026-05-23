@@ -40,6 +40,7 @@
  *   ------- Solver Controls -------
  *   100.0           SimTime        - Total simulation time [s]
  *   0.01            Dt             - Time step
+ *   true            UseDuhamel     - Enable Duhamel (radiation memory) integral
  *   0               Head           - Heading (degrees)
  *   ------- Body Definition -------
  *   s11.bd.dat      BodyFN         - body file name(s)
@@ -69,6 +70,7 @@ public:
     // Solver controls
     cusfloat                    sim_time            = 100.0;
     cusfloat                    dt                  = 0.01;
+    bool                        use_duhamel         = true;    // enable radiation memory (Duhamel) integral
     cusfloat                    wave_heading        = 0.0;     // heading in degrees
 
     // Body definitions
