@@ -310,125 +310,125 @@ void FormulationKernelBackendT<N, NGPT>::build_rhs(
     // -----------------------------------------------------------------------
     if ( this->_input->use_duhamel )
     {
-    std::cout << "  [DBG build_rhs] Duhamel loop start\n" << std::flush;
-    for ( int k=0; k<n_hist; k++ )
-    {
-        const cusfloat t_lag_end   = t_current - static_cast<cusfloat>( k     ) * dt;
-        const cusfloat t_lag_start = t_current - static_cast<cusfloat>( k + 1 ) * dt;
-
-        if ( t_lag_end <= t_lag_start ) { continue; }
-
-        const std::vector<cusfloat>& sigma_k = sigma_hist[k];
-
-        // Outer: local source panels (columns)
-        for ( int src=this->_solver->start_col_0; src<this->_solver->end_col_0; src++ )
+        std::cout << "  [DBG build_rhs] Duhamel loop start\n" << std::flush;
+        for ( int k=0; k<n_hist; k++ )
         {
-            SourceNode* source_src = this->_mesh_gp->source_nodes[src];
+            const cusfloat t_lag_end   = t_current - static_cast<cusfloat>( k     ) * dt;
+            const cusfloat t_lag_start = t_current - static_cast<cusfloat>( k + 1 ) * dt;
 
-            // Inner: all observation rows
-            for ( int obs=0; obs<np; obs++ )
+            if ( t_lag_end <= t_lag_start ) { continue; }
+
+            const std::vector<cusfloat>& sigma_k = sigma_hist[k];
+
+            // Outer: local source panels (columns)
+            for ( int src=this->_solver->start_col_0; src<this->_solver->end_col_0; src++ )
             {
-                SourceNode* source_obs = this->_mesh_gp->source_nodes[obs];
+                SourceNode* source_src = this->_mesh_gp->source_nodes[src];
 
-                // Set up time-domain Green's function integrator:
-                //   source_i = integration panel (src)
-                //   source_j = position source   (obs)
-                this->_gwtfcns_interf.set_source_i( source_src, static_cast<cusfloat>( 1.0 ) );
-                this->_gwtfcns_interf.set_source_j( source_obs );
+                // Inner: all observation rows
+                for ( int obs=0; obs<np; obs++ )
+                {
+                    SourceNode* source_obs = this->_mesh_gp->source_nodes[obs];
 
-                cusfloat dtn_val   = 0.0;
-                cusfloat dtx_val   = 0.0;
-                cusfloat dty_val   = 0.0;
-                cusfloat dtz_val   = 0.0;
-                cusfloat dtt_val   = 0.0;
-                cusfloat dttn_val  = 0.0;
-                cusfloat dttx_val  = 0.0;
-                cusfloat dtty_val  = 0.0;
-                cusfloat dttz_val  = 0.0;
+                    // Set up time-domain Green's function integrator:
+                    //   source_i = integration panel (src)
+                    //   source_j = position source   (obs)
+                    this->_gwtfcns_interf.set_source_i( source_src, static_cast<cusfloat>( 1.0 ) );
+                    this->_gwtfcns_interf.set_source_j( source_obs );
 
-                quadrature_panel_time_t<PanelGeom, GWTFcnsInterfaceT<N*N>, N, NGPT>(
-                                                                                        source_src->panel,
-                                                                                        this->_gwtfcns_interf,
-                                                                                        t_lag_start,
-                                                                                        t_lag_end,
-                                                                                        dtn_val,
-                                                                                        dtx_val,
-                                                                                        dty_val,
-                                                                                        dtz_val,
-                                                                                        dtt_val,
-                                                                                        dttn_val,
-                                                                                        dttx_val,
-                                                                                        dtty_val,
-                                                                                        dttz_val,
-                                                                                        false
-                                                                                     );
+                    cusfloat dtn_val   = 0.0;
+                    cusfloat dtx_val   = 0.0;
+                    cusfloat dty_val   = 0.0;
+                    cusfloat dtz_val   = 0.0;
+                    cusfloat dtt_val   = 0.0;
+                    cusfloat dttn_val  = 0.0;
+                    cusfloat dttx_val  = 0.0;
+                    cusfloat dtty_val  = 0.0;
+                    cusfloat dttz_val  = 0.0;
 
-                // Accumulate Duhamel contribution (partial sum for local columns)
-                this->_rhs[obs]         -= sigma_k[src] * dtn_val  / static_cast<cusfloat>( 4.0 * PI );
-                this->_rhs_dt[obs]      -= sigma_k[src] * dttn_val / static_cast<cusfloat>( 4.0 * PI );
-                this->_phi_dt[obs]  -= sigma_k[src] * dtt_val / static_cast<cusfloat>( 4.0 * PI );
-                this->_phi_dx[obs]  -= sigma_k[src] * dtx_val / static_cast<cusfloat>( 4.0 * PI );
-                this->_phi_dy[obs]  -= sigma_k[src] * dty_val / static_cast<cusfloat>( 4.0 * PI );
-                this->_phi_dz[obs]  -= sigma_k[src] * dtz_val / static_cast<cusfloat>( 4.0 * PI );
+                    quadrature_panel_time_t<PanelGeom, GWTFcnsInterfaceT<N*N>, N, NGPT>(
+                                                                                            source_src->panel,
+                                                                                            this->_gwtfcns_interf,
+                                                                                            t_lag_start,
+                                                                                            t_lag_end,
+                                                                                            dtn_val,
+                                                                                            dtx_val,
+                                                                                            dty_val,
+                                                                                            dtz_val,
+                                                                                            dtt_val,
+                                                                                            dttn_val,
+                                                                                            dttx_val,
+                                                                                            dtty_val,
+                                                                                            dttz_val,
+                                                                                            false
+                                                                                        );
+
+                    // Accumulate Duhamel contribution (partial sum for local columns)
+                    this->_rhs[obs]         -= sigma_k[src] * dtn_val  / static_cast<cusfloat>( 4.0 * PI );
+                    this->_rhs_dt[obs]      -= sigma_k[src] * dttn_val / static_cast<cusfloat>( 4.0 * PI );
+                    this->_phi_dt[obs]  -= sigma_k[src] * dtt_val / static_cast<cusfloat>( 4.0 * PI );
+                    this->_phi_dx[obs]  -= sigma_k[src] * dtx_val / static_cast<cusfloat>( 4.0 * PI );
+                    this->_phi_dy[obs]  -= sigma_k[src] * dty_val / static_cast<cusfloat>( 4.0 * PI );
+                    this->_phi_dz[obs]  -= sigma_k[src] * dtz_val / static_cast<cusfloat>( 4.0 * PI );
+                }
             }
         }
-    }
 
-    std::cout << "  [DBG build_rhs] Duhamel loop done, MPI_Allreduce start\n" << std::flush;
-    // Sum partial RHS contributions from all processes
-    MPI_Allreduce(
-                    MPI_IN_PLACE,
-                    this->_rhs,
-                    np,
-                    mpi_cusfloat,
-                    MPI_SUM,
-                    MPI_COMM_WORLD
-                 );
+        std::cout << "  [DBG build_rhs] Duhamel loop done, MPI_Allreduce start\n" << std::flush;
+        // Sum partial RHS contributions from all processes
+        MPI_Allreduce(
+                        MPI_IN_PLACE,
+                        this->_rhs,
+                        np,
+                        mpi_cusfloat,
+                        MPI_SUM,
+                        MPI_COMM_WORLD
+                    );
 
-    MPI_Allreduce(
-                    MPI_IN_PLACE,
-                    this->_rhs_dt,
-                    np,
-                    mpi_cusfloat,
-                    MPI_SUM,
-                    MPI_COMM_WORLD
-                 );
+        MPI_Allreduce(
+                        MPI_IN_PLACE,
+                        this->_rhs_dt,
+                        np,
+                        mpi_cusfloat,
+                        MPI_SUM,
+                        MPI_COMM_WORLD
+                    );
 
-    MPI_Allreduce(
-                    MPI_IN_PLACE,
-                    this->_phi_dt,
-                    np,
-                    mpi_cusfloat,
-                    MPI_SUM,
-                    MPI_COMM_WORLD
-                 );
+        MPI_Allreduce(
+                        MPI_IN_PLACE,
+                        this->_phi_dt,
+                        np,
+                        mpi_cusfloat,
+                        MPI_SUM,
+                        MPI_COMM_WORLD
+                    );
 
-    MPI_Allreduce(
-                    MPI_IN_PLACE,
-                    this->_phi_dx,
-                    np,
-                    mpi_cusfloat,
-                    MPI_SUM,
-                    MPI_COMM_WORLD
-                 );
+        MPI_Allreduce(
+                        MPI_IN_PLACE,
+                        this->_phi_dx,
+                        np,
+                        mpi_cusfloat,
+                        MPI_SUM,
+                        MPI_COMM_WORLD
+                    );
 
-    MPI_Allreduce(
-                    MPI_IN_PLACE,
-                    this->_phi_dy,
-                    np,
-                    mpi_cusfloat,
-                    MPI_SUM,
-                    MPI_COMM_WORLD
-                 );
+        MPI_Allreduce(
+                        MPI_IN_PLACE,
+                        this->_phi_dy,
+                        np,
+                        mpi_cusfloat,
+                        MPI_SUM,
+                        MPI_COMM_WORLD
+                    );
 
-    MPI_Allreduce(
-                    MPI_IN_PLACE,
-                    this->_phi_dz,
-                    np,
-                    mpi_cusfloat,
-                    MPI_SUM,
-                    MPI_COMM_WORLD
-                 );
+        MPI_Allreduce(
+                        MPI_IN_PLACE,
+                        this->_phi_dz,
+                        np,
+                        mpi_cusfloat,
+                        MPI_SUM,
+                        MPI_COMM_WORLD
+                    );
 
     } // end if ( use_duhamel )
 
