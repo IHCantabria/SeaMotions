@@ -391,6 +391,11 @@ void InputT::read_case( const std::string& folder_path )
     read_signal     = read_channel_value( infile, this->use_duhamel );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
+    // Read force ramp-up duration (0 = disabled)
+    target_signal   = "RampTime";
+    read_signal     = read_channel_value( infile, this->ramp_time );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
     //////////////////////////////////////////////
     /************** Body Definition *************/
     //////////////////////////////////////////////
@@ -514,7 +519,7 @@ void InputT::read_case( const std::string& folder_path )
     target_signal   = "WaveH";
     read_signal     = read_channel_value( infile, this->wave_heading );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
-
+    
     // Close file unit
     infile.close( );
 }

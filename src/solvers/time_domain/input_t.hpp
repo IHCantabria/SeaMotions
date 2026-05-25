@@ -41,7 +41,7 @@
  *   100.0           SimTime        - Total simulation time [s]
  *   0.01            Dt             - Time step
  *   true            UseDuhamel     - Enable Duhamel (radiation memory) integral
- *   0               Head           - Heading (degrees)
+ *   10.0            RampTime       - Force ramp-up duration [s] (0 = disabled)
  *   ------- Body Definition -------
  *   s11.bd.dat      BodyFN         - body file name(s)
  *   ------- Field Points ----------
@@ -61,7 +61,8 @@
  *   9.81            GravAcc
  *   50.0            WaterDepth
  *   1.0             WaveAmp        - Wave amplitude [m] (0 = no incident wave)
- *   0.628           AngFreq        - Wave angular frequency [rad/s] (0 = no incident wave)
+ *   3.0             WaveP          - Wave period [s] (0 = no incident wave)
+ *   0               WaveH          - Wave heading [deg]
  * @endcode
  */
 struct InputT
@@ -99,6 +100,7 @@ public:
     cusfloat                    wave_amp            = 0.0;     // wave amplitude [m]  (0 = no incident wave)
     cusfloat                    wave_period         = 0.0;     // wave period [s]     (0 = no incident wave)
     cusfloat                    ang_freq            = 0.0;     // angular frequency [rad/s] derived from wave_period
+    cusfloat                    ramp_time           = 0.0;     // force ramp-up duration [s] (0 = disabled)
 
     // Paths
     std::string                 case_fopath         = "";

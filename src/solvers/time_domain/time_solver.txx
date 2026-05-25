@@ -249,8 +249,9 @@ void TimeSolver<N, NGPT>::_initialize_structural_dynamics( )
     this->_fext_structs.resize( bodies_np );
     for ( int ib=0; ib<bodies_np; ib++ )
     {
-        this->_fext_structs[ib].forces  = this->_hydro_forces[ib].data( );
-        this->_fext_structs[ib].dofs_np = dofs_np;
+        this->_fext_structs[ib].forces    = this->_hydro_forces[ib].data( );
+        this->_fext_structs[ib].dofs_np   = dofs_np;
+        this->_fext_structs[ib].ramp_time = this->_input->ramp_time;
     }
 
     for ( int ib=0; ib<bodies_np; ib++ )

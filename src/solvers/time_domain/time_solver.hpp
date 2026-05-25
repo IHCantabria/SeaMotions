@@ -42,14 +42,21 @@
  * 6-argument operator() signature below.  This struct stores a raw pointer to
  * the hydro_forces vector owned by TimeSolver so that the force values can be
  * updated in-place between time steps without re-assigning the functor.
+ *
+ * A linear ramp-up factor is applied when ramp_time > 0:
+ *   scale = min( t / ramp_time, 1 )
+ * This smoothly brings the external forces from zero to their full value over
+ * the first ramp_time seconds, reducing impulsive transients at t = 0.
+ * Set ramp_time = 0 (default) to disable the ramp entirely.
  */
 struct TimeDomainFextStruct
 {
-    cusfloat*   forces  = nullptr;  ///< Raw ptr into TimeSolver::_hydro_forces[ib]
-    int         dofs_np = 0;       ///< Number of DOFs (= 6)
+    cusfloat*   forces      = nullptr;  ///< Raw ptr into TimeSolver::_hydro_forces[ib]
+    int         dofs_np     = 0;        ///< Number of DOFs (= 6)
+    cusfloat    ramp_time   = 0.0;      ///< Ramp-up duration [s]; 0 = disabled
 
     void operator()(
-        cusfloat  /* t   */,
+        cusfloat    t,
         cusfloat  /* dt  */,
         cusfloat* /* pos */,
         cusfloat* /* vel */,
@@ -57,8 +64,15 @@ struct TimeDomainFextStruct
         cusfloat* fext
     )
     {
+        // Linear ramp factor: rises from 0 to 1 over [0, ramp_time].
+        // When ramp_time <= 0 the factor is always 1 (no ramp).
+        const cusfloat scale = ( ramp_time > static_cast<cusfloat>( 0.0 ) )
+                               ? ( ( t < ramp_time ) ? ( t / ramp_time )
+                                                     : static_cast<cusfloat>( 1.0 ) )
+                               : static_cast<cusfloat>( 1.0 );
+
         for ( int id = 0; id < dofs_np; id++ )
-            fext[id] = forces[id];
+            fext[id] = scale * forces[id];
     }
 };
 
