@@ -49,7 +49,15 @@
  * Note: with rho_inf = 1 the Generalized-Alpha scheme reduces exactly to the
  * constant-average-acceleration Newmark method, so results must match. With
  * rho_inf < 1 high-frequency modes are damped and amplitude errors increase
- * slightly, so ABS_TOL is relaxed to 5e-3 for those cases.
+ * slightly, so tolerances are relaxed for those cases.
+ *
+ * Checks performed at each sample time:
+ *   - Position  u(t)  vs. analytical
+ *   - Velocity  v(t)  vs. analytical derivative
+ *   - Acceleration a(t) vs. analytical second derivative
+ *
+ * Velocity and acceleration tolerances are scaled from the position tolerance
+ * by omega_n and omega_n^2 respectively, reflecting the growth in amplitude.
  */
 
 // Include general usage libraries
@@ -66,9 +74,13 @@
 //-- Test tolerances
 //--------------------------------------------------------------------
 // rho_inf = 1.0 → identical to Newmark avg-acceleration: tight tolerance
-constexpr cusfloat ABS_TOL_NO_DISS = 1e-3;
-// rho_inf = 0.5 → moderate numerical dissipation: slightly relaxed tolerance
-constexpr cusfloat ABS_TOL_DISS    = 5e-3;
+constexpr cusfloat ABS_TOL_POS_NO_DISS = 1e-3;
+constexpr cusfloat ABS_TOL_VEL_NO_DISS = 1e-2;   // ~omega_n * ABS_TOL_POS_NO_DISS
+constexpr cusfloat ABS_TOL_ACC_NO_DISS = 5e-2;   // ~omega_n^2 * ABS_TOL_POS_NO_DISS
+// rho_inf < 1 → moderate/maximum high-frequency dissipation: relaxed tolerance
+constexpr cusfloat ABS_TOL_POS_DISS    = 5e-3;
+constexpr cusfloat ABS_TOL_VEL_DISS    = 5e-2;   // ~omega_n * ABS_TOL_POS_DISS
+constexpr cusfloat ABS_TOL_ACC_DISS    = 2.5e-1;  // ~omega_n^2 * ABS_TOL_POS_DISS
 
 //--------------------------------------------------------------------
 //-- External force functor (zero force - free vibration)
@@ -108,6 +120,45 @@ cusfloat sdof_analytical_pos( cusfloat t, cusfloat omega_n, cusfloat zeta )
     return decay * ( std::cos( omega_d * t ) + ( zeta / std::sqrt( 1.0 - zeta*zeta ) ) * std::sin( omega_d * t ) );
 }
 
+/**
+ * @brief Analytical velocity for a free damped 1-DOF oscillator.
+ *
+ * v(t) = -exp(-zeta*omega_n*t) * (omega_n/sqrt(1-zeta^2)) * sin(omega_d*t)
+ * Obtained by differentiating sdof_analytical_pos; the cosine terms cancel
+ * exactly because v(0) = 0.
+ *
+ * @param t       Evaluation time [s]
+ * @param omega_n Natural frequency [rad/s]
+ * @param zeta    Damping ratio [-]
+ */
+cusfloat sdof_analytical_vel( cusfloat t, cusfloat omega_n, cusfloat zeta )
+{
+    cusfloat omega_d   = omega_n * std::sqrt( 1.0 - zeta*zeta );
+    cusfloat decay     = std::exp( -zeta * omega_n * t );
+    cusfloat sqrt1mz2  = std::sqrt( 1.0 - zeta*zeta );
+    return -decay * ( omega_n / sqrt1mz2 ) * std::sin( omega_d * t );
+}
+
+/**
+ * @brief Analytical acceleration for a free damped 1-DOF oscillator.
+ *
+ * a(t) = exp(-zeta*omega_n*t) * (omega_n^2/sqrt(1-zeta^2))
+ *        * [ zeta*sin(omega_d*t) - sqrt(1-zeta^2)*cos(omega_d*t) ]
+ * Obtained by differentiating sdof_analytical_vel.
+ *
+ * @param t       Evaluation time [s]
+ * @param omega_n Natural frequency [rad/s]
+ * @param zeta    Damping ratio [-]
+ */
+cusfloat sdof_analytical_acc( cusfloat t, cusfloat omega_n, cusfloat zeta )
+{
+    cusfloat omega_d   = omega_n * std::sqrt( 1.0 - zeta*zeta );
+    cusfloat decay     = std::exp( -zeta * omega_n * t );
+    cusfloat sqrt1mz2  = std::sqrt( 1.0 - zeta*zeta );
+    return decay * ( omega_n * omega_n / sqrt1mz2 )
+           * ( zeta * std::sin( omega_d * t ) - sqrt1mz2 * std::cos( omega_d * t ) );
+}
+
 //--------------------------------------------------------------------
 //-- Helper: build a 1x1 CSRMatrix from a scalar value
 //--------------------------------------------------------------------
@@ -124,10 +175,12 @@ CSRMatrix* build_csr_1x1( cusfloat value )
  * @brief Run the Generalized-Alpha solver for a given rho_inf and check
  *        the solution against the analytical SDOF response.
  *
- * @param rho_inf   Spectral radius at infinite frequency ∈ [0, 1]
- * @param abs_tol   Absolute error tolerance for the position checks
+ * @param rho_inf      Spectral radius at infinite frequency ∈ [0, 1]
+ * @param abs_tol_pos  Absolute error tolerance for position
+ * @param abs_tol_vel  Absolute error tolerance for velocity
+ * @param abs_tol_acc  Absolute error tolerance for acceleration
  */
-bool test_generalized_alpha_sdof( cusfloat rho_inf, cusfloat abs_tol )
+bool test_generalized_alpha_sdof( cusfloat rho_inf, cusfloat abs_tol_pos, cusfloat abs_tol_vel, cusfloat abs_tol_acc )
 {
     bool pass = true;
 
@@ -200,9 +253,16 @@ bool test_generalized_alpha_sdof( cusfloat rho_inf, cusfloat abs_tol )
 
     //----------------------------------------------------------------
     // Define check times and their step indices
+    // Sampled every quarter period (T_n/4 = 0.25 s) to capture
+    // peaks, troughs, and zero-crossings of the damped response.
     //----------------------------------------------------------------
-    constexpr int n_checks = 6;
-    const cusfloat check_times[n_checks] = { 0.5, 1.0, 1.5, 2.0, 2.5, 3.0 };
+    constexpr int n_checks = 12;
+    const cusfloat check_times[n_checks] = {
+        0.25, 0.50, 0.75,
+        1.00, 1.25, 1.50,
+        1.75, 2.00, 2.25,
+        2.50, 2.75, 3.00
+    };
 
     int check_steps[n_checks];
     for ( int i=0; i<n_checks; i++ )
@@ -223,25 +283,43 @@ bool test_generalized_alpha_sdof( cusfloat rho_inf, cusfloat abs_tol )
         // Check at requested times
         if ( next_check < n_checks && (step+1) == check_steps[next_check] )
         {
-            cusfloat t_check  = check_times[next_check];
-            cusfloat u_num    = solver.y_pos[0];
-            cusfloat u_ref    = sdof_analytical_pos( t_check, omega_n, zeta );
-            cusfloat abs_err  = std::abs( u_num - u_ref );
+            cusfloat t_check = check_times[next_check];
 
-            std::cout << "  t = " << t_check << " s"
-                      << " | u_num = " << u_num
-                      << " | u_ref = " << u_ref
-                      << " | |error| = " << abs_err;
+            // Position check
+            cusfloat u_num   = solver.y_pos[0];
+            cusfloat u_ref   = sdof_analytical_pos( t_check, omega_n, zeta );
+            cusfloat err_pos = std::abs( u_num - u_ref );
 
-            if ( abs_err > abs_tol )
-            {
-                std::cout << " -> FAIL (tol = " << abs_tol << ")\n";
+            // Velocity check
+            cusfloat v_num   = solver.y_vel[0];
+            cusfloat v_ref   = sdof_analytical_vel( t_check, omega_n, zeta );
+            cusfloat err_vel = std::abs( v_num - v_ref );
+
+            // Acceleration check
+            cusfloat a_num   = solver.y_acc[0];
+            cusfloat a_ref   = sdof_analytical_acc( t_check, omega_n, zeta );
+            cusfloat err_acc = std::abs( a_num - a_ref );
+
+            bool pos_ok = err_pos <= abs_tol_pos;
+            bool vel_ok = err_vel <= abs_tol_vel;
+            bool acc_ok = err_acc <= abs_tol_acc;
+
+            std::cout << "  t = " << t_check << " s\n"
+                      << "    pos: num = " << u_num << "  ref = " << u_ref
+                      << "  |err| = " << err_pos
+                      << (pos_ok ? "  -> PASS" : "  -> FAIL (tol = " + std::to_string(abs_tol_pos) + ")")
+                      << "\n"
+                      << "    vel: num = " << v_num << "  ref = " << v_ref
+                      << "  |err| = " << err_vel
+                      << (vel_ok ? "  -> PASS" : "  -> FAIL (tol = " + std::to_string(abs_tol_vel) + ")")
+                      << "\n"
+                      << "    acc: num = " << a_num << "  ref = " << a_ref
+                      << "  |err| = " << err_acc
+                      << (acc_ok ? "  -> PASS" : "  -> FAIL (tol = " + std::to_string(abs_tol_acc) + ")")
+                      << "\n";
+
+            if ( !pos_ok || !vel_ok || !acc_ok )
                 pass = false;
-            }
-            else
-            {
-                std::cout << " -> PASS\n";
-            }
 
             next_check++;
         }
@@ -272,7 +350,7 @@ int main( void )
     // constant-average-acceleration method (beta=1/4, gamma=1/2).
     //----------------------------------------------------------------
     std::cout << "--- Case 1: rho_inf = 1.0 (no numerical dissipation) ---\n";
-    bool pass1 = test_generalized_alpha_sdof( 1.0, ABS_TOL_NO_DISS );
+    bool pass1 = test_generalized_alpha_sdof( 1.0, ABS_TOL_POS_NO_DISS, ABS_TOL_VEL_NO_DISS, ABS_TOL_ACC_NO_DISS );
     all_pass = all_pass && pass1;
     std::cout << "  Case 1 result: " << (pass1 ? "PASS" : "FAIL") << "\n\n";
 
@@ -282,7 +360,7 @@ int main( void )
     // due to algorithmic damping of the response frequency itself.
     //----------------------------------------------------------------
     std::cout << "--- Case 2: rho_inf = 0.5 (moderate dissipation) ---\n";
-    bool pass2 = test_generalized_alpha_sdof( 0.5, ABS_TOL_DISS );
+    bool pass2 = test_generalized_alpha_sdof( 0.5, ABS_TOL_POS_DISS, ABS_TOL_VEL_DISS, ABS_TOL_ACC_DISS );
     all_pass = all_pass && pass2;
     std::cout << "  Case 2 result: " << (pass2 ? "PASS" : "FAIL") << "\n\n";
 
@@ -292,7 +370,7 @@ int main( void )
     // Errors on this well-resolved system (omega_n*dt << 1) are still small.
     //----------------------------------------------------------------
     std::cout << "--- Case 3: rho_inf = 0.0 (maximum dissipation) ---\n";
-    bool pass3 = test_generalized_alpha_sdof( 0.0, ABS_TOL_DISS );
+    bool pass3 = test_generalized_alpha_sdof( 0.0, ABS_TOL_POS_DISS, ABS_TOL_VEL_DISS, ABS_TOL_ACC_DISS );
     all_pass = all_pass && pass3;
     std::cout << "  Case 3 result: " << (pass3 ? "PASS" : "FAIL") << "\n\n";
 
