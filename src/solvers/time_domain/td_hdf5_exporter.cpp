@@ -17,8 +17,6 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifdef _HDF5_BUILD
-
 #include "td_hdf5_exporter.hpp"
 #include "../../inout/hdf5_wrappers.hpp"
 
@@ -231,5 +229,3 @@ void TimeDomainHDF5Exporter::close( )
         _file = H5I_INVALID_HID;
     }
 }
-
-#endif // _HDF5_BUILD

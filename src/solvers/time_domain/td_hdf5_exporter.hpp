@@ -23,9 +23,8 @@
 #include <string>
 #include <vector>
 
+#include "hdf5.h"
 #include "../../config.hpp"
-
-#ifdef _HDF5_BUILD
 
 /**
  * @brief HDF5 time-series exporter for the time-domain BEM solver.
@@ -132,5 +131,3 @@ private:
     int     _n_panels   = 0;
     int     _n_bodies   = 0;
 };
-
-#endif // _HDF5_BUILD

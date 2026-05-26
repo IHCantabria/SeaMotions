@@ -31,9 +31,7 @@
 #include "../../config.hpp"
 #include "../../containers/mpi_config.hpp"
 
-#ifdef _HDF5_BUILD
 #include "td_hdf5_exporter.hpp"
-#endif
 #include "../../hydrostatics.hpp"
 #include "../../math/generalized_alpha.hpp"
 #include "../../math/sparse/sparse_containers.hpp"
@@ -225,10 +223,8 @@ private:
     // HDF5 time-series output
     // ---------------------------------------------------------------
 
-#ifdef _HDF5_BUILD
     /// Owns the HDF5 exporter object; nullptr until _init_hdf5_output() is called.
     TimeDomainHDF5Exporter* _hdf5_exporter = nullptr;
-#endif
 
     /**
      * @brief Open the HDF5 file and initialise all extendable datasets.

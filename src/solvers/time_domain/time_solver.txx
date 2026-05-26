@@ -117,13 +117,11 @@ TimeSolver<N, NGPT>::~TimeSolver( )
         this->_rb_meshes = nullptr;
     }
 
-#ifdef _HDF5_BUILD
     if ( this->_hdf5_exporter != nullptr )
     {
         delete this->_hdf5_exporter;
         this->_hdf5_exporter = nullptr;
     }
-#endif
 }
 
 
@@ -670,7 +668,6 @@ void TimeSolver<N, NGPT>::_finalize_paraview_output( )
 template<std::size_t N, int NGPT>
 void TimeSolver<N, NGPT>::_init_hdf5_output( )
 {
-#ifdef _HDF5_BUILD
     if ( !this->_input->out_pressure ) { return; }
 
     const int np = this->_kernel->get_n_panels( );
@@ -678,19 +675,16 @@ void TimeSolver<N, NGPT>::_init_hdf5_output( )
 
     this->_hdf5_exporter = new TimeDomainHDF5Exporter( );
     this->_hdf5_exporter->initialize( this->_input->folder_path, np, nb );
-#endif
 }
 
 template<std::size_t N, int NGPT>
 void TimeSolver<N, NGPT>::_finalize_hdf5_output( )
 {
-#ifdef _HDF5_BUILD
     if ( this->_hdf5_exporter != nullptr )
     {
         this->_hdf5_exporter->close( );
         std::cout << " -> HDF5 time-series closed." << std::endl;
     }
-#endif
 }
 
 
@@ -813,7 +807,6 @@ void TimeSolver<N, NGPT>::_output_step( cusfloat t, int step )
     this->_pvd_entries.emplace_back( static_cast<double>( t ), pvd_rel );
 
     // ---- HDF5 time-series append ----
-#ifdef _HDF5_BUILD
     if ( this->_hdf5_exporter != nullptr && this->_hdf5_exporter->is_open( ) )
     {
         // Integrate panel pressure components into per-body 6-DOF forces.
@@ -886,7 +879,6 @@ void TimeSolver<N, NGPT>::_output_step( cusfloat t, int step )
             body_force_hydrostatic
         );
     }
-#endif
 }
 
 
