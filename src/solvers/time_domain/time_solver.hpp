@@ -21,6 +21,10 @@
 #pragma once
 
 // Include general usage libraries
+#include <cstdint>
+#include <filesystem>
+#include <string>
+#include <utility>
 #include <vector>
 
 // Include local modules
@@ -182,6 +186,28 @@ private:
      * @param bc2  Output vector sized n_panels for the time derivative of bc.
      */
     void _compute_body_vel_bc( cusfloat t, std::vector<cusfloat>& bc, std::vector<cusfloat>& bc2 );
+
+    // ---------------------------------------------------------------
+    // ParaView VTU / PVD output
+    // ---------------------------------------------------------------
+
+    /// Directory where VTU files and the PVD index are written.
+    std::string _paraview_dir;
+
+    /// Ordered list of (time [s], relative VTU filename) pairs for the PVD file.
+    std::vector<std::pair<double, std::string>> _pvd_entries;
+
+    /**
+     * @brief Create the ParaView output directory and clear the PVD entry list.
+     *        No-op when out_pressure is false.
+     */
+    void _init_paraview_output( );
+
+    /**
+     * @brief Write the PVD collection file after the simulation is complete.
+     *        No-op when out_pressure is false.
+     */
+    void _finalize_paraview_output( );
 
     /**
      * @brief Write output for the current time step.

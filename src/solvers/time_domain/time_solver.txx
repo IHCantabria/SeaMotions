@@ -21,14 +21,17 @@
 // Include general usage libraries
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <functional>
 #include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
 // Include local modules
 #include "time_solver.hpp"
+#include "../../inout/vtu.hpp"
 #include "../../tools.hpp"
 #include "../../math/math_constants.hpp"
 #include "../../waves/wave_dispersion_base_fo.hpp"
@@ -607,13 +610,61 @@ void TimeSolver<N, NGPT>::_update_mesh_positions( )
 
 
 /*****************************************************************************
+ * ParaView output helpers
+ *****************************************************************************/
+
+template<std::size_t N, int NGPT>
+void TimeSolver<N, NGPT>::_init_paraview_output( )
+{
+    if ( !this->_input->out_pressure ) { return; }
+
+    namespace fs = std::filesystem;
+
+    const fs::path results_dir  = fs::path( this->_input->folder_path )
+                                  / fs::path( RESULTS_FOLDER_NAME );
+    const fs::path paraview_dir = results_dir / fs::path( RESULTS_PARAVIEW_FOLDER_NAME );
+
+    if ( !fs::exists( results_dir ) )
+    {
+        fs::create_directory( results_dir );
+    }
+    if ( !fs::exists( paraview_dir ) )
+    {
+        fs::create_directory( paraview_dir );
+    }
+
+    this->_paraview_dir = paraview_dir.string( );
+    this->_pvd_entries.clear( );
+
+    std::cout << " -> ParaView pressure output: " << this->_paraview_dir << std::endl;
+}
+
+
+template<std::size_t N, int NGPT>
+void TimeSolver<N, NGPT>::_finalize_paraview_output( )
+{
+    if ( !this->_input->out_pressure || this->_pvd_entries.empty( ) ) { return; }
+
+    namespace fs = std::filesystem;
+
+    const std::string pvd_path = ( fs::path( this->_paraview_dir ) / "pressure.pvd" ).string( );
+    if ( write_pvd( pvd_path, this->_pvd_entries ) )
+    {
+        std::cout << " -> ParaView PVD written: " << pvd_path << std::endl;
+    }
+}
+
+
+/*****************************************************************************
  * Output step
  *****************************************************************************/
 
 template<std::size_t N, int NGPT>
 void TimeSolver<N, NGPT>::_output_step( cusfloat t, int step )
 {
-    // Placeholder: write per-step data to stdout
+    // ---------------------------------------------------------------
+    // Console progress (every 10 steps)
+    // ---------------------------------------------------------------
     const int bodies_np = this->_input->bodies_np;
     const int dofs_np   = this->_input->dofs_np;
 
@@ -630,6 +681,90 @@ void TimeSolver<N, NGPT>::_output_step( cusfloat t, int step )
         }
         std::cout << std::endl;
     }
+
+    // ---------------------------------------------------------------
+    // ParaView VTU pressure output
+    // ---------------------------------------------------------------
+    if ( !this->_input->out_pressure ) { return; }
+
+    const int np = this->_kernel->get_n_panels( );
+    if ( np <= 0 ) { return; }
+
+    const cusfloat  rho = this->_input->water_density;
+    const cusfloat  g   = this->_input->grav_acc;
+
+    const cusfloat* phi_dt = this->_kernel->get_phi_dt( );
+    const cusfloat* phi_dx = this->_kernel->get_phi_dx( );
+    const cusfloat* phi_dy = this->_kernel->get_phi_dy( );
+    const cusfloat* phi_dz = this->_kernel->get_phi_dz( );
+
+    // ---- Build geometry and pressure arrays ----
+    std::vector<cusfloat>   nodes_x, nodes_y, nodes_z;
+    std::vector<int32_t>    connectivity, offsets;
+    std::vector<uint8_t>    types;
+    std::vector<cusfloat>   pressure( static_cast<std::size_t>( np ) );
+
+    nodes_x.reserve( static_cast<std::size_t>( np ) * 4 );
+    nodes_y.reserve( static_cast<std::size_t>( np ) * 4 );
+    nodes_z.reserve( static_cast<std::size_t>( np ) * 4 );
+    connectivity.reserve( static_cast<std::size_t>( np ) * 4 );
+    offsets.reserve( static_cast<std::size_t>( np ) );
+    types.reserve( static_cast<std::size_t>( np ) );
+
+    int32_t node_count = 0;
+
+    for ( int ip = 0; ip < np; ip++ )
+    {
+        PanelGeom* panel = this->_mesh_gp->panels[ip];
+        const int  nn    = panel->num_nodes;
+
+        for ( int k = 0; k < nn; k++ )
+        {
+            nodes_x.push_back( panel->x[k] );
+            nodes_y.push_back( panel->y[k] );
+            nodes_z.push_back( panel->z[k] );
+            connectivity.push_back( node_count + k );
+        }
+        node_count += static_cast<int32_t>( nn );
+        offsets.push_back( node_count );
+
+        // VTK cell type: 5 = VTK_TRIANGLE, 9 = VTK_QUAD, 7 = VTK_POLYGON
+        uint8_t vtype = ( nn == 3 ) ? 5 : ( nn == 4 ) ? 9 : 7;
+        types.push_back( vtype );
+
+        // Bernoulli pressure (linearised): p = -rho*(dphi/dt + 0.5*|grad phi|^2 + g*z)
+        pressure[static_cast<std::size_t>( ip )] =
+            -rho * (   phi_dt[ip]
+                     + static_cast<cusfloat>( 0.5 ) * (   phi_dx[ip] * phi_dx[ip]
+                                                         + phi_dy[ip] * phi_dy[ip]
+                                                         + phi_dz[ip] * phi_dz[ip] )
+                     + g * panel->center[2] );
+    }
+
+    // ---- Filename: pressure_XXXXXX.vtu ----
+    std::ostringstream ss;
+    ss << "pressure_" << std::setfill( '0' ) << std::setw( 6 ) << step << ".vtu";
+    const std::string vtu_name = ss.str( );
+
+    namespace fs = std::filesystem;
+    const std::string vtu_path = ( fs::path( this->_paraview_dir ) / vtu_name ).string( );
+
+    write_vtu_panel_pressure(
+                                vtu_path,
+                                static_cast<std::size_t>( node_count ),
+                                nodes_x.data( ),
+                                nodes_y.data( ),
+                                nodes_z.data( ),
+                                static_cast<std::size_t>( np ),
+                                connectivity.data( ),
+                                offsets.data( ),
+                                types.data( ),
+                                pressure.data( )
+                            );
+
+    // Record entry for PVD (relative path from the paraview dir's parent = results dir)
+    const std::string pvd_rel = ( fs::path( RESULTS_PARAVIEW_FOLDER_NAME ) / vtu_name ).string( );
+    this->_pvd_entries.emplace_back( static_cast<double>( t ), pvd_rel );
 }
 
 
@@ -660,6 +795,9 @@ void TimeSolver<N, NGPT>::run( )
 
     // Print a progress line roughly every 1 % of the total steps
     const int print_interval = std::max( 1, n_steps / 100 );
+
+    // Prepare ParaView output directory (no-op when out_pressure is false)
+    this->_init_paraview_output( );
 
     for ( int step=0; step<n_steps; step++ )
     {
@@ -782,4 +920,7 @@ void TimeSolver<N, NGPT>::run( )
     }
 
     std::cout << " -> Time-domain simulation complete." << std::endl;
+
+    // Write the PVD collection file (no-op when out_pressure is false)
+    this->_finalize_paraview_output( );
 }

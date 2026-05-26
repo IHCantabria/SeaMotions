@@ -19,7 +19,10 @@
  */
 
 // Include general usage libraries
+#include <cstdint>
 #include <fstream>
+#include <utility>
+#include <vector>
 
 // Include local modules
 #include "../containers/logger.hpp"
@@ -229,5 +232,155 @@ bool    write_vtu_ascii(
     out << "</Cells>\n";
     out << "</Piece>\n</UnstructuredGrid>\n</VTKFile>\n";
 
+    return true;
+}
+
+
+// -----------------------------------------------------------------------
+// Compile-time helper: VTK type-name string for cusfloat
+// -----------------------------------------------------------------------
+static constexpr const char* vtk_float_type_name( )
+{
+    return ( sizeof( cusfloat ) == 4 ) ? "Float32" : "Float64";
+}
+
+
+// -----------------------------------------------------------------------
+// write_vtu_panel_pressure  — binary-appended UnstructuredGrid + CellData
+// -----------------------------------------------------------------------
+bool    write_vtu_panel_pressure(
+                                    const std::string&      filename,
+                                    std::size_t             n_nodes,
+                                    const cusfloat*         nodes_x,
+                                    const cusfloat*         nodes_y,
+                                    const cusfloat*         nodes_z,
+                                    std::size_t             n_cells,
+                                    const int32_t*          connectivity,
+                                    const int32_t*          offsets,
+                                    const uint8_t*          types,
+                                    const cusfloat*         pressure
+                                )
+{
+    std::ofstream out( filename, std::ios::binary );
+    if ( !out.is_open( ) )
+    {
+        Logger logger;
+        logger.error( "Could not create VTU pressure file: " + filename + "\n" );
+        return false;
+    }
+
+    const char* ftype = vtk_float_type_name( );
+
+    // ----------------------------------------------------------------
+    // Binary block sizes
+    // ----------------------------------------------------------------
+    const uint32_t pts_bytes  = static_cast<uint32_t>( n_nodes  * 3 * sizeof( cusfloat ) );
+    const uint32_t conn_bytes = static_cast<uint32_t>( n_nodes      * sizeof( int32_t  ) );
+    const uint32_t offs_bytes = static_cast<uint32_t>( n_cells      * sizeof( int32_t  ) );
+    const uint32_t type_bytes = static_cast<uint32_t>( n_cells      * sizeof( uint8_t  ) );
+    const uint32_t pres_bytes = static_cast<uint32_t>( n_cells      * sizeof( cusfloat ) );
+
+    // ----------------------------------------------------------------
+    // Appended-data section offsets (each block starts with its uint32 length)
+    // ----------------------------------------------------------------
+    const uint32_t off_pts  = 0;
+    const uint32_t off_conn = off_pts  + sizeof( uint32_t ) + pts_bytes;
+    const uint32_t off_offs = off_conn + sizeof( uint32_t ) + conn_bytes;
+    const uint32_t off_type = off_offs + sizeof( uint32_t ) + offs_bytes;
+    const uint32_t off_pres = off_type + sizeof( uint32_t ) + type_bytes;
+
+    // ----------------------------------------------------------------
+    // XML header
+    // ----------------------------------------------------------------
+    out <<
+R"(<?xml version="1.0"?>
+<VTKFile type="UnstructuredGrid" version="0.1" byte_order="LittleEndian" header_type="UInt32">
+  <UnstructuredGrid>
+    <Piece NumberOfPoints=")" << n_nodes << R"(" NumberOfCells=")" << n_cells << R"(">
+      <Points>
+        <DataArray type=")" << ftype << R"(" NumberOfComponents="3" format="appended" offset=")" << off_pts << R"("/>
+      </Points>
+      <Cells>
+        <DataArray type="Int32"  Name="connectivity" format="appended" offset=")" << off_conn << R"("/>
+        <DataArray type="Int32"  Name="offsets"      format="appended" offset=")" << off_offs << R"("/>
+        <DataArray type="UInt8"  Name="types"        format="appended" offset=")" << off_type << R"("/>
+      </Cells>
+      <CellData Scalars="Pressure">
+        <DataArray type=")" << ftype << R"(" Name="Pressure" NumberOfComponents="1" format="appended" offset=")" << off_pres << R"("/>
+      </CellData>
+    </Piece>
+  </UnstructuredGrid>
+  <AppendedData encoding="raw">_)";
+
+    // ----------------------------------------------------------------
+    // Points block: interleaved x,y,z per node
+    // ----------------------------------------------------------------
+    {
+        std::vector<cusfloat> pts_buf;
+        pts_buf.reserve( n_nodes * 3 );
+        for ( std::size_t i = 0; i < n_nodes; i++ )
+        {
+            pts_buf.push_back( nodes_x[i] );
+            pts_buf.push_back( nodes_y[i] );
+            pts_buf.push_back( nodes_z[i] );
+        }
+        out.write( reinterpret_cast<const char*>( &pts_bytes ), sizeof( uint32_t ) );
+        out.write( reinterpret_cast<const char*>( pts_buf.data( ) ), pts_bytes );
+    }
+
+    // Connectivity block
+    out.write( reinterpret_cast<const char*>( &conn_bytes ), sizeof( uint32_t ) );
+    out.write( reinterpret_cast<const char*>( connectivity ), conn_bytes );
+
+    // Offsets block
+    out.write( reinterpret_cast<const char*>( &offs_bytes ), sizeof( uint32_t ) );
+    out.write( reinterpret_cast<const char*>( offsets ), offs_bytes );
+
+    // Types block
+    out.write( reinterpret_cast<const char*>( &type_bytes ), sizeof( uint32_t ) );
+    out.write( reinterpret_cast<const char*>( types ), type_bytes );
+
+    // Pressure (cell data) block
+    out.write( reinterpret_cast<const char*>( &pres_bytes ), sizeof( uint32_t ) );
+    out.write( reinterpret_cast<const char*>( pressure ), pres_bytes );
+
+    // ----------------------------------------------------------------
+    // Close
+    // ----------------------------------------------------------------
+    out << "\n  </AppendedData>\n</VTKFile>\n";
+    out.close( );
+    return true;
+}
+
+
+// -----------------------------------------------------------------------
+// write_pvd  — ParaView Data collection file
+// -----------------------------------------------------------------------
+bool    write_pvd(
+                    const std::string&                                  filename,
+                    const std::vector<std::pair<double, std::string>>&  timesteps
+                )
+{
+    std::ofstream out( filename );
+    if ( !out.is_open( ) )
+    {
+        Logger logger;
+        logger.error( "Could not create PVD file: " + filename + "\n" );
+        return false;
+    }
+
+    out << "<?xml version=\"1.0\"?>\n";
+    out << "<VTKFile type=\"Collection\" version=\"0.1\" byte_order=\"LittleEndian\">\n";
+    out << "  <Collection>\n";
+
+    for ( const auto& [t, vtu_path] : timesteps )
+    {
+        out << "    <DataSet timestep=\"" << t
+            << "\" group=\"\" part=\"0\" file=\"" << vtu_path << "\"/>\n";
+    }
+
+    out << "  </Collection>\n";
+    out << "</VTKFile>\n";
+    out.close( );
     return true;
 }
