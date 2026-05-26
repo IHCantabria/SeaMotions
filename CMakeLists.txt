@@ -215,6 +215,33 @@ set_mkl_lib_target( seamotions_stab )
 set_mpi_target( seamotions_stab )
 set_hdf5_target( seamotions_stab )
 
+# Add SeaMotions time-domain solver
+set(
+        seamotions_time_src
+        ${sm_time_module_files}
+        "./src/config.hpp"
+        "./src/cli_header_banner.hpp"
+        ${containers_module_files}
+        ${green_module_files}
+        ${interfaces_module_files}
+        ${hydrostatic_module_files}
+        ${inout_module_files}
+        ${math_module_files}
+        ${mesh_module_files}
+        ${raos_module_files}
+        ${tools_module_files}
+        ${waves_module_files}
+        ${version_module_files}
+    )
+
+add_executable(
+                    seamotions_time
+                    ${seamotions_time_src}
+                )
+set_mkl_lib_target( seamotions_time )
+set_mpi_target( seamotions_time )
+set_hdf5_target( seamotions_time )
+
 if ( WIN32 )
     install(
             TARGETS seamotions_freq
