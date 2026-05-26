@@ -464,9 +464,9 @@ void TimeSolver<N, NGPT>::_compute_hydro_forces( int body_id, cusfloat* forces )
                                         + g * panel->center[2] );
 
         // Force: F_i = p_i * area_i * n_i
-        const cusfloat dF0 = press * panel->area * panel->normal_vec[0];
-        const cusfloat dF1 = press * panel->area * panel->normal_vec[1];
-        const cusfloat dF2 = press * panel->area * panel->normal_vec[2];
+        const cusfloat dF0 = - press * panel->area * panel->normal_vec[0]; // Reversed sign is to revert surface normals that where previously reverted to match freq domain formulation (same interface for both)
+        const cusfloat dF1 = - press * panel->area * panel->normal_vec[1]; // Reversed sign is to revert surface normals that where previously reverted to match freq domain formulation (same interface for both)
+        const cusfloat dF2 = - press * panel->area * panel->normal_vec[2]; // Reversed sign is to revert surface normals that where previously reverted to match freq domain formulation (same interface for both)
 
         forces[0] += dF0;
         forces[1] += dF1;
@@ -865,9 +865,9 @@ void TimeSolver<N, NGPT>::_output_step( cusfloat t, int step )
                 // Accumulate F = p * area * n  and  M = r × F  for one component
                 auto accumulate_force = [&]( std::array<cusfloat, 6>& f, cusfloat p )
                 {
-                    const cusfloat dF0 = p * area * panel->normal_vec[0];
-                    const cusfloat dF1 = p * area * panel->normal_vec[1];
-                    const cusfloat dF2 = p * area * panel->normal_vec[2];
+                    const cusfloat dF0 = - p * area * panel->normal_vec[0]; // Reversed sign is to revert surface normals that where previously reverted to match freq domain formulation (same interface for both)
+                    const cusfloat dF1 = - p * area * panel->normal_vec[1]; // Reversed sign is to revert surface normals that where previously reverted to match freq domain formulation (same interface for both)
+                    const cusfloat dF2 = - p * area * panel->normal_vec[2]; // Reversed sign is to revert surface normals that where previously reverted to match freq domain formulation (same interface for both)
                     f[0] += dF0;
                     f[1] += dF1;
                     f[2] += dF2;
