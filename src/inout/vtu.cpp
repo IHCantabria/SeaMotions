@@ -258,7 +258,10 @@ bool    write_vtu_panel_pressure(
                                     const int32_t*          connectivity,
                                     const int32_t*          offsets,
                                     const uint8_t*          types,
-                                    const cusfloat*         pressure
+                                    const cusfloat*         pressure,
+                                    const cusfloat*         phi_dt_comp,
+                                    const cusfloat*         kinetic_comp,
+                                    const cusfloat*         hydrostatic_comp
                                 )
 {
     std::ofstream out( filename, std::ios::binary );
@@ -283,11 +286,14 @@ bool    write_vtu_panel_pressure(
     // ----------------------------------------------------------------
     // Appended-data section offsets (each block starts with its uint32 length)
     // ----------------------------------------------------------------
-    const uint32_t off_pts  = 0;
-    const uint32_t off_conn = off_pts  + sizeof( uint32_t ) + pts_bytes;
-    const uint32_t off_offs = off_conn + sizeof( uint32_t ) + conn_bytes;
-    const uint32_t off_type = off_offs + sizeof( uint32_t ) + offs_bytes;
-    const uint32_t off_pres = off_type + sizeof( uint32_t ) + type_bytes;
+    const uint32_t off_pts        = 0;
+    const uint32_t off_conn       = off_pts        + sizeof( uint32_t ) + pts_bytes;
+    const uint32_t off_offs       = off_conn       + sizeof( uint32_t ) + conn_bytes;
+    const uint32_t off_type       = off_offs       + sizeof( uint32_t ) + offs_bytes;
+    const uint32_t off_pres       = off_type       + sizeof( uint32_t ) + type_bytes;
+    const uint32_t off_phi_dt     = off_pres       + sizeof( uint32_t ) + pres_bytes;
+    const uint32_t off_kinetic    = off_phi_dt     + sizeof( uint32_t ) + pres_bytes;
+    const uint32_t off_hydrostatic= off_kinetic    + sizeof( uint32_t ) + pres_bytes;
 
     // ----------------------------------------------------------------
     // XML header
@@ -306,7 +312,10 @@ R"(<?xml version="1.0"?>
         <DataArray type="UInt8"  Name="types"        format="appended" offset=")" << off_type << R"("/>
       </Cells>
       <CellData Scalars="Pressure">
-        <DataArray type=")" << ftype << R"(" Name="Pressure" NumberOfComponents="1" format="appended" offset=")" << off_pres << R"("/>
+        <DataArray type=")" << ftype << R"(" Name="Pressure"             NumberOfComponents="1" format="appended" offset=")" << off_pres        << R"("/>
+        <DataArray type=")" << ftype << R"(" Name="Pressure_PhiDt"       NumberOfComponents="1" format="appended" offset=")" << off_phi_dt      << R"("/>
+        <DataArray type=")" << ftype << R"(" Name="Pressure_Kinetic"     NumberOfComponents="1" format="appended" offset=")" << off_kinetic     << R"("/>
+        <DataArray type=")" << ftype << R"(" Name="Pressure_Hydrostatic" NumberOfComponents="1" format="appended" offset=")" << off_hydrostatic << R"("/>
       </CellData>
     </Piece>
   </UnstructuredGrid>
@@ -343,6 +352,18 @@ R"(<?xml version="1.0"?>
     // Pressure (cell data) block
     out.write( reinterpret_cast<const char*>( &pres_bytes ), sizeof( uint32_t ) );
     out.write( reinterpret_cast<const char*>( pressure ), pres_bytes );
+
+    // Pressure_PhiDt block
+    out.write( reinterpret_cast<const char*>( &pres_bytes ), sizeof( uint32_t ) );
+    out.write( reinterpret_cast<const char*>( phi_dt_comp ), pres_bytes );
+
+    // Pressure_Kinetic block
+    out.write( reinterpret_cast<const char*>( &pres_bytes ), sizeof( uint32_t ) );
+    out.write( reinterpret_cast<const char*>( kinetic_comp ), pres_bytes );
+
+    // Pressure_Hydrostatic block
+    out.write( reinterpret_cast<const char*>( &pres_bytes ), sizeof( uint32_t ) );
+    out.write( reinterpret_cast<const char*>( hydrostatic_comp ), pres_bytes );
 
     // ----------------------------------------------------------------
     // Close

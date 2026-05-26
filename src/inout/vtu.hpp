@@ -60,19 +60,27 @@ bool    write_vtu_ascii(
  * @brief Write a VTU (UnstructuredGrid) file with per-panel pressure cell data.
  *
  * Each panel is represented as an independent polygon cell (no node sharing).
- * The pressure scalar field is stored as CellData.
+ * Four pressure scalars are stored as CellData:
+ *   - Pressure           : total Bernoulli pressure  ( -rho*(phi_dt + 0.5*|grad phi|^2 + g*z) )
+ *   - Pressure_PhiDt     : -rho * dphi/dt  term
+ *   - Pressure_Kinetic   : -rho * 0.5 * |grad phi|^2  term
+ *   - Pressure_Hydrostatic: -rho * g * z  term
+ *
  * Format: binary-appended, little-endian, block lengths as UInt32.
  *
- * @param filename      Full path of the output VTU file.
- * @param n_nodes       Total number of corner nodes (sum of num_nodes over all panels).
- * @param nodes_x       Flat array of node x-coordinates (length n_nodes).
- * @param nodes_y       Flat array of node y-coordinates (length n_nodes).
- * @param nodes_z       Flat array of node z-coordinates (length n_nodes).
- * @param n_cells       Number of panels / cells.
- * @param connectivity  Node indices per cell, concatenated (length = n_nodes).
- * @param offsets       Cumulative node count per cell (length = n_cells).
- * @param types         VTK cell-type code per cell (5=TRI, 9=QUAD, 7=POLYGON).
- * @param pressure      Pressure value per cell (length = n_cells).
+ * @param filename          Full path of the output VTU file.
+ * @param n_nodes           Total number of corner nodes (sum of num_nodes over all panels).
+ * @param nodes_x           Flat array of node x-coordinates (length n_nodes).
+ * @param nodes_y           Flat array of node y-coordinates (length n_nodes).
+ * @param nodes_z           Flat array of node z-coordinates (length n_nodes).
+ * @param n_cells           Number of panels / cells.
+ * @param connectivity      Node indices per cell, concatenated (length = n_nodes).
+ * @param offsets           Cumulative node count per cell (length = n_cells).
+ * @param types             VTK cell-type code per cell (5=TRI, 9=QUAD, 7=POLYGON).
+ * @param pressure          Total pressure per cell (length = n_cells).
+ * @param phi_dt_comp       -rho * dphi/dt per cell (length = n_cells).
+ * @param kinetic_comp      -rho * 0.5 * |grad phi|^2 per cell (length = n_cells).
+ * @param hydrostatic_comp  -rho * g * z per cell (length = n_cells).
  * @return true on success.
  */
 bool    write_vtu_panel_pressure(
@@ -85,7 +93,10 @@ bool    write_vtu_panel_pressure(
                                     const int32_t*          connectivity,
                                     const int32_t*          offsets,
                                     const uint8_t*          types,
-                                    const cusfloat*         pressure
+                                    const cusfloat*         pressure,
+                                    const cusfloat*         phi_dt_comp,
+                                    const cusfloat*         kinetic_comp,
+                                    const cusfloat*         hydrostatic_comp
                                 );
 
 

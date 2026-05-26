@@ -799,7 +799,10 @@ void TimeSolver<N, NGPT>::_output_step( cusfloat t, int step )
                                 connectivity.data( ),
                                 offsets.data( ),
                                 types.data( ),
-                                pressure.data( )
+                                pressure.data( ),
+                                phi_dt_comp.data( ),
+                                kinetic_comp.data( ),
+                                hydrostatic_comp.data( )
                             );
 
     // Record entry for PVD (relative path from the paraview dir's parent = results dir)
