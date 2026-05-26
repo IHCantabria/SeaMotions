@@ -166,6 +166,18 @@ private:
     void _compute_hydro_forces( int body_id, cusfloat* forces );
 
     /**
+     * @brief Accumulate gravitational force (-m*g in heave) into an existing
+     *        6-DOF force vector.
+     *
+     * Since gravity acts at the CoG there are no gravitational moments about
+     * the CoG, so only forces[2] (heave) is modified.
+     *
+     * @param body_id   Index of the body.
+     * @param forces    6-DOF force vector to which the gravity contribution is added.
+     */
+    void _compute_gravitational_forces( int body_id, cusfloat* forces );
+
+    /**
      * @brief Update mesh panel positions based on current CoG states.
      *
      * For the first approach the panels are kept at their initial positions.

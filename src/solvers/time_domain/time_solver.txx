@@ -485,8 +485,25 @@ void TimeSolver<N, NGPT>::_compute_hydro_forces( int body_id, cusfloat* forces )
 
 
 /*****************************************************************************
- * Mesh update
+ * Gravitational forces
  *****************************************************************************/
+
+template<std::size_t N, int NGPT>
+void TimeSolver<N, NGPT>::_compute_gravitational_forces( int body_id, cusfloat* forces )
+{
+    // Gravity acts at the body CoG, so there are no moment contributions.
+    // F_heave = -mass * g  (downward, opposing positive-z convention)
+
+    const cusfloat mass = this->_input->bodies[body_id]->mass;
+    const cusfloat g    = this->_input->grav_acc;
+
+    forces[2] -= mass * g;   // heave force only; all other DOFs unchanged
+}
+
+
+/*****************************************************************************
+ * Mesh update
+ ****************************************************************************/
 
 template<std::size_t N, int NGPT>
 void TimeSolver<N, NGPT>::_compute_body_vel_bc( 
@@ -980,6 +997,7 @@ void TimeSolver<N, NGPT>::run( )
         for ( int ib=0; ib<bodies_np; ib++ )
         {
             this->_compute_hydro_forces( ib, this->_hydro_forces[ib].data( ) );
+            this->_compute_gravitational_forces( ib, this->_hydro_forces[ib].data( ) );
         }
 
         // -----------------------------------------------------------------
