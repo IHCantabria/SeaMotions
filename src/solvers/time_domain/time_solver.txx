@@ -116,6 +116,14 @@ TimeSolver<N, NGPT>::~TimeSolver( )
         delete [] this->_rb_meshes;
         this->_rb_meshes = nullptr;
     }
+
+#ifdef _HDF5_BUILD
+    if ( this->_hdf5_exporter != nullptr )
+    {
+        delete this->_hdf5_exporter;
+        this->_hdf5_exporter = nullptr;
+    }
+#endif
 }
 
 
@@ -656,6 +664,37 @@ void TimeSolver<N, NGPT>::_finalize_paraview_output( )
 
 
 /*****************************************************************************
+ * HDF5 time-series output helpers
+ *****************************************************************************/
+
+template<std::size_t N, int NGPT>
+void TimeSolver<N, NGPT>::_init_hdf5_output( )
+{
+#ifdef _HDF5_BUILD
+    if ( !this->_input->out_pressure ) { return; }
+
+    const int np = this->_kernel->get_n_panels( );
+    const int nb = this->_input->bodies_np;
+
+    this->_hdf5_exporter = new TimeDomainHDF5Exporter( );
+    this->_hdf5_exporter->initialize( this->_input->folder_path, np, nb );
+#endif
+}
+
+template<std::size_t N, int NGPT>
+void TimeSolver<N, NGPT>::_finalize_hdf5_output( )
+{
+#ifdef _HDF5_BUILD
+    if ( this->_hdf5_exporter != nullptr )
+    {
+        this->_hdf5_exporter->close( );
+        std::cout << " -> HDF5 time-series closed." << std::endl;
+    }
+#endif
+}
+
+
+/*****************************************************************************
  * Output step
  *****************************************************************************/
 
@@ -683,7 +722,7 @@ void TimeSolver<N, NGPT>::_output_step( cusfloat t, int step )
     }
 
     // ---------------------------------------------------------------
-    // ParaView VTU pressure output
+    // Pressure field: compute and route to VTU and/or HDF5
     // ---------------------------------------------------------------
     if ( !this->_input->out_pressure ) { return; }
 
@@ -698,18 +737,23 @@ void TimeSolver<N, NGPT>::_output_step( cusfloat t, int step )
     const cusfloat* phi_dy = this->_kernel->get_phi_dy( );
     const cusfloat* phi_dz = this->_kernel->get_phi_dz( );
 
-    // ---- Build geometry and pressure arrays ----
+    // ---- Build geometry arrays (for VTU) and decomposed pressure components ----
     std::vector<cusfloat>   nodes_x, nodes_y, nodes_z;
     std::vector<int32_t>    connectivity, offsets;
     std::vector<uint8_t>    types;
-    std::vector<cusfloat>   pressure( static_cast<std::size_t>( np ) );
 
-    nodes_x.reserve( static_cast<std::size_t>( np ) * 4 );
-    nodes_y.reserve( static_cast<std::size_t>( np ) * 4 );
-    nodes_z.reserve( static_cast<std::size_t>( np ) * 4 );
-    connectivity.reserve( static_cast<std::size_t>( np ) * 4 );
-    offsets.reserve( static_cast<std::size_t>( np ) );
-    types.reserve( static_cast<std::size_t>( np ) );
+    const std::size_t snp = static_cast<std::size_t>( np );
+    std::vector<cusfloat>   phi_dt_comp     ( snp );
+    std::vector<cusfloat>   kinetic_comp    ( snp );
+    std::vector<cusfloat>   hydrostatic_comp( snp );
+    std::vector<cusfloat>   pressure        ( snp );
+
+    nodes_x.reserve( snp * 4 );
+    nodes_y.reserve( snp * 4 );
+    nodes_z.reserve( snp * 4 );
+    connectivity.reserve( snp * 4 );
+    offsets.reserve( snp );
+    types.reserve( snp );
 
     int32_t node_count = 0;
 
@@ -732,16 +776,18 @@ void TimeSolver<N, NGPT>::_output_step( cusfloat t, int step )
         uint8_t vtype = ( nn == 3 ) ? 5 : ( nn == 4 ) ? 9 : 7;
         types.push_back( vtype );
 
-        // Bernoulli pressure (linearised): p = -rho*(dphi/dt + 0.5*|grad phi|^2 + g*z)
-        pressure[static_cast<std::size_t>( ip )] =
-            -rho * (   phi_dt[ip]
-                     + static_cast<cusfloat>( 0.5 ) * (   phi_dx[ip] * phi_dx[ip]
-                                                         + phi_dy[ip] * phi_dy[ip]
-                                                         + phi_dz[ip] * phi_dz[ip] )
-                     + g * panel->center[2] );
+        // Decomposed Bernoulli pressure components
+        const std::size_t sip = static_cast<std::size_t>( ip );
+        phi_dt_comp[sip]      = -rho * phi_dt[ip];
+        kinetic_comp[sip]     = -rho * static_cast<cusfloat>( 0.5 )
+                                     * (   phi_dx[ip] * phi_dx[ip]
+                                         + phi_dy[ip] * phi_dy[ip]
+                                         + phi_dz[ip] * phi_dz[ip] );
+        hydrostatic_comp[sip] = -rho * g * panel->center[2];
+        pressure[sip]         = phi_dt_comp[sip] + kinetic_comp[sip] + hydrostatic_comp[sip];
     }
 
-    // ---- Filename: pressure_XXXXXX.vtu ----
+    // ---- ParaView VTU: pressure_XXXXXX.vtu ----
     std::ostringstream ss;
     ss << "pressure_" << std::setfill( '0' ) << std::setw( 6 ) << step << ".vtu";
     const std::string vtu_name = ss.str( );
@@ -755,7 +801,7 @@ void TimeSolver<N, NGPT>::_output_step( cusfloat t, int step )
                                 nodes_x.data( ),
                                 nodes_y.data( ),
                                 nodes_z.data( ),
-                                static_cast<std::size_t>( np ),
+                                snp,
                                 connectivity.data( ),
                                 offsets.data( ),
                                 types.data( ),
@@ -765,6 +811,82 @@ void TimeSolver<N, NGPT>::_output_step( cusfloat t, int step )
     // Record entry for PVD (relative path from the paraview dir's parent = results dir)
     const std::string pvd_rel = ( fs::path( RESULTS_PARAVIEW_FOLDER_NAME ) / vtu_name ).string( );
     this->_pvd_entries.emplace_back( static_cast<double>( t ), pvd_rel );
+
+    // ---- HDF5 time-series append ----
+#ifdef _HDF5_BUILD
+    if ( this->_hdf5_exporter != nullptr && this->_hdf5_exporter->is_open( ) )
+    {
+        // Integrate panel pressure components into per-body 6-DOF forces.
+        const int n_bodies = this->_input->bodies_np;
+
+        std::vector<std::array<cusfloat, 6>> body_force_total      ( static_cast<std::size_t>( n_bodies ) );
+        std::vector<std::array<cusfloat, 6>> body_force_phi_dt     ( static_cast<std::size_t>( n_bodies ) );
+        std::vector<std::array<cusfloat, 6>> body_force_kinetic    ( static_cast<std::size_t>( n_bodies ) );
+        std::vector<std::array<cusfloat, 6>> body_force_hydrostatic( static_cast<std::size_t>( n_bodies ) );
+
+        for ( int ib = 0; ib < n_bodies; ib++ )
+        {
+            body_force_total[ib].fill( static_cast<cusfloat>( 0.0 ) );
+            body_force_phi_dt[ib].fill( static_cast<cusfloat>( 0.0 ) );
+            body_force_kinetic[ib].fill( static_cast<cusfloat>( 0.0 ) );
+            body_force_hydrostatic[ib].fill( static_cast<cusfloat>( 0.0 ) );
+
+            const int       panel_start = this->_mesh_gp->panels_cnp[ib];
+            const int       panel_end   = this->_mesh_gp->panels_cnp[ib + 1];
+            const cusfloat* cog         = this->_input->bodies[ib]->cog;
+
+            for ( int ip = panel_start; ip < panel_end; ip++ )
+            {
+                PanelGeom* panel = this->_mesh_gp->panels[ip];
+
+                // Only submerged panels contribute
+                if ( panel->center[2] >= static_cast<cusfloat>( 0.0 ) ) { continue; }
+
+                const std::size_t sip  = static_cast<std::size_t>( ip );
+                const cusfloat    area = panel->area;
+
+                const cusfloat rx = panel->center[0] - cog[0];
+                const cusfloat ry = panel->center[1] - cog[1];
+                const cusfloat rz = panel->center[2] - cog[2];
+
+                // Accumulate F = p * area * n  and  M = r × F  for one component
+                auto accumulate_force = [&]( std::array<cusfloat, 6>& f, cusfloat p )
+                {
+                    const cusfloat dF0 = p * area * panel->normal_vec[0];
+                    const cusfloat dF1 = p * area * panel->normal_vec[1];
+                    const cusfloat dF2 = p * area * panel->normal_vec[2];
+                    f[0] += dF0;
+                    f[1] += dF1;
+                    f[2] += dF2;
+                    f[3] += ry * dF2 - rz * dF1;
+                    f[4] += rz * dF0 - rx * dF2;
+                    f[5] += rx * dF1 - ry * dF0;
+                };
+
+                accumulate_force( body_force_phi_dt[ib],       phi_dt_comp[sip]      );
+                accumulate_force( body_force_kinetic[ib],      kinetic_comp[sip]     );
+                accumulate_force( body_force_hydrostatic[ib],  hydrostatic_comp[sip] );
+                accumulate_force( body_force_total[ib],        pressure[sip]         );
+            }
+        }
+
+        this->_hdf5_exporter->append_step(
+            t,
+            pressure.data( ),
+            phi_dt_comp.data( ),
+            kinetic_comp.data( ),
+            hydrostatic_comp.data( ),
+            np,
+            this->_body_pos,
+            this->_body_vel,
+            this->_body_acc,
+            body_force_total,
+            body_force_phi_dt,
+            body_force_kinetic,
+            body_force_hydrostatic
+        );
+    }
+#endif
 }
 
 
@@ -798,6 +920,9 @@ void TimeSolver<N, NGPT>::run( )
 
     // Prepare ParaView output directory (no-op when out_pressure is false)
     this->_init_paraview_output( );
+
+    // Prepare HDF5 time-series file (no-op when out_pressure is false or HDF5 absent)
+    this->_init_hdf5_output( );
 
     for ( int step=0; step<n_steps; step++ )
     {
@@ -923,4 +1048,7 @@ void TimeSolver<N, NGPT>::run( )
 
     // Write the PVD collection file (no-op when out_pressure is false)
     this->_finalize_paraview_output( );
+
+    // Flush and close the HDF5 time-series file (no-op when out_pressure is false or HDF5 absent)
+    this->_finalize_hdf5_output( );
 }

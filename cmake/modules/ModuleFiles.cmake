@@ -399,4 +399,6 @@ set(
         ${CMAKE_SOURCE_DIR}/src/solvers/time_domain/formulation_kernel_backend_t.txx
         ${CMAKE_SOURCE_DIR}/src/solvers/time_domain/time_solver.hpp
         ${CMAKE_SOURCE_DIR}/src/solvers/time_domain/time_solver.txx
+        ${CMAKE_SOURCE_DIR}/src/solvers/time_domain/td_hdf5_exporter.hpp
+        ${CMAKE_SOURCE_DIR}/src/solvers/time_domain/td_hdf5_exporter.cpp
     )
