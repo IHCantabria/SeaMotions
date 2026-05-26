@@ -234,6 +234,88 @@ void InputT::read_body(
     }
 
     //////////////////////////////////////////////
+    /********** Initial Conditions **************/
+    //////////////////////////////////////////////
+
+    // Skip header
+    skip_header( infile, line_count, 3 );
+
+    // Read initial position (surge, sway, heave [m]; roll, pitch, yaw [rad])
+    target_signal   = "ICP_Surge";
+    read_signal     = read_channel_value( infile, body->ic_pos[0] );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    target_signal   = "ICP_Sway";
+    read_signal     = read_channel_value( infile, body->ic_pos[1] );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    target_signal   = "ICP_Heave";
+    read_signal     = read_channel_value( infile, body->ic_pos[2] );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    target_signal   = "ICP_Roll";
+    read_signal     = read_channel_value( infile, body->ic_pos[3] );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    target_signal   = "ICP_Pitch";
+    read_signal     = read_channel_value( infile, body->ic_pos[4] );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    target_signal   = "ICP_Yaw";
+    read_signal     = read_channel_value( infile, body->ic_pos[5] );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read initial velocity (m/s; rad/s)
+    target_signal   = "ICV_Surge";
+    read_signal     = read_channel_value( infile, body->ic_vel[0] );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    target_signal   = "ICV_Sway";
+    read_signal     = read_channel_value( infile, body->ic_vel[1] );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    target_signal   = "ICV_Heave";
+    read_signal     = read_channel_value( infile, body->ic_vel[2] );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    target_signal   = "ICV_Roll";
+    read_signal     = read_channel_value( infile, body->ic_vel[3] );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    target_signal   = "ICV_Pitch";
+    read_signal     = read_channel_value( infile, body->ic_vel[4] );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    target_signal   = "ICV_Yaw";
+    read_signal     = read_channel_value( infile, body->ic_vel[5] );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read initial acceleration (m/s²; rad/s²)
+    target_signal   = "ICA_Surge";
+    read_signal     = read_channel_value( infile, body->ic_acc[0] );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    target_signal   = "ICA_Sway";
+    read_signal     = read_channel_value( infile, body->ic_acc[1] );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    target_signal   = "ICA_Heave";
+    read_signal     = read_channel_value( infile, body->ic_acc[2] );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    target_signal   = "ICA_Roll";
+    read_signal     = read_channel_value( infile, body->ic_acc[3] );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    target_signal   = "ICA_Pitch";
+    read_signal     = read_channel_value( infile, body->ic_acc[4] );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    target_signal   = "ICA_Yaw";
+    read_signal     = read_channel_value( infile, body->ic_acc[5] );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    //////////////////////////////////////////////
     /************* Mesh Description *************/
     //////////////////////////////////////////////
 

@@ -265,10 +265,14 @@ void TimeSolver<N, NGPT>::_initialize_structural_dynamics( )
 
     for ( int ib=0; ib<bodies_np; ib++ )
     {
-        // Zero initial conditions
-        this->_body_pos[ib].fill( 0.0 );
-        this->_body_vel[ib].fill( 0.0 );
-        this->_body_acc[ib].fill( 0.0 );
+        // Set initial conditions from body definition file
+        const BodyDef* bd = this->_input->bodies[ib];
+        for ( int k=0; k<dofs_np; k++ )
+        {
+            this->_body_pos[ib][k] = bd->ic_pos[k];
+            this->_body_vel[ib][k] = bd->ic_vel[k];
+            this->_body_acc[ib][k] = bd->ic_acc[k];
+        }
 
         if ( this->_input->bodies[ib]->is_fix )
         {

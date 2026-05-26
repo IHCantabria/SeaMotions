@@ -36,6 +36,9 @@ public:
     cusfloat                        cog[3]                  = { 0.0, 0.0, 0.0 };
     bool                            dof_restrictions[6]     = { false, false, false, false, false, false };  ///< Per-DOF kinematic restrictions (false=free, true=fixed): surge, sway, heave, roll, pitch, yaw
     cusfloat                        ext_lid_damp_f          = 0.0;
+    cusfloat                        ic_pos[6]               = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };  ///< Initial position [m, m, m, rad, rad, rad]: surge, sway, heave, roll, pitch, yaw
+    cusfloat                        ic_vel[6]               = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };  ///< Initial velocity [m/s, m/s, m/s, rad/s, rad/s, rad/s]
+    cusfloat                        ic_acc[6]               = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };  ///< Initial acceleration [m/s², m/s², m/s², rad/s², rad/s², rad/s²]
     cusfloat                        inertia[6]              = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
     bool                            interia_by_rad          = false;
     bool                            is_fix                  = false;
