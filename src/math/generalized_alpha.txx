@@ -491,6 +491,17 @@ void GeneralizedAlpha<T>::initialize( void )
     this->_u_beta   = generate_empty_vector<cusfloat>( this->rows_np );
     this->_u_gamma  = generate_empty_vector<cusfloat>( this->rows_np );
 
+    if constexpr ( GA_DEBUG_ON )
+    {
+        // Allocate RHS debug snapshot arrays (populated only when debug_rhs == true,
+        // which the caller sets after construction)
+        this->dbg_fext  = generate_empty_vector<cusfloat>( this->rows_np );
+        this->dbg_Ku    = generate_empty_vector<cusfloat>( this->rows_np );
+        this->dbg_SDVv  = generate_empty_vector<cusfloat>( this->rows_np );
+        this->dbg_SDAa  = generate_empty_vector<cusfloat>( this->rows_np );
+        this->_dbg_tmp  = generate_empty_vector<cusfloat>( this->rows_np );
+    }
+
     // Delete heap memory of variables to be destroyed along
     // this function
     mkl_free( acc_crr_rhs       );
@@ -670,6 +681,15 @@ GeneralizedAlpha<T>::~GeneralizedAlpha( void )
     mkl_free( this->y_vel_old       );
     mkl_free( this->_u_beta         );
     mkl_free( this->_u_gamma        );
+
+    if constexpr ( GA_DEBUG_ON )
+    {
+        mkl_free( this->dbg_fext        );
+        mkl_free( this->dbg_Ku          );
+        mkl_free( this->dbg_SDVv        );
+        mkl_free( this->dbg_SDAa        );
+        mkl_free( this->_dbg_tmp        );
+    }
 }
 
 
@@ -719,6 +739,13 @@ void GeneralizedAlpha<T>::step( void )
     // Apply restrictions to external forces
     this->_apply_restrictions( this->rhs );
 
+    if constexpr ( GA_DEBUG_ON )
+        if ( this->debug_rhs )
+        {
+            copy_vector( this->rows_np, this->rhs, this->dbg_fext );
+            copy_vector( this->rows_np, this->rhs, this->_dbg_tmp );
+        }
+
     std::cout << "  [DBG ga.step] fext done, applying MKL sparse ops\n" << std::flush;
     // Add stiffness contribution
     // OPERATION -> RHS += -K*u_pos
@@ -735,6 +762,13 @@ void GeneralizedAlpha<T>::step( void )
                         ),
         "Error after MKL_SPARSE_D_MV - RHS += -K*u_pos \n"
     );
+
+    if constexpr ( GA_DEBUG_ON )
+        if ( this->debug_rhs )
+        {
+            for ( int _di=0; _di<this->rows_np; _di++ ) this->dbg_Ku[_di] = this->rhs[_di] - this->_dbg_tmp[_di];
+            copy_vector( this->rows_np, this->rhs, this->_dbg_tmp );
+        }
 
     std::cout << "  [DBG ga.step] -K*u_pos done\n" << std::flush;
     // Add velocity contribution via stiff_damp_vel matrix
@@ -753,6 +787,13 @@ void GeneralizedAlpha<T>::step( void )
         "Error after MKL_SPARSE_D_MV - RHS += -SDV*u_vel \n"
     );
 
+    if constexpr ( GA_DEBUG_ON )
+        if ( this->debug_rhs )
+        {
+            for ( int _di=0; _di<this->rows_np; _di++ ) this->dbg_SDVv[_di] = this->rhs[_di] - this->_dbg_tmp[_di];
+            copy_vector( this->rows_np, this->rhs, this->_dbg_tmp );
+        }
+
     std::cout << "  [DBG ga.step] -SDV*u_vel done\n" << std::flush;
     // Add acceleration contribution via stiff_damp_acc matrix
     // OPERATION -> RHS += -SDA*u_acc
@@ -769,6 +810,10 @@ void GeneralizedAlpha<T>::step( void )
                         ),
         "Error after MKL_SPARSE_D_MV - RHS += -SDA*u_acc \n"
     );
+
+    if constexpr ( GA_DEBUG_ON )
+        if ( this->debug_rhs )
+            for ( int _di=0; _di<this->rows_np; _di++ ) this->dbg_SDAa[_di] = this->rhs[_di] - this->_dbg_tmp[_di];
 
     std::cout << "  [DBG ga.step] -SDA*u_acc done" << std::flush;
     // Print rhs and y_acc_old before solve

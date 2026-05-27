@@ -30,6 +30,10 @@ constexpr bool      _DEBUG_BUILD        = true;
 constexpr bool      _DEBUG_BUILD        = false;
 #endif
 
+// Enable per-step Generalized-Alpha RHS contribution debug CSV output.
+// Set to false to disable the tracing and eliminate all associated overhead.
+constexpr bool GA_DEBUG_ON = true;
+
 #ifdef SIMPLE_PREC
 typedef float cusfloat;
 typedef std::complex<float> cuscomplex;

@@ -22,6 +22,8 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
 #include <functional>
 #include <iomanip>
 #include <iostream>
@@ -376,7 +378,7 @@ void TimeSolver<N, NGPT>::_initialize_structural_dynamics( )
     const int bodies_np     = this->_input->bodies_np;
     const int dofs_np       = this->_input->dofs_np;   // = 6
     const cusfloat dt       = this->_input->dt;
-    const cusfloat rho_inf  = static_cast<cusfloat>( 0.8 );    // spectral radius for GA
+    const cusfloat rho_inf  = static_cast<cusfloat>( 1.0 );    // spectral radius for GA (1.0 = no algorithmic damping)
 
     for ( int ib=0; ib<bodies_np; ib++ )
     {
@@ -403,11 +405,11 @@ void TimeSolver<N, NGPT>::_initialize_structural_dynamics( )
         CSRMatrix* mass_mat = new CSRMatrix( dofs_np, mass_dense );
 
         // Hydrostatic stiffness matrix
+        // NOTE: hydrostatic restoring forces are computed at every step via
+        // pressure integration (_compute_hydro_forces) and passed as F_ext.
+        // The K matrix in GA must therefore be zero to avoid double-counting.
         cusfloat stiff_dense[36];
-        // for ( int k=0; k<36; k++ )
-        // {
-        //     stiff_dense[k] = this->_hydrostiff[ib][k];
-        // }
+        clear_vector( 36, stiff_dense );
         CSRMatrix* stiff_mat = new CSRMatrix( dofs_np, stiff_dense );
 
         // No mechanical damping for the first approach
@@ -892,8 +894,67 @@ void TimeSolver<N, NGPT>::_finalize_hdf5_output( )
 
 
 /*****************************************************************************
- * Output step
+ * GA RHS debug CSV helpers
  *****************************************************************************/
+
+template<std::size_t N, int NGPT>
+void TimeSolver<N, NGPT>::_init_ga_debug_csv( )
+{
+    const int bodies_np = this->_input->bodies_np;
+    const int dofs_np   = this->_input->dofs_np;
+
+    // Enable debug tracing on every active GA integrator
+    for ( int ib=0; ib<bodies_np; ib++ )
+    {
+        if ( this->_gen_alpha[ib] != nullptr )
+            this->_gen_alpha[ib]->debug_rhs = true;
+    }
+
+    // Open CSV in <folder>/1_results/
+    namespace fs = std::filesystem;
+    const fs::path results_dir = fs::path( this->_input->folder_path ) / "1_results";
+    fs::create_directories( results_dir );
+    const fs::path csv_path = results_dir / "ga_rhs_debug.csv";
+
+    this->_ga_debug_csv.open( csv_path.string( ) );
+    if ( !this->_ga_debug_csv.is_open( ) )
+    {
+        std::cerr << "[WARN] Could not open GA RHS debug CSV: " << csv_path << std::endl;
+        return;
+    }
+
+    // Write CSV header
+    this->_ga_debug_csv << "step,time,body,dof";
+    for ( int id=0; id<dofs_np; id++ )
+        this->_ga_debug_csv << ",fext_" << id;
+    for ( int id=0; id<dofs_np; id++ )
+        this->_ga_debug_csv << ",Ku_" << id;
+    for ( int id=0; id<dofs_np; id++ )
+        this->_ga_debug_csv << ",SDVv_" << id;
+    for ( int id=0; id<dofs_np; id++ )
+        this->_ga_debug_csv << ",SDAa_" << id;
+    for ( int id=0; id<dofs_np; id++ )
+        this->_ga_debug_csv << ",rhs_" << id;
+    this->_ga_debug_csv << "\n";
+
+    std::cout << " -> GA RHS debug CSV: " << csv_path << std::endl;
+}
+
+template<std::size_t N, int NGPT>
+void TimeSolver<N, NGPT>::_finalize_ga_debug_csv( )
+{
+    if ( this->_ga_debug_csv.is_open( ) )
+    {
+        this->_ga_debug_csv.flush( );
+        this->_ga_debug_csv.close( );
+        std::cout << " -> GA RHS debug CSV closed." << std::endl;
+    }
+}
+
+
+/*****************************************************************************
+ * Output step
+ ****************************************************************************/
 
 template<std::size_t N, int NGPT>
 void TimeSolver<N, NGPT>::_output_step( cusfloat t, int step )
@@ -1084,6 +1145,9 @@ void TimeSolver<N, NGPT>::run( )
     // Prepare HDF5 time-series file (no-op when out_pressure is false or HDF5 absent)
     this->_init_hdf5_output( );
 
+    if constexpr ( GA_DEBUG_ON )
+        this->_init_ga_debug_csv( );
+
     for ( int step=0; step<n_steps; step++ )
     {
         const cusfloat t = static_cast<cusfloat>( step ) * dt;
@@ -1171,6 +1235,20 @@ void TimeSolver<N, NGPT>::run( )
                 this->_body_vel[ib][id] = ga.y_vel[id];
                 this->_body_acc[ib][id] = ga.y_acc[id];
             }
+
+            if constexpr ( GA_DEBUG_ON )
+                if ( this->_ga_debug_csv.is_open( ) && ga.debug_rhs )
+                {
+                    const cusfloat t_step = static_cast<cusfloat>( step ) * this->_input->dt;
+                    this->_ga_debug_csv << std::scientific << std::setprecision( 10 )
+                        << step << "," << t_step << "," << ib << "," << dofs_np;
+                    for ( int id=0; id<dofs_np; id++ ) this->_ga_debug_csv << "," << ga.dbg_fext[id];
+                    for ( int id=0; id<dofs_np; id++ ) this->_ga_debug_csv << "," << ga.dbg_Ku[id];
+                    for ( int id=0; id<dofs_np; id++ ) this->_ga_debug_csv << "," << ga.dbg_SDVv[id];
+                    for ( int id=0; id<dofs_np; id++ ) this->_ga_debug_csv << "," << ga.dbg_SDAa[id];
+                    for ( int id=0; id<dofs_np; id++ ) this->_ga_debug_csv << "," << ga.rhs[id];
+                    this->_ga_debug_csv << "\n";
+                }
         }
 
         // -----------------------------------------------------------------
@@ -1212,4 +1290,7 @@ void TimeSolver<N, NGPT>::run( )
 
     // Flush and close the HDF5 time-series file (no-op when out_pressure is false or HDF5 absent)
     this->_finalize_hdf5_output( );
+
+    if constexpr ( GA_DEBUG_ON )
+        this->_finalize_ga_debug_csv( );
 }

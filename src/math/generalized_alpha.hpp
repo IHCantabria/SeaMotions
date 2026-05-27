@@ -165,6 +165,19 @@ public:
     cusfloat*           y_pos_old       = nullptr;
     cusfloat*           y_vel_old       = nullptr;
 
+    // ---------------------------------------------------------------
+    // RHS contribution debug snapshots
+    // Set debug_rhs = true before the first step() call to enable.
+    // After each step(), dbg_fext/Ku/SDVv/SDAa hold the individual
+    // incremental contributions to the RHS for that step (size rows_np).
+    // ---------------------------------------------------------------
+    bool        debug_rhs   = false;    ///< Enable per-step RHS contribution tracing
+    cusfloat*   dbg_fext    = nullptr;  ///< F_ext contribution  (rows_np)
+    cusfloat*   dbg_Ku      = nullptr;  ///< -K·u_pos contribution  (rows_np)
+    cusfloat*   dbg_SDVv    = nullptr;  ///< -SDV·u_vel contribution  (rows_np)
+    cusfloat*   dbg_SDAa    = nullptr;  ///< -SDA·u_acc contribution  (rows_np)
+    cusfloat*   _dbg_tmp    = nullptr;  ///< Scratch for incremental snapshotting (rows_np)
+
     /* Declare class constructors and destructor */
 
     /**

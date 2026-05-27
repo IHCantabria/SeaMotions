@@ -23,6 +23,7 @@
 // Include general usage libraries
 #include <cstdint>
 #include <filesystem>
+#include <fstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -312,6 +313,25 @@ private:
      *        No-op when out_pressure is false or HDF5 is not compiled in.
      */
     void _finalize_hdf5_output( );
+
+    // ---------------------------------------------------------------
+    // GA RHS contribution debug CSV
+    // ---------------------------------------------------------------
+
+    /// CSV file that receives one row per body per time step with the
+    /// individual contributions to the Generalized-Alpha RHS vector.
+    std::ofstream _ga_debug_csv;
+
+    /**
+     * @brief Enable debug tracing on all GA integrators and open the CSV.
+     *        Written to <folder>/1_results/ga_rhs_debug.csv.
+     */
+    void _init_ga_debug_csv( );
+
+    /**
+     * @brief Flush and close the GA RHS debug CSV.
+     */
+    void _finalize_ga_debug_csv( );
 
 public:
     // Constructor and destructor
