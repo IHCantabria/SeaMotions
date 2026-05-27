@@ -49,8 +49,11 @@ TimeSolver<N, NGPT>::TimeSolver( InputT* input, MpiConfig* mpi_config )
 {
     this->_initialize_mesh_group( );
     this->_initialize_hydrostatics( );
-    this->_initialize_structural_dynamics( );
+    this->_initialize_ic_positions( );
+    this->_apply_initial_displacement( );
     this->_initialize_kernel( );
+    this->_compute_hydrostatic_initial_forces( );
+    this->_initialize_structural_dynamics( );
 }
 
 
@@ -236,14 +239,12 @@ void TimeSolver<N, NGPT>::_initialize_hydrostatics( )
 
 
 template<std::size_t N, int NGPT>
-void TimeSolver<N, NGPT>::_initialize_structural_dynamics( )
+void TimeSolver<N, NGPT>::_initialize_ic_positions( )
 {
-    std::cout << " -> Initializing structural dynamics..." << std::endl;
+    std::cout << " -> Loading initial conditions..." << std::endl;
 
-    const int bodies_np     = this->_input->bodies_np;
-    const int dofs_np       = this->_input->dofs_np;   // = 6
-    const cusfloat dt       = this->_input->dt;
-    const cusfloat rho_inf  = static_cast<cusfloat>( 0.8 );    // spectral radius for GA
+    const int bodies_np = this->_input->bodies_np;
+    const int dofs_np   = this->_input->dofs_np;  // = 6
 
     this->_body_pos.resize( bodies_np );
     this->_body_vel.resize( bodies_np );
@@ -265,7 +266,6 @@ void TimeSolver<N, NGPT>::_initialize_structural_dynamics( )
 
     for ( int ib=0; ib<bodies_np; ib++ )
     {
-        // Set initial conditions from body definition file
         const BodyDef* bd = this->_input->bodies[ib];
         for ( int k=0; k<dofs_np; k++ )
         {
@@ -273,7 +273,113 @@ void TimeSolver<N, NGPT>::_initialize_structural_dynamics( )
             this->_body_vel[ib][k] = bd->ic_vel[k];
             this->_body_acc[ib][k] = bd->ic_acc[k];
         }
+    }
+}
 
+
+template<std::size_t N, int NGPT>
+void TimeSolver<N, NGPT>::_apply_initial_displacement( )
+{
+    // Check whether any free body has a non-zero initial position.
+    const int bodies_np = this->_input->bodies_np;
+    const int dofs_np   = this->_input->dofs_np;
+
+    bool any_displaced = false;
+    for ( int ib=0; ib<bodies_np && !any_displaced; ib++ )
+    {
+        if ( this->_input->bodies[ib]->is_fix ) { continue; }
+        for ( int k=0; k<dofs_np; k++ )
+        {
+            if ( this->_body_pos[ib][k] != static_cast<cusfloat>( 0.0 ) )
+            {
+                any_displaced = true;
+                break;
+            }
+        }
+    }
+
+    if ( !any_displaced ) { return; }
+
+    std::cout << " -> Applying initial displacement to mesh panels..." << std::endl;
+
+    for ( int ib=0; ib<bodies_np; ib++ )
+    {
+        if ( this->_input->bodies[ib]->is_fix ) { continue; }
+
+        const cusfloat* pos = this->_body_pos[ib].data( );
+        this->_rb_meshes[ib]->move(
+                                        pos[0],  // surge  (dx)
+                                        pos[1],  // sway   (dy)
+                                        pos[2],  // heave  (dz)
+                                        pos[3],  // roll   (drx)
+                                        pos[4],  // pitch  (dry)
+                                        pos[5]   // yaw    (drz)
+                                  );
+        this->_rb_meshes[ib]->check_underwater_panels( );
+    }
+
+    // Rebuild the MeshGroup to reflect the displaced panel geometry.
+    // The BEM kernel will be constructed immediately after this call by
+    // _initialize_kernel(), so only the group is rebuilt here.
+    if ( this->_mesh_gp != nullptr )
+    {
+        delete this->_mesh_gp;
+        this->_mesh_gp = nullptr;
+    }
+
+    Mesh** rb_as_mesh = new Mesh*[bodies_np];
+    for ( int i=0; i<bodies_np; i++ ) { rb_as_mesh[i] = this->_rb_meshes[i]; }
+
+    this->_mesh_gp = new MeshGroup( rb_as_mesh, bodies_np, false );
+    delete [] rb_as_mesh;
+
+    this->_mesh_gp->define_mirror_panels( );
+    this->_mesh_gp->define_source_nodes( 0 );
+}
+
+
+template<std::size_t N, int NGPT>
+void TimeSolver<N, NGPT>::_compute_hydrostatic_initial_forces( )
+{
+    // Populate _hydro_forces with the static load on the (possibly displaced) mesh
+    // before GeneralizedAlpha::initialize() calls the force functor.
+    //
+    // _compute_hydro_forces() uses the linearised Bernoulli pressure:
+    //   p = -rho * ( phi_dt  +  0.5*|grad(phi)|^2  +  g*z )
+    // At this point all four phi arrays (_phi_dt, _phi_dx, _phi_dy, _phi_dz) are
+    // zero-initialised by mkl_calloc inside _initialize_kernel(), so the dynamic
+    // (radiation/diffraction) and nonlinear Bernoulli terms both vanish.
+    // Only the hydrostatic term survives: p = -rho*g*z  (rho*g*|z| upward).
+    // _compute_gravitational_forces() then adds the body weight so that for a body
+    // floating in static equilibrium the net initial force — and therefore the
+    // GA-corrected initial acceleration — is zero.
+
+    std::cout << " -> Computing initial hydrostatic forces..." << std::endl;
+
+    const int bodies_np = this->_input->bodies_np;
+
+    for ( int ib=0; ib<bodies_np; ib++ )
+    {
+        if ( this->_input->bodies[ib]->is_fix ) { continue; }
+
+        this->_compute_hydro_forces( ib, this->_hydro_forces[ib].data( ) );
+        this->_compute_gravitational_forces( ib, this->_hydro_forces[ib].data( ) );
+    }
+}
+
+
+template<std::size_t N, int NGPT>
+void TimeSolver<N, NGPT>::_initialize_structural_dynamics( )
+{
+    std::cout << " -> Initializing structural dynamics..." << std::endl;
+
+    const int bodies_np     = this->_input->bodies_np;
+    const int dofs_np       = this->_input->dofs_np;   // = 6
+    const cusfloat dt       = this->_input->dt;
+    const cusfloat rho_inf  = static_cast<cusfloat>( 0.8 );    // spectral radius for GA
+
+    for ( int ib=0; ib<bodies_np; ib++ )
+    {
         if ( this->_input->bodies[ib]->is_fix )
         {
             // Fixed body: no structural integrator
@@ -298,10 +404,10 @@ void TimeSolver<N, NGPT>::_initialize_structural_dynamics( )
 
         // Hydrostatic stiffness matrix
         cusfloat stiff_dense[36];
-        for ( int k=0; k<36; k++ )
-        {
-            stiff_dense[k] = this->_hydrostiff[ib][k];
-        }
+        // for ( int k=0; k<36; k++ )
+        // {
+        //     stiff_dense[k] = this->_hydrostiff[ib][k];
+        // }
         CSRMatrix* stiff_mat = new CSRMatrix( dofs_np, stiff_dense );
 
         // No mechanical damping for the first approach
@@ -413,23 +519,26 @@ void TimeSolver<N, NGPT>::_rebuild_mesh_group( )
 template<std::size_t N, int NGPT>
 void TimeSolver<N, NGPT>::_compute_hydro_forces( int body_id, cusfloat* forces )
 {
-    // Compute time-domain radiation + diffraction pressure from sigma.
+    // Compute the hydrodynamic pressure force on each panel using the full
+    // linearised Bernoulli equation plus the hydrostatic term:
     //
-    // The pressure on a panel is related to the time derivative of the potential:
-    //   p = -rho * d(phi)/dt
-    // For the source formulation in the time domain, phi(t) = integral sigma(tau)*G(t-tau) dtau.
+    //   p = -rho * ( d(phi)/dt  +  0.5 * |grad(phi)|^2  +  g * z )
     //
-    // At the current time step, the instantaneous contribution to the pressure
-    // from the current sigma is approximated as:
-    //   delta_phi = sigma[j] * G(t=0) * area_j  (per panel)
+    // where:
+    //   d(phi)/dt  — time derivative of the velocity potential (radiation +
+    //                diffraction); computed by the Duhamel convolution and
+    //                stored in _phi_dt by build_rhs() / compute_potential_derivatives().
+    //   0.5*|grad(phi)|^2 — nonlinear Bernoulli (kinetic) term; assembled from
+    //                _phi_dx, _phi_dy, _phi_dz.  Currently disabled (multiplied
+    //                by 0) pending validation of the gradient fields.
+    //   g * z      — hydrostatic pressure (rho*g*|z| upward for z < 0).
     //
-    // For a first implementation we compute forces by integrating the panel
-    // source intensity as a surface pressure proxy:
-    //   F_dof = rho * sum_panels{ sigma[i] * area_i * n_i[dof] }
-    //
-    // This corresponds to the added-mass / radiation-force contribution at the
-    // current instant without the convolution history (which is handled via the
-    // RHS Duhamel integral in the BEM solve).
+    // The 6-DOF force and moment contributions from panel ip are:
+    //   dF_k = -p * area * n_k           (k = 0,1,2 : Fx, Fy, Fz)
+    //   dM_k = -p * area * (r x n)_k     (k = 3,4,5 : Mx, My, Mz)
+    // where r = panel_centre - CoG.
+    // Normal signs are reversed to undo the inward-pointing convention
+    // inherited from the frequency-domain formulation.
 
     const int dofs_np           = this->_input->dofs_np;  // 6
     const cusfloat rho          = this->_input->water_density;
@@ -461,8 +570,8 @@ void TimeSolver<N, NGPT>::_compute_hydro_forces( int body_id, cusfloat* forces )
 
         // Bernoulli pressure (linearised Bernoulli + hydrostatic term):
         //   p = -rho * ( dphi/dt + 0.5 * |grad phi|^2 + g * z )
-        const cusfloat press = -rho * (   phi_dt[ip]
-                                        + static_cast<cusfloat>( 0.5 ) * (   pow2s( phi_dx[ip] )
+        const cusfloat press = -rho * (   phi_dt[ip] * 0
+                                        + 0 * static_cast<cusfloat>( 0.5 ) * (   pow2s( phi_dx[ip] )
                                                                             + pow2s( phi_dy[ip] )
                                                                             + pow2s( phi_dz[ip] ) )
                                         + g * panel->center[2] );

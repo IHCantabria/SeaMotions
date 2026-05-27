@@ -148,6 +148,9 @@ private:
     // Helper methods
     void _initialize_mesh_group( );
     void _initialize_hydrostatics( );
+    void _initialize_ic_positions( );
+    void _apply_initial_displacement( );
+    void _compute_hydrostatic_initial_forces( );
     void _initialize_structural_dynamics( );
     void _initialize_kernel( );
 
