@@ -457,12 +457,24 @@ void TimeSolver<N, NGPT>::_initialize_kernel( )
 
     this->_kernel = new FormulationKernelBackendT<N, NGPT>( );
     this->_kernel->initialize( this->_mesh_gp, this->_input, this->_mpi_config );
+    this->_resize_panel_pressure_cache( );
+}
+
+
+template<std::size_t N, int NGPT>
+void TimeSolver<N, NGPT>::_resize_panel_pressure_cache( )
+{
+    const std::size_t np = static_cast<std::size_t>( this->_kernel->get_n_panels( ) );
+    this->_panel_phi_dt_comp     .assign( np, static_cast<cusfloat>( 0.0 ) );
+    this->_panel_kinetic_comp    .assign( np, static_cast<cusfloat>( 0.0 ) );
+    this->_panel_hydrostatic_comp.assign( np, static_cast<cusfloat>( 0.0 ) );
+    this->_panel_pressure        .assign( np, static_cast<cusfloat>( 0.0 ) );
 }
 
 
 /*****************************************************************************
  * Mesh group rebuild (after rigid-body motion)
- *****************************************************************************/
+ ****************************************************************************/
 
 template<std::size_t N, int NGPT>
 void TimeSolver<N, NGPT>::_rebuild_mesh_group( )
@@ -509,6 +521,67 @@ void TimeSolver<N, NGPT>::_rebuild_mesh_group( )
     // Rebuild the BEM steady matrix for the new panel geometry.
     this->_kernel = new FormulationKernelBackendT<N, NGPT>( );
     this->_kernel->initialize( this->_mesh_gp, this->_input, this->_mpi_config );
+    this->_resize_panel_pressure_cache( );
+}
+
+
+/*****************************************************************************
+ * Bernoulli pressure decomposition helper
+ *****************************************************************************/
+
+template<std::size_t N, int NGPT>
+void TimeSolver<N, NGPT>::_compute_panel_pressure_components(
+    cusfloat  rho,
+    cusfloat  g,
+    cusfloat  phi_dt_val,
+    cusfloat  phi_dx_val,
+    cusfloat  phi_dy_val,
+    cusfloat  phi_dz_val,
+    cusfloat  z,
+    cusfloat& p_phi_dt,
+    cusfloat& p_kinetic,
+    cusfloat& p_hydrostatic )
+{
+    p_phi_dt      = -rho * phi_dt_val;
+    p_kinetic     = -rho * static_cast<cusfloat>( 0.5 )
+                        * (   phi_dx_val * phi_dx_val
+                            + phi_dy_val * phi_dy_val
+                            + phi_dz_val * phi_dz_val );
+    p_hydrostatic = -rho * g * z;
+}
+
+
+/*****************************************************************************
+ * Panel pressure → 6-DOF force helper
+ *****************************************************************************/
+
+
+template<std::size_t N, int NGPT>
+void TimeSolver<N, NGPT>::_add_panel_pressure_force(
+    PanelGeom*      panel,
+    const cusfloat* cog,
+    cusfloat        press,
+    cusfloat*       forces )
+{
+    // Force: F_i = -p * area * n_i
+    // (negative sign reverts the inward-pointing normal convention inherited
+    //  from the frequency-domain formulation)
+    const cusfloat dF0 = -press * panel->area * panel->normal_vec[0];
+    const cusfloat dF1 = -press * panel->area * panel->normal_vec[1];
+    const cusfloat dF2 = -press * panel->area * panel->normal_vec[2];
+
+    forces[0] += dF0;
+    forces[1] += dF1;
+    forces[2] += dF2;
+
+    // Moment: M = r × F   where r = panel_centre - CoG
+    const cusfloat rx = panel->center[0] - cog[0];
+    const cusfloat ry = panel->center[1] - cog[1];
+    const cusfloat rz = panel->center[2] - cog[2];
+
+    forces[3] += ry * dF2 - rz * dF1;  // roll
+    forces[4] += rz * dF0 - rx * dF2;  // pitch
+    forces[5] += rx * dF1 - ry * dF0;  // yaw
 }
 
 
@@ -563,36 +636,36 @@ void TimeSolver<N, NGPT>::_compute_hydro_forces( int body_id, cusfloat* forces )
     for ( int ip=panel_start; ip<panel_end; ip++ )
     {
         PanelGeom* panel = this->_mesh_gp->panels[ip];
+        const std::size_t sip = static_cast<std::size_t>( ip );
 
-        // Only submerged panels contribute to hydrodynamic pressure
         if ( panel->center[2] >= static_cast<cusfloat>( 0.0 ) )
+        {
+            // Above waterplane: zero the pressure cache slot and skip force contribution
+            this->_panel_phi_dt_comp[sip]      = static_cast<cusfloat>( 0.0 );
+            this->_panel_kinetic_comp[sip]     = static_cast<cusfloat>( 0.0 );
+            this->_panel_hydrostatic_comp[sip] = static_cast<cusfloat>( 0.0 );
+            this->_panel_pressure[sip]         = static_cast<cusfloat>( 0.0 );
             continue;
+        }
 
-        // Bernoulli pressure (linearised Bernoulli + hydrostatic term):
-        //   p = -rho * ( dphi/dt + 0.5 * |grad phi|^2 + g * z )
-        const cusfloat press = -rho * (   phi_dt[ip] * 0
-                                        + 0 * static_cast<cusfloat>( 0.5 ) * (   pow2s( phi_dx[ip] )
-                                                                            + pow2s( phi_dy[ip] )
-                                                                            + pow2s( phi_dz[ip] ) )
-                                        + g * panel->center[2] );
+        // Decompose Bernoulli pressure into its three components and cache
+        cusfloat p_phi_dt, p_kinetic, p_hydrostatic;
+        _compute_panel_pressure_components(
+            rho, g,
+            phi_dt[ip], phi_dx[ip], phi_dy[ip], phi_dz[ip],
+            panel->center[2],
+            p_phi_dt, p_kinetic, p_hydrostatic );
 
-        // Force: F_i = p_i * area_i * n_i
-        const cusfloat dF0 = - press * panel->area * panel->normal_vec[0]; // Reversed sign is to revert surface normals that where previously reverted to match freq domain formulation (same interface for both)
-        const cusfloat dF1 = - press * panel->area * panel->normal_vec[1]; // Reversed sign is to revert surface normals that where previously reverted to match freq domain formulation (same interface for both)
-        const cusfloat dF2 = - press * panel->area * panel->normal_vec[2]; // Reversed sign is to revert surface normals that where previously reverted to match freq domain formulation (same interface for both)
+        this->_panel_phi_dt_comp[sip]      = p_phi_dt;
+        this->_panel_kinetic_comp[sip]     = p_kinetic;
+        this->_panel_hydrostatic_comp[sip] = p_hydrostatic;
+        this->_panel_pressure[sip]         = p_phi_dt + p_kinetic + p_hydrostatic;
 
-        forces[0] += dF0;
-        forces[1] += dF1;
-        forces[2] += dF2;
+        // TODO: include p_phi_dt and p_kinetic once gradient fields are validated
+        const cusfloat press = p_hydrostatic;
 
-        // Moments: M = r × F   where r = panel_centre - CoG
-        const cusfloat rx = panel->center[0] - cog[0];
-        const cusfloat ry = panel->center[1] - cog[1];
-        const cusfloat rz = panel->center[2] - cog[2];
-
-        forces[3] += ry * dF2 - rz * dF1;  // roll
-        forces[4] += rz * dF0 - rx * dF2;  // pitch
-        forces[5] += rx * dF1 - ry * dF0;  // yaw
+        // Force and moment contributions via the shared helper
+        _add_panel_pressure_force( panel, cog, press, forces );
     }
 }
 
@@ -853,24 +926,15 @@ void TimeSolver<N, NGPT>::_output_step( cusfloat t, int step )
     const int np = this->_kernel->get_n_panels( );
     if ( np <= 0 ) { return; }
 
-    const cusfloat  rho = this->_input->water_density;
-    const cusfloat  g   = this->_input->grav_acc;
-
-    const cusfloat* phi_dt = this->_kernel->get_phi_dt( );
-    const cusfloat* phi_dx = this->_kernel->get_phi_dx( );
-    const cusfloat* phi_dy = this->_kernel->get_phi_dy( );
-    const cusfloat* phi_dz = this->_kernel->get_phi_dz( );
-
-    // ---- Build geometry arrays (for VTU) and decomposed pressure components ----
+    // ---- Build geometry arrays for VTU ----
+    // Pressure component arrays (_panel_phi_dt_comp, _panel_kinetic_comp,
+    // _panel_hydrostatic_comp, _panel_pressure) are already populated each step
+    // by _compute_hydro_forces, so no recomputation is needed here.
     std::vector<cusfloat>   nodes_x, nodes_y, nodes_z;
     std::vector<int32_t>    connectivity, offsets;
     std::vector<uint8_t>    types;
 
     const std::size_t snp = static_cast<std::size_t>( np );
-    std::vector<cusfloat>   phi_dt_comp     ( snp );
-    std::vector<cusfloat>   kinetic_comp    ( snp );
-    std::vector<cusfloat>   hydrostatic_comp( snp );
-    std::vector<cusfloat>   pressure        ( snp );
 
     nodes_x.reserve( snp * 4 );
     nodes_y.reserve( snp * 4 );
@@ -899,16 +963,6 @@ void TimeSolver<N, NGPT>::_output_step( cusfloat t, int step )
         // VTK cell type: 5 = VTK_TRIANGLE, 9 = VTK_QUAD, 7 = VTK_POLYGON
         uint8_t vtype = ( nn == 3 ) ? 5 : ( nn == 4 ) ? 9 : 7;
         types.push_back( vtype );
-
-        // Decomposed Bernoulli pressure components
-        const std::size_t sip = static_cast<std::size_t>( ip );
-        phi_dt_comp[sip]      = -rho * phi_dt[ip];
-        kinetic_comp[sip]     = -rho * static_cast<cusfloat>( 0.5 )
-                                     * (   phi_dx[ip] * phi_dx[ip]
-                                         + phi_dy[ip] * phi_dy[ip]
-                                         + phi_dz[ip] * phi_dz[ip] );
-        hydrostatic_comp[sip] = -rho * g * panel->center[2];
-        pressure[sip]         = phi_dt_comp[sip] + kinetic_comp[sip] + hydrostatic_comp[sip];
     }
 
     // ---- ParaView VTU: pressure_XXXXXX.vtu ----
@@ -929,10 +983,10 @@ void TimeSolver<N, NGPT>::_output_step( cusfloat t, int step )
                                 connectivity.data( ),
                                 offsets.data( ),
                                 types.data( ),
-                                pressure.data( ),
-                                phi_dt_comp.data( ),
-                                kinetic_comp.data( ),
-                                hydrostatic_comp.data( )
+                                this->_panel_pressure.data( ),
+                                this->_panel_phi_dt_comp.data( ),
+                                this->_panel_kinetic_comp.data( ),
+                                this->_panel_hydrostatic_comp.data( )
                             );
 
     // Record entry for PVD (relative path from the paraview dir's parent = results dir)
@@ -969,39 +1023,20 @@ void TimeSolver<N, NGPT>::_output_step( cusfloat t, int step )
                 if ( panel->center[2] >= static_cast<cusfloat>( 0.0 ) ) { continue; }
 
                 const std::size_t sip  = static_cast<std::size_t>( ip );
-                const cusfloat    area = panel->area;
 
-                const cusfloat rx = panel->center[0] - cog[0];
-                const cusfloat ry = panel->center[1] - cog[1];
-                const cusfloat rz = panel->center[2] - cog[2];
-
-                // Accumulate F = p * area * n  and  M = r × F  for one component
-                auto accumulate_force = [&]( std::array<cusfloat, 6>& f, cusfloat p )
-                {
-                    const cusfloat dF0 = - p * area * panel->normal_vec[0]; // Reversed sign is to revert surface normals that where previously reverted to match freq domain formulation (same interface for both)
-                    const cusfloat dF1 = - p * area * panel->normal_vec[1]; // Reversed sign is to revert surface normals that where previously reverted to match freq domain formulation (same interface for both)
-                    const cusfloat dF2 = - p * area * panel->normal_vec[2]; // Reversed sign is to revert surface normals that where previously reverted to match freq domain formulation (same interface for both)
-                    f[0] += dF0;
-                    f[1] += dF1;
-                    f[2] += dF2;
-                    f[3] += ry * dF2 - rz * dF1;
-                    f[4] += rz * dF0 - rx * dF2;
-                    f[5] += rx * dF1 - ry * dF0;
-                };
-
-                accumulate_force( body_force_phi_dt[ib],       phi_dt_comp[sip]      );
-                accumulate_force( body_force_kinetic[ib],      kinetic_comp[sip]     );
-                accumulate_force( body_force_hydrostatic[ib],  hydrostatic_comp[sip] );
-                accumulate_force( body_force_total[ib],        pressure[sip]         );
+                _add_panel_pressure_force( panel, cog, this->_panel_phi_dt_comp[sip],      body_force_phi_dt[ib].data()       );
+                _add_panel_pressure_force( panel, cog, this->_panel_kinetic_comp[sip],     body_force_kinetic[ib].data()      );
+                _add_panel_pressure_force( panel, cog, this->_panel_hydrostatic_comp[sip], body_force_hydrostatic[ib].data()  );
+                _add_panel_pressure_force( panel, cog, this->_panel_pressure[sip],         body_force_total[ib].data()        );
             }
         }
 
         this->_hdf5_exporter->append_step(
             t,
-            pressure.data( ),
-            phi_dt_comp.data( ),
-            kinetic_comp.data( ),
-            hydrostatic_comp.data( ),
+            this->_panel_pressure.data( ),
+            this->_panel_phi_dt_comp.data( ),
+            this->_panel_kinetic_comp.data( ),
+            this->_panel_hydrostatic_comp.data( ),
             np,
             this->_body_pos,
             this->_body_vel,

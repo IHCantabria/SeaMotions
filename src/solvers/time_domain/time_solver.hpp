@@ -145,6 +145,14 @@ private:
     // Time derivative of _body_vel_bc (body acceleration + wave acceleration BC)
     std::vector<cusfloat>                   _body_acc_bc;
 
+    // Per-panel Bernoulli pressure components, populated each step by
+    // _compute_hydro_forces and read by _output_step.  Kept as member vectors to
+    // avoid repeated heap allocation; resized whenever the panel count changes.
+    std::vector<cusfloat>                   _panel_phi_dt_comp;
+    std::vector<cusfloat>                   _panel_kinetic_comp;
+    std::vector<cusfloat>                   _panel_hydrostatic_comp;
+    std::vector<cusfloat>                   _panel_pressure;
+
     // Helper methods
     void _initialize_mesh_group( );
     void _initialize_hydrostatics( );
@@ -155,10 +163,62 @@ private:
     void _initialize_kernel( );
 
     /**
+     * @brief Resize the four per-panel pressure-cache vectors to the current panel count.
+     *        Called after every kernel initialisation or mesh rebuild.
+     */
+    void _resize_panel_pressure_cache( );
+
+    /**
      * @brief Destroy and recreate MeshGroup + BEM kernel from the current
      *        state of _rb_meshes.  Called after every mesh position update.
      */
     void _rebuild_mesh_group( );
+
+    /**
+     * @brief Decompose the linearised Bernoulli pressure at a panel centre into its three additive
+     *        components.
+     *
+     *   p_phi_dt      = -rho * dphi/dt
+     *   p_kinetic     = -rho * 0.5 * |grad(phi)|^2
+     *   p_hydrostatic = -rho * g * z
+     *
+     * The total pressure is p_phi_dt + p_kinetic + p_hydrostatic.
+     *
+     * @param rho          Water density [kg/m³].
+     * @param g            Gravitational acceleration [m/s²].
+     * @param phi_dt_val   Time derivative of phi at the panel centre.
+     * @param phi_dx_val   x-gradient of phi at the panel centre.
+     * @param phi_dy_val   y-gradient of phi at the panel centre.
+     * @param phi_dz_val   z-gradient of phi at the panel centre.
+     * @param z            Vertical coordinate of the panel centre (negative below waterplane).
+     * @param p_phi_dt        Output: radiation/diffraction pressure component.
+     * @param p_kinetic       Output: nonlinear Bernoulli (kinetic) component.
+     * @param p_hydrostatic   Output: hydrostatic component.
+     */
+    static void _compute_panel_pressure_components(
+                    cusfloat  rho,
+                    cusfloat  g,
+                    cusfloat  phi_dt_val,
+                    cusfloat  phi_dx_val,
+                    cusfloat  phi_dy_val,
+                    cusfloat  phi_dz_val,
+                    cusfloat  z,
+                    cusfloat& p_phi_dt,
+                    cusfloat& p_kinetic,
+                    cusfloat& p_hydrostatic );
+
+    /**
+     * @brief Accumulate one panel's pressure contribution into a 6-DOF force vector.
+     *
+     * Computes F = -p * area * n  and  M = r × F  (r = panel_centre − CoG)
+     * and adds the result to forces[0..5].  The vector is NOT zeroed first.
+     *
+     * @param panel   Panel geometry.
+     * @param cog     Body centre of gravity [3].
+     * @param press   Scalar pressure at the panel centre.
+     * @param forces  6-DOF accumulator [Fx Fy Fz Mx My Mz].
+     */
+    static void _add_panel_pressure_force( PanelGeom* panel, const cusfloat* cog, cusfloat press, cusfloat* forces );
 
     /**
      * @brief Compute hydrodynamic pressure forces on a body from the current source intensities.
