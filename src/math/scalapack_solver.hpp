@@ -231,7 +231,10 @@ void ScalapackSolver<T>::GenerateRhsComm(void)
     // Construct a group containing all of the prime ranks in world_group
     MPI_Group_incl(world_group, num_procs_row, new_ranks, &rhs_group);
     MPI_Comm_create_group(this->global_comm, rhs_group, 0, &rhs_comm);
-    
+
+    // world_group is no longer needed after the sub-group is created.
+    MPI_Group_free( &world_group );
+
     // Delete matrixes
     mkl_free( cols_position );
 }
@@ -433,6 +436,21 @@ ScalapackSolver<T>::~ScalapackSolver( )
     mkl_free( this->descA );
     mkl_free( this->descB );
     mkl_free( this->ipiv );
+
+    // Free MPI/BLACS resources created during Initialize().
+    // blacs_gridexit releases the context and the MPI communicator that
+    // blacs_gridinit duplicated internally via MPI_Comm_dup.
+    blacs_gridexit( &this->ictxt );
+
+    // Free the sub-communicator created by GenerateRhsComm().
+    if ( this->rhs_comm != MPI_COMM_NULL )
+    {
+        MPI_Comm_free( &this->rhs_comm );
+    }
+    if ( this->rhs_group != MPI_GROUP_NULL && this->rhs_group != MPI_GROUP_EMPTY )
+    {
+        MPI_Group_free( &this->rhs_group );
+    }
 }
 
 
