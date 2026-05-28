@@ -190,44 +190,44 @@ void FormulationKernelBackendT<N, NGPT>::initialize(
                                 );
 
     // Local block dimensions from ScaLAPACK distribution
-    const int rows_local = this->_solver->num_rows_local;   // = np  (1 row of procs)
-    const int cols_local = this->_solver->num_cols_local;
+    const int rows_local        = this->_solver->num_rows_local;   // = np  (1 row of procs)
+    const int cols_local        = this->_solver->num_cols_local;
 
     // Allocate clean steady sysmat (never passed to Solve) + working copy
     const std::size_t sysmat_np = static_cast<std::size_t>( rows_local ) * static_cast<std::size_t>( cols_local );
-    this->_sysmat_steady = static_cast<cusfloat*>( mkl_calloc( sysmat_np, sizeof(cusfloat), 64 ) );
-    this->_sysmat        = static_cast<cusfloat*>( mkl_calloc( sysmat_np, sizeof(cusfloat), 64 ) );
+    this->_sysmat_steady        = generate_empty_vector<cusfloat>( sysmat_np );
+    this->_sysmat               = generate_empty_vector<cusfloat>( sysmat_np );
 
     // RHS and solution: full vector on every process (num_rows_local = np for 1×P grid)
-    this->_rhs          = static_cast<cusfloat*>( mkl_calloc( np, sizeof(cusfloat), 64 ) );
-    this->_rhs_dt       = static_cast<cusfloat*>( mkl_calloc( np, sizeof(cusfloat), 64 ) );
-    this->_sigma        = static_cast<cusfloat*>( mkl_calloc( np, sizeof(cusfloat), 64 ) );
-    this->_sigma_dt     = static_cast<cusfloat*>( mkl_calloc( np, sizeof(cusfloat), 64 ) );
+    this->_rhs                  = generate_empty_vector<cusfloat>( np );
+    this->_rhs_dt               = generate_empty_vector<cusfloat>( np );
+    this->_sigma                = generate_empty_vector<cusfloat>( np );
+    this->_sigma_dt             = generate_empty_vector<cusfloat>( np );
 
     // Potential gradient: total (= rad + wave), updated at end of compute_potential_derivatives
-    this->_phi_dt   = static_cast<cusfloat*>( mkl_calloc( np, sizeof(cusfloat), 64 ) );
-    this->_phi_dx   = static_cast<cusfloat*>( mkl_calloc( np, sizeof(cusfloat), 64 ) );
-    this->_phi_dy   = static_cast<cusfloat*>( mkl_calloc( np, sizeof(cusfloat), 64 ) );
-    this->_phi_dz   = static_cast<cusfloat*>( mkl_calloc( np, sizeof(cusfloat), 64 ) );
+    this->_phi_dt               = generate_empty_vector<cusfloat>( np );
+    this->_phi_dx               = generate_empty_vector<cusfloat>( np );
+    this->_phi_dy               = generate_empty_vector<cusfloat>( np );
+    this->_phi_dz               = generate_empty_vector<cusfloat>( np );
 
     // Split arrays: radiation (Duhamel + steady Rankine)
-    this->_phi_dt_rad  = static_cast<cusfloat*>( mkl_calloc( np, sizeof(cusfloat), 64 ) );
-    this->_phi_dx_rad  = static_cast<cusfloat*>( mkl_calloc( np, sizeof(cusfloat), 64 ) );
-    this->_phi_dy_rad  = static_cast<cusfloat*>( mkl_calloc( np, sizeof(cusfloat), 64 ) );
-    this->_phi_dz_rad  = static_cast<cusfloat*>( mkl_calloc( np, sizeof(cusfloat), 64 ) );
+    this->_phi_dt_rad           = generate_empty_vector<cusfloat>( np );
+    this->_phi_dx_rad           = generate_empty_vector<cusfloat>( np );
+    this->_phi_dy_rad           = generate_empty_vector<cusfloat>( np );
+    this->_phi_dz_rad           = generate_empty_vector<cusfloat>( np );
 
     // Split arrays: incident wave
-    this->_phi_dt_wave = static_cast<cusfloat*>( mkl_calloc( np, sizeof(cusfloat), 64 ) );
-    this->_phi_dx_wave = static_cast<cusfloat*>( mkl_calloc( np, sizeof(cusfloat), 64 ) );
-    this->_phi_dy_wave = static_cast<cusfloat*>( mkl_calloc( np, sizeof(cusfloat), 64 ) );
-    this->_phi_dz_wave = static_cast<cusfloat*>( mkl_calloc( np, sizeof(cusfloat), 64 ) );
+    this->_phi_dt_wave          = generate_empty_vector<cusfloat>( np );
+    this->_phi_dx_wave          = generate_empty_vector<cusfloat>( np );
+    this->_phi_dy_wave          = generate_empty_vector<cusfloat>( np );
+    this->_phi_dz_wave          = generate_empty_vector<cusfloat>( np );
 
     // Scratch buffers for compute_potential_derivatives() — steady contribution
-    this->_acc_phi_dt          = generate_empty_vector<cusfloat>( np );
-    this->_acc_phi_dx          = generate_empty_vector<cusfloat>( np );
-    this->_acc_phi_dy          = generate_empty_vector<cusfloat>( np );
-    this->_acc_phi_dz          = generate_empty_vector<cusfloat>( np );
-    this->_steady_field_points = generate_empty_vector<cusfloat>( 3 * np );
+    this->_acc_phi_dt           = generate_empty_vector<cusfloat>( np );
+    this->_acc_phi_dx           = generate_empty_vector<cusfloat>( np );
+    this->_acc_phi_dy           = generate_empty_vector<cusfloat>( np );
+    this->_acc_phi_dz           = generate_empty_vector<cusfloat>( np );
+    this->_steady_field_points  = generate_empty_vector<cusfloat>( 3 * np );
 
     // Build the steady BEM matrix (fills _sysmat_steady; factorization on first solve)
     this->_build_steady_matrix( );
