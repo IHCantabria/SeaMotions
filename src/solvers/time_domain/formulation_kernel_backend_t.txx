@@ -95,6 +95,48 @@ FormulationKernelBackendT<N, NGPT>::~FormulationKernelBackendT( )
         mkl_free( this->_phi_dz );
         this->_phi_dz = nullptr;
     }
+    // Radiation split arrays
+    if ( this->_phi_dt_rad != nullptr )
+    {
+        mkl_free( this->_phi_dt_rad );
+        this->_phi_dt_rad = nullptr;
+    }
+    if ( this->_phi_dx_rad != nullptr )
+    {
+        mkl_free( this->_phi_dx_rad );
+        this->_phi_dx_rad = nullptr;
+    }
+    if ( this->_phi_dy_rad != nullptr )
+    {
+        mkl_free( this->_phi_dy_rad );
+        this->_phi_dy_rad = nullptr;
+    }
+    if ( this->_phi_dz_rad != nullptr )
+    {
+        mkl_free( this->_phi_dz_rad );
+        this->_phi_dz_rad = nullptr;
+    }
+    // Incident-wave split arrays
+    if ( this->_phi_dt_wave != nullptr )
+    {
+        mkl_free( this->_phi_dt_wave );
+        this->_phi_dt_wave = nullptr;
+    }
+    if ( this->_phi_dx_wave != nullptr )
+    {
+        mkl_free( this->_phi_dx_wave );
+        this->_phi_dx_wave = nullptr;
+    }
+    if ( this->_phi_dy_wave != nullptr )
+    {
+        mkl_free( this->_phi_dy_wave );
+        this->_phi_dy_wave = nullptr;
+    }
+    if ( this->_phi_dz_wave != nullptr )
+    {
+        mkl_free( this->_phi_dz_wave );
+        this->_phi_dz_wave = nullptr;
+    }
     if ( this->_acc_phi_dt != nullptr )
     {
         mkl_free( this->_acc_phi_dt );
@@ -162,11 +204,23 @@ void FormulationKernelBackendT<N, NGPT>::initialize(
     this->_sigma        = static_cast<cusfloat*>( mkl_calloc( np, sizeof(cusfloat), 64 ) );
     this->_sigma_dt     = static_cast<cusfloat*>( mkl_calloc( np, sizeof(cusfloat), 64 ) );
 
-    // Potential gradient Duhamel integrals (direct eval, no additional solve)
+    // Potential gradient: total (= rad + wave), updated at end of compute_potential_derivatives
     this->_phi_dt   = static_cast<cusfloat*>( mkl_calloc( np, sizeof(cusfloat), 64 ) );
     this->_phi_dx   = static_cast<cusfloat*>( mkl_calloc( np, sizeof(cusfloat), 64 ) );
     this->_phi_dy   = static_cast<cusfloat*>( mkl_calloc( np, sizeof(cusfloat), 64 ) );
     this->_phi_dz   = static_cast<cusfloat*>( mkl_calloc( np, sizeof(cusfloat), 64 ) );
+
+    // Split arrays: radiation (Duhamel + steady Rankine)
+    this->_phi_dt_rad  = static_cast<cusfloat*>( mkl_calloc( np, sizeof(cusfloat), 64 ) );
+    this->_phi_dx_rad  = static_cast<cusfloat*>( mkl_calloc( np, sizeof(cusfloat), 64 ) );
+    this->_phi_dy_rad  = static_cast<cusfloat*>( mkl_calloc( np, sizeof(cusfloat), 64 ) );
+    this->_phi_dz_rad  = static_cast<cusfloat*>( mkl_calloc( np, sizeof(cusfloat), 64 ) );
+
+    // Split arrays: incident wave
+    this->_phi_dt_wave = static_cast<cusfloat*>( mkl_calloc( np, sizeof(cusfloat), 64 ) );
+    this->_phi_dx_wave = static_cast<cusfloat*>( mkl_calloc( np, sizeof(cusfloat), 64 ) );
+    this->_phi_dy_wave = static_cast<cusfloat*>( mkl_calloc( np, sizeof(cusfloat), 64 ) );
+    this->_phi_dz_wave = static_cast<cusfloat*>( mkl_calloc( np, sizeof(cusfloat), 64 ) );
 
     // Scratch buffers for compute_potential_derivatives() — steady contribution
     this->_acc_phi_dt          = generate_empty_vector<cusfloat>( np );
@@ -285,10 +339,11 @@ void FormulationKernelBackendT<N, NGPT>::build_rhs(
     // Initialize RHS to zero (partial contributions from this process)
     clear_vector( np, this->_rhs        );
     clear_vector( np, this->_rhs_dt     );
-    clear_vector( np, this->_phi_dt );
-    clear_vector( np, this->_phi_dx );
-    clear_vector( np, this->_phi_dy );
-    clear_vector( np, this->_phi_dz );
+    // Clear radiation-split arrays; wave and total arrays are set in compute_potential_derivatives
+    clear_vector( np, this->_phi_dt_rad );
+    clear_vector( np, this->_phi_dx_rad );
+    clear_vector( np, this->_phi_dy_rad );
+    clear_vector( np, this->_phi_dz_rad );
 
     // -----------------------------------------------------------------------
     // Body kinematic BC: rhs[j] += n_j · vel_body
@@ -364,12 +419,13 @@ void FormulationKernelBackendT<N, NGPT>::build_rhs(
                                                                                         );
 
                     // Accumulate Duhamel contribution (partial sum for local columns)
-                    this->_rhs[obs]         -= sigma_k[src] * dtn_val  / static_cast<cusfloat>( 4.0 * PI );
-                    this->_rhs_dt[obs]      -= sigma_k[src] * dttn_val / static_cast<cusfloat>( 4.0 * PI );
-                    this->_phi_dt[obs]  -= sigma_k[src] * dtt_val / static_cast<cusfloat>( 4.0 * PI );
-                    this->_phi_dx[obs]  -= sigma_k[src] * dtx_val / static_cast<cusfloat>( 4.0 * PI );
-                    this->_phi_dy[obs]  -= sigma_k[src] * dty_val / static_cast<cusfloat>( 4.0 * PI );
-                    this->_phi_dz[obs]  -= sigma_k[src] * dtz_val / static_cast<cusfloat>( 4.0 * PI );
+                    // phi_rad arrays collect the radiation (memory-kernel) part only.
+                    this->_rhs[obs]            -= sigma_k[src] * dtn_val  / static_cast<cusfloat>( 4.0 * PI );
+                    this->_rhs_dt[obs]         -= sigma_k[src] * dttn_val / static_cast<cusfloat>( 4.0 * PI );
+                    this->_phi_dt_rad[obs] -= sigma_k[src] * dtt_val / static_cast<cusfloat>( 4.0 * PI );
+                    this->_phi_dx_rad[obs] -= sigma_k[src] * dtx_val / static_cast<cusfloat>( 4.0 * PI );
+                    this->_phi_dy_rad[obs] -= sigma_k[src] * dty_val / static_cast<cusfloat>( 4.0 * PI );
+                    this->_phi_dz_rad[obs] -= sigma_k[src] * dtz_val / static_cast<cusfloat>( 4.0 * PI );
                 }
             }
         }
@@ -396,7 +452,7 @@ void FormulationKernelBackendT<N, NGPT>::build_rhs(
 
         MPI_Allreduce(
                         MPI_IN_PLACE,
-                        this->_phi_dt,
+                        this->_phi_dt_rad,
                         np,
                         mpi_cusfloat,
                         MPI_SUM,
@@ -405,7 +461,7 @@ void FormulationKernelBackendT<N, NGPT>::build_rhs(
 
         MPI_Allreduce(
                         MPI_IN_PLACE,
-                        this->_phi_dx,
+                        this->_phi_dx_rad,
                         np,
                         mpi_cusfloat,
                         MPI_SUM,
@@ -414,7 +470,7 @@ void FormulationKernelBackendT<N, NGPT>::build_rhs(
 
         MPI_Allreduce(
                         MPI_IN_PLACE,
-                        this->_phi_dy,
+                        this->_phi_dy_rad,
                         np,
                         mpi_cusfloat,
                         MPI_SUM,
@@ -423,7 +479,7 @@ void FormulationKernelBackendT<N, NGPT>::build_rhs(
 
         MPI_Allreduce(
                         MPI_IN_PLACE,
-                        this->_phi_dz,
+                        this->_phi_dz_rad,
                         np,
                         mpi_cusfloat,
                         MPI_SUM,
@@ -491,21 +547,28 @@ void FormulationKernelBackendT<N, NGPT>::solve( )
 template<std::size_t N, int NGPT>
 void FormulationKernelBackendT<N, NGPT>::compute_potential_derivatives( )
 {
-    // _phi_dt/dx/dy/dz already contain the radiation (Duhamel) contribution
-    // assembled in build_rhs().  Here we add:
-    //   (a) the incident wave contribution  (phi_wave)
-    //   (b) the steady Green's function contribution  (phi_steady)
-    // so that the total velocity potential derivatives
-    //   phi_d* = phi_rad_d* + phi_wave_d* + phi_steady_d*
-    // are available at each collocation point for pressure and force evaluation.
+    // _phi_dt_rad/dx/dy/dz already hold the Duhamel (memory-kernel) contribution
+    // assembled in build_rhs().  Here we:
+    //   (a) fill _phi_dt_wave/dx/dy/dz from the analytical incident wave potential,
+    //   (b) add the steady Rankine (σ × Green) contribution to the radiation arrays,
+    //   (c) set the total arrays: _phi_dt = _phi_dt_rad + _phi_dt_wave  (and likewise
+    //       for dx, dy, dz).
+    // This keeps radiation and incident-wave contributions separate for force
+    // decomposition in the time solver.
 
     const int np = this->_n_panels;
     std::cout << "  [DBG cpd] entry np=" << np << "\n" << std::flush;
 
     // ----------------------------------------------------------------
     // (a) Incident wave contributions (skipped when no wave is active)
+    //     Fills the wave-split arrays; wave arrays are zeroed first.
     // ----------------------------------------------------------------
     {
+        clear_vector( np, this->_phi_dt_wave );
+        clear_vector( np, this->_phi_dx_wave );
+        clear_vector( np, this->_phi_dy_wave );
+        clear_vector( np, this->_phi_dz_wave );
+
         const cusfloat w  = this->_input->ang_freq;
         const cusfloat aw = this->_input->wave_amp;
         const cusfloat h  = this->_input->water_depth;
@@ -522,10 +585,10 @@ void FormulationKernelBackendT<N, NGPT>::compute_potential_derivatives( )
                 const cusfloat y = this->_mesh_gp->panels[j]->center[1];
                 const cusfloat z = this->_mesh_gp->panels[j]->center[2];
 
-                this->_phi_dt[j] += wave_potential_fo_time_dt( aw, w, k, h, g, x, y, z, mu, t );
-                this->_phi_dx[j] += wave_potential_fo_time_dx( aw, w, k, h, g, x, y, z, mu, t );
-                this->_phi_dy[j] += wave_potential_fo_time_dy( aw, w, k, h, g, x, y, z, mu, t );
-                this->_phi_dz[j] += wave_potential_fo_time_dz( aw, w, k, h, g, x, y, z, mu, t );
+                this->_phi_dt_wave[j] += wave_potential_fo_time_dt( aw, w, k, h, g, x, y, z, mu, t );
+                this->_phi_dx_wave[j] += wave_potential_fo_time_dx( aw, w, k, h, g, x, y, z, mu, t );
+                this->_phi_dy_wave[j] += wave_potential_fo_time_dy( aw, w, k, h, g, x, y, z, mu, t );
+                this->_phi_dz_wave[j] += wave_potential_fo_time_dz( aw, w, k, h, g, x, y, z, mu, t );
             }
         }
     }
@@ -626,13 +689,19 @@ void FormulationKernelBackendT<N, NGPT>::compute_potential_derivatives( )
         MPI_Allreduce( MPI_IN_PLACE, this->_acc_phi_dy, np, mpi_cusfloat, MPI_SUM, MPI_COMM_WORLD );
         MPI_Allreduce( MPI_IN_PLACE, this->_acc_phi_dz, np, mpi_cusfloat, MPI_SUM, MPI_COMM_WORLD );
 
-        // Accumulate into the output vectors
+        // Accumulate steady Rankine into the radiation arrays and compute totals
         for ( int j=0; j<np; j++ )
         {
-            this->_phi_dt[j] += this->_acc_phi_dt[j];
-            this->_phi_dx[j] += this->_acc_phi_dx[j];
-            this->_phi_dy[j] += this->_acc_phi_dy[j];
-            this->_phi_dz[j] += this->_acc_phi_dz[j];
+            // Steady Rankine (σ-driven) is part of the radiation potential
+            this->_phi_dt_rad[j] += this->_acc_phi_dt[j];
+            this->_phi_dx_rad[j] += this->_acc_phi_dx[j];
+            this->_phi_dy_rad[j] += this->_acc_phi_dy[j];
+            this->_phi_dz_rad[j] += this->_acc_phi_dz[j];
+            // Total = radiation + incident wave
+            this->_phi_dt[j] = this->_phi_dt_rad[j] + this->_phi_dt_wave[j];
+            this->_phi_dx[j] = this->_phi_dx_rad[j] + this->_phi_dx_wave[j];
+            this->_phi_dy[j] = this->_phi_dy_rad[j] + this->_phi_dy_wave[j];
+            this->_phi_dz[j] = this->_phi_dz_rad[j] + this->_phi_dz_wave[j];
         }
     }
 

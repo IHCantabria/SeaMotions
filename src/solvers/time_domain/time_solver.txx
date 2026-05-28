@@ -467,10 +467,12 @@ template<std::size_t N, int NGPT>
 void TimeSolver<N, NGPT>::_resize_panel_pressure_cache( )
 {
     const std::size_t np = static_cast<std::size_t>( this->_kernel->get_n_panels( ) );
-    this->_panel_phi_dt_comp     .assign( np, static_cast<cusfloat>( 0.0 ) );
-    this->_panel_kinetic_comp    .assign( np, static_cast<cusfloat>( 0.0 ) );
-    this->_panel_hydrostatic_comp.assign( np, static_cast<cusfloat>( 0.0 ) );
-    this->_panel_pressure        .assign( np, static_cast<cusfloat>( 0.0 ) );
+    this->_panel_phi_dt_comp      .assign( np, static_cast<cusfloat>( 0.0 ) );
+    this->_panel_phi_dt_rad_comp  .assign( np, static_cast<cusfloat>( 0.0 ) );
+    this->_panel_phi_dt_wave_comp .assign( np, static_cast<cusfloat>( 0.0 ) );
+    this->_panel_kinetic_comp     .assign( np, static_cast<cusfloat>( 0.0 ) );
+    this->_panel_hydrostatic_comp .assign( np, static_cast<cusfloat>( 0.0 ) );
+    this->_panel_pressure         .assign( np, static_cast<cusfloat>( 0.0 ) );
 }
 
 
@@ -627,10 +629,12 @@ void TimeSolver<N, NGPT>::_compute_hydro_forces( int body_id, cusfloat* forces )
     const int panel_end         = this->_mesh_gp->panels_cnp[body_id + 1];
 
     // Velocity-potential derivatives at panel centres (computed by kernel)
-    const cusfloat* phi_dt  = this->_kernel->get_phi_dt( );
-    const cusfloat* phi_dx  = this->_kernel->get_phi_dx( );
-    const cusfloat* phi_dy  = this->_kernel->get_phi_dy( );
-    const cusfloat* phi_dz  = this->_kernel->get_phi_dz( );
+    const cusfloat* phi_dt      = this->_kernel->get_phi_dt( );       // total (rad + wave)
+    const cusfloat* phi_dx      = this->_kernel->get_phi_dx( );
+    const cusfloat* phi_dy      = this->_kernel->get_phi_dy( );
+    const cusfloat* phi_dz      = this->_kernel->get_phi_dz( );
+    const cusfloat* phi_dt_rad  = this->_kernel->get_phi_dt_rad( );   // radiation only
+    const cusfloat* phi_dt_wave = this->_kernel->get_phi_dt_wave( );  // incident wave only
 
     // Centre of gravity of this body (for moment arm)
     const cusfloat* cog = this->_input->bodies[body_id]->cog;
@@ -642,8 +646,10 @@ void TimeSolver<N, NGPT>::_compute_hydro_forces( int body_id, cusfloat* forces )
 
         if ( panel->center[2] >= static_cast<cusfloat>( 0.0 ) )
         {
-            // Above waterplane: zero the pressure cache slot and skip force contribution
+            // Above waterplane: zero the pressure cache slots and skip force contribution
             this->_panel_phi_dt_comp[sip]      = static_cast<cusfloat>( 0.0 );
+            this->_panel_phi_dt_rad_comp[sip]  = static_cast<cusfloat>( 0.0 );
+            this->_panel_phi_dt_wave_comp[sip] = static_cast<cusfloat>( 0.0 );
             this->_panel_kinetic_comp[sip]     = static_cast<cusfloat>( 0.0 );
             this->_panel_hydrostatic_comp[sip] = static_cast<cusfloat>( 0.0 );
             this->_panel_pressure[sip]         = static_cast<cusfloat>( 0.0 );
@@ -658,7 +664,13 @@ void TimeSolver<N, NGPT>::_compute_hydro_forces( int body_id, cusfloat* forces )
             panel->center[2],
             p_phi_dt, p_kinetic, p_hydrostatic );
 
+        // Radiation and incident-wave splits of the phi_dt pressure component
+        const cusfloat p_phi_dt_rad  = -rho * phi_dt_rad[ip];
+        const cusfloat p_phi_dt_wave = -rho * phi_dt_wave[ip];
+
         this->_panel_phi_dt_comp[sip]      = p_phi_dt;
+        this->_panel_phi_dt_rad_comp[sip]  = p_phi_dt_rad;
+        this->_panel_phi_dt_wave_comp[sip] = p_phi_dt_wave;
         this->_panel_kinetic_comp[sip]     = p_kinetic;
         this->_panel_hydrostatic_comp[sip] = p_hydrostatic;
         this->_panel_pressure[sip]         = p_phi_dt + p_kinetic + p_hydrostatic;
@@ -1062,6 +1074,8 @@ void TimeSolver<N, NGPT>::_output_step( cusfloat t, int step )
 
         std::vector<std::array<cusfloat, 6>> body_force_total      ( static_cast<std::size_t>( n_bodies ) );
         std::vector<std::array<cusfloat, 6>> body_force_phi_dt     ( static_cast<std::size_t>( n_bodies ) );
+        std::vector<std::array<cusfloat, 6>> body_force_radiation  ( static_cast<std::size_t>( n_bodies ) );
+        std::vector<std::array<cusfloat, 6>> body_force_wave       ( static_cast<std::size_t>( n_bodies ) );
         std::vector<std::array<cusfloat, 6>> body_force_kinetic    ( static_cast<std::size_t>( n_bodies ) );
         std::vector<std::array<cusfloat, 6>> body_force_hydrostatic( static_cast<std::size_t>( n_bodies ) );
 
@@ -1069,6 +1083,8 @@ void TimeSolver<N, NGPT>::_output_step( cusfloat t, int step )
         {
             body_force_total[ib].fill( static_cast<cusfloat>( 0.0 ) );
             body_force_phi_dt[ib].fill( static_cast<cusfloat>( 0.0 ) );
+            body_force_radiation[ib].fill( static_cast<cusfloat>( 0.0 ) );
+            body_force_wave[ib].fill( static_cast<cusfloat>( 0.0 ) );
             body_force_kinetic[ib].fill( static_cast<cusfloat>( 0.0 ) );
             body_force_hydrostatic[ib].fill( static_cast<cusfloat>( 0.0 ) );
 
@@ -1086,6 +1102,8 @@ void TimeSolver<N, NGPT>::_output_step( cusfloat t, int step )
                 const std::size_t sip  = static_cast<std::size_t>( ip );
 
                 _add_panel_pressure_force( panel, cog, this->_panel_phi_dt_comp[sip],      body_force_phi_dt[ib].data()       );
+                _add_panel_pressure_force( panel, cog, this->_panel_phi_dt_rad_comp[sip],  body_force_radiation[ib].data()    );
+                _add_panel_pressure_force( panel, cog, this->_panel_phi_dt_wave_comp[sip], body_force_wave[ib].data()         );
                 _add_panel_pressure_force( panel, cog, this->_panel_kinetic_comp[sip],     body_force_kinetic[ib].data()      );
                 _add_panel_pressure_force( panel, cog, this->_panel_hydrostatic_comp[sip], body_force_hydrostatic[ib].data()  );
                 _add_panel_pressure_force( panel, cog, this->_panel_pressure[sip],         body_force_total[ib].data()        );
@@ -1104,6 +1122,8 @@ void TimeSolver<N, NGPT>::_output_step( cusfloat t, int step )
             this->_body_acc,
             body_force_total,
             body_force_phi_dt,
+            body_force_radiation,
+            body_force_wave,
             body_force_kinetic,
             body_force_hydrostatic
         );

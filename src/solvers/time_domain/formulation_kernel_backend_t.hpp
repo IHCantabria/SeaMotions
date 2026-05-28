@@ -65,12 +65,26 @@ private:
     cusfloat*   _sigma              = nullptr;
     cusfloat*   _sigma_dt           = nullptr;
 
-    // Duhamel integrals for the velocity potential and its spatial/time gradient
-    // (evaluated at each collocation point; no additional BEM solve required)
-    cusfloat*   _phi_dt         = nullptr;  ///< d(phi)/dt  at each panel
-    cusfloat*   _phi_dx         = nullptr;  ///< d(phi)/dx  at each panel
-    cusfloat*   _phi_dy         = nullptr;  ///< d(phi)/dy  at each panel
-    cusfloat*   _phi_dz         = nullptr;  ///< d(phi)/dz  at each panel
+    // Total velocity-potential derivatives (radiation + incident wave; sum of the two
+    // split arrays below).  Updated at the end of compute_potential_derivatives().
+    cusfloat*   _phi_dt         = nullptr;  ///< d(phi_total)/dt  at each panel
+    cusfloat*   _phi_dx         = nullptr;  ///< d(phi_total)/dx  at each panel
+    cusfloat*   _phi_dy         = nullptr;  ///< d(phi_total)/dy  at each panel
+    cusfloat*   _phi_dz         = nullptr;  ///< d(phi_total)/dz  at each panel
+
+    // Split velocity-potential derivatives: radiation contribution
+    // (Duhamel convolution memory kernel + steady Rankine, both σ-driven)
+    cusfloat*   _phi_dt_rad     = nullptr;  ///< d(phi_rad)/dt  at each panel
+    cusfloat*   _phi_dx_rad     = nullptr;  ///< d(phi_rad)/dx  at each panel
+    cusfloat*   _phi_dy_rad     = nullptr;  ///< d(phi_rad)/dy  at each panel
+    cusfloat*   _phi_dz_rad     = nullptr;  ///< d(phi_rad)/dz  at each panel
+
+    // Split velocity-potential derivatives: incident wave contribution
+    // (analytical first-order wave potential; independent of body motion)
+    cusfloat*   _phi_dt_wave    = nullptr;  ///< d(phi_wave)/dt  at each panel
+    cusfloat*   _phi_dx_wave    = nullptr;  ///< d(phi_wave)/dx  at each panel
+    cusfloat*   _phi_dy_wave    = nullptr;  ///< d(phi_wave)/dy  at each panel
+    cusfloat*   _phi_dz_wave    = nullptr;  ///< d(phi_wave)/dz  at each panel
 
     // Time-domain Green's function integrator
     GWTFcnsInterfaceT<N*N>  _gwtfcns_interf;
@@ -140,14 +154,17 @@ public:
     void    solve( );
 
     /**
-     * @brief Add the incident wave contributions to the velocity-potential
-     *        derivative fields assembled by build_rhs().
+     * @brief Add the incident wave and steady Rankine contributions to the
+     *        velocity-potential derivative fields, completing the rad/wave split.
      *
-     * build_rhs() accumulates the radiation (Duhamel convolution) part of
-     * phi_dt, phi_dx, phi_dy and phi_dz into _phi_dt/_dx/_dy/_dz.
-     * This method adds the incident-wave (diffraction) part so that the
-     * total velocity potential derivatives at each panel are available via
-     * get_phi_dt/dx/dy/dz().
+     * After build_rhs() the radiation (Duhamel) part of dphi/dt, dphi/dx,
+     * dphi/dy, dphi/dz is stored in _phi_dt_rad/_dx_rad/_dy_rad/_dz_rad.
+     * This method:
+     *   (a) fills _phi_dt_wave/_dx_wave/_dy_wave/_dz_wave from the analytical
+     *       first-order incident wave potential;
+     *   (b) adds the steady Rankine (σ × Green kernel) contribution to the
+     *       radiation arrays (steady Rankine also depends on body motion);
+     *   (c) sets the total arrays _phi_dt/_dx/_dy/_dz = rad + wave.
      *
      * Must be called after solve() on the same time step.
      */
@@ -165,23 +182,49 @@ public:
 
     /**
      * @brief Access the Duhamel integral for d(phi)/dt at each collocation point.
+     *        Returns the TOTAL derivative (radiation + incident wave).
      */
     cusfloat*   get_phi_dt( )   { return this->_phi_dt;   }
 
     /**
      * @brief Access the Duhamel integral for d(phi)/dx at each collocation point.
+     *        Returns the TOTAL derivative (radiation + incident wave).
      */
     cusfloat*   get_phi_dx( )   { return this->_phi_dx;   }
 
     /**
      * @brief Access the Duhamel integral for d(phi)/dy at each collocation point.
+     *        Returns the TOTAL derivative (radiation + incident wave).
      */
     cusfloat*   get_phi_dy( )   { return this->_phi_dy;   }
 
     /**
      * @brief Access the Duhamel integral for d(phi)/dz at each collocation point.
+     *        Returns the TOTAL derivative (radiation + incident wave).
      */
     cusfloat*   get_phi_dz( )   { return this->_phi_dz;   }
+
+    // --- Radiation-only derivatives (Duhamel convolution + steady Rankine) ---
+
+    /** @brief d(phi_rad)/dt at each panel centre (radiation contribution only). */
+    cusfloat*   get_phi_dt_rad( )  { return this->_phi_dt_rad;  }
+    /** @brief d(phi_rad)/dx at each panel centre (radiation contribution only). */
+    cusfloat*   get_phi_dx_rad( )  { return this->_phi_dx_rad;  }
+    /** @brief d(phi_rad)/dy at each panel centre (radiation contribution only). */
+    cusfloat*   get_phi_dy_rad( )  { return this->_phi_dy_rad;  }
+    /** @brief d(phi_rad)/dz at each panel centre (radiation contribution only). */
+    cusfloat*   get_phi_dz_rad( )  { return this->_phi_dz_rad;  }
+
+    // --- Incident-wave-only derivatives (analytical first-order wave potential) ---
+
+    /** @brief d(phi_wave)/dt at each panel centre (incident wave contribution only). */
+    cusfloat*   get_phi_dt_wave( ) { return this->_phi_dt_wave; }
+    /** @brief d(phi_wave)/dx at each panel centre (incident wave contribution only). */
+    cusfloat*   get_phi_dx_wave( ) { return this->_phi_dx_wave; }
+    /** @brief d(phi_wave)/dy at each panel centre (incident wave contribution only). */
+    cusfloat*   get_phi_dy_wave( ) { return this->_phi_dy_wave; }
+    /** @brief d(phi_wave)/dz at each panel centre (incident wave contribution only). */
+    cusfloat*   get_phi_dz_wave( ) { return this->_phi_dz_wave; }
 
     /**
      * @brief Return the number of panels.

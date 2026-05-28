@@ -47,6 +47,8 @@
  *           forces/
  *               total              (n_steps, 6)  [Fx,Fy,Fz,Mx,My,Mz]  [N, N·m]
  *               phi_dt_term        (n_steps, 6)  -rho * dphi/dt  contribution
+ *               radiation          (n_steps, 6)  -rho * d(phi_rad)/dt  (Duhamel + steady Rankine)
+ *               wave_excitation    (n_steps, 6)  -rho * d(phi_wave)/dt  (incident wave)
  *               kinetic_term       (n_steps, 6)  -rho * 0.5 * |grad phi|^2 contribution
  *               hydrostatic_term   (n_steps, 6)  -rho * g * z  contribution
  *       body_1/ ...
@@ -99,10 +101,12 @@ public:
      * @param body_pos         Body CoG positions  [n_bodies][6].
      * @param body_vel         Body CoG velocities [n_bodies][6].
      * @param body_acc         Body CoG accelerations [n_bodies][6].
-     * @param body_force_total       Integrated hydrodynamic forces [n_bodies][6].
-     * @param body_force_phi_dt      -rho*dphi/dt  force contribution [n_bodies][6].
-     * @param body_force_kinetic     -rho*0.5*|∇φ|² force contribution [n_bodies][6].
-     * @param body_force_hydrostatic -rho*g*z  force contribution [n_bodies][6].
+     * @param body_force_total          Integrated total hydrodynamic forces [n_bodies][6].
+     * @param body_force_phi_dt         Total -rho*dphi/dt force contribution [n_bodies][6].
+     * @param body_force_radiation      Radiation (Duhamel + steady) force contribution [n_bodies][6].
+     * @param body_force_wave           Incident-wave force contribution [n_bodies][6].
+     * @param body_force_kinetic        -rho*0.5*|∇φ|² force contribution [n_bodies][6].
+     * @param body_force_hydrostatic    -rho*g*z force contribution [n_bodies][6].
      */
     void append_step(
         cusfloat                                            t,
@@ -116,6 +120,8 @@ public:
         const std::vector<std::array<cusfloat, 6>>&         body_acc,
         const std::vector<std::array<cusfloat, 6>>&         body_force_total,
         const std::vector<std::array<cusfloat, 6>>&         body_force_phi_dt,
+        const std::vector<std::array<cusfloat, 6>>&         body_force_radiation,
+        const std::vector<std::array<cusfloat, 6>>&         body_force_wave,
         const std::vector<std::array<cusfloat, 6>>&         body_force_kinetic,
         const std::vector<std::array<cusfloat, 6>>&         body_force_hydrostatic
     );
