@@ -255,15 +255,18 @@ void TimeSolver<N, NGPT>::_initialize_ic_positions( )
     this->_gen_alpha.resize( bodies_np, nullptr );
 
     // Initialise per-body hydro force vectors and functor structs.
-    // The structs hold raw pointers into _hydro_forces so that forces can
-    // be updated in-place each step without touching the GA object itself.
+    // The structs hold raw pointers into _hydro_forces / _hydro_forces_wave so
+    // that forces can be updated in-place each step without touching the GA
+    // object itself.  forces_base is NOT ramped; forces_wave IS ramped.
     this->_hydro_forces.assign( bodies_np, std::vector<cusfloat>( dofs_np, 0.0 ) );
+    this->_hydro_forces_wave.assign( bodies_np, std::vector<cusfloat>( dofs_np, 0.0 ) );
     this->_fext_structs.resize( bodies_np );
     for ( int ib=0; ib<bodies_np; ib++ )
     {
-        this->_fext_structs[ib].forces    = this->_hydro_forces[ib].data( );
-        this->_fext_structs[ib].dofs_np   = dofs_np;
-        this->_fext_structs[ib].ramp_time = this->_input->ramp_time;
+        this->_fext_structs[ib].forces_base = this->_hydro_forces[ib].data( );
+        this->_fext_structs[ib].forces_wave = this->_hydro_forces_wave[ib].data( );
+        this->_fext_structs[ib].dofs_np     = dofs_np;
+        this->_fext_structs[ib].ramp_time   = this->_input->ramp_time;
     }
 
     for ( int ib=0; ib<bodies_np; ib++ )
@@ -621,8 +624,16 @@ void TimeSolver<N, NGPT>::_compute_hydro_forces( int body_id, cusfloat* forces )
     const cusfloat rho          = this->_input->water_density;
     const cusfloat g            = this->_input->grav_acc;
 
-    // Zero the forces vector
+    // Zero the base forces vector
     clear_vector( dofs_np, forces );
+
+    // Zero the wave-excitation force accumulator for this body.
+    // Guard against the early call from _compute_hydrostatic_initial_forces,
+    // which runs before _hydro_forces_wave is sized in _initialize_structural_dynamics.
+    // At that point phi_dt_wave = 0 anyway (kernel just calloc'd), so skipping is safe.
+    const bool wave_vec_ready = ( body_id < static_cast<int>( this->_hydro_forces_wave.size( ) ) );
+    if ( wave_vec_ready )
+        clear_vector( dofs_np, this->_hydro_forces_wave[body_id].data( ) );
 
     // Panels owned by this body
     const int panel_start       = this->_mesh_gp->panels_cnp[body_id];
@@ -678,8 +689,13 @@ void TimeSolver<N, NGPT>::_compute_hydro_forces( int body_id, cusfloat* forces )
         // TODO: include p_phi_dt and p_kinetic once gradient fields are validated
         const cusfloat press = p_hydrostatic;
 
-        // Force and moment contributions via the shared helper
+        // Accumulate base (non-wave) force contribution
         _add_panel_pressure_force( panel, cog, press, forces );
+
+        // Accumulate incident-wave excitation force contribution (ramped by functor)
+        if ( wave_vec_ready )
+            _add_panel_pressure_force( panel, cog, p_phi_dt_wave,
+                                       this->_hydro_forces_wave[body_id].data( ) );
     }
 }
 

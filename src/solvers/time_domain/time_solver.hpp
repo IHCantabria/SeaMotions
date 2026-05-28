@@ -52,15 +52,20 @@
  *
  * A linear ramp-up factor is applied when ramp_time > 0:
  *   scale = min( t / ramp_time, 1 )
- * This smoothly brings the external forces from zero to their full value over
- * the first ramp_time seconds, reducing impulsive transients at t = 0.
+ * The ramp is applied ONLY to the incident-wave excitation force (forces_wave).
+ * The base forces (radiation damping + hydrostatic restoring + gravity) are
+ * passed through unmodified so that the body equilibrium and radiation memory
+ * are not artificially suppressed during the ramp window.
  * Set ramp_time = 0 (default) to disable the ramp entirely.
  */
 struct TimeDomainFextStruct
 {
-    cusfloat*   forces      = nullptr;  ///< Raw ptr into TimeSolver::_hydro_forces[ib]
-    int         dofs_np     = 0;        ///< Number of DOFs (= 6)
-    cusfloat    ramp_time   = 0.0;      ///< Ramp-up duration [s]; 0 = disabled
+    /// Non-wave forces (radiation + hydrostatic + gravity) — passed through without ramping.
+    cusfloat*   forces_base  = nullptr;
+    /// Incident-wave excitation forces — multiplied by the ramp scale factor.
+    cusfloat*   forces_wave  = nullptr;
+    int         dofs_np      = 0;        ///< Number of DOFs (= 6)
+    cusfloat    ramp_time    = 0.0;      ///< Ramp-up duration [s]; 0 = disabled
 
     void operator()(
         cusfloat    t,
@@ -78,8 +83,10 @@ struct TimeDomainFextStruct
                                                      : static_cast<cusfloat>( 1.0 ) )
                                : static_cast<cusfloat>( 1.0 );
 
+        // Base forces (radiation + hydrostatic + gravity) are not ramped.
+        // Wave excitation is scaled up from zero over [0, ramp_time].
         for ( int id = 0; id < dofs_np; id++ )
-            fext[id] = scale * forces[id];
+            fext[id] = forces_base[id] + scale * forces_wave[id];
     }
 };
 
@@ -125,8 +132,13 @@ private:
     std::vector<std::array<cusfloat, 6>>    _body_vel;
     std::vector<std::array<cusfloat, 6>>    _body_acc;
 
-    // Per-body hydrodynamic force vector (updated each step; referenced by _fext_structs)
+    // Per-body hydrodynamic force vector (updated each step; referenced by _fext_structs).
+    // Contains all non-wave contributions (radiation + hydrostatic + gravity).
     std::vector<std::vector<cusfloat>>      _hydro_forces;
+
+    // Per-body incident-wave excitation force (updated each step; referenced by _fext_structs).
+    // Applied to the GA functor with the ramp scale factor.
+    std::vector<std::vector<cusfloat>>      _hydro_forces_wave;
 
     // Hydrostatic stiffness per body (6×6, row-major)
     std::vector<std::array<cusfloat, 36>>   _hydrostiff;
