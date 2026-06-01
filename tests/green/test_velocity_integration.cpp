@@ -167,7 +167,7 @@ int     main(int argc, char* argv[])
                                         mesh_fipath,
                                         std::string( "box" ),
                                         cog,
-                                        DIFFRAC_PANEL_CODE                                
+                                        PanelTypeE::DIFFRAC                                
                                     );
     msh->define_source_nodes(
                                 0,
