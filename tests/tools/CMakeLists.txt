@@ -501,21 +501,7 @@ add_executable(
 set_mkl_lib_target( test_cusvector_cmd )
 
 
-add_executable( test_cusvector2_cmd "test_cusvector2.cpp" )
-add_executable( test_cusvector3_cmd "test_cusvector3.cpp" )
-add_executable( test_cusvector4_cmd "test_cusvector4.cpp" )
-add_executable( test_cusvector5_cmd "test_cusvector5.cpp" )
-set_mkl_lib_target( test_cusvector5_cmd )
-add_executable( test_cusvector6_cmd "test_cusvector6.cpp" )
-set_mkl_lib_target( test_cusvector6_cmd )
-add_executable( test_cusvector7_cmd "test_cusvector7.cpp" )
-set_mkl_lib_target( test_cusvector7_cmd )
-add_executable( test_cusvector8_cmd "test_cusvector8.cpp" ${math_module_files} )
-set_mkl_lib_target( test_cusvector8_cmd )
-add_executable( test_cusvector_speed_cmd "test_cusvector_speed.cpp" )
-set_mkl_lib_target( test_cusvector_speed_cmd )
 
-add_executable( test_read_gmsh_cmd test_read_gmsh.cpp )
 
 
 # Add test to check CusTensor class and expressions
@@ -575,3 +561,16 @@ add_executable( test_hdf5_paraview_mpi_cmd ${test_hdf5_paraview_mpi_src} )
 set_mkl_lib_target( test_hdf5_paraview_mpi_cmd )
 set_hdf5_target( test_hdf5_paraview_mpi_cmd )
 set_mpi_target( test_hdf5_paraview_mpi_cmd )
+
+
+# ============================================================================
+# Performance benchmark: 2D spline interpolation of Gt(beta, mu)
+# Not registered as a CTest test; run manually.
+# ============================================================================
+set(
+    perf_gt_spline_src
+    perf_gt_spline.cpp
+    "../../src/config.hpp"
+)
+add_executable( perf_gt_spline_cmd ${perf_gt_spline_src} )
+set_hdf5_target( perf_gt_spline_cmd )
