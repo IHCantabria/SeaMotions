@@ -235,52 +235,6 @@ add_test(
         )
 
 
-# Add test to check the finite water depth 
-# wave term
-set(
-        test_wave_term_fin_depth_consistency_src
-        test_wave_term_fin_depth_consistency.cpp
-        ${containers_module_files}
-        ${inout_module_files}
-        ${panel_geometry_src}
-        ${green_module_files}
-        ${interfaces_module_files}
-        ${math_module_files}
-        ${mesh_module_files}
-        ${tools_module_files}
-        ${version_module_files}
-        ${waves_module_files}
-    )
-
-add_executable(
-                    test_wave_term_fin_depth_consistency_cmd 
-                    ${test_wave_term_fin_depth_consistency_src}
-                )
-set_mkl_lib_target( test_wave_term_fin_depth_consistency_cmd )
-set_mpi_target( test_wave_term_fin_depth_consistency_cmd )
-set_hdf5_target( test_wave_term_fin_depth_consistency_cmd )
-
-# Add test to check the finite water depth 
-# wave term
-set(
-        test_wave_term_fin_depth_consistency_panels_src
-        test_wave_term_fin_depth_consistency_panels.cpp
-        ${containers_module_files}
-        ${panel_geometry_src}
-        ${green_module_files}
-        ${interfaces_module_files}
-        ${math_module_files}
-        ${mesh_module_files}
-        ${tools_module_files}
-        ${waves_module_files}
-    )
-
-add_executable(
-                    test_wave_term_fin_depth_consistency_panels_cmd 
-                    ${test_wave_term_fin_depth_consistency_panels_src}
-                )
-set_mkl_lib_target( test_wave_term_fin_depth_consistency_panels_cmd )
-
 
 # Add test to compare full finite-depth wave integration against split wave plus exact steady terms
 set(
@@ -313,26 +267,6 @@ add_test(
             COMMAND test_wave_term_panel_full_vs_split_cmd
         )
 
-# Add test to check the finite water depth 
-# wave term
-set(
-        test_check_john_integration_src
-        test_check_john_integration.cpp
-        ${containers_module_files}
-        ${panel_geometry_src}
-        ${green_module_files}
-        ${interfaces_module_files}
-        ${math_module_files}
-        ${mesh_module_files}
-        ${tools_module_files}
-        ${waves_module_files}
-    )
-
-add_executable(
-                    test_check_john_integration_cmd 
-                    ${test_check_john_integration_src}
-                )
-set_mkl_lib_target( test_check_john_integration_cmd )
 
 # Add test to check the finite water depth 
 # wave term (John series) integration using
