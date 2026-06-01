@@ -151,6 +151,8 @@ set(
         ${CMAKE_SOURCE_DIR}/src/green/source.hpp
         ${CMAKE_SOURCE_DIR}/src/green/source.cpp
         ${CMAKE_SOURCE_DIR}/src/green/source.txx
+        ${CMAKE_SOURCE_DIR}/src/green/time_domain_asymptotic.hpp
+        ${CMAKE_SOURCE_DIR}/src/green/time_domain_asymptotic.cpp
         ${CMAKE_SOURCE_DIR}/src/green/triple_hankel_far_field.hpp
         ${CMAKE_SOURCE_DIR}/src/green/triple_hankel_far_field.cpp
         ${green_findepth_coeffs_src}
@@ -401,4 +403,17 @@ set(
         ${CMAKE_SOURCE_DIR}/src/solvers/time_domain/time_solver.txx
         ${CMAKE_SOURCE_DIR}/src/solvers/time_domain/td_hdf5_exporter.hpp
         ${CMAKE_SOURCE_DIR}/src/solvers/time_domain/td_hdf5_exporter.cpp
+    )
+
+# Pack embedded time-domain integral tables
+set(
+        td_data_module_files
+        ${CMAKE_SOURCE_DIR}/src/green/td_data/td_common_axes.cpp
+        ${CMAKE_SOURCE_DIR}/src/green/td_data/td_Gt_fcn.cpp
+        ${CMAKE_SOURCE_DIR}/src/green/td_data/td_Gtt_fcn.cpp
+        ${CMAKE_SOURCE_DIR}/src/green/td_data/td_Gttt_fcn.cpp
+        ${CMAKE_SOURCE_DIR}/src/green/td_data/td_Gtx_fcn.cpp
+        ${CMAKE_SOURCE_DIR}/src/green/td_data/td_Gttx_fcn.cpp
+        ${CMAKE_SOURCE_DIR}/src/green/td_data/td_Gtxx_fcn.cpp
+        ${CMAKE_SOURCE_DIR}/src/green/td_data/td_Gttxx_fcn.cpp
     )
