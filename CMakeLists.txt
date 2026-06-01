@@ -219,6 +219,7 @@ set_hdf5_target( seamotions_stab )
 set(
         seamotions_time_src
         ${sm_time_module_files}
+        ${td_data_module_files}
         "./src/config.hpp"
         "./src/cli_header_banner.hpp"
         ${containers_module_files}
@@ -241,6 +242,7 @@ add_executable(
 set_mkl_lib_target( seamotions_time )
 set_mpi_target( seamotions_time )
 set_hdf5_target( seamotions_time )
+
 
 if ( WIN32 )
     install(
