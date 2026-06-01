@@ -32,6 +32,7 @@
 #include "../../config.hpp"
 #include "../../containers/mpi_config.hpp"
 
+#include "../../containers/circular_buffer.hpp"
 #include "td_hdf5_exporter.hpp"
 #include "../../hydrostatics.hpp"
 #include "../../math/generalized_alpha.hpp"
@@ -124,8 +125,10 @@ private:
     std::vector<GeneralizedAlpha<FextFunctor>*>  _gen_alpha;
     std::vector<TimeDomainFextStruct>            _fext_structs;  ///< One functor struct per body
 
-    // Source intensity history: _sigma_hist[k] is the solution k steps ago
-    std::vector<std::vector<cusfloat>>  _sigma_hist;
+    // Source intensity history: _sigma_hist[k] is the solution k steps ago.
+    // Stored in a fixed-capacity circular buffer to avoid O(N) memory copies
+    // per time step and to bound memory usage to the Duhamel history window.
+    CircularBuffer<std::vector<cusfloat>>   _sigma_hist;
 
     // Per-body CoG tracking (6-DOF: surge, sway, heave, roll, pitch, yaw)
     std::vector<std::array<cusfloat, 6>>    _body_pos;
@@ -154,9 +157,12 @@ private:
 
     // Reusable scratch buffer for body kinematic + wave BC (avoids per-step heap allocation).
     // Sized to np each step via assign(); capacity is retained between steps.
-    std::vector<cusfloat>                   _body_vel_bc;
+    std::vector<cusfloat>                   _body_vel_bc;     ///< Combined body-kin + wave BC
     // Time derivative of _body_vel_bc (body acceleration + wave acceleration BC)
     std::vector<cusfloat>                   _body_acc_bc;
+    // Split BC contributions (body-motion only / wave-diffraction only)
+    std::vector<cusfloat>                   _body_kin_bc;     ///< Body kinematic part only
+    std::vector<cusfloat>                   _wave_bc;         ///< Wave diffraction BC part only
 
     // Per-panel Bernoulli pressure components, populated each step by
     // _compute_hydro_forces and read by _output_step.  Kept as member vectors to
@@ -277,7 +283,11 @@ private:
      * @param bc   Output vector sized n_panels; values zeroed before accumulation.
      * @param bc2  Output vector sized n_panels for the time derivative of bc.
      */
-    void _compute_body_vel_bc( cusfloat t, std::vector<cusfloat>& bc, std::vector<cusfloat>& bc2 );
+    void _compute_body_vel_bc( cusfloat t,
+                                std::vector<cusfloat>& bc,
+                                std::vector<cusfloat>& bc2,
+                                std::vector<cusfloat>& bc_kin,
+                                std::vector<cusfloat>& bc_wave );
 
     // ---------------------------------------------------------------
     // ParaView VTU / PVD output

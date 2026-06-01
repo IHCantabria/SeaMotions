@@ -25,6 +25,7 @@
 
 // Include local modules
 #include "../../config.hpp"
+#include "../../containers/circular_buffer.hpp"
 #include "../../containers/mpi_config.hpp"
 #include "../../containers/source_node.hpp"
 #include "../../interfaces/gwtfcns_interface_t.hpp"
@@ -64,6 +65,11 @@ private:
     cusfloat*   _rhs_dt             = nullptr;  ///< Time-derivative BC RHS  (sigma_dt solve)
     cusfloat*   _sigma              = nullptr;
     cusfloat*   _sigma_dt           = nullptr;
+
+    // Decomposed RHS contributions (debug / ParaView export)
+    cusfloat*   _rhs_body_kin       = nullptr;  ///< Body kinematic BC part only
+    cusfloat*   _rhs_duhamel        = nullptr;  ///< Duhamel convolution part only
+    cusfloat*   _rhs_wave           = nullptr;  ///< Incident-wave diffraction BC part only
 
     // Total velocity-potential derivatives (radiation + incident wave; sum of the two
     // split arrays below).  Updated at the end of compute_potential_derivatives().
@@ -133,18 +139,20 @@ public:
      * and summed via MPI_Allreduce.
      *
      * @param t_current     Current simulation time.
-     * @param sigma_hist    History of source intensities; sigma_hist[k] is the solution
+     * @param sigma_hist    Circular history of source intensities; sigma_hist[k] is the solution
      *                      at time t_current - (k+1)*dt.
      * @param dt            Time step size.
      * @param body_vel_bc   Optional pre-computed normal body velocity at each collocation
      *                      point (size = n_panels). Pass nullptr for stationary bodies.
      */
     void    build_rhs(
-                        cusfloat                                        t_current,
-                        const std::vector<std::vector<cusfloat>>&       sigma_hist,
-                        cusfloat                                        dt,
-                        const cusfloat*                                 body_vel_bc  = nullptr,
-                        const cusfloat*                                 body_acc_bc  = nullptr
+                        cusfloat                                            t_current,
+                        const CircularBuffer<std::vector<cusfloat>>&        sigma_hist,
+                        cusfloat                                            dt,
+                        const cusfloat*                                     body_vel_bc  = nullptr,
+                        const cusfloat*                                     body_acc_bc  = nullptr,
+                        const cusfloat*                                     body_kin_bc  = nullptr,  ///< body-motion BC only (stored in _rhs_body_kin for debug)
+                        const cusfloat*                                     wave_bc      = nullptr   ///< wave diffraction BC only (stored in _rhs_wave for debug)
                      );
 
     /**
@@ -230,6 +238,27 @@ public:
      * @brief Return the number of panels.
      */
     int get_n_panels( ) const { return this->_n_panels; }
+
+    // --- Decomposed RHS contributions (populated by build_rhs; useful for debugging) ---
+
+    /** @brief Body kinematic BC contribution to the RHS (body motion only). */
+    cusfloat*   get_rhs_body_kin( )  { return this->_rhs_body_kin; }
+    /** @brief Duhamel convolution contribution to the RHS (memory-kernel term). */
+    cusfloat*   get_rhs_duhamel( )   { return this->_rhs_duhamel;  }
+    /** @brief Incident wave diffraction BC contribution to the RHS. */
+    cusfloat*   get_rhs_wave( )      { return this->_rhs_wave;     }
+
+    /**
+     * @brief Export the RHS and source-intensity (sigma) fields to a VTK
+     *        UnstructuredGrid (.vtu) file for ParaView visualisation.
+     *
+     * Writes the panel mesh as an unstructured grid (triangles / quads) with
+     * two cell-data scalar arrays: "rhs" (_rhs) and "sigma" (_sigma).
+     * Only MPI rank 0 writes; all other ranks return immediately.
+     *
+     * @param filename  Output file path (should end in .vtu).
+     */
+    void export_vtu( const std::string& filename ) const;
 };
 
 // Include template definitions

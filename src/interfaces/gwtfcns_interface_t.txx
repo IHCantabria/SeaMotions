@@ -24,6 +24,11 @@
 #include "../math/math_tools.hpp"
 #include "../math/math_interface.hpp"
 #include "../green/time_domain_evaluator.hpp"
+#include "../green/td_data/td_database.hpp"
+#include "../green/time_domain_asymptotic.hpp"
+
+// Timer shorthand used throughout this file
+using _Clock = std::chrono::high_resolution_clock;
 
 
 template<std::size_t N>
@@ -51,7 +56,13 @@ void        GWTFcnsInterfaceT<N>::operator()(
                                                         bool        verbose
                                                     )
 {
-    // Calculate horizontal radius
+    ++_timer_call_count;
+
+    // ----------------------------------------------------------------
+    // Section 1 – Geometry: dX, dY, dZ, R, R2, R3
+    // ----------------------------------------------------------------
+    auto _t0 = _Clock::now();
+
     cusfloat source_x = this->_source_j->position[0];
     cusfloat source_y = this->_source_j->position[1];
     cusfloat source_z = this->_source_j->position[2];
@@ -83,32 +94,81 @@ void        GWTFcnsInterfaceT<N>::operator()(
         this->_R3[i] = this->_R2[i] * this->_R[i];
     }
 
-    // Calculate leading term
+    _timer_geometry += _Clock::now() - _t0;
+
+    // ----------------------------------------------------------------
+    // Section 2 – Leading term, beta and mu
+    // ----------------------------------------------------------------
+    _t0 = _Clock::now();
+
     for ( std::size_t i=0; i<N; i++ )
     {
         this->_lt[i]  = 2.0 * std::sqrt( this->_grav_acc / this->_R[i] );
         this->_lt2[i] = 2.0 * this->_grav_acc / this->_R2[i];
     }
 
-    // Calculate beta and mu
     for ( std::size_t i=0; i<N; i++ )
     {
         this->_beta[i] = this->_lt[i] * this->_time_diff / 2.0;
         this->_mu[i]   = - this->_dZp[i] / this->_R[i];
     }
 
-    // Calculate tabulated integrals
-    clear_vector<cusfloat, N>( this->_ftab );
-    clear_vector<cusfloat, N>( this->_ftab_dmu );
-    clear_vector<cusfloat, N>( this->_ftab_dt );
+    _timer_leading += _Clock::now() - _t0;
 
-    eval_dGdt_vec<N, STATIC_LOOP_ON>( N, this->_beta, this->_mu, this->_ftab );
-    eval_dGdtx_vec<N, STATIC_LOOP_ON>( N, this->_beta, this->_mu, this->_ftab_dmu );
-    eval_dGdtt_vec<N, STATIC_LOOP_ON>( N, this->_beta, this->_mu, this->_ftab_dt );
-    eval_dGdttx_vec<N, STATIC_LOOP_ON>( N, this->_beta, this->_mu, this->_ftab_dtmu );
-    eval_dGdttt_vec<N, STATIC_LOOP_ON>( N, this->_beta, this->_mu, this->_ftab_dtt );
+    // ----------------------------------------------------------------
+    // Section 3 – Tabulated integrals (bilinear interpolation from embedded database)
+    //
+    // Five static bilinear interpolators (thread-safe C++11 magic statics) are
+    // built once on the first call and reused thereafter.  They store the
+    // COMPLETE table value (G0 + residual), so no separate G0 correction is
+    // needed.  _timer_eval_dGdt accumulates the total bilinear evaluation time;
+    // the individual sub-timers (dGdtx, dGdtt, etc.) are no longer incremented.
+    // ----------------------------------------------------------------
 
-    // Calculate X, Y and Z cartesian coordinates derivatives
+    static const Bilinear2D<double> s_bilin_Gt   = td_db::make_bilinear_Gt();
+    static const Bilinear2D<double> s_bilin_Gtx  = td_db::make_bilinear_Gtx();
+    static const Bilinear2D<double> s_bilin_Gtt  = td_db::make_bilinear_Gtt();
+    static const Bilinear2D<double> s_bilin_Gttx = td_db::make_bilinear_Gttx();
+    static const Bilinear2D<double> s_bilin_Gttt = td_db::make_bilinear_Gttt();
+
+    // β threshold above which the asymptotic expansion supersedes the database.
+    // Results from the asymptotic functions are divided by 2 to match the
+    // database scaling convention.
+    constexpr double BETA_ASYMP_THRESHOLD = 50.0;
+    constexpr cusfloat ASYMP_HALF = cusfloat(0.5);
+
+    _t0 = _Clock::now();
+    for ( std::size_t i = 0; i < N; ++i )
+    {
+        const double log_mu = std::log10( static_cast<double>( this->_mu[i]   ) );
+        const double beta_i =             static_cast<double>( this->_beta[i] );
+
+        if ( beta_i > BETA_ASYMP_THRESHOLD )
+        {
+            // Asymptotic expansion valid for β > 50 (divided by 2 to match database)
+            this->_ftab    [i] = ASYMP_HALF * dGdt_asymptotic  ( this->_beta[i], this->_mu[i] );
+            // this->_ftab_dmu[i] = ASYMP_HALF * dGdtx_asymptotic ( this->_beta[i], this->_mu[i] );
+            // this->_ftab_dt [i] = ASYMP_HALF * dGdtt_asymptotic ( this->_beta[i], this->_mu[i] );
+            // this->_ftab_dtmu[i]= ASYMP_HALF * dGdttx_asymptotic( this->_beta[i], this->_mu[i] );
+            // this->_ftab_dtt[i] = ASYMP_HALF * dGdttt_asymptotic( this->_beta[i], this->_mu[i] );
+        }
+        else
+        {
+            // Tabulated bilinear interpolation for β ≤ 50
+            this->_ftab    [i] = static_cast<cusfloat>( s_bilin_Gt  .eval( beta_i, log_mu ) );
+            // this->_ftab_dmu[i] = static_cast<cusfloat>( s_bilin_Gtx .eval( beta_i, log_mu ) );
+            // this->_ftab_dt [i] = static_cast<cusfloat>( s_bilin_Gtt .eval( beta_i, log_mu ) );
+            // this->_ftab_dtmu[i]= static_cast<cusfloat>( s_bilin_Gttx.eval( beta_i, log_mu ) );
+            // this->_ftab_dtt[i] = static_cast<cusfloat>( s_bilin_Gttt.eval( beta_i, log_mu ) );
+        }
+    }
+    _timer_eval_dGdt += _Clock::now() - _t0;
+
+    // ----------------------------------------------------------------
+    // Section 4 – Cartesian derivatives
+    // ----------------------------------------------------------------
+    _t0 = _Clock::now();
+
     cusfloat a = 0.0;
     cusfloat b = 0.0;
     cusfloat c = 0.0;
@@ -135,7 +195,13 @@ void        GWTFcnsInterfaceT<N>::operator()(
 
     }
 
-    // Calculate normal derivate
+    _timer_derivatives += _Clock::now() - _t0;
+
+    // ----------------------------------------------------------------
+    // Section 5 – Normal derivatives
+    // ----------------------------------------------------------------
+    _t0 = _Clock::now();
+
     cusfloat nx_pf = this->_source_i->normal_vec[0];
     cusfloat ny_pf = this->_source_i->normal_vec[1];
     cusfloat nz_pf = this->_source_i->normal_vec[2];
@@ -160,7 +226,9 @@ void        GWTFcnsInterfaceT<N>::operator()(
                             this->dG_dttz[i] * nz_pf
                         );
     }
-    
+
+    _timer_normals += _Clock::now() - _t0;
+
 }
 
 
@@ -201,4 +269,75 @@ void    GWTFcnsInterfaceT<N>::set_time_diff(
                                             )
 {
     this->_time_diff = time_diff;
+}
+
+
+template<std::size_t N>
+void    GWTFcnsInterfaceT<N>::print_timers() const
+{
+    // Total accumulated time across all sections
+    double t_geo   = _timer_geometry.count();
+    double t_lead  = _timer_leading.count();
+    double t_dGdt  = _timer_eval_dGdt.count();
+    double t_dGdtx = _timer_eval_dGdtx.count();
+    double t_dGdtt = _timer_eval_dGdtt.count();
+    double t_dGdttx= _timer_eval_dGdttx.count();
+    double t_dGdttt= _timer_eval_dGdttt.count();
+    double t_tab   = t_dGdt + t_dGdtx + t_dGdtt + t_dGdttx + t_dGdttt;
+    double t_der   = _timer_derivatives.count();
+    double t_nor   = _timer_normals.count();
+    double t_tot   = t_geo + t_lead + t_tab + t_der + t_nor;
+
+    auto pct = [&]( double t ) -> double {
+        return ( t_tot > 0.0 ) ? 100.0 * t / t_tot : 0.0;
+    };
+
+    std::printf( "\n--- GWTFcnsInterfaceT<%zu> operator() timing report ---\n",  N );
+    std::printf( "  Calls              : %zu\n",      _timer_call_count );
+    std::printf( "  Total              : %.6f s\n",   t_tot );
+    std::printf( "  Geometry           : %.6f s  (%5.1f %%)\n", t_geo,    pct(t_geo)    );
+    std::printf( "  Leading/beta/mu    : %.6f s  (%5.1f %%)\n", t_lead,   pct(t_lead)   );
+    std::printf( "  Tabulated (total)  : %.6f s  (%5.1f %%)\n", t_tab,    pct(t_tab)    );
+    std::printf( "    eval_dGdt        : %.6f s  (%5.1f %%)\n", t_dGdt,   pct(t_dGdt)   );
+    std::printf( "    eval_dGdtx       : %.6f s  (%5.1f %%)\n", t_dGdtx,  pct(t_dGdtx)  );
+    double t_dGdtt_logmu  = _timer_eval_dGdtt_logmu.count();
+    double t_dGdtt_cheby  = _timer_eval_dGdtt_cheby.count();
+    double t_dGdtt_G0     = _timer_eval_dGdtt_G0.count();
+    double t_dGdttx_logmu = _timer_eval_dGdttx_logmu.count();
+    double t_dGdttx_cheby = _timer_eval_dGdttx_cheby.count();
+    double t_dGdttx_G0    = _timer_eval_dGdttx_G0.count();
+    std::printf( "    eval_dGdtt       : %.6f s  (%5.1f %%)\n", t_dGdtt,       pct(t_dGdtt)       );
+    std::printf( "      log_mu         : %.6f s  (%5.1f %%)\n", t_dGdtt_logmu, pct(t_dGdtt_logmu) );
+    std::printf( "      cheby eval     : %.6f s  (%5.1f %%)\n", t_dGdtt_cheby, pct(t_dGdtt_cheby) );
+    std::printf( "      G0 correction  : %.6f s  (%5.1f %%)\n", t_dGdtt_G0,    pct(t_dGdtt_G0)    );
+    std::printf( "    eval_dGdttx      : %.6f s  (%5.1f %%)\n", t_dGdttx,      pct(t_dGdttx)      );
+    std::printf( "      log_mu         : %.6f s  (%5.1f %%)\n", t_dGdttx_logmu,pct(t_dGdttx_logmu));
+    std::printf( "      cheby eval     : %.6f s  (%5.1f %%)\n", t_dGdttx_cheby,pct(t_dGdttx_cheby));
+    std::printf( "      G0 correction  : %.6f s  (%5.1f %%)\n", t_dGdttx_G0,   pct(t_dGdttx_G0)   );
+    std::printf( "    eval_dGdttt      : %.6f s  (%5.1f %%)\n", t_dGdttt, pct(t_dGdttt) );
+    std::printf( "  Derivatives        : %.6f s  (%5.1f %%)\n", t_der,    pct(t_der)    );
+    std::printf( "  Normal derivs      : %.6f s  (%5.1f %%)\n", t_nor,    pct(t_nor)    );
+    std::printf( "-------------------------------------------------------\n\n" );
+}
+
+
+template<std::size_t N>
+void    GWTFcnsInterfaceT<N>::reset_timers()
+{
+    _timer_geometry     = Duration::zero();
+    _timer_leading      = Duration::zero();
+    _timer_eval_dGdt    = Duration::zero();
+    _timer_eval_dGdtx   = Duration::zero();
+    _timer_eval_dGdtt        = Duration::zero();
+    _timer_eval_dGdtt_logmu  = Duration::zero();
+    _timer_eval_dGdtt_cheby  = Duration::zero();
+    _timer_eval_dGdtt_G0     = Duration::zero();
+    _timer_eval_dGdttx       = Duration::zero();
+    _timer_eval_dGdttx_logmu = Duration::zero();
+    _timer_eval_dGdttx_cheby = Duration::zero();
+    _timer_eval_dGdttx_G0    = Duration::zero();
+    _timer_eval_dGdttt  = Duration::zero();
+    _timer_derivatives  = Duration::zero();
+    _timer_normals      = Duration::zero();
+    _timer_call_count   = 0;
 }

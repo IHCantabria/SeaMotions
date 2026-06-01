@@ -20,6 +20,10 @@
 
 #pragma once
 
+// Include standard library
+#include <chrono>
+#include <cstdio>
+
 // Include local modules
 #include "../containers/source_node.hpp"
 #include "../green/pulsating_fin_depth.hpp"
@@ -69,6 +73,25 @@ public:
     cusfloat    dG_dtty[N];     // Green function second order time y derivative
     cusfloat    dG_dttz[N];     // Green function second order time z derivative
 
+    // Cumulative profiling timers (accumulated over all operator() calls)
+    using Duration = std::chrono::duration<double>;
+    Duration    _timer_geometry             = Duration::zero();  // R, dX, dY, dZ, R2, R3
+    Duration    _timer_leading              = Duration::zero();  // leading term, beta, mu
+    Duration    _timer_eval_dGdt            = Duration::zero();  // eval_dGdt_vec
+    Duration    _timer_eval_dGdtx           = Duration::zero();  // eval_dGdtx_vec
+    Duration    _timer_eval_dGdtt           = Duration::zero();  // eval_dGdtt_vec (total)
+    Duration    _timer_eval_dGdtt_logmu     = Duration::zero();  //   |- compute_log_mu
+    Duration    _timer_eval_dGdtt_cheby     = Duration::zero();  //   |- eval_time_residual_2d_vec
+    Duration    _timer_eval_dGdtt_G0        = Duration::zero();  //   |- G0 correction loop
+    Duration    _timer_eval_dGdttx          = Duration::zero();  // eval_dGdttx_vec (total)
+    Duration    _timer_eval_dGdttx_logmu    = Duration::zero();  //   |- compute_log_mu
+    Duration    _timer_eval_dGdttx_cheby    = Duration::zero();  //   |- eval_time_residual_2d_vec
+    Duration    _timer_eval_dGdttx_G0       = Duration::zero();  //   |- G0 correction loop
+    Duration    _timer_eval_dGdttt          = Duration::zero();  // eval_dGdttt_vec
+    Duration    _timer_derivatives          = Duration::zero();  // Cartesian derivative loop
+    Duration    _timer_normals              = Duration::zero();  // normal derivative loop
+    std::size_t _timer_call_count           = 0;
+
     // Define constructors and destructors
     GWTFcnsInterfaceT( )   = default;
 
@@ -106,6 +129,10 @@ public:
     void        set_time_diff(
                                     cusfloat    time_diff
                             );
+
+    void        print_timers() const;
+
+    void        reset_timers();
 
 };
 

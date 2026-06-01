@@ -725,13 +725,17 @@ template<std::size_t N, int NGPT>
 void TimeSolver<N, NGPT>::_compute_body_vel_bc( 
                                                     cusfloat t, 
                                                     std::vector<cusfloat>& bc,
-                                                    std::vector<cusfloat>& bc2
+                                                    std::vector<cusfloat>& bc2,
+                                                    std::vector<cusfloat>& bc_kin,
+                                                    std::vector<cusfloat>& bc_wave
                                                 )
 {
     const int np = this->_kernel->get_n_panels( );
     std::cout << "  [DBG _vel_bc] entry np=" << np << "\n" << std::flush;
-    bc.assign( np, static_cast<cusfloat>( 0.0 ) );
-    bc2.assign( np, static_cast<cusfloat>( 0.0 ) );
+    bc      .assign( np, static_cast<cusfloat>( 0.0 ) );
+    bc2     .assign( np, static_cast<cusfloat>( 0.0 ) );
+    bc_kin  .assign( np, static_cast<cusfloat>( 0.0 ) );
+    bc_wave .assign( np, static_cast<cusfloat>( 0.0 ) );
 
     const cusfloat w  = this->_input->ang_freq;
     const cusfloat aw = this->_input->wave_amp;
@@ -769,8 +773,9 @@ void TimeSolver<N, NGPT>::_compute_body_vel_bc(
             const cusfloat* acc = this->_body_acc[ib].data( );
             for ( int id=0; id<6; id++ )
             {
-                bc[j]   += vel[id] * n[id];
-                bc2[j]  += acc[id] * n[id];
+                bc[j]       += vel[id] * n[id];
+                bc2[j]      += acc[id] * n[id];
+                bc_kin[j]   += vel[id] * n[id];
             }
         }
 
@@ -795,8 +800,10 @@ void TimeSolver<N, NGPT>::_compute_body_vel_bc(
             const cusfloat vz_dt    = wave_potential_fo_time_dtdz( aw, w, k, h, g, x, y, z, mu, t );
 
             // Negative of incident wave normal velocity (diffraction condition)
-            bc[j] -= ( vx * n[0] + vy * n[1] + vz * n[2] );
-            bc2[j] -= ( vx_dt * n[0] + vy_dt * n[1] + vz_dt * n[2] );
+            const cusfloat wave_contrib = vx * n[0] + vy * n[1] + vz * n[2];
+            bc[j]       -= wave_contrib;
+            bc_wave[j]  -= wave_contrib;
+            bc2[j]      -= ( vx_dt * n[0] + vy_dt * n[1] + vz_dt * n[2] );
         }
     }
 }
@@ -1167,9 +1174,19 @@ void TimeSolver<N, NGPT>::run( )
 
     std::cout << " -> Total steps: " << n_steps << "  (dt=" << dt << " s, T=" << sim_time << " s)" << std::endl;
 
-    // Reserve sigma history with a maximum memory footprint of ~1000 steps
-    // (for a proper solver this should be managed more carefully)
-    const int max_hist = n_steps;
+    // Determine the maximum number of sigma history steps to retain.
+    // If duhamel_hist_time > 0 the user has specified an explicit time window;
+    // otherwise the full simulation history is kept (worst-case memory).
+    const cusfloat hist_time  = this->_input->duhamel_hist_time;
+    const int      max_hist   = ( hist_time > static_cast<cusfloat>( 0.0 ) )
+                                ? std::max( 1, static_cast<int>( hist_time / dt ) )
+                                : n_steps;
+
+    std::cout << " -> Duhamel history: " << max_hist << " steps"
+              << "  (" << static_cast<cusfloat>( max_hist ) * dt << " s)"
+              << std::endl;
+
+    // Reserve the circular buffer — O(1) insertions per time step, bounded memory.
     this->_sigma_hist.reserve( max_hist );
 
     // Print a progress line roughly every 1 % of the total steps
@@ -1202,7 +1219,9 @@ void TimeSolver<N, NGPT>::run( )
         this->_compute_body_vel_bc( 
                                         t, 
                                         this->_body_vel_bc, 
-                                        this->_body_acc_bc 
+                                        this->_body_acc_bc,
+                                        this->_body_kin_bc,
+                                        this->_wave_bc
                                     );
 
         std::cout << "[DBG] step=" << step << "  (2b) build_rhs\n" << std::flush;
@@ -1211,7 +1230,9 @@ void TimeSolver<N, NGPT>::run( )
                                         this->_sigma_hist, 
                                         dt, 
                                         this->_body_vel_bc.data( ),
-                                        this->_body_acc_bc.data( )
+                                        this->_body_acc_bc.data( ),
+                                        this->_body_kin_bc.data( ),
+                                        this->_wave_bc.data( )
                                 );
 
         // -----------------------------------------------------------------
@@ -1220,14 +1241,13 @@ void TimeSolver<N, NGPT>::run( )
         std::cout << "[DBG] step=" << step << "  (3) solve\n" << std::flush;
         this->_kernel->solve( );
 
-        // Store current sigma in history (newest at front)
-        std::cout << "[DBG] step=" << step << "  (3b) sigma_hist.insert\n" << std::flush;
-        const int   np          = this->_kernel->get_n_panels( );
+        // Store current sigma in history — O(1) circular push, no data shifting.
+        std::cout << "[DBG] step=" << step << "  (3b) sigma_hist.push_front\n" << std::flush;
+        const int       np      = this->_kernel->get_n_panels( );
         const cusfloat* sigma   = this->_kernel->get_sigma( );
-        this->_sigma_hist.insert(
-                                    this->_sigma_hist.begin( ),
-                                    std::vector<cusfloat>( sigma, sigma + np )
-                                );
+        this->_sigma_hist.push_front(
+                                        std::vector<cusfloat>( sigma, sigma + np )
+                                    );
 
         // -----------------------------------------------------------------
         // 4. Compute potential derivatives dt, dx, dy and dz. They will be  
@@ -1236,6 +1256,13 @@ void TimeSolver<N, NGPT>::run( )
         // -----------------------------------------------------------------
         std::cout << "[DBG] step=" << step << "  (4) compute_potential_derivatives\n" << std::flush;
         this->_kernel->compute_potential_derivatives( );
+
+        // Debug: export RHS and sigma (source) fields to VTU for ParaView
+        {
+            std::ostringstream oss;
+            oss << "debug_bem_step_" << std::setw(6) << std::setfill('0') << step << ".vtu";
+            this->_kernel->export_vtu( oss.str( ) );
+        }
 
         // -----------------------------------------------------------------
         // 5. Compute hydrodynamic forces from sigma into the member vectors

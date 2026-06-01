@@ -19,7 +19,11 @@
  */
 
 // Include general usage libraries
+#include <chrono>
+#include <fstream>
+#include <iomanip>
 #include <iostream>
+#include <string>
 
 // Include local modules
 #include "formulation_kernel_backend_t.hpp"
@@ -64,6 +68,21 @@ FormulationKernelBackendT<N, NGPT>::~FormulationKernelBackendT( )
     {
         mkl_free( this->_rhs_dt );
         this->_rhs_dt = nullptr;
+    }
+    if ( this->_rhs_body_kin != nullptr )
+    {
+        mkl_free( this->_rhs_body_kin );
+        this->_rhs_body_kin = nullptr;
+    }
+    if ( this->_rhs_duhamel != nullptr )
+    {
+        mkl_free( this->_rhs_duhamel );
+        this->_rhs_duhamel = nullptr;
+    }
+    if ( this->_rhs_wave != nullptr )
+    {
+        mkl_free( this->_rhs_wave );
+        this->_rhs_wave = nullptr;
     }
     if ( this->_sigma != nullptr )
     {
@@ -204,6 +223,11 @@ void FormulationKernelBackendT<N, NGPT>::initialize(
     this->_sigma                = generate_empty_vector<cusfloat>( np );
     this->_sigma_dt             = generate_empty_vector<cusfloat>( np );
 
+    // Decomposed RHS contributions (debug export)
+    this->_rhs_body_kin         = generate_empty_vector<cusfloat>( np );
+    this->_rhs_duhamel          = generate_empty_vector<cusfloat>( np );
+    this->_rhs_wave             = generate_empty_vector<cusfloat>( np );
+
     // Potential gradient: total (= rad + wave), updated at end of compute_potential_derivatives
     this->_phi_dt               = generate_empty_vector<cusfloat>( np );
     this->_phi_dx               = generate_empty_vector<cusfloat>( np );
@@ -322,10 +346,12 @@ void FormulationKernelBackendT<N, NGPT>::_build_steady_matrix( )
 template<std::size_t N, int NGPT>
 void FormulationKernelBackendT<N, NGPT>::build_rhs(
                                                         cusfloat                                            t_current,
-                                                        const std::vector<std::vector<cusfloat>>&           sigma_hist,
+                                                        const CircularBuffer<std::vector<cusfloat>>&        sigma_hist,
                                                         cusfloat                                            dt,
                                                         const cusfloat*                                     body_vel_bc,
-                                                        const cusfloat*                                     body_acc_bc
+                                                        const cusfloat*                                     body_acc_bc,
+                                                        const cusfloat*                                     body_kin_bc,
+                                                        const cusfloat*                                     wave_bc
                                                    )
 {
     const int np     = this->_n_panels;
@@ -339,6 +365,10 @@ void FormulationKernelBackendT<N, NGPT>::build_rhs(
     // Initialize RHS to zero (partial contributions from this process)
     clear_vector( np, this->_rhs        );
     clear_vector( np, this->_rhs_dt     );
+    // Clear decomposed contribution arrays
+    clear_vector( np, this->_rhs_body_kin );
+    clear_vector( np, this->_rhs_duhamel  );
+    clear_vector( np, this->_rhs_wave     );
     // Clear radiation-split arrays; wave and total arrays are set in compute_potential_derivatives
     clear_vector( np, this->_phi_dt_rad );
     clear_vector( np, this->_phi_dx_rad );
@@ -347,7 +377,9 @@ void FormulationKernelBackendT<N, NGPT>::build_rhs(
 
     // -----------------------------------------------------------------------
     // Body kinematic BC: rhs[j] += n_j · vel_body
-    // body_vel_bc[j] = normal velocity of the body surface at collocation j
+    // body_vel_bc[j] = combined normal velocity (body motion + wave diffraction)
+    // body_kin_bc[j] = body motion contribution only  (optional, for debug export)
+    // wave_bc[j]     = wave diffraction contribution only (optional, for debug export)
     // -----------------------------------------------------------------------
     if ( body_vel_bc != nullptr )
     {
@@ -355,6 +387,21 @@ void FormulationKernelBackendT<N, NGPT>::build_rhs(
         {
             this->_rhs[j]       += body_vel_bc[j];
             this->_rhs_dt[j]    += body_acc_bc[j];
+        }
+    }
+    // Store individual contributions if provided
+    if ( body_kin_bc != nullptr )
+    {
+        for ( int j=0; j<np; j++ )
+        {
+            this->_rhs_body_kin[j] = body_kin_bc[j];
+        }
+    }
+    if ( wave_bc != nullptr )
+    {
+        for ( int j=0; j<np; j++ )
+        {
+            this->_rhs_wave[j] = wave_bc[j];
         }
     }
 
@@ -366,6 +413,7 @@ void FormulationKernelBackendT<N, NGPT>::build_rhs(
     if ( this->_input->use_duhamel )
     {
         std::cout << "  [DBG build_rhs] Duhamel loop start\n" << std::flush;
+        const auto _t_duhamel_start = std::chrono::high_resolution_clock::now();
         for ( int k=0; k<n_hist; k++ )
         {
             const cusfloat t_lag_end   = t_current - static_cast<cusfloat>( k     ) * dt;
@@ -420,7 +468,10 @@ void FormulationKernelBackendT<N, NGPT>::build_rhs(
 
                     // Accumulate Duhamel contribution (partial sum for local columns)
                     // phi_rad arrays collect the radiation (memory-kernel) part only.
-                    this->_rhs[obs]            -= sigma_k[src] * dtn_val  / static_cast<cusfloat>( 4.0 * PI );
+                    const cusfloat duhamel_rhs_contrib = sigma_k[src] * dtn_val  / static_cast<cusfloat>( 4.0 * PI );
+                    // const cusfloat duhamel_rhs_contrib = dtn_val  / static_cast<cusfloat>( 4.0 * PI );
+                    this->_rhs[obs]            -= duhamel_rhs_contrib;
+                    this->_rhs_duhamel[obs]    -= duhamel_rhs_contrib;
                     this->_rhs_dt[obs]         -= sigma_k[src] * dttn_val / static_cast<cusfloat>( 4.0 * PI );
                     this->_phi_dt_rad[obs] -= sigma_k[src] * dtt_val / static_cast<cusfloat>( 4.0 * PI );
                     this->_phi_dx_rad[obs] -= sigma_k[src] * dtx_val / static_cast<cusfloat>( 4.0 * PI );
@@ -430,7 +481,13 @@ void FormulationKernelBackendT<N, NGPT>::build_rhs(
             }
         }
 
-        std::cout << "  [DBG build_rhs] Duhamel loop done, MPI_Allreduce start\n" << std::flush;
+        const double _t_duhamel_s = std::chrono::duration<double>(
+            std::chrono::high_resolution_clock::now() - _t_duhamel_start ).count();
+
+        this->_gwtfcns_interf.print_timers();
+
+        const auto _t_mpi_start = std::chrono::high_resolution_clock::now();
+        std::cout << "  [DBG build_rhs] Duhamel loop done  (" << _t_duhamel_s << " s), MPI_Allreduce start\n" << std::flush;
         // Sum partial RHS contributions from all processes
         MPI_Allreduce(
                         MPI_IN_PLACE,
@@ -444,6 +501,16 @@ void FormulationKernelBackendT<N, NGPT>::build_rhs(
         MPI_Allreduce(
                         MPI_IN_PLACE,
                         this->_rhs_dt,
+                        np,
+                        mpi_cusfloat,
+                        MPI_SUM,
+                        MPI_COMM_WORLD
+                    );
+
+        // Also reduce the Duhamel-only contribution (distributed across columns)
+        MPI_Allreduce(
+                        MPI_IN_PLACE,
+                        this->_rhs_duhamel,
                         np,
                         mpi_cusfloat,
                         MPI_SUM,
@@ -485,6 +552,10 @@ void FormulationKernelBackendT<N, NGPT>::build_rhs(
                         MPI_SUM,
                         MPI_COMM_WORLD
                     );
+
+        const double _t_mpi_s = std::chrono::duration<double>(
+            std::chrono::high_resolution_clock::now() - _t_mpi_start ).count();
+        std::cout << "  [DBG build_rhs] MPI_Allreduce done (" << _t_mpi_s << " s)\n" << std::flush;
 
     } // end if ( use_duhamel )
 
@@ -706,4 +777,155 @@ void FormulationKernelBackendT<N, NGPT>::compute_potential_derivatives( )
     }
 
     std::cout << "  [DBG cpd] done\n" << std::flush;
+}
+
+
+// =============================================================================
+// VTU export (debug visualisation in ParaView)
+// =============================================================================
+
+template<std::size_t N, int NGPT>
+void FormulationKernelBackendT<N, NGPT>::export_vtu( const std::string& filename ) const
+{
+    // Only root rank writes; all other ranks hold identical data after solve()
+    if ( this->_mpi_config->proc_rank != this->_mpi_config->proc_root ) { return; }
+
+    const int np = this->_n_panels;
+
+    // Count total points across all panels (panels may duplicate shared corners)
+    int total_points = 0;
+    for ( int ip = 0; ip < np; ip++ )
+    {
+        total_points += this->_mesh_gp->panels[ip]->num_nodes;
+    }
+
+    std::ofstream f( filename );
+    if ( !f.is_open( ) )
+    {
+        std::cerr << "[export_vtu] Cannot open file: " << filename << "\n";
+        return;
+    }
+
+    f << std::scientific << std::setprecision( 10 );
+
+    // ---- VTU header --------------------------------------------------------
+    f << "<?xml version=\"1.0\"?>\n";
+    f << "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\">\n";
+    f << "  <UnstructuredGrid>\n";
+    f << "    <Piece NumberOfPoints=\"" << total_points
+      << "\" NumberOfCells=\"" << np << "\">\n";
+
+    // ---- Points (panel corner coordinates) ---------------------------------
+    f << "      <Points>\n";
+    f << "        <DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\">\n";
+    for ( int ip = 0; ip < np; ip++ )
+    {
+        PanelGeom* panel = this->_mesh_gp->panels[ip];
+        for ( int k = 0; k < panel->num_nodes; k++ )
+        {
+            f << "          "
+              << static_cast<double>( panel->x[k] ) << " "
+              << static_cast<double>( panel->y[k] ) << " "
+              << static_cast<double>( panel->z[k] ) << "\n";
+        }
+    }
+    f << "        </DataArray>\n";
+    f << "      </Points>\n";
+
+    // ---- Cells -------------------------------------------------------------
+    f << "      <Cells>\n";
+
+    // connectivity
+    f << "        <DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">\n";
+    {
+        int pt_idx = 0;
+        for ( int ip = 0; ip < np; ip++ )
+        {
+            const int nn = this->_mesh_gp->panels[ip]->num_nodes;
+            f << "         ";
+            for ( int k = 0; k < nn; k++ )
+            {
+                f << " " << ( pt_idx + k );
+            }
+            f << "\n";
+            pt_idx += nn;
+        }
+    }
+    f << "        </DataArray>\n";
+
+    // offsets (cumulative node count per cell)
+    f << "        <DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">\n";
+    {
+        int offset = 0;
+        for ( int ip = 0; ip < np; ip++ )
+        {
+            offset += this->_mesh_gp->panels[ip]->num_nodes;
+            f << "          " << offset << "\n";
+        }
+    }
+    f << "        </DataArray>\n";
+
+    // cell types: 5 = VTK_TRIANGLE, 9 = VTK_QUAD
+    f << "        <DataArray type=\"Int8\" Name=\"types\" format=\"ascii\">\n";
+    for ( int ip = 0; ip < np; ip++ )
+    {
+        const int nn       = this->_mesh_gp->panels[ip]->num_nodes;
+        const int vtk_type = ( nn == 3 ) ? 5 : 9;
+        f << "          " << vtk_type << "\n";
+    }
+    f << "        </DataArray>\n";
+    f << "      </Cells>\n";
+
+    // ---- CellData ----------------------------------------------------------
+    f << "      <CellData>\n";
+
+    // rhs (total)
+    f << "        <DataArray type=\"Float64\" Name=\"rhs\" format=\"ascii\">\n";
+    for ( int ip = 0; ip < np; ip++ )
+    {
+        f << "          " << static_cast<double>( this->_rhs[ip] ) << "\n";
+    }
+    f << "        </DataArray>\n";
+
+    // rhs_body_kin (body motion BC contribution)
+    f << "        <DataArray type=\"Float64\" Name=\"rhs_body_kin\" format=\"ascii\">\n";
+    for ( int ip = 0; ip < np; ip++ )
+    {
+        f << "          " << static_cast<double>( this->_rhs_body_kin[ip] ) << "\n";
+    }
+    f << "        </DataArray>\n";
+
+    // rhs_duhamel (Duhamel convolution contribution)
+    f << "        <DataArray type=\"Float64\" Name=\"rhs_duhamel\" format=\"ascii\">\n";
+    for ( int ip = 0; ip < np; ip++ )
+    {
+        f << "          " << static_cast<double>( this->_rhs_duhamel[ip] ) << "\n";
+    }
+    f << "        </DataArray>\n";
+
+    // rhs_wave (incident wave diffraction BC contribution)
+    f << "        <DataArray type=\"Float64\" Name=\"rhs_wave\" format=\"ascii\">\n";
+    for ( int ip = 0; ip < np; ip++ )
+    {
+        f << "          " << static_cast<double>( this->_rhs_wave[ip] ) << "\n";
+    }
+    f << "        </DataArray>\n";
+
+    // sigma (source intensity)
+    f << "        <DataArray type=\"Float64\" Name=\"sigma\" format=\"ascii\">\n";
+    for ( int ip = 0; ip < np; ip++ )
+    {
+        f << "          " << static_cast<double>( this->_sigma[ip] ) << "\n";
+    }
+    f << "        </DataArray>\n";
+
+    f << "      </CellData>\n";
+
+    // ---- Footer ------------------------------------------------------------
+    f << "    </Piece>\n";
+    f << "  </UnstructuredGrid>\n";
+    f << "</VTKFile>\n";
+
+    f.close( );
+    std::cout << "[export_vtu] Written: " << filename << "\n" << std::flush;
 }
