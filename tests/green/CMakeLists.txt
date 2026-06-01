@@ -732,3 +732,88 @@ add_test(
             COMMAND test_time_domain_evaluator_gauss_cmd
             ${test_time_domain_evaluator_gauss_args}
         )
+
+# ============================================================================
+# Test suite for the 2D interpolators (Bilinear, Catmull-Rom, NCS) applied
+# to all seven time-domain integral tables: Gt, Gtt, Gttt, Gtx, Gttx, Gtxx, Gttxx.
+# ============================================================================
+set( td_data_dir "${CMAKE_SOURCE_DIR}/src/green/td_data" )
+set(
+    test_interp2d_gt_src
+    test_interp2d_gt.cpp
+    "../../src/config.hpp"
+    "../../src/math/data_fit/interp2d.hpp"
+    "${td_data_dir}/td_database.hpp"
+    "${td_data_dir}/td_common_axes.cpp"
+    "${td_data_dir}/td_Gt_fcn.cpp"
+    "${td_data_dir}/td_Gtt_fcn.cpp"
+    "${td_data_dir}/td_Gttt_fcn.cpp"
+    "${td_data_dir}/td_Gtx_fcn.cpp"
+    "${td_data_dir}/td_Gttx_fcn.cpp"
+    "${td_data_dir}/td_Gtxx_fcn.cpp"
+    "${td_data_dir}/td_Gttxx_fcn.cpp"
+)
+add_executable( test_interp2d_gt_cmd ${test_interp2d_gt_src} )
+set_hdf5_target( test_interp2d_gt_cmd )
+
+set( td_db_dir "${CMAKE_SOURCE_DIR}/aux_data/0_integrals_database/1_time_domain" )
+set( td_ref_dir "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain" )
+set(
+    test_interp2d_gt_args
+    "${td_db_dir}/Gt.h5"
+    "${td_db_dir}/Gtt.h5"
+    "${td_db_dir}/Gttt.h5"
+    "${td_db_dir}/Gtx.h5"
+    "${td_db_dir}/Gttx.h5"
+    "${td_db_dir}/Gtxx.h5"
+    "${td_db_dir}/Gttxx.h5"
+    "${td_ref_dir}/dGdt.dat"
+    "${td_ref_dir}/dGdtt.dat"
+    "${td_ref_dir}/dGdttt.dat"
+    "${td_ref_dir}/dGdtx.dat"
+    "${td_ref_dir}/dGdttx.dat"
+    "${td_ref_dir}/dGdtxx.dat"
+    "${td_ref_dir}/dGdttxx.dat"
+)
+add_test(
+    NAME    test_interp2d_gt
+    COMMAND test_interp2d_gt_cmd ${test_interp2d_gt_args}
+)
+
+
+# ============================================================================
+# Test for the time-domain asymptotic Green function routines
+# (src/green/time_domain_asymptotic.hpp / .cpp).
+#
+# Test 1 – spot_checks: C++ output vs Python float64 reference at a 4×3 grid.
+# Test 2 – finiteness: all 600 (beta, mu) points in each .dat file produce a
+#           finite, non-NaN result.
+# ============================================================================
+set(
+        test_time_domain_asymptotic_src
+        test_time_domain_asymptotic.cpp
+        "../../src/config.hpp"
+        "../../src/math/math_constants.hpp"
+        "../../src/green/time_domain_asymptotic.hpp"
+        "../../src/green/time_domain_asymptotic.cpp"
+    )
+
+add_executable(
+                    test_time_domain_asymptotic_cmd
+                    ${test_time_domain_asymptotic_src}
+                )
+
+set(
+        test_time_domain_asymptotic_args
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdt.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdtt.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdttt.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdtx.dat"
+        "${CMAKE_SOURCE_DIR}/tests/tests_data/time_domain/dGdttx.dat"
+    )
+
+add_test(
+            NAME    test_time_domain_asymptotic
+            COMMAND test_time_domain_asymptotic_cmd
+            ${test_time_domain_asymptotic_args}
+        )
