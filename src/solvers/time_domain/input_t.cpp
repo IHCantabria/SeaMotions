@@ -478,6 +478,11 @@ void InputT::read_case( const std::string& folder_path )
     read_signal     = read_channel_value( infile, this->ramp_time );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
+    // Read Duhamel history window (0 = retain full simulation history)
+    target_signal   = "HistTime";
+    read_signal     = read_channel_value( infile, this->duhamel_hist_time );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
     //////////////////////////////////////////////
     /************** Body Definition *************/
     //////////////////////////////////////////////

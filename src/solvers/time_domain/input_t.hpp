@@ -42,6 +42,7 @@
  *   0.01            Dt             - Time step
  *   true            UseDuhamel     - Enable Duhamel (radiation memory) integral
  *   10.0            RampTime       - Force ramp-up duration [s] (0 = disabled)
+ *   0.0             HistTime       - Duhamel history window [s] (0 = full sim_time)
  *   ------- Body Definition -------
  *   s11.bd.dat      BodyFN         - body file name(s)
  *   ------- Field Points ----------
@@ -101,6 +102,7 @@ public:
     cusfloat                    wave_period         = 0.0;     // wave period [s]     (0 = no incident wave)
     cusfloat                    ang_freq            = 0.0;     // angular frequency [rad/s] derived from wave_period
     cusfloat                    ramp_time           = 0.0;     // force ramp-up duration [s] (0 = disabled)
+    cusfloat                    duhamel_hist_time   = 0.0;     // Duhamel history window [s] (0 = full sim_time)
 
     // Paths
     std::string                 case_fopath         = "";
