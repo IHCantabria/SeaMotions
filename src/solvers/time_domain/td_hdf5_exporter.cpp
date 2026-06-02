@@ -153,6 +153,11 @@ void TimeDomainHDF5Exporter::initialize(
             cusfloat_h5, { 0, 6 }, { H5S_UNLIMITED, 6 } );
     }
 
+    // Flush the superblock + dataset headers immediately so the file is a
+    // valid HDF5 container even if the solver dies before the first
+    // append_step / destructor call.
+    H5Fflush( _file, H5F_SCOPE_GLOBAL );
+
     std::cout << " -> HDF5 time-series: " << file_path << std::endl;
 }
 
@@ -226,6 +231,11 @@ void TimeDomainHDF5Exporter::append_step(
         append_to_hdf5_dataset( _file, fgrp + "/hydrostatic_term",
                                 cusfloat_h5, { 1, 6 }, body_force_hydrostatic[ib].data( ) );
     }
+
+    // Make partial results survive an abnormal solver termination
+    // (segfault, Ctrl-C, OOM, etc.). HDF5 chunk caches the per-step writes
+    // and would otherwise only commit them on H5Fclose.
+    H5Fflush( _file, H5F_SCOPE_GLOBAL );
 }
 
 
