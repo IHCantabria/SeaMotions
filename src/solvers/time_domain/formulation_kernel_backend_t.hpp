@@ -118,6 +118,48 @@ private:
     // Build the steady BEM matrix and LU-factorize it
     void _build_steady_matrix( );
 
+    /**
+     * @brief Accumulate Duhamel contributions using the trapezoidal (history-step) rule.
+     *
+     * For each sub-interval k, sigma is treated as constant and equal to
+     * sigma_hist[k][src] (the value at the older end of the interval).
+     * The spatial–temporal Green's function is integrated with the existing
+     * Gauss–Legendre rule in time (NGPT points per sub-interval).
+     *
+     * Updates: _rhs, _rhs_dt, _rhs_duhamel, _phi_dt_rad/_dx/_dy/_dz_rad.
+     * All output arrays must be pre-zeroed by the caller (build_rhs).
+     * No MPI reduction is performed here; that is left to build_rhs.
+     */
+    void _accumulate_duhamel_trapezoidal(
+                                            const CircularBuffer<std::vector<cusfloat>>&  sigma_hist,
+                                            cusfloat                                      t_current,
+                                            cusfloat                                      dt
+                                        );
+
+    /**
+     * @brief Accumulate Duhamel contributions using GK quadrature with
+     *        piecewise-linear sigma interpolation across each sub-interval.
+     *
+     * Within each history sub-interval [t-(k+1)*dt, t-k*dt], sigma(tau) is
+     * linearly interpolated between sigma_hist[k] (older end) and
+     * sigma_hist[k-1] (newer end, for k≥1).  For k=0 the newest interval
+     * has no available sigma at t_current, so sigma_hist[0] is used at both
+     * endpoints (constant extrapolation, identical to the trapezoidal rule
+     * for that single interval).
+     *
+     * The sigma weighting is folded directly into the time quadrature via
+     * quadrature_panel_time_t_sigma, so the outputs already include sigma.
+     *
+     * Updates: _rhs, _rhs_dt, _rhs_duhamel, _phi_dt_rad/_dx/_dy/_dz_rad.
+     * All output arrays must be pre-zeroed by the caller (build_rhs).
+     * No MPI reduction is performed here; that is left to build_rhs.
+     */
+    void _accumulate_duhamel_gk_sigma(
+                                            const CircularBuffer<std::vector<cusfloat>>&  sigma_hist,
+                                            cusfloat                                      t_current,
+                                            cusfloat                                      dt
+                                      );
+
 public:
     // Constructor and destructor
     FormulationKernelBackendT( ) = default;

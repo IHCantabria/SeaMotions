@@ -320,6 +320,26 @@ private:
     void _output_step( cusfloat t, int step );
 
     // ---------------------------------------------------------------
+    // Debug BEM VTU / PVD output (RHS and sigma fields per step)
+    // ---------------------------------------------------------------
+
+    /// Directory where per-step debug VTU files and the debug PVD index are written.
+    std::string _debug_bem_dir;
+
+    /// Ordered list of (time [s], relative VTU filename) pairs for the debug PVD file.
+    std::vector<std::pair<double, std::string>> _debug_bem_pvd_entries;
+
+    /**
+     * @brief Create the debug-BEM output directory and clear the PVD entry list.
+     */
+    void _init_debug_bem_output( );
+
+    /**
+     * @brief Write the debug-BEM PVD collection file after the simulation is complete.
+     */
+    void _finalize_debug_bem_output( );
+
+    // ---------------------------------------------------------------
     // HDF5 time-series output
     // ---------------------------------------------------------------
 

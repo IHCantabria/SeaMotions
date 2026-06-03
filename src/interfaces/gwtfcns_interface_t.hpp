@@ -63,6 +63,7 @@ protected:
 
 public:
     // Define public attributes
+    cusfloat    dG_dt[N];       // Green function first order time derivative
     cusfloat    dG_dtn[N];      // Green function first order time normal derivative
     cusfloat    dG_dtx[N];      // Green function first order time x derivative
     cusfloat    dG_dty[N];      // Green function first order time y derivative

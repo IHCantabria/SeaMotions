@@ -103,13 +103,13 @@ void        GWTFcnsInterfaceT<N>::operator()(
 
     for ( std::size_t i=0; i<N; i++ )
     {
-        this->_lt[i]  = 2.0 * std::sqrt( this->_grav_acc / this->_R[i] );
-        this->_lt2[i] = 2.0 * this->_grav_acc / this->_R2[i];
+        this->_lt[i]  = 2.0 * std::sqrt( this->_grav_acc / this->_R3[i] );   // 2*sqrt(g/R^3)
+        this->_lt2[i] = 2.0 * this->_grav_acc / this->_R2[i];                // 2*g/R^2 = d/dt( _lt * sqrt(g*R) )
     }
 
     for ( std::size_t i=0; i<N; i++ )
     {
-        this->_beta[i] = this->_lt[i] * this->_time_diff / 2.0;
+        this->_beta[i] = std::sqrt( this->_grav_acc / this->_R[i] ) * this->_time_diff;   // sqrt(g/R)*time_diff
         this->_mu[i]   = - this->_dZp[i] / this->_R[i];
     }
 
@@ -146,20 +146,22 @@ void        GWTFcnsInterfaceT<N>::operator()(
         if ( beta_i > BETA_ASYMP_THRESHOLD )
         {
             // Asymptotic expansion valid for β > 50 (divided by 2 to match database)
+            // this->_ftab    [i] = 1.0;
             this->_ftab    [i] = ASYMP_HALF * dGdt_asymptotic  ( this->_beta[i], this->_mu[i] );
-            // this->_ftab_dmu[i] = ASYMP_HALF * dGdtx_asymptotic ( this->_beta[i], this->_mu[i] );
-            // this->_ftab_dt [i] = ASYMP_HALF * dGdtt_asymptotic ( this->_beta[i], this->_mu[i] );
-            // this->_ftab_dtmu[i]= ASYMP_HALF * dGdttx_asymptotic( this->_beta[i], this->_mu[i] );
-            // this->_ftab_dtt[i] = ASYMP_HALF * dGdttt_asymptotic( this->_beta[i], this->_mu[i] );
+            this->_ftab_dmu[i] = ASYMP_HALF * dGdtx_asymptotic ( this->_beta[i], this->_mu[i] );
+            this->_ftab_dt [i] = ASYMP_HALF * dGdtt_asymptotic ( this->_beta[i], this->_mu[i] );
+            this->_ftab_dtmu[i]= ASYMP_HALF * dGdttx_asymptotic( this->_beta[i], this->_mu[i] );
+            this->_ftab_dtt[i] = ASYMP_HALF * dGdttt_asymptotic( this->_beta[i], this->_mu[i] );
         }
         else
         {
             // Tabulated bilinear interpolation for β ≤ 50
+            // this->_ftab    [i] = 1.0;
             this->_ftab    [i] = static_cast<cusfloat>( s_bilin_Gt  .eval( beta_i, log_mu ) );
-            // this->_ftab_dmu[i] = static_cast<cusfloat>( s_bilin_Gtx .eval( beta_i, log_mu ) );
-            // this->_ftab_dt [i] = static_cast<cusfloat>( s_bilin_Gtt .eval( beta_i, log_mu ) );
-            // this->_ftab_dtmu[i]= static_cast<cusfloat>( s_bilin_Gttx.eval( beta_i, log_mu ) );
-            // this->_ftab_dtt[i] = static_cast<cusfloat>( s_bilin_Gttt.eval( beta_i, log_mu ) );
+            this->_ftab_dmu[i] = static_cast<cusfloat>( s_bilin_Gtx .eval( beta_i, log_mu ) );
+            this->_ftab_dt [i] = static_cast<cusfloat>( s_bilin_Gtt .eval( beta_i, log_mu ) );
+            this->_ftab_dtmu[i]= static_cast<cusfloat>( s_bilin_Gttx.eval( beta_i, log_mu ) );
+            this->_ftab_dtt[i] = static_cast<cusfloat>( s_bilin_Gttt.eval( beta_i, log_mu ) );
         }
     }
     _timer_eval_dGdt += _Clock::now() - _t0;
@@ -170,17 +172,22 @@ void        GWTFcnsInterfaceT<N>::operator()(
     _t0 = _Clock::now();
 
     cusfloat a = 0.0;
-    cusfloat b = 0.0;
     cusfloat c = 0.0;
     for ( std::size_t i=0; i<N; i++ )
     {
         // Calculate first order time derivative
+        // dG_dt = lt * Gt
+        // d(dG_dt)/d(src_k) = a * dK * c   (k = x,y; for k=z an extra term appears)
+        // where:
+        //   a = -lt / R^2
+        //   c = 0.5*Gt + 0.5*beta*Gtt - Gtx*dZp/R   (= 0.5*Gt + 0.5*beta*Gtt + mu*Gtx)
+        //   extra z-term: -lt * Gtx / R  (from d(mu)/d(sz) = -1/R - mu*dZ/R^2)
         a                   = - this->_lt[i] / this->_R2[i];
-        b                   = -1.5 * this->_ftab[i];
-        c                   = - 0.5 * this->_beta[i] * this->_ftab_dt[i] + this->_ftab_dmu[i] * this->_dZp[i] / this->_R[i];
-        this->dG_dtx[i]     = a * ( b + this->_dX[i] * c );
-        this->dG_dty[i]     = a * ( b + this->_dY[i] * c );
-        this->dG_dtz[i]     = a * ( b + this->_dZ[i] * c ) + this->_lt[i] * this->_ftab_dmu[i] / this->_R[i];
+        c                   = 1.5 * this->_ftab[i] + 0.5 * this->_beta[i] * this->_ftab_dt[i] - this->_ftab_dmu[i] * this->_dZp[i] / this->_R[i];
+        this->dG_dt[i]      = this->_lt[i] * this->_ftab[i];
+        this->dG_dtx[i]     = a * this->_dX[i] * c;
+        this->dG_dty[i]     = a * this->_dY[i] * c;
+        this->dG_dtz[i]     = a * this->_dZ[i] * c - this->_lt[i] * this->_ftab_dmu[i] / this->_R[i];
 
         // Calculate second order time derivative
         a                   = - this->_lt2[i] * ( 
@@ -198,29 +205,97 @@ void        GWTFcnsInterfaceT<N>::operator()(
     _timer_derivatives += _Clock::now() - _t0;
 
     // ----------------------------------------------------------------
+    // Verbose check – numerical (central-difference) verification of
+    // dG_dtx / dG_dty / dG_dtz against finite differences of dG_dt
+    // with respect to the source position.
+    // ----------------------------------------------------------------
+    if ( false /*verbose*/ )
+    {
+        // Recompute dG_dt at a perturbed source position.
+        // s_bilin_Gt, BETA_ASYMP_THRESHOLD and ASYMP_HALF are still in scope.
+        auto compute_dGdt_at = [&]( cusfloat sx, cusfloat sy, cusfloat sz,
+                                    std::size_t k ) -> cusfloat
+        {
+            const cusfloat ddX  = sx - xi[k];
+            const cusfloat ddY  = sy - eta[k];
+            const cusfloat ddZ  = sz - zeta[k];
+            const cusfloat ddZp = sz + zeta[k];
+            cusfloat r2 = ddX*ddX + ddY*ddY + ddZ*ddZ;
+            r2 = std::max( r2, cusfloat(1e-12) );
+            const cusfloat r    = std::sqrt( r2 );
+            const cusfloat lt   = cusfloat(2) * std::sqrt( this->_grav_acc / r );
+            const cusfloat beta = lt * this->_time_diff / cusfloat(2);
+            const cusfloat mu_  = -ddZp / r;
+            const double   lm   = std::log10( static_cast<double>( mu_ ) );
+            const double   bd   = static_cast<double>( beta );
+            cusfloat ftab;
+            if ( bd > BETA_ASYMP_THRESHOLD )
+                ftab = ASYMP_HALF * dGdt_asymptotic( beta, mu_ );
+            else
+                ftab = static_cast<cusfloat>( s_bilin_Gt.eval( bd, lm ) );
+            return lt * ftab;
+        };
+
+        std::printf( "\n--- dG_dt Cartesian derivative check (central differences on source position) ---\n" );
+        std::printf( "  %4s  %13s  %13s  %10s  %13s  %13s  %10s  %13s  %13s  %10s\n",
+                     "i",
+                     "dG_dtx_an", "dG_dtx_fd", "err_x",
+                     "dG_dty_an", "dG_dty_fd", "err_y",
+                     "dG_dtz_an", "dG_dtz_fd", "err_z" );
+
+        for ( std::size_t i = 0; i < N; i++ )
+        {
+            const cusfloat h = std::max( cusfloat(1e-6) * this->_R[i], cusfloat(1e-8) );
+
+            const cusfloat fd_x = ( compute_dGdt_at( source_x + h, source_y,     source_z,     i )
+                                  - compute_dGdt_at( source_x - h, source_y,     source_z,     i ) )
+                                / ( cusfloat(2) * h );
+            const cusfloat fd_y = ( compute_dGdt_at( source_x,     source_y + h, source_z,     i )
+                                  - compute_dGdt_at( source_x,     source_y - h, source_z,     i ) )
+                                / ( cusfloat(2) * h );
+            const cusfloat fd_z = ( compute_dGdt_at( source_x,     source_y,     source_z + h, i )
+                                  - compute_dGdt_at( source_x,     source_y,     source_z - h, i ) )
+                                / ( cusfloat(2) * h );
+
+            std::printf( "  %4zu  %13.5e  %13.5e  %10.3e  %13.5e  %13.5e  %10.3e  %13.5e  %13.5e  %10.3e\n",
+                         i,
+                         static_cast<double>( this->dG_dtx[i] ),
+                         static_cast<double>( fd_x ),
+                         std::abs( static_cast<double>( this->dG_dtx[i] - fd_x ) ),
+                         static_cast<double>( this->dG_dty[i] ),
+                         static_cast<double>( fd_y ),
+                         std::abs( static_cast<double>( this->dG_dty[i] - fd_y ) ),
+                         static_cast<double>( this->dG_dtz[i] ),
+                         static_cast<double>( fd_z ),
+                         std::abs( static_cast<double>( this->dG_dtz[i] - fd_z ) ) );
+        }
+        std::printf( "----------------------------------------------------------------------------------\n\n" );
+    }
+
+    // ----------------------------------------------------------------
     // Section 5 – Normal derivatives
     // ----------------------------------------------------------------
     _t0 = _Clock::now();
 
-    cusfloat nx_pf = this->_source_i->normal_vec[0];
-    cusfloat ny_pf = this->_source_i->normal_vec[1];
-    cusfloat nz_pf = this->_source_i->normal_vec[2];
+    cusfloat nx_pf = this->_source_j->normal_vec[0];
+    cusfloat ny_pf = this->_source_j->normal_vec[1];
+    cusfloat nz_pf = this->_source_j->normal_vec[2];
 
     for ( std::size_t i=0; i<N; i++ )
     {
         this->dG_dtn[i] = (
-                            - 
+                            + 
                             this->dG_dtx[i] * nx_pf
-                            -
+                            +
                             this->dG_dty[i] * ny_pf
                             +
                             this->dG_dtz[i] * nz_pf
                         );
 
         this->dG_dttn[i] = (
-                            - 
+                            + 
                             this->dG_dttx[i] * nx_pf
-                            -
+                            +
                             this->dG_dtty[i] * ny_pf
                             +
                             this->dG_dttz[i] * nz_pf

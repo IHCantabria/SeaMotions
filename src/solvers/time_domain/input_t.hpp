@@ -41,8 +41,11 @@
  *   100.0           SimTime        - Total simulation time [s]
  *   0.01            Dt             - Time step
  *   true            UseDuhamel     - Enable Duhamel (radiation memory) integral
+ *   false           UseGkDuhamel   - Use GK + sigma interpolation (true) or trapezoidal sum (false)
+ *   10              GkNSeg         - Number of composite GK segments to divide HistTime into (>=1)
  *   10.0            RampTime       - Force ramp-up duration [s] (0 = disabled)
  *   0.0             HistTime       - Duhamel history window [s] (0 = full sim_time)
+ *   100             OutFlushNIter  - Close+reopen the time-series HDF5 file every N output steps to force OS-level commit (0 = disabled)
  *   ------- Body Definition -------
  *   s11.bd.dat      BodyFN         - body file name(s)
  *   ------- Field Points ----------
@@ -73,6 +76,8 @@ public:
     cusfloat                    sim_time            = 100.0;
     cusfloat                    dt                  = 0.01;
     bool                        use_duhamel         = true;    // enable radiation memory (Duhamel) integral
+    bool                        use_gk_duhamel      = false;   // use GK + sigma interpolation instead of trapezoidal sum
+    int                         gk_n_seg            = 10;      // number of composite GK macro-intervals over the full Duhamel history
     cusfloat                    wave_heading        = 0.0;     // heading in degrees
 
     // Body definitions
@@ -103,6 +108,7 @@ public:
     cusfloat                    ang_freq            = 0.0;     // angular frequency [rad/s] derived from wave_period
     cusfloat                    ramp_time           = 0.0;     // force ramp-up duration [s] (0 = disabled)
     cusfloat                    duhamel_hist_time   = 0.0;     // Duhamel history window [s] (0 = full sim_time)
+    int                         output_flush_niter  = 100;     // Close+reopen the time-series HDF5 file every N steps (0 = disabled)
 
     // Paths
     std::string                 case_fopath         = "";

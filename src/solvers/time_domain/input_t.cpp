@@ -473,6 +473,16 @@ void InputT::read_case( const std::string& folder_path )
     read_signal     = read_channel_value( infile, this->use_duhamel );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
+    // Read Duhamel integration scheme: GK + sigma interpolation (true) vs trapezoidal (false)
+    target_signal   = "UseGkDuhamel";
+    read_signal     = read_channel_value( infile, this->use_gk_duhamel );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read number of composite GK macro-intervals over the full Duhamel history
+    target_signal   = "GkNSeg";
+    read_signal     = read_channel_value( infile, this->gk_n_seg );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
     // Read force ramp-up duration (0 = disabled)
     target_signal   = "RampTime";
     read_signal     = read_channel_value( infile, this->ramp_time );
@@ -481,6 +491,14 @@ void InputT::read_case( const std::string& folder_path )
     // Read Duhamel history window (0 = retain full simulation history)
     target_signal   = "HistTime";
     read_signal     = read_channel_value( infile, this->duhamel_hist_time );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    // Read output-flush cadence (steps; 0 = disabled). Triggers a periodic
+    // close+reopen of the time-series HDF5 file to force OS-level commit so
+    // partial results survive crashes and are readable by external tools
+    // while the solver is still running.
+    target_signal   = "OutFlushNIter";
+    read_signal     = read_channel_value( infile, this->output_flush_niter );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
     //////////////////////////////////////////////

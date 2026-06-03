@@ -902,6 +902,44 @@ void TimeSolver<N, NGPT>::_finalize_paraview_output( )
 
 
 /*****************************************************************************
+ * Debug BEM VTU/PVD output helpers
+ *****************************************************************************/
+
+template<std::size_t N, int NGPT>
+void TimeSolver<N, NGPT>::_init_debug_bem_output( )
+{
+    namespace fs = std::filesystem;
+
+    const fs::path results_dir   = fs::path( this->_input->folder_path )
+                                   / fs::path( RESULTS_FOLDER_NAME );
+    const fs::path debug_bem_dir = results_dir / fs::path( RESULTS_DEBUG_BEM_FOLDER_NAME );
+
+    if ( !fs::exists( results_dir   ) ) { fs::create_directory( results_dir   ); }
+    if ( !fs::exists( debug_bem_dir ) ) { fs::create_directory( debug_bem_dir ); }
+
+    this->_debug_bem_dir = debug_bem_dir.string( );
+    this->_debug_bem_pvd_entries.clear( );
+
+    std::cout << " -> Debug BEM output: " << this->_debug_bem_dir << std::endl;
+}
+
+
+template<std::size_t N, int NGPT>
+void TimeSolver<N, NGPT>::_finalize_debug_bem_output( )
+{
+    if ( this->_debug_bem_pvd_entries.empty( ) ) { return; }
+
+    namespace fs = std::filesystem;
+
+    const std::string pvd_path = ( fs::path( this->_debug_bem_dir ) / "debug_bem.pvd" ).string( );
+    if ( write_pvd( pvd_path, this->_debug_bem_pvd_entries ) )
+    {
+        std::cout << " -> Debug BEM PVD written: " << pvd_path << std::endl;
+    }
+}
+
+
+/*****************************************************************************
  * HDF5 time-series output helpers
  *****************************************************************************/
 
@@ -1081,13 +1119,17 @@ void TimeSolver<N, NGPT>::_output_step( cusfloat t, int step )
                                 types.data( ),
                                 this->_panel_pressure.data( ),
                                 this->_panel_phi_dt_comp.data( ),
+                                this->_panel_phi_dt_rad_comp.data( ),
+                                this->_panel_phi_dt_wave_comp.data( ),
                                 this->_panel_kinetic_comp.data( ),
-                                this->_panel_hydrostatic_comp.data( )
+                                this->_panel_hydrostatic_comp.data( ),
+                                this->_kernel->get_sigma( )
                             );
 
-    // Record entry for PVD (relative path from the paraview dir's parent = results dir)
-    const std::string pvd_rel = ( fs::path( RESULTS_PARAVIEW_FOLDER_NAME ) / vtu_name ).string( );
-    this->_pvd_entries.emplace_back( static_cast<double>( t ), pvd_rel );
+    // PVD entries are resolved relative to the PVD file's directory. The PVD
+    // lives next to the VTU files inside the paraview dir, so the entry is
+    // just the basename.
+    this->_pvd_entries.emplace_back( static_cast<double>( t ), vtu_name );
 
     // ---- HDF5 time-series append ----
     if ( this->_hdf5_exporter != nullptr && this->_hdf5_exporter->is_open( ) )
@@ -1198,6 +1240,10 @@ void TimeSolver<N, NGPT>::run( )
     // Prepare HDF5 time-series file (no-op when out_pressure is false or HDF5 absent)
     this->_init_hdf5_output( );
 
+    // Prepare debug-BEM output directory (always on; the per-step VTU dump below
+    // is unconditional, so its target folder must always exist).
+    this->_init_debug_bem_output( );
+
     if constexpr ( GA_DEBUG_ON )
         this->_init_ga_debug_csv( );
 
@@ -1257,11 +1303,19 @@ void TimeSolver<N, NGPT>::run( )
         std::cout << "[DBG] step=" << step << "  (4) compute_potential_derivatives\n" << std::flush;
         this->_kernel->compute_potential_derivatives( );
 
-        // Debug: export RHS and sigma (source) fields to VTU for ParaView
+        // Debug: export RHS and sigma (source) fields to VTU for ParaView,
+        // and record an entry for the aggregating PVD file written at run end.
         {
             std::ostringstream oss;
             oss << "debug_bem_step_" << std::setw(6) << std::setfill('0') << step << ".vtu";
-            this->_kernel->export_vtu( oss.str( ) );
+            const std::string vtu_name = oss.str( );
+
+            namespace fs = std::filesystem;
+            const std::string vtu_path = ( fs::path( this->_debug_bem_dir ) / vtu_name ).string( );
+            this->_kernel->export_vtu( vtu_path );
+
+            // PVD entries are basenames (resolved relative to the PVD's own dir).
+            this->_debug_bem_pvd_entries.emplace_back( static_cast<double>( t ), vtu_name );
         }
 
         // -----------------------------------------------------------------
@@ -1321,6 +1375,21 @@ void TimeSolver<N, NGPT>::run( )
         this->_output_step( t, step );
 
         // -----------------------------------------------------------------
+        // 7b. Periodic HDF5 close+reopen to force OS-level commit.
+        //     H5Fflush alone is not enough on some platforms (notably
+        //     Windows, where the file size visible to other processes
+        //     does not update for open handles).  Cadence is controlled
+        //     by the OutputFlushNIter input field; 0 disables it.
+        // -----------------------------------------------------------------
+        if ( this->_input->output_flush_niter > 0
+             && this->_hdf5_exporter != nullptr
+             && this->_hdf5_exporter->is_open( )
+             && ( ( step + 1 ) % this->_input->output_flush_niter ) == 0 )
+        {
+            this->_hdf5_exporter->reopen( );
+        }
+
+        // -----------------------------------------------------------------
         // 8. Console progress report
         // -----------------------------------------------------------------
         if ( step == 0 || ( step + 1 ) % print_interval == 0 || step == n_steps - 1 )
@@ -1353,6 +1422,9 @@ void TimeSolver<N, NGPT>::run( )
 
     // Flush and close the HDF5 time-series file (no-op when out_pressure is false or HDF5 absent)
     this->_finalize_hdf5_output( );
+
+    // Write the debug-BEM PVD collection file (no-op when no steps were recorded)
+    this->_finalize_debug_bem_output( );
 
     if constexpr ( GA_DEBUG_ON )
         this->_finalize_ga_debug_csv( );

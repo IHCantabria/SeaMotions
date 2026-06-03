@@ -20,6 +20,7 @@
 
 // Include general usage libraries
 #include <chrono>
+#include <cmath>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -412,73 +413,18 @@ void FormulationKernelBackendT<N, NGPT>::build_rhs(
     // -----------------------------------------------------------------------
     if ( this->_input->use_duhamel )
     {
-        std::cout << "  [DBG build_rhs] Duhamel loop start\n" << std::flush;
+        std::cout << "  [DBG build_rhs] Duhamel loop start ("
+                  << ( this->_input->use_gk_duhamel ? "GK+sigma-interp" : "trapezoidal" )
+                  << ")\n" << std::flush;
         const auto _t_duhamel_start = std::chrono::high_resolution_clock::now();
-        for ( int k=0; k<n_hist; k++ )
+
+        if ( this->_input->use_gk_duhamel )
         {
-            const cusfloat t_lag_end   = t_current - static_cast<cusfloat>( k     ) * dt;
-            const cusfloat t_lag_start = t_current - static_cast<cusfloat>( k + 1 ) * dt;
-
-            if ( t_lag_end <= t_lag_start ) { continue; }
-
-            const std::vector<cusfloat>& sigma_k = sigma_hist[k];
-
-            // Outer: local source panels (columns)
-            for ( int src=this->_solver->start_col_0; src<this->_solver->end_col_0; src++ )
-            {
-                SourceNode* source_src = this->_mesh_gp->source_nodes[src];
-
-                // Inner: all observation rows
-                for ( int obs=0; obs<np; obs++ )
-                {
-                    SourceNode* source_obs = this->_mesh_gp->source_nodes[obs];
-
-                    // Set up time-domain Green's function integrator:
-                    //   source_i = integration panel (src)
-                    //   source_j = position source   (obs)
-                    this->_gwtfcns_interf.set_source_i( source_src, static_cast<cusfloat>( 1.0 ) );
-                    this->_gwtfcns_interf.set_source_j( source_obs );
-
-                    cusfloat dtn_val   = 0.0;
-                    cusfloat dtx_val   = 0.0;
-                    cusfloat dty_val   = 0.0;
-                    cusfloat dtz_val   = 0.0;
-                    cusfloat dtt_val   = 0.0;
-                    cusfloat dttn_val  = 0.0;
-                    cusfloat dttx_val  = 0.0;
-                    cusfloat dtty_val  = 0.0;
-                    cusfloat dttz_val  = 0.0;
-
-                    quadrature_panel_time_t<PanelGeom, GWTFcnsInterfaceT<N*N>, N, NGPT>(
-                                                                                            source_src->panel,
-                                                                                            this->_gwtfcns_interf,
-                                                                                            t_lag_start,
-                                                                                            t_lag_end,
-                                                                                            dtn_val,
-                                                                                            dtx_val,
-                                                                                            dty_val,
-                                                                                            dtz_val,
-                                                                                            dtt_val,
-                                                                                            dttn_val,
-                                                                                            dttx_val,
-                                                                                            dtty_val,
-                                                                                            dttz_val,
-                                                                                            false
-                                                                                        );
-
-                    // Accumulate Duhamel contribution (partial sum for local columns)
-                    // phi_rad arrays collect the radiation (memory-kernel) part only.
-                    const cusfloat duhamel_rhs_contrib = sigma_k[src] * dtn_val  / static_cast<cusfloat>( 4.0 * PI );
-                    // const cusfloat duhamel_rhs_contrib = dtn_val  / static_cast<cusfloat>( 4.0 * PI );
-                    this->_rhs[obs]            -= duhamel_rhs_contrib;
-                    this->_rhs_duhamel[obs]    -= duhamel_rhs_contrib;
-                    this->_rhs_dt[obs]         -= sigma_k[src] * dttn_val / static_cast<cusfloat>( 4.0 * PI );
-                    this->_phi_dt_rad[obs] -= sigma_k[src] * dtt_val / static_cast<cusfloat>( 4.0 * PI );
-                    this->_phi_dx_rad[obs] -= sigma_k[src] * dtx_val / static_cast<cusfloat>( 4.0 * PI );
-                    this->_phi_dy_rad[obs] -= sigma_k[src] * dty_val / static_cast<cusfloat>( 4.0 * PI );
-                    this->_phi_dz_rad[obs] -= sigma_k[src] * dtz_val / static_cast<cusfloat>( 4.0 * PI );
-                }
-            }
+            this->_accumulate_duhamel_gk_sigma( sigma_hist, t_current, dt );
+        }
+        else
+        {
+            this->_accumulate_duhamel_trapezoidal( sigma_hist, t_current, dt );
         }
 
         const double _t_duhamel_s = std::chrono::duration<double>(
@@ -560,6 +506,189 @@ void FormulationKernelBackendT<N, NGPT>::build_rhs(
     } // end if ( use_duhamel )
 
     std::cout << "  [DBG build_rhs] done\n" << std::flush;
+}
+
+
+// =============================================================================
+// Duhamel accumulator — trapezoidal (history-step constant-sigma) rule
+// =============================================================================
+
+template<std::size_t N, int NGPT>
+void FormulationKernelBackendT<N, NGPT>::_accumulate_duhamel_trapezoidal(
+                                                                            const CircularBuffer<std::vector<cusfloat>>&  sigma_hist,
+                                                                            cusfloat                                      t_current,
+                                                                            cusfloat                                      dt
+                                                                         )
+{
+    const int np     = this->_n_panels;
+    const int n_hist = static_cast<int>( sigma_hist.size( ) );
+
+    for ( int k=0; k<n_hist; k++ )
+    {
+        // Integrate the kernel in the LAG variable s = t_current - tau.
+        // Segment k corresponds to lag in [k*dt, (k+1)*dt] (k=0 is most recent).
+        // set_time_diff() receives the lag, which is what the free-surface
+        // kernel expects (beta = sqrt(g/R) * lag).
+        const cusfloat t_lag_start = static_cast<cusfloat>( k     ) * dt;
+        const cusfloat t_lag_end   = static_cast<cusfloat>( k + 1 ) * dt;
+
+        if ( t_lag_end <= t_lag_start ) { continue; }
+
+        const std::vector<cusfloat>& sigma_k = sigma_hist[k];
+
+        // Outer loop: local source panels (columns owned by this MPI process)
+        for ( int src=this->_solver->start_col_0; src<this->_solver->end_col_0; src++ )
+        {
+            SourceNode* source_src = this->_mesh_gp->source_nodes[src];
+            const cusfloat sigma_src = sigma_k[src];   // constant over [t_lag_start, t_lag_end]
+
+            // Inner loop: all observation / collocation rows
+            for ( int obs=0; obs<np; obs++ )
+            {
+                SourceNode* source_obs = this->_mesh_gp->source_nodes[obs];
+
+                this->_gwtfcns_interf.set_source_i( source_src, static_cast<cusfloat>( 1.0 ) );
+                this->_gwtfcns_interf.set_source_j( source_obs );
+
+                cusfloat dtn_val  = 0.0;
+                cusfloat dtx_val  = 0.0;
+                cusfloat dty_val  = 0.0;
+                cusfloat dtz_val  = 0.0;
+                cusfloat dtt_val  = 0.0;
+                cusfloat dttn_val = 0.0;
+                cusfloat dttx_val = 0.0;
+                cusfloat dtty_val = 0.0;
+                cusfloat dttz_val = 0.0;
+
+                quadrature_panel_time_t<PanelGeom, GWTFcnsInterfaceT<N*N>, N, NGPT>(
+                                                                                        source_src->panel,
+                                                                                        this->_gwtfcns_interf,
+                                                                                        t_lag_start,
+                                                                                        t_lag_end,
+                                                                                        dtn_val,
+                                                                                        dtx_val,
+                                                                                        dty_val,
+                                                                                        dtz_val,
+                                                                                        dtt_val,
+                                                                                        dttn_val,
+                                                                                        dttx_val,
+                                                                                        dtty_val,
+                                                                                        dttz_val,
+                                                                                        false
+                                                                                    );
+
+                const cusfloat inv4pi = static_cast<cusfloat>( 1.0 / ( 4.0 * PI ) );
+                const cusfloat contrib_rhs = sigma_src * dtn_val * inv4pi;
+                this->_rhs[obs]         += contrib_rhs;
+                this->_rhs_duhamel[obs] += contrib_rhs;
+                this->_rhs_dt[obs]      += sigma_src * dttn_val * inv4pi;
+                this->_phi_dt_rad[obs]  += sigma_src * dtt_val  * inv4pi;
+                this->_phi_dx_rad[obs]  += sigma_src * dtx_val  * inv4pi;
+                this->_phi_dy_rad[obs]  += sigma_src * dty_val  * inv4pi;
+                this->_phi_dz_rad[obs]  += sigma_src * dtz_val  * inv4pi;
+            }
+        }
+    }
+}
+
+
+// =============================================================================
+// Duhamel accumulator — GK + piecewise-linear sigma interpolation
+// =============================================================================
+
+template<std::size_t N, int NGPT>
+void FormulationKernelBackendT<N, NGPT>::_accumulate_duhamel_gk_sigma(
+                                                                          const CircularBuffer<std::vector<cusfloat>>&  sigma_hist,
+                                                                          cusfloat                                      t_current,
+                                                                          cusfloat                                      dt
+                                                                       )
+{
+    const int np     = this->_n_panels;
+    const int n_hist = static_cast<int>( sigma_hist.size( ) );
+    const int n_seg  = std::max( 1, this->_input->gk_n_seg );  // composite GK macro-intervals
+
+    if ( n_hist == 0 ) { return; }
+
+    // Divide the full Duhamel history window into n_seg equal macro-intervals.
+    // Each macro-interval [t_seg_start, t_seg_end] is integrated with a single
+    // G7K15 Gauss-Kronrod call (15 points).  sigma(t) at any quadrature point
+    // is obtained by piecewise-linear interpolation from the discrete history.
+    const cusfloat T_hist = static_cast<cusfloat>( n_hist ) * dt;   // total history span [s]
+    const cusfloat T_seg  = T_hist / static_cast<cusfloat>( n_seg ); // macro-interval width [s]
+
+    for ( int seg = 0; seg < n_seg; seg++ )
+    {
+        // Integrate the kernel in the LAG variable s = t_current - tau.
+        // Segment seg covers lag in [seg*T_seg, (seg+1)*T_seg] (seg=0 is most recent).
+        // set_time_diff() receives the lag inside the quadrature, matching the
+        // kernel convention (beta = sqrt(g/R) * lag).
+        const cusfloat t_seg_start = static_cast<cusfloat>( seg     ) * T_seg;
+        const cusfloat t_seg_end   = static_cast<cusfloat>( seg + 1 ) * T_seg;
+
+        if ( t_seg_end <= t_seg_start ) { continue; }
+
+        for ( int src = this->_solver->start_col_0; src < this->_solver->end_col_0; src++ )
+        {
+            SourceNode* source_src = this->_mesh_gp->source_nodes[src];
+
+            // sigma at lag s: piecewise-linear interpolation from the discrete history.
+            //   k_exact = s / dt              (fractional history index)
+            //   sigma_hist[k_lo] is sigma at t_current - k_lo*dt  (newer side)
+            //   sigma_hist[k_hi] is sigma at t_current - k_hi*dt  (older side)
+            const auto sigma_at = [&sigma_hist, n_hist, dt, src]( cusfloat t_lag ) -> cusfloat
+            {
+                const cusfloat k_real = t_lag / dt;
+                const int      k_lo   = static_cast<int>( std::floor( k_real ) );
+                const cusfloat alpha  = k_real - static_cast<cusfloat>( k_lo );
+                const int      k_lo_c = std::max( 0, std::min( k_lo,     n_hist - 1 ) );
+                const int      k_hi_c = std::max( 0, std::min( k_lo + 1, n_hist - 1 ) );
+                return ( static_cast<cusfloat>( 1.0 ) - alpha ) * sigma_hist[k_lo_c][src]
+                     +   alpha                                  * sigma_hist[k_hi_c][src];
+            };
+
+            for ( int obs = 0; obs < np; obs++ )
+            {
+                SourceNode* source_obs = this->_mesh_gp->source_nodes[obs];
+
+                this->_gwtfcns_interf.set_source_i( source_src, static_cast<cusfloat>( 1.0 ) );
+                this->_gwtfcns_interf.set_source_j( source_obs );
+
+                cusfloat dtn_val  = 0.0, dtx_val  = 0.0, dty_val  = 0.0, dtz_val  = 0.0;
+                cusfloat dtt_val  = 0.0, dttn_val = 0.0, dttx_val = 0.0;
+                cusfloat dtty_val = 0.0, dttz_val = 0.0;
+
+                // sigma already folded into the quadrature weights;
+                // outputs = ∫ sigma(t) · G_kernel(t) dt  over [t_seg_start, t_seg_end].
+                quadrature_panel_time_t_sigma_gl<PanelGeom, GWTFcnsInterfaceT<N*N>, N, 15>(
+                                                                                              source_src->panel,
+                                                                                              this->_gwtfcns_interf,
+                                                                                              t_seg_start,
+                                                                                              t_seg_end,
+                                                                                              sigma_at,
+                                                                                              dtn_val,
+                                                                                              dtx_val,
+                                                                                              dty_val,
+                                                                                              dtz_val,
+                                                                                              dtt_val,
+                                                                                              dttn_val,
+                                                                                              dttx_val,
+                                                                                              dtty_val,
+                                                                                              dttz_val,
+                                                                                              false
+                                                                                           );
+
+                const cusfloat inv4pi      = static_cast<cusfloat>( 1.0 / ( 4.0 * PI ) );
+                const cusfloat contrib_rhs = dtn_val * inv4pi;
+                this->_rhs[obs]         += contrib_rhs;
+                this->_rhs_duhamel[obs] += contrib_rhs;
+                this->_rhs_dt[obs]      += dttn_val * inv4pi;
+                this->_phi_dt_rad[obs]  += dtt_val  * inv4pi;
+                this->_phi_dx_rad[obs]  += dtx_val  * inv4pi;
+                this->_phi_dy_rad[obs]  += dty_val  * inv4pi;
+                this->_phi_dz_rad[obs]  += dtz_val  * inv4pi;
+            }
+        }
+    }
 }
 
 
@@ -706,9 +835,10 @@ void FormulationKernelBackendT<N, NGPT>::compute_potential_derivatives( )
         std::cout << "  [DBG cpd] steady Green loop start\n" << std::flush;
         for ( int i=this->_solver->start_col_0; i<this->_solver->end_col_0; i++ )
         {
-            PanelGeom* panel_i_s   = this->_mesh_gp->panels[i];
-            PanelGeom* panel_mir_i = this->_mesh_gp->panels_mirror[i];
-            const cusfloat sigma_i = this->_sigma[i];
+            PanelGeom* panel_i_s        = this->_mesh_gp->panels[i];
+            PanelGeom* panel_mir_i      = this->_mesh_gp->panels_mirror[i];
+            const cusfloat sigma_i      = this->_sigma[i];
+            const cusfloat sigma_i_dt   = this->_sigma_dt[i];
 
             // Inner loop: all collocation rows
             for ( int j=0; j<np; j++ )
@@ -717,6 +847,7 @@ void FormulationKernelBackendT<N, NGPT>::compute_potential_derivatives( )
                 clear_vector( ndim, vel_1 );
                 clear_vector( ndim, vel_sf );
                 pot_0 = 0.0;  pot_1 = 0.0;
+                PanelGeom* panel_j_s   = this->_mesh_gp->panels[j];
 
                 // r0: direct Rankine source evaluated at collocation point j
                 calculate_source_newman( panel_i_s, &(this->_steady_field_points[3*j]), 0, 0, vel_0, pot_0 );
@@ -736,19 +867,19 @@ void FormulationKernelBackendT<N, NGPT>::compute_potential_derivatives( )
                 {
                     // Diagonal: free-surface solid-angle condition
                     const cusfloat half = static_cast<cusfloat>( 0.5 );
-                    this->_acc_phi_dx[j] += sigma_i * half * panel_i_s->normal_vec[0];
-                    this->_acc_phi_dy[j] += sigma_i * half * panel_i_s->normal_vec[1];
-                    this->_acc_phi_dz[j] += sigma_i * half * panel_i_s->normal_vec[2];
+                    this->_acc_phi_dx[j] += sigma_i * half * panel_j_s->normal_vec[0];
+                    this->_acc_phi_dy[j] += sigma_i * half * panel_j_s->normal_vec[1];
+                    this->_acc_phi_dz[j] += sigma_i * half * panel_j_s->normal_vec[2];
                     // pot_total is singular on the diagonal: no phi_dt contribution
                 }
                 else
                 {
                     const cusfloat inv4pi = static_cast<cusfloat>( 1.0 )
                                          / static_cast<cusfloat>( 4.0 * PI );
-                    this->_acc_phi_dx[j] += sigma_i * vel_sf[0] * inv4pi;
-                    this->_acc_phi_dy[j] += sigma_i * vel_sf[1] * inv4pi;
-                    this->_acc_phi_dz[j] += sigma_i * vel_sf[2] * inv4pi;
-                    this->_acc_phi_dt[j] += sigma_i * ( pot_0 - pot_1 ) * inv4pi;
+                    this->_acc_phi_dx[j] += sigma_i    * vel_sf[0] * inv4pi;
+                    this->_acc_phi_dy[j] += sigma_i    * vel_sf[1] * inv4pi;
+                    this->_acc_phi_dz[j] += sigma_i    * vel_sf[2] * inv4pi;
+                    this->_acc_phi_dt[j] += sigma_i_dt * ( pot_0 - pot_1 ) * inv4pi;
                 }
             }
         }
