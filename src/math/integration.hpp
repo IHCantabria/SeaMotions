@@ -26,6 +26,7 @@
 #include "../config.hpp"
 #include "../containers/panel_geom.hpp"
 #include "../math/gauss.hpp"
+#include "../math/gauss_kronrod_t.hpp"
 
 // Generate alias for long type definitions in oder to clarify
 // the function declaration
@@ -169,6 +170,46 @@ template<
                                                                                         bool                verbose=false
                                                                         );
 
+/**
+ * @brief Like quadrature_panel_time_t but weights the spatial integral at each
+ *        time quadrature point by sigma_at(t_q).
+ *
+ * The returned results already include the sigma(t) weighting, i.e.:
+ *   result_G_dtn = ∫_{t0}^{t1} sigma(t) · [∫_panel dG/dn dA] dt
+ *
+ * This enables higher-order Duhamel integration when sigma varies within a
+ * time sub-interval: pass a linear interpolator of sigma_hist as sigma_at.
+ *
+ * @tparam T        Panel geometry type.
+ * @tparam U        Green's function interface type.
+ * @tparam NGP      Number of spatial Gauss points per edge.
+ * @tparam NGPT     Number of temporal Gauss points.
+ * @tparam SigmaFcn Callable with signature cusfloat(cusfloat t_abs).
+ */
+template<
+            typename T,
+            typename U,
+            int NGP,
+            int NGPT,
+            typename SigmaFcn
+        >                                   void        quadrature_panel_time_t_sigma(
+                                                                                        T*                  panel,
+                                                                                        U&                  target_fcn,
+                                                                                        cusfloat            t0,
+                                                                                        cusfloat            t1,
+                                                                                        SigmaFcn            sigma_at,
+                                                                                        cusfloat&           result_G_dtn,
+                                                                                        cusfloat&           result_G_dtx,
+                                                                                        cusfloat&           result_G_dty,
+                                                                                        cusfloat&           result_G_dtz,
+                                                                                        cusfloat&           result_G_dtt,
+                                                                                        cusfloat&           result_G_dttn,
+                                                                                        cusfloat&           result_G_dttx,
+                                                                                        cusfloat&           result_G_dtty,
+                                                                                        cusfloat&           result_G_dttz,
+                                                                                        bool                verbose=false
+                                                                        );
+
 template<
             typename Functor
         >                                   cusfloat    romberg_quadrature(   
@@ -177,6 +218,74 @@ template<
                                                                                         cusfloat        b, 
                                                                                         cusfloat        precision
                                                                             );
+
+/**
+ * @brief Like quadrature_panel_time_t but uses a Gauss-Kronrod rule for the
+ *        time integration instead of standard Gauss-Legendre.
+ *
+ * @tparam T     Panel geometry type.
+ * @tparam U     Green's function interface type.
+ * @tparam NGP   Number of spatial Gauss points per edge.
+ * @tparam NGKPT Total number of Kronrod points (7, 15, or 21).
+ */
+template<
+            typename T,
+            typename U,
+            int NGP,
+            int NGKPT
+        >                                   void        quadrature_panel_time_t_gk(
+                                                                                        T*                  panel,
+                                                                                        U&                  target_fcn,
+                                                                                        cusfloat            t0,
+                                                                                        cusfloat            t1,
+                                                                                        cusfloat&           result_G_dtn,
+                                                                                        cusfloat&           result_G_dtx,
+                                                                                        cusfloat&           result_G_dty,
+                                                                                        cusfloat&           result_G_dtz,
+                                                                                        cusfloat&           result_G_dtt,
+                                                                                        cusfloat&           result_G_dttn,
+                                                                                        cusfloat&           result_G_dttx,
+                                                                                        cusfloat&           result_G_dtty,
+                                                                                        cusfloat&           result_G_dttz,
+                                                                                        bool                verbose=false
+                                                                        );
+
+/**
+ * @brief Like quadrature_panel_time_t_sigma but uses a Gauss-Kronrod rule for
+ *        the time integration and weights each Kronrod point by sigma_at(t_k).
+ *
+ * The returned results already include the sigma(t) weighting:
+ *   result_G_dtn = ∫_{t0}^{t1} sigma(t) · [∫_panel dG/dn dA] dt
+ *
+ * @tparam T        Panel geometry type.
+ * @tparam U        Green's function interface type.
+ * @tparam NGP      Number of spatial Gauss points per edge.
+ * @tparam NGKPT    Total number of Kronrod points (7, 15, or 21).
+ * @tparam SigmaFcn Callable with signature cusfloat(cusfloat t_abs).
+ */
+template<
+            typename T,
+            typename U,
+            int NGP,
+            int NGKPT,
+            typename SigmaFcn
+        >                                   void        quadrature_panel_time_t_sigma_gk(
+                                                                                        T*                  panel,
+                                                                                        U&                  target_fcn,
+                                                                                        cusfloat            t0,
+                                                                                        cusfloat            t1,
+                                                                                        SigmaFcn            sigma_at,
+                                                                                        cusfloat&           result_G_dtn,
+                                                                                        cusfloat&           result_G_dtx,
+                                                                                        cusfloat&           result_G_dty,
+                                                                                        cusfloat&           result_G_dtz,
+                                                                                        cusfloat&           result_G_dtt,
+                                                                                        cusfloat&           result_G_dttn,
+                                                                                        cusfloat&           result_G_dttx,
+                                                                                        cusfloat&           result_G_dtty,
+                                                                                        cusfloat&           result_G_dttz,
+                                                                                        bool                verbose=false
+                                                                        );
 
 // Include templates definition
 #include "integration.txx"
