@@ -56,8 +56,10 @@ void TimeDomainHDF5Exporter::initialize(
     const fs::path results_dir = fs::path( folder_path ) / fs::path( RESULTS_FOLDER_NAME );
     const fs::path file_path   = results_dir / "results.td.h5";
 
+    _file_path = file_path.string( );
+
     _file = H5Fcreate(
-        file_path.string( ).c_str( ),
+        _file_path.c_str( ),
         H5F_ACC_TRUNC,
         H5P_DEFAULT,
         H5P_DEFAULT
@@ -249,5 +251,30 @@ void TimeDomainHDF5Exporter::close( )
     {
         H5Fclose( _file );
         _file = H5I_INVALID_HID;
+    }
+}
+
+
+/*****************************************************************************
+ * reopen
+ *****************************************************************************/
+
+void TimeDomainHDF5Exporter::reopen( )
+{
+    if ( _file == H5I_INVALID_HID || _file_path.empty( ) ) { return; }
+
+    // Closing the file releases all HDF5 caches and triggers the underlying
+    // VFD's fsync/_commit, so every byte buffered by HDF5 reaches the OS and
+    // (with the default sec2 driver) the disk.
+    H5Fclose( _file );
+    _file = H5I_INVALID_HID;
+
+    // Reopen in read/write mode so subsequent append_step() calls keep working.
+    _file = H5Fopen( _file_path.c_str( ), H5F_ACC_RDWR, H5P_DEFAULT );
+
+    if ( _file == H5I_INVALID_HID )
+    {
+        std::cerr << "[ERROR] TimeDomainHDF5Exporter::reopen: H5Fopen failed for "
+                  << _file_path << " — subsequent steps will be skipped." << std::endl;
     }
 }

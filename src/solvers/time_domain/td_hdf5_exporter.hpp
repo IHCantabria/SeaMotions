@@ -129,11 +129,28 @@ public:
     /** @brief Flush and close the HDF5 file.  Safe to call multiple times. */
     void close( );
 
+    /**
+     * @brief Force an OS-level commit by closing and reopening the file.
+     *
+     * H5Fflush only flushes HDF5's internal caches; the underlying file
+     * descriptor's data may still sit in OS buffers (and on Windows the
+     * file size reported to other processes does not update for open
+     * handles).  Closing and reopening guarantees that all pending writes
+     * reach disk and that the file becomes readable by external tools
+     * (Python, ParaView, ...) without stopping the solver.
+     *
+     * Safe to call only when @c is_open() returns true.  Becomes a no-op
+     * if the reopen fails (file is then marked closed and subsequent
+     * append_step() calls will silently skip).
+     */
+    void reopen( );
+
     /** @return @c true when the file is open and ready to receive data. */
     bool is_open( ) const { return _file != H5I_INVALID_HID; }
 
 private:
-    hid_t   _file       = H5I_INVALID_HID;
-    int     _n_panels   = 0;
-    int     _n_bodies   = 0;
+    hid_t       _file       = H5I_INVALID_HID;
+    int         _n_panels   = 0;
+    int         _n_bodies   = 0;
+    std::string _file_path;     ///< Cached path used by reopen() to re-open in R/W mode.
 };
