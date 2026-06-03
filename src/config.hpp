@@ -120,6 +120,7 @@ constexpr const char* RESULTS_FOLDER_NAME               = "1_results";
 constexpr const char* RESULTS_MESH_FOLDER_NAME          = "0_mesh";
 constexpr const char* RESULTS_FIELD_POINTS_FOLDER_NAME  = "1_field_points";
 constexpr const char* RESULTS_PARAVIEW_FOLDER_NAME      = "2_paraview";
+constexpr const char* RESULTS_DEBUG_BEM_FOLDER_NAME     = "3_debug_bem";
 
 
 /************************************************************/
