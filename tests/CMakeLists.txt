@@ -62,3 +62,13 @@ add_test(NAME test_dispersion
         COMMAND test_dispersion_cmd
         ${files_path_dispersion}
         )
+
+# Add test for the Gauss-Kronrod quadrature rule
+add_executable(
+                    test_gauss_kronrod_cmd
+                    test_gauss_kronrod.cpp
+                    ${CMAKE_SOURCE_DIR}/src/config.hpp
+                    ${CMAKE_SOURCE_DIR}/src/math/gauss_kronrod_t.hpp
+                    ${CMAKE_SOURCE_DIR}/src/math/math_constants.hpp
+                )
+add_test( NAME test_gauss_kronrod COMMAND test_gauss_kronrod_cmd )
