@@ -78,7 +78,7 @@ void        GWTFcnsInterfaceT<N>::operator()(
 
     for ( std::size_t i=0; i<N; i++ )
     {
-        this->_R[i] = ( pow2s( this->_dX[i] ) + pow2s( this->_dY[i] ) + pow2s( this->_dZ[i] ) );
+        this->_R[i] = ( pow2s( this->_dX[i] ) + pow2s( this->_dY[i] ) + pow2s( this->_dZp[i] ) );
     }
 
     for ( std::size_t i=0; i<N; i++ )
@@ -111,6 +111,15 @@ void        GWTFcnsInterfaceT<N>::operator()(
     {
         this->_beta[i] = std::sqrt( this->_grav_acc / this->_R[i] ) * this->_time_diff;   // sqrt(g/R)*time_diff
         this->_mu[i]   = - this->_dZp[i] / this->_R[i];
+
+        if ( std::abs( this->_mu[i] ) > 1.0 )
+        {
+            std::cerr << "Warning: |mu| > 1 detected in GWTFcnsInterfaceT. This may indicate a source-observer pair near the free surface, which can lead to numerical instability. Details:\n";
+            std::cerr << "  Source position: (" << this->_source_j->position[0] << ", " << this->_source_j->position[1] << ", " << this->_source_j->position[2] << ")\n";
+            std::cerr << "  Observer position (xi, eta, zeta): (" << xi[i] << ", " << eta[i] << ", " << zeta[i] << ")\n";
+            std::cerr << "  Computed mu: " << this->_mu[i] << "\n";
+            throw std::runtime_error( "Invalid mu value in GWTFcnsInterfaceT: |mu| > 1. Check source and observer positions." );
+        }
     }
 
     _timer_leading += _Clock::now() - _t0;
@@ -137,6 +146,26 @@ void        GWTFcnsInterfaceT<N>::operator()(
     constexpr double BETA_ASYMP_THRESHOLD = 50.0;
     constexpr cusfloat ASYMP_HALF = cusfloat(0.5);
 
+    // -----------------------------------------------------------------
+    // DIAGNOSTIC: compare bilinear-database vs asymptotic at boundary.
+    //   Trigger band: β in [BAND_LO, BAND_HI]
+    //   Hard cap on prints so the run stays usable.
+    //   Reports header once, then one line per quadrature point in band.
+    // -----------------------------------------------------------------
+    constexpr double DBG_BAND_LO     = 49.0;
+    constexpr double DBG_BAND_HI     = 51.0;
+    constexpr int    DBG_MAX_PRINTS  = 200;
+    static std::atomic<int> dbg_print_count{ 0 };
+    static std::atomic<bool> dbg_header_printed{ false };
+
+    // Small-μ diagnostic: μ = -dZp/R goes to 0 when source+observer pair is
+    // near the free surface, pushing log10(μ) past y_min_global and/or making
+    // the kernels (dG/dt, dG/dtt, dG/dtx, …) blow up via image-source coincidence.
+    constexpr double DBG_MU_THRESHOLD   = 0.01;
+    constexpr int    DBG_MU_MAX_PRINTS  = 200;
+    static std::atomic<int> dbg_mu_print_count{ 0 };
+    static std::atomic<bool> dbg_mu_header_printed{ false };
+
     _t0 = _Clock::now();
     for ( std::size_t i = 0; i < N; ++i )
     {
@@ -162,6 +191,97 @@ void        GWTFcnsInterfaceT<N>::operator()(
             this->_ftab_dt [i] = static_cast<cusfloat>( s_bilin_Gtt .eval( beta_i, log_mu ) );
             this->_ftab_dtmu[i]= static_cast<cusfloat>( s_bilin_Gttx.eval( beta_i, log_mu ) );
             this->_ftab_dtt[i] = static_cast<cusfloat>( s_bilin_Gttt.eval( beta_i, log_mu ) );
+        }
+
+        // DIAGNOSTIC boundary check
+        if ( beta_i >= DBG_BAND_LO 
+            // && beta_i <= DBG_BAND_HI
+             && dbg_print_count.load( std::memory_order_relaxed ) < DBG_MAX_PRINTS )
+        {
+            const cusfloat mu_i = this->_mu[i];
+            const cusfloat bil_Gt    = static_cast<cusfloat>( s_bilin_Gt  .eval( beta_i, log_mu ) );
+            const cusfloat bil_Gtx   = static_cast<cusfloat>( s_bilin_Gtx .eval( beta_i, log_mu ) );
+            const cusfloat bil_Gtt   = static_cast<cusfloat>( s_bilin_Gtt .eval( beta_i, log_mu ) );
+            const cusfloat bil_Gttx  = static_cast<cusfloat>( s_bilin_Gttx.eval( beta_i, log_mu ) );
+            const cusfloat bil_Gttt  = static_cast<cusfloat>( s_bilin_Gttt.eval( beta_i, log_mu ) );
+            const cusfloat asy_Gt    = ASYMP_HALF * dGdt_asymptotic  ( this->_beta[i], mu_i );
+            const cusfloat asy_Gtx   = ASYMP_HALF * dGdtx_asymptotic ( this->_beta[i], mu_i );
+            const cusfloat asy_Gtt   = ASYMP_HALF * dGdtt_asymptotic ( this->_beta[i], mu_i );
+            const cusfloat asy_Gttx  = ASYMP_HALF * dGdttx_asymptotic( this->_beta[i], mu_i );
+            const cusfloat asy_Gttt  = ASYMP_HALF * dGdttt_asymptotic( this->_beta[i], mu_i );
+
+            auto relerr = []( cusfloat a, cusfloat b ) -> double
+            {
+                const double da = static_cast<double>( a );
+                const double db = static_cast<double>( b );
+                const double s  = std::max( std::abs( da ), std::abs( db ) );
+                return s > 1e-30 ? std::abs( da - db ) / s : 0.0;
+            };
+
+            if ( !dbg_header_printed.exchange( true, std::memory_order_relaxed ) )
+            {
+                std::printf( "[BETA50-DBG]  beta in [%.1f,%.1f]   ASYMP_HALF=%g\n"
+                             "[BETA50-DBG]  cols: beta  mu  log_mu  | "
+                             "Gt(bil)  Gt(asy)  relerr  | "
+                             "Gtt(bil) Gtt(asy) relerr  | "
+                             "Gtx(bil) Gtx(asy) relerr  | "
+                             "Gttx(bil) Gttx(asy) relerr | "
+                             "Gttt(bil) Gttt(asy) relerr\n",
+                             DBG_BAND_LO, DBG_BAND_HI, static_cast<double>( ASYMP_HALF ) );
+            }
+
+            std::printf(
+                "[BETA50-DBG]  b=%.4f  mu=%.4e  lmu=%.4f | "
+                "Gt %+.5e %+.5e r=%.2e | "
+                "Gtt %+.5e %+.5e r=%.2e | "
+                "Gtx %+.5e %+.5e r=%.2e | "
+                "Gttx %+.5e %+.5e r=%.2e | "
+                "Gttt %+.5e %+.5e r=%.2e\n",
+                beta_i,
+                static_cast<double>( mu_i ), log_mu,
+                static_cast<double>( bil_Gt   ), static_cast<double>( asy_Gt   ), relerr( bil_Gt,   asy_Gt   ),
+                static_cast<double>( bil_Gtt  ), static_cast<double>( asy_Gtt  ), relerr( bil_Gtt,  asy_Gtt  ),
+                static_cast<double>( bil_Gtx  ), static_cast<double>( asy_Gtx  ), relerr( bil_Gtx,  asy_Gtx  ),
+                static_cast<double>( bil_Gttx ), static_cast<double>( asy_Gttx ), relerr( bil_Gttx, asy_Gttx ),
+                static_cast<double>( bil_Gttt ), static_cast<double>( asy_Gttt ), relerr( bil_Gttt, asy_Gttt )
+            );
+            std::fflush( stdout );
+            dbg_print_count.fetch_add( 1, std::memory_order_relaxed );
+        }
+
+        // DIAGNOSTIC small-μ check: print kernel values when μ is very small.
+        // Reports R, lag (=_time_diff), β, μ, log10(μ) and the five ftab values
+        // so we can see (a) when in lag/time we hit this regime, (b) how big
+        // the kernels actually are there, (c) whether log10(μ) is below the
+        // database's y_min_global (i.e. silently clamped).
+        if ( static_cast<double>( this->_mu[i] ) < DBG_MU_THRESHOLD
+             && dbg_mu_print_count.load( std::memory_order_relaxed ) < DBG_MU_MAX_PRINTS )
+        {
+            if ( !dbg_mu_header_printed.exchange( true, std::memory_order_relaxed ) )
+            {
+                std::printf( "[SMALLMU-DBG]  mu < %.3f  threshold;  "
+                             "cols: R  lag  beta  mu  log_mu  | "
+                             "ftab(Gt)  ftab_dt(Gtt)  ftab_dmu(Gtx)  "
+                             "ftab_dtmu(Gttx)  ftab_dtt(Gttt)\n",
+                             DBG_MU_THRESHOLD );
+            }
+
+            std::printf(
+                "[SMALLMU-DBG]  R=%.4e  lag=%.4e  b=%.4e  mu=%.4e  lmu=%.4f | "
+                "Gt=%+.5e  Gtt=%+.5e  Gtx=%+.5e  Gttx=%+.5e  Gttt=%+.5e\n",
+                static_cast<double>( this->_R[i] ),
+                static_cast<double>( this->_time_diff ),
+                beta_i,
+                static_cast<double>( this->_mu[i] ),
+                log_mu,
+                static_cast<double>( this->_ftab[i]     ),
+                static_cast<double>( this->_ftab_dt[i]  ),
+                static_cast<double>( this->_ftab_dmu[i] ),
+                static_cast<double>( this->_ftab_dtmu[i]),
+                static_cast<double>( this->_ftab_dtt[i] )
+            );
+            std::fflush( stdout );
+            dbg_mu_print_count.fetch_add( 1, std::memory_order_relaxed );
         }
     }
     _timer_eval_dGdt += _Clock::now() - _t0;

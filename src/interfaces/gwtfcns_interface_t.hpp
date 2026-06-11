@@ -21,6 +21,7 @@
 #pragma once
 
 // Include standard library
+#include <atomic>
 #include <chrono>
 #include <cstdio>
 
@@ -134,6 +135,29 @@ public:
     void        print_timers() const;
 
     void        reset_timers();
+
+    // Read-only accessors over the spatial Gauss-point cloud.
+    // Used by the Duhamel-tracking diagnostic to summarise where each
+    // quadrature node lives in (β, μ, R) space.
+    cusfloat    min_mu()   const { cusfloat v = _mu[0];   for ( std::size_t i = 1; i < N; ++i ) if ( _mu[i]   < v ) v = _mu[i];   return v; }
+    cusfloat    max_mu()   const { cusfloat v = _mu[0];   for ( std::size_t i = 1; i < N; ++i ) if ( _mu[i]   > v ) v = _mu[i];   return v; }
+    cusfloat    min_beta() const { cusfloat v = _beta[0]; for ( std::size_t i = 1; i < N; ++i ) if ( _beta[i] < v ) v = _beta[i]; return v; }
+    cusfloat    max_beta() const { cusfloat v = _beta[0]; for ( std::size_t i = 1; i < N; ++i ) if ( _beta[i] > v ) v = _beta[i]; return v; }
+    cusfloat    min_R()    const { cusfloat v = _R[0];    for ( std::size_t i = 1; i < N; ++i ) if ( _R[i]    < v ) v = _R[i];    return v; }
+    cusfloat    max_R()    const { cusfloat v = _R[0];    for ( std::size_t i = 1; i < N; ++i ) if ( _R[i]    > v ) v = _R[i];    return v; }
+
+    // Raw per-Gauss-point read-only accessors.  Length = N for every array.
+    // Used by the Duhamel tracker to dump the underlying geometry that goes
+    // into beta/mu so we can spot anomalies (e.g. a GP crossing the waterline)
+    // step by step.
+    static constexpr std::size_t  gp_count() { return N; }
+    const cusfloat*  gp_R()    const { return _R;   }
+    const cusfloat*  gp_dX()   const { return _dX;  }
+    const cusfloat*  gp_dY()   const { return _dY;  }
+    const cusfloat*  gp_dZ()   const { return _dZ;  }
+    const cusfloat*  gp_dZp()  const { return _dZp; }
+    const cusfloat*  gp_beta() const { return _beta;}
+    const cusfloat*  gp_mu()   const { return _mu;  }
 
 };
 
