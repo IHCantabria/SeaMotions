@@ -28,6 +28,8 @@
 
 // Include local modules
 #include "formulation_kernel_backend_t.hpp"
+#include "rhs_tracker.hpp"
+#include "../../math/gauss_t.hpp"
 #include "../../green/source.hpp"
 #include "../../math/math_tools.hpp"
 #include "../../tools.hpp"
@@ -136,6 +138,15 @@ FormulationKernelBackendT<N, NGPT>::~FormulationKernelBackendT( )
         mkl_free( this->_phi_dz_rad );
         this->_phi_dz_rad = nullptr;
     }
+    // Radiation sub-split arrays (static = steady Rankine; memory = Duhamel)
+    if ( this->_phi_dt_rad_static != nullptr ) { mkl_free( this->_phi_dt_rad_static ); this->_phi_dt_rad_static = nullptr; }
+    if ( this->_phi_dx_rad_static != nullptr ) { mkl_free( this->_phi_dx_rad_static ); this->_phi_dx_rad_static = nullptr; }
+    if ( this->_phi_dy_rad_static != nullptr ) { mkl_free( this->_phi_dy_rad_static ); this->_phi_dy_rad_static = nullptr; }
+    if ( this->_phi_dz_rad_static != nullptr ) { mkl_free( this->_phi_dz_rad_static ); this->_phi_dz_rad_static = nullptr; }
+    if ( this->_phi_dt_rad_memory != nullptr ) { mkl_free( this->_phi_dt_rad_memory ); this->_phi_dt_rad_memory = nullptr; }
+    if ( this->_phi_dx_rad_memory != nullptr ) { mkl_free( this->_phi_dx_rad_memory ); this->_phi_dx_rad_memory = nullptr; }
+    if ( this->_phi_dy_rad_memory != nullptr ) { mkl_free( this->_phi_dy_rad_memory ); this->_phi_dy_rad_memory = nullptr; }
+    if ( this->_phi_dz_rad_memory != nullptr ) { mkl_free( this->_phi_dz_rad_memory ); this->_phi_dz_rad_memory = nullptr; }
     // Incident-wave split arrays
     if ( this->_phi_dt_wave != nullptr )
     {
@@ -240,6 +251,16 @@ void FormulationKernelBackendT<N, NGPT>::initialize(
     this->_phi_dx_rad           = generate_empty_vector<cusfloat>( np );
     this->_phi_dy_rad           = generate_empty_vector<cusfloat>( np );
     this->_phi_dz_rad           = generate_empty_vector<cusfloat>( np );
+
+    // Sub-split arrays: steady-Rankine (static) and Duhamel (memory) contributions
+    this->_phi_dt_rad_static    = generate_empty_vector<cusfloat>( np );
+    this->_phi_dx_rad_static    = generate_empty_vector<cusfloat>( np );
+    this->_phi_dy_rad_static    = generate_empty_vector<cusfloat>( np );
+    this->_phi_dz_rad_static    = generate_empty_vector<cusfloat>( np );
+    this->_phi_dt_rad_memory    = generate_empty_vector<cusfloat>( np );
+    this->_phi_dx_rad_memory    = generate_empty_vector<cusfloat>( np );
+    this->_phi_dy_rad_memory    = generate_empty_vector<cusfloat>( np );
+    this->_phi_dz_rad_memory    = generate_empty_vector<cusfloat>( np );
 
     // Split arrays: incident wave
     this->_phi_dt_wave          = generate_empty_vector<cusfloat>( np );
@@ -375,6 +396,16 @@ void FormulationKernelBackendT<N, NGPT>::build_rhs(
     clear_vector( np, this->_phi_dx_rad );
     clear_vector( np, this->_phi_dy_rad );
     clear_vector( np, this->_phi_dz_rad );
+    // Clear the static/memory sub-split (static populated in compute_potential_derivatives,
+    // memory populated below by the Duhamel accumulators).
+    clear_vector( np, this->_phi_dt_rad_static );
+    clear_vector( np, this->_phi_dx_rad_static );
+    clear_vector( np, this->_phi_dy_rad_static );
+    clear_vector( np, this->_phi_dz_rad_static );
+    clear_vector( np, this->_phi_dt_rad_memory );
+    clear_vector( np, this->_phi_dx_rad_memory );
+    clear_vector( np, this->_phi_dy_rad_memory );
+    clear_vector( np, this->_phi_dz_rad_memory );
 
     // -----------------------------------------------------------------------
     // Body kinematic BC: rhs[j] += n_j · vel_body
@@ -499,6 +530,13 @@ void FormulationKernelBackendT<N, NGPT>::build_rhs(
                         MPI_COMM_WORLD
                     );
 
+        // Also reduce the memory (Duhamel-only) sub-split arrays so they stay
+        // consistent with _phi_*_rad across all ranks.
+        MPI_Allreduce( MPI_IN_PLACE, this->_phi_dt_rad_memory, np, mpi_cusfloat, MPI_SUM, MPI_COMM_WORLD );
+        MPI_Allreduce( MPI_IN_PLACE, this->_phi_dx_rad_memory, np, mpi_cusfloat, MPI_SUM, MPI_COMM_WORLD );
+        MPI_Allreduce( MPI_IN_PLACE, this->_phi_dy_rad_memory, np, mpi_cusfloat, MPI_SUM, MPI_COMM_WORLD );
+        MPI_Allreduce( MPI_IN_PLACE, this->_phi_dz_rad_memory, np, mpi_cusfloat, MPI_SUM, MPI_COMM_WORLD );
+
         const double _t_mpi_s = std::chrono::duration<double>(
             std::chrono::high_resolution_clock::now() - _t_mpi_start ).count();
         std::cout << "  [DBG build_rhs] MPI_Allreduce done (" << _t_mpi_s << " s)\n" << std::flush;
@@ -579,13 +617,25 @@ void FormulationKernelBackendT<N, NGPT>::_accumulate_duhamel_trapezoidal(
 
                 const cusfloat inv4pi = static_cast<cusfloat>( 1.0 / ( 4.0 * PI ) );
                 const cusfloat contrib_rhs = sigma_src * dtn_val * inv4pi;
+                // BIE-RHS quantities: Duhamel moved from LHS to RHS -> minus sign.
                 this->_rhs[obs]         += contrib_rhs;
                 this->_rhs_duhamel[obs] += contrib_rhs;
-                this->_rhs_dt[obs]      += sigma_src * dttn_val * inv4pi;
-                this->_phi_dt_rad[obs]  += sigma_src * dtt_val  * inv4pi;
-                this->_phi_dx_rad[obs]  += sigma_src * dtx_val  * inv4pi;
-                this->_phi_dy_rad[obs]  += sigma_src * dty_val  * inv4pi;
-                this->_phi_dz_rad[obs]  += sigma_src * dtz_val  * inv4pi;
+                this->_rhs_dt[obs]      -= sigma_src * dttn_val * inv4pi;
+                // Direct potential-derivative evaluators (for Bernoulli pressure):
+                // both steady (sigma_t * G_0) and Duhamel pieces add with the same
+                // sign in the analytical expression, so use +=.
+                const cusfloat d_phi_dt = sigma_src * dtt_val * inv4pi;
+                const cusfloat d_phi_dx = sigma_src * dtx_val * inv4pi;
+                const cusfloat d_phi_dy = sigma_src * dty_val * inv4pi;
+                const cusfloat d_phi_dz = sigma_src * dtz_val * inv4pi;
+                this->_phi_dt_rad[obs]        -= d_phi_dt;
+                this->_phi_dx_rad[obs]        -= d_phi_dx;
+                this->_phi_dy_rad[obs]        -= d_phi_dy;
+                this->_phi_dz_rad[obs]        -= d_phi_dz;
+                this->_phi_dt_rad_memory[obs] -= d_phi_dt;
+                this->_phi_dx_rad_memory[obs] -= d_phi_dx;
+                this->_phi_dy_rad_memory[obs] -= d_phi_dy;
+                this->_phi_dz_rad_memory[obs] -= d_phi_dz;
             }
         }
     }
@@ -615,6 +665,11 @@ void FormulationKernelBackendT<N, NGPT>::_accumulate_duhamel_gk_sigma(
     // is obtained by piecewise-linear interpolation from the discrete history.
     const cusfloat T_hist = static_cast<cusfloat>( n_hist ) * dt;   // total history span [s]
     const cusfloat T_seg  = T_hist / static_cast<cusfloat>( n_seg ); // macro-interval width [s]
+
+    // Step index used by the diagnostic tracker (round(t_current / dt)).
+    const int      track_step       = static_cast<int>( std::round(
+                                            static_cast<double>( t_current ) / static_cast<double>( dt ) ) );
+    const bool     track_this_step  = tdtrack::RhsTracker::instance().is_tracking_step( track_step );
 
     for ( int seg = 0; seg < n_seg; seg++ )
     {
@@ -657,35 +712,171 @@ void FormulationKernelBackendT<N, NGPT>::_accumulate_duhamel_gk_sigma(
                 cusfloat dtt_val  = 0.0, dttn_val = 0.0, dttx_val = 0.0;
                 cusfloat dtty_val = 0.0, dttz_val = 0.0;
 
-                // sigma already folded into the quadrature weights;
-                // outputs = ∫ sigma(t) · G_kernel(t) dt  over [t_seg_start, t_seg_end].
-                quadrature_panel_time_t_sigma_gl<PanelGeom, GWTFcnsInterfaceT<N*N>, N, 15>(
-                                                                                              source_src->panel,
-                                                                                              this->_gwtfcns_interf,
-                                                                                              t_seg_start,
-                                                                                              t_seg_end,
-                                                                                              sigma_at,
-                                                                                              dtn_val,
-                                                                                              dtx_val,
-                                                                                              dty_val,
-                                                                                              dtz_val,
-                                                                                              dtt_val,
-                                                                                              dttn_val,
-                                                                                              dttx_val,
-                                                                                              dtty_val,
-                                                                                              dttz_val,
-                                                                                              false
-                                                                                           );
+                const bool track_this = track_this_step
+                                     && tdtrack::RhsTracker::instance().is_tracking_obs( obs );
+
+                if ( track_this )
+                {
+                    // ----- Tracked branch: manual GL-15 with per-node logging.
+                    // Mirrors quadrature_panel_time_t_sigma_gl exactly so the
+                    // integrated values dtn_val/dttn_val/... are identical to
+                    // what the regular code path would produce.
+                    const cusfloat half_dt = static_cast<cusfloat>( 0.5 ) * ( t_seg_end - t_seg_start );
+                    const cusfloat mid_t   = static_cast<cusfloat>( 0.5 ) * ( t_seg_start + t_seg_end );
+
+                    for ( int kt = 0; kt < 15; ++kt )
+                    {
+                        const cusfloat xi_t    = GaussPointsT<1, 15>::roots_x[kt];
+                        const cusfloat wt      = GaussPointsT<1, 15>::weights_x[kt];
+                        const cusfloat t_k     = mid_t + xi_t * half_dt;
+                        const cusfloat sigma_q = sigma_at( t_k );
+
+                        this->_gwtfcns_interf.set_time_diff( t_k );
+                        this->_gwtfcns_interf.operator()(
+                                                            source_src->panel->xl,
+                                                            source_src->panel->yl,
+                                                            source_src->panel->gauss_points_global_x,
+                                                            source_src->panel->gauss_points_global_y,
+                                                            source_src->panel->gauss_points_global_z,
+                                                            false
+                                                        );
+
+                        cusfloat tmp_dtn  = 0.0, tmp_dtx  = 0.0, tmp_dty  = 0.0, tmp_dtz  = 0.0;
+                        cusfloat tmp_dtt  = 0.0, tmp_dttn = 0.0, tmp_dttx = 0.0;
+                        cusfloat tmp_dtty = 0.0, tmp_dttz = 0.0;
+
+                        gauss2d_loop<N>( tmp_dtn,  [&]( int i ){ return this->_gwtfcns_interf.dG_dtn[i];  }, source_src->panel );
+                        gauss2d_loop<N>( tmp_dtx,  [&]( int i ){ return this->_gwtfcns_interf.dG_dtx[i];  }, source_src->panel );
+                        gauss2d_loop<N>( tmp_dty,  [&]( int i ){ return this->_gwtfcns_interf.dG_dty[i];  }, source_src->panel );
+                        gauss2d_loop<N>( tmp_dtz,  [&]( int i ){ return this->_gwtfcns_interf.dG_dtz[i];  }, source_src->panel );
+                        gauss2d_loop<N>( tmp_dtt,  [&]( int i ){ return this->_gwtfcns_interf.dG_dtt[i];  }, source_src->panel );
+                        gauss2d_loop<N>( tmp_dttn, [&]( int i ){ return this->_gwtfcns_interf.dG_dttn[i]; }, source_src->panel );
+                        gauss2d_loop<N>( tmp_dttx, [&]( int i ){ return this->_gwtfcns_interf.dG_dttx[i]; }, source_src->panel );
+                        gauss2d_loop<N>( tmp_dtty, [&]( int i ){ return this->_gwtfcns_interf.dG_dtty[i]; }, source_src->panel );
+                        gauss2d_loop<N>( tmp_dttz, [&]( int i ){ return this->_gwtfcns_interf.dG_dttz[i]; }, source_src->panel );
+
+                        const cusfloat scale = sigma_q * wt * half_dt;
+                        dtn_val  += scale * tmp_dtn;
+                        dtx_val  += scale * tmp_dtx;
+                        dty_val  += scale * tmp_dty;
+                        dtz_val  += scale * tmp_dtz;
+                        dtt_val  += scale * tmp_dtt;
+                        dttn_val += scale * tmp_dttn;
+                        dttx_val += scale * tmp_dttx;
+                        dtty_val += scale * tmp_dtty;
+                        dttz_val += scale * tmp_dttz;
+
+                        // Per-node log
+                        tdtrack::RhsTracker::instance().log_node(
+                            track_step,
+                            static_cast<double>( t_current ),
+                            obs, src, seg, kt,
+                            static_cast<double>( t_k ),
+                            static_cast<double>( sigma_q ),
+                            static_cast<double>( tmp_dtn  ),
+                            static_cast<double>( tmp_dtt  ),
+                            static_cast<double>( tmp_dtx  ),
+                            static_cast<double>( tmp_dty  ),
+                            static_cast<double>( tmp_dtz  ),
+                            static_cast<double>( tmp_dttn ),
+                            static_cast<double>( scale ),
+                            static_cast<double>( scale * tmp_dtn ),
+                            static_cast<double>( this->_gwtfcns_interf.min_mu()   ),
+                            static_cast<double>( this->_gwtfcns_interf.max_mu()   ),
+                            static_cast<double>( this->_gwtfcns_interf.max_beta() ),
+                            static_cast<double>( this->_gwtfcns_interf.min_R()    )
+                        );
+
+                        // Per-Gauss-point geometry log: dump R, dX, dY, dZ, dZp,
+                        // beta and mu for every spatial GP on the source panel.
+                        // This is what lets the analysis script localise an
+                        // anomaly to a specific GP rather than the panel-wide
+                        // min/max summary above.
+                        {
+                            const auto&     iface = this->_gwtfcns_interf;
+                            const std::size_t ngp = iface.gp_count();
+                            const cusfloat* gR    = iface.gp_R();
+                            const cusfloat* gdX   = iface.gp_dX();
+                            const cusfloat* gdY   = iface.gp_dY();
+                            const cusfloat* gdZ   = iface.gp_dZ();
+                            const cusfloat* gdZp  = iface.gp_dZp();
+                            const cusfloat* gbeta = iface.gp_beta();
+                            const cusfloat* gmu   = iface.gp_mu();
+                            for ( std::size_t gp = 0; gp < ngp; ++gp )
+                            {
+                                tdtrack::RhsTracker::instance().log_gp(
+                                    track_step,
+                                    static_cast<double>( t_current ),
+                                    obs, src, seg, kt, static_cast<int>( gp ),
+                                    static_cast<double>( t_k ),
+                                    static_cast<double>( gR   [gp] ),
+                                    static_cast<double>( gdX  [gp] ),
+                                    static_cast<double>( gdY  [gp] ),
+                                    static_cast<double>( gdZ  [gp] ),
+                                    static_cast<double>( gdZp [gp] ),
+                                    static_cast<double>( gbeta[gp] ),
+                                    static_cast<double>( gmu  [gp] )
+                                );
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // sigma already folded into the quadrature weights;
+                    // outputs = ∫ sigma(t) · G_kernel(t) dt  over [t_seg_start, t_seg_end].
+                    quadrature_panel_time_t_sigma_gl<PanelGeom, GWTFcnsInterfaceT<N*N>, N, 15>(
+                                                                                                  source_src->panel,
+                                                                                                  this->_gwtfcns_interf,
+                                                                                                  t_seg_start,
+                                                                                                  t_seg_end,
+                                                                                                  sigma_at,
+                                                                                                  dtn_val,
+                                                                                                  dtx_val,
+                                                                                                  dty_val,
+                                                                                                  dtz_val,
+                                                                                                  dtt_val,
+                                                                                                  dttn_val,
+                                                                                                  dttx_val,
+                                                                                                  dtty_val,
+                                                                                                  dttz_val,
+                                                                                                  false
+                                                                                               );
+                }
 
                 const cusfloat inv4pi      = static_cast<cusfloat>( 1.0 / ( 4.0 * PI ) );
                 const cusfloat contrib_rhs = dtn_val * inv4pi;
-                this->_rhs[obs]         += contrib_rhs;
-                this->_rhs_duhamel[obs] += contrib_rhs;
-                this->_rhs_dt[obs]      += dttn_val * inv4pi;
-                this->_phi_dt_rad[obs]  += dtt_val  * inv4pi;
-                this->_phi_dx_rad[obs]  += dtx_val  * inv4pi;
-                this->_phi_dy_rad[obs]  += dty_val  * inv4pi;
-                this->_phi_dz_rad[obs]  += dtz_val  * inv4pi;
+                // BIE-RHS quantities: Duhamel moved from LHS to RHS -> minus sign.
+                this->_rhs[obs]            += contrib_rhs;
+                this->_rhs_duhamel[obs]    += contrib_rhs;
+                this->_rhs_dt[obs]         -= dttn_val * inv4pi;
+                // Direct potential-derivative evaluators (for Bernoulli pressure):
+                // both steady (sigma_t * G_0) and Duhamel pieces add with the same
+                // sign in the analytical expression, so use +=.
+                const cusfloat d_phi_dt = dtt_val * inv4pi;
+                const cusfloat d_phi_dx = dtx_val * inv4pi;
+                const cusfloat d_phi_dy = dty_val * inv4pi;
+                const cusfloat d_phi_dz = dtz_val * inv4pi;
+                this->_phi_dt_rad[obs]        -= d_phi_dt;
+                this->_phi_dx_rad[obs]        -= d_phi_dx;
+                this->_phi_dy_rad[obs]        -= d_phi_dy;
+                this->_phi_dz_rad[obs]        -= d_phi_dz;
+                this->_phi_dt_rad_memory[obs] -= d_phi_dt;
+                this->_phi_dx_rad_memory[obs] -= d_phi_dx;
+                this->_phi_dy_rad_memory[obs] -= d_phi_dy;
+                this->_phi_dz_rad_memory[obs] -= d_phi_dz;
+
+                if ( track_this )
+                {
+                    tdtrack::RhsTracker::instance().log_segment(
+                        track_step,
+                        static_cast<double>( t_current ),
+                        obs, src, seg,
+                        static_cast<double>( dtn_val  ),
+                        static_cast<double>( dttn_val ),
+                        static_cast<double>( contrib_rhs )
+                    );
+                }
             }
         }
     }
@@ -891,14 +1082,20 @@ void FormulationKernelBackendT<N, NGPT>::compute_potential_derivatives( )
         MPI_Allreduce( MPI_IN_PLACE, this->_acc_phi_dy, np, mpi_cusfloat, MPI_SUM, MPI_COMM_WORLD );
         MPI_Allreduce( MPI_IN_PLACE, this->_acc_phi_dz, np, mpi_cusfloat, MPI_SUM, MPI_COMM_WORLD );
 
-        // Accumulate steady Rankine into the radiation arrays and compute totals
+        // Accumulate steady Rankine into the radiation arrays and compute totals.
+        // The same contribution is captured in the "static" sub-split so the
+        // memory/static decomposition can be inspected downstream.
         for ( int j=0; j<np; j++ )
         {
             // Steady Rankine (σ-driven) is part of the radiation potential
-            this->_phi_dt_rad[j] += this->_acc_phi_dt[j];
-            this->_phi_dx_rad[j] += this->_acc_phi_dx[j];
-            this->_phi_dy_rad[j] += this->_acc_phi_dy[j];
-            this->_phi_dz_rad[j] += this->_acc_phi_dz[j];
+            this->_phi_dt_rad[j]        += this->_acc_phi_dt[j];
+            this->_phi_dx_rad[j]        += this->_acc_phi_dx[j];
+            this->_phi_dy_rad[j]        += this->_acc_phi_dy[j];
+            this->_phi_dz_rad[j]        += this->_acc_phi_dz[j];
+            this->_phi_dt_rad_static[j] += this->_acc_phi_dt[j];
+            this->_phi_dx_rad_static[j] += this->_acc_phi_dx[j];
+            this->_phi_dy_rad_static[j] += this->_acc_phi_dy[j];
+            this->_phi_dz_rad_static[j] += this->_acc_phi_dz[j];
             // Total = radiation + incident wave
             this->_phi_dt[j] = this->_phi_dt_rad[j] + this->_phi_dt_wave[j];
             this->_phi_dx[j] = this->_phi_dx_rad[j] + this->_phi_dx_wave[j];

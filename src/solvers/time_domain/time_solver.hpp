@@ -167,9 +167,11 @@ private:
     // Per-panel Bernoulli pressure components, populated each step by
     // _compute_hydro_forces and read by _output_step.  Kept as member vectors to
     // avoid repeated heap allocation; resized whenever the panel count changes.
-    std::vector<cusfloat>                   _panel_phi_dt_comp;       ///< -rho * d(phi_total)/dt
-    std::vector<cusfloat>                   _panel_phi_dt_rad_comp;   ///< -rho * d(phi_rad)/dt    (radiation only)
-    std::vector<cusfloat>                   _panel_phi_dt_wave_comp;  ///< -rho * d(phi_wave)/dt   (incident wave only)
+    std::vector<cusfloat>                   _panel_phi_dt_comp;              ///< -rho * d(phi_total)/dt
+    std::vector<cusfloat>                   _panel_phi_dt_rad_comp;          ///< -rho * d(phi_rad)/dt           (radiation only)
+    std::vector<cusfloat>                   _panel_phi_dt_rad_static_comp;   ///< -rho * d(phi_rad_static)/dt   (steady Rankine σ̇·G₀)
+    std::vector<cusfloat>                   _panel_phi_dt_rad_memory_comp;   ///< -rho * d(phi_rad_memory)/dt   (Duhamel convolution)
+    std::vector<cusfloat>                   _panel_phi_dt_wave_comp;         ///< -rho * d(phi_wave)/dt          (incident wave only)
     std::vector<cusfloat>                   _panel_kinetic_comp;
     std::vector<cusfloat>                   _panel_hydrostatic_comp;
     std::vector<cusfloat>                   _panel_pressure;

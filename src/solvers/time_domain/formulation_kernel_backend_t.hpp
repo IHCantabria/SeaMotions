@@ -80,10 +80,23 @@ private:
 
     // Split velocity-potential derivatives: radiation contribution
     // (Duhamel convolution memory kernel + steady Rankine, both σ-driven)
-    cusfloat*   _phi_dt_rad     = nullptr;  ///< d(phi_rad)/dt  at each panel
-    cusfloat*   _phi_dx_rad     = nullptr;  ///< d(phi_rad)/dx  at each panel
-    cusfloat*   _phi_dy_rad     = nullptr;  ///< d(phi_rad)/dy  at each panel
-    cusfloat*   _phi_dz_rad     = nullptr;  ///< d(phi_rad)/dz  at each panel
+    cusfloat*   _phi_dt_rad     = nullptr;  ///< d(phi_rad)/dt  at each panel (static + memory)
+    cusfloat*   _phi_dx_rad     = nullptr;  ///< d(phi_rad)/dx  at each panel (static + memory)
+    cusfloat*   _phi_dy_rad     = nullptr;  ///< d(phi_rad)/dy  at each panel (static + memory)
+    cusfloat*   _phi_dz_rad     = nullptr;  ///< d(phi_rad)/dz  at each panel (static + memory)
+
+    // Sub-split of the radiation contribution:
+    //   _static = steady-Rankine (σ̇·G₀) part assembled in compute_potential_derivatives
+    //   _memory = Duhamel free-surface convolution part assembled in build_rhs
+    // The sum equals _phi_dt_rad / _phi_dx_rad / _phi_dy_rad / _phi_dz_rad.
+    cusfloat*   _phi_dt_rad_static = nullptr;  ///< d(phi_rad_static)/dt at each panel
+    cusfloat*   _phi_dx_rad_static = nullptr;  ///< d(phi_rad_static)/dx at each panel
+    cusfloat*   _phi_dy_rad_static = nullptr;  ///< d(phi_rad_static)/dy at each panel
+    cusfloat*   _phi_dz_rad_static = nullptr;  ///< d(phi_rad_static)/dz at each panel
+    cusfloat*   _phi_dt_rad_memory = nullptr;  ///< d(phi_rad_memory)/dt at each panel
+    cusfloat*   _phi_dx_rad_memory = nullptr;  ///< d(phi_rad_memory)/dx at each panel
+    cusfloat*   _phi_dy_rad_memory = nullptr;  ///< d(phi_rad_memory)/dy at each panel
+    cusfloat*   _phi_dz_rad_memory = nullptr;  ///< d(phi_rad_memory)/dz at each panel
 
     // Split velocity-potential derivatives: incident wave contribution
     // (analytical first-order wave potential; independent of body motion)
@@ -264,6 +277,17 @@ public:
     cusfloat*   get_phi_dy_rad( )  { return this->_phi_dy_rad;  }
     /** @brief d(phi_rad)/dz at each panel centre (radiation contribution only). */
     cusfloat*   get_phi_dz_rad( )  { return this->_phi_dz_rad;  }
+
+    // --- Radiation sub-split: steady-Rankine (static) vs. Duhamel (memory) ---
+
+    cusfloat*   get_phi_dt_rad_static( ) { return this->_phi_dt_rad_static; }
+    cusfloat*   get_phi_dx_rad_static( ) { return this->_phi_dx_rad_static; }
+    cusfloat*   get_phi_dy_rad_static( ) { return this->_phi_dy_rad_static; }
+    cusfloat*   get_phi_dz_rad_static( ) { return this->_phi_dz_rad_static; }
+    cusfloat*   get_phi_dt_rad_memory( ) { return this->_phi_dt_rad_memory; }
+    cusfloat*   get_phi_dx_rad_memory( ) { return this->_phi_dx_rad_memory; }
+    cusfloat*   get_phi_dy_rad_memory( ) { return this->_phi_dy_rad_memory; }
+    cusfloat*   get_phi_dz_rad_memory( ) { return this->_phi_dz_rad_memory; }
 
     // --- Incident-wave-only derivatives (analytical first-order wave potential) ---
 

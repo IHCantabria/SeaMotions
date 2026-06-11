@@ -145,6 +145,12 @@ void TimeDomainHDF5Exporter::initialize(
             _file, fgrp + "/radiation",
             cusfloat_h5, { 0, 6 }, { H5S_UNLIMITED, 6 } );
         create_hdf5_extendable_dataset(
+            _file, fgrp + "/radiation_static",
+            cusfloat_h5, { 0, 6 }, { H5S_UNLIMITED, 6 } );
+        create_hdf5_extendable_dataset(
+            _file, fgrp + "/radiation_memory",
+            cusfloat_h5, { 0, 6 }, { H5S_UNLIMITED, 6 } );
+        create_hdf5_extendable_dataset(
             _file, fgrp + "/wave_excitation",
             cusfloat_h5, { 0, 6 }, { H5S_UNLIMITED, 6 } );
         create_hdf5_extendable_dataset(
@@ -181,6 +187,8 @@ void TimeDomainHDF5Exporter::append_step(
     const std::vector<std::array<cusfloat, 6>>&     body_force_total,
     const std::vector<std::array<cusfloat, 6>>&     body_force_phi_dt,
     const std::vector<std::array<cusfloat, 6>>&     body_force_radiation,
+    const std::vector<std::array<cusfloat, 6>>&     body_force_radiation_static,
+    const std::vector<std::array<cusfloat, 6>>&     body_force_radiation_memory,
     const std::vector<std::array<cusfloat, 6>>&     body_force_wave,
     const std::vector<std::array<cusfloat, 6>>&     body_force_kinetic,
     const std::vector<std::array<cusfloat, 6>>&     body_force_hydrostatic
@@ -226,6 +234,10 @@ void TimeDomainHDF5Exporter::append_step(
                                 cusfloat_h5, { 1, 6 }, body_force_phi_dt[ib].data( ) );
         append_to_hdf5_dataset( _file, fgrp + "/radiation",
                                 cusfloat_h5, { 1, 6 }, body_force_radiation[ib].data( ) );
+        append_to_hdf5_dataset( _file, fgrp + "/radiation_static",
+                                cusfloat_h5, { 1, 6 }, body_force_radiation_static[ib].data( ) );
+        append_to_hdf5_dataset( _file, fgrp + "/radiation_memory",
+                                cusfloat_h5, { 1, 6 }, body_force_radiation_memory[ib].data( ) );
         append_to_hdf5_dataset( _file, fgrp + "/wave_excitation",
                                 cusfloat_h5, { 1, 6 }, body_force_wave[ib].data( ) );
         append_to_hdf5_dataset( _file, fgrp + "/kinetic_term",
