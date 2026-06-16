@@ -1,0 +1,122 @@
+/******** SeaMotions input file *********/
+1.1.0 		version - Program version
+/*************************************/
+/********* Solver Controls ***********/
+/*************************************/
+0 				QTFSOModel 	- [-] 		- Quadratic Transfer Functions potential second order model { 0: Pinkster - 1: Indirect - 2: Direct }
+1e-3 			WLDetPrec 	- [m] 		- Water line points detection precision.
+/*************************************/
+/********** Body Definition **********/
+/*************************************/
+platform.bd.dat	BodyFN 		- [str] 	- File name of the body description file
+/*************************************/
+/********** Output Channels **********/
+/*************************************/
+true 			OutDiffrac 	- [bool] 	- Output diffraction force
+true 			OutFK 		- [bool] 	- Output Froude-Krylov force
+true 			OutHydMech 	- [bool] 	- Output hydromechanic coefficients
+true 			OutHydStiff - [bool]	- Output hydrostatic stiffness
+true 			OutPot		- [bool] 	- Output potential over panels
+true 			OutPress	- [bool] 	- Output pressure over panels
+true			OutMDrift 	- [bool] 	- Output mean drift
+true 			OutMesh 	- [bool]	- Output mesh definition
+false 			OutQTF 		- [bool]	- Output quadratic transfer functions
+true 			OutQTFComp 	- [bool]	- Output quadratic transfer functions components
+true 			OutRAOs 	- [bool]	- Output response amplitude operator for all dofs of the bodies
+true 			OutSources	- [bool] 	- Output panel sources intensity
+true 			OutStMass 	- [bool]	- Output structural mass
+true 			OutWex 		- [bool]	- Output wave excitation forces
+/*************************************/
+/********* Site Conditions ***********/
+/*************************************/
+1025.0 			RhoW 		- [Kg/m³] 	- Water density
+9.81			GravAcc 	- [m/s²]	- Gravitation acceleration
+50.0			WaterDepth  - [m] 		- Water depth at the bodies location
+/*************************************/
+/************ Headings ***************/
+/*************************************/
+deg 			HeadUnits 	- [str]		- Heading input units. Possible values are { deg: degrees | rad: radians }
+0
+45
+90
+/*************************************/
+/*********** Frequencies *************/
+/*************************************/
+period 			FreqUnit	- [str]		- Frequencies input units. Possible values are { period: period [s] | freq: frequency [1/s] | angfreq: angular frequency [rad/s] }
+3.0
+3.2727273
+3.5454545
+3.8181818
+4.0909091
+4.3636364
+4.6363636
+4.9090909
+5.1818182
+5.4545455
+5.7272727
+6.0
+6.2727273
+6.5454545
+6.8181818
+7.0909091
+7.3636364
+7.6363636
+7.9090909
+8.1818182
+8.4545455
+8.7272727
+9.0
+9.2727273
+9.5454545
+9.8181818
+10.090909
+10.363636
+10.636364
+10.909091
+11.181818
+11.454545
+11.727273
+12.0
+12.272727
+12.545455
+12.818182
+13.090909
+13.363636
+13.636364
+13.909091
+14.181818
+14.454545
+14.727273
+15.0
+15.272727
+15.545455
+15.818182
+16.090909
+16.363636
+16.636364
+16.909091
+17.181818
+17.454545
+17.727273
+18.0
+18.272727
+18.545455
+18.818182
+19.090909
+19.363636
+19.636364
+19.909091
+20.181818
+20.454545
+20.727273
+21.0
+21.272727
+21.545455
+21.818182
+22.090909
+22.363636
+22.636364
+22.909091
+23.181818
+23.454545
+23.727273

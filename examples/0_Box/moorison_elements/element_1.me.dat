@@ -1,0 +1,36 @@
+/**** Morison Element Description input file ****/
+1.1.0          version        - Program version of the Morison element input format.
+/************************************************/
+/************* Element Geometry *****************/
+/************************************************/
+5.0            		START_POINT_X  	- [m]  		- X coordinate of the starting point of the in the local reference system (w.r.t the COG of the body).
+0.0            		START_POINT_Y  	- [m]  		- Y coordinate of the starting point of the in the local reference system (w.r.t the COG of the body).
+-5.0           		START_POINT_Z  	- [m]  		- Z coordinate of the starting point of the in the local reference system (w.r.t the COG of the body).
+/************************************************/
+/********* Orientation of the element ***********/
+/************************************************/
+0.0            		AZIMUTH        	- [deg] 	- Horizontal orientation angle measured in the XY plane from the global X axis.
+0.0            		DECLINATION    	- [deg] 	- Vertical inclination angle measured from the horizontal plane.
+0.0            		DIR_AXIS_ROT   	- [deg] 	- Rotation of the element cross-section around its own longitudinal axis.
+/************************************************/
+/********** Element discretization **************/
+/************************************************/
+5.0            		LENGTH         	- [m]  		- Total physical length of the Morison element.
+10             		NUM_DIVISIONS  	- [-]  		- Number of segments used to discretize the element for hydrodynamic calculations.
+1.0            		KC_LENGTH      	- [m]  		- Characteristic length used for computing the Keulegan–Carpenter number.
+/************************************************/
+/************ Hydrodynamic Areas ****************/
+/************************************************/
+1.0            		AXIAL_AREA_CA  	- [m²]   	- Reference area used to compute the axial inertia force coefficient (Ca).
+1.0            		AXIAL_AREA_CD  	- [m²/m] 	- Axial projected area per unit length used to compute the axial drag coefficient (Cd).
+1.0            		TRANS_AREA_CD  	- [m²/m] 	- Transverse projected area per unit length used to compute the transverse drag coefficient (Cd).
+1.0            		VERT_AREA_CD   	- [m²/m] 	- Vertical projected area per unit length used to compute the vertical drag coefficient (Cd).
+/************************************************/
+/********* Hydrodynamic Coefficients ************/
+/************************************************/
+axial_ca.mcd.dat   	AXIAL_CA_FILE   - [str] 	- File containing the axial inertia coefficient (Ca) data table.
+trans_ca.mcd.dat   	TRANS_CA_FILE   - [str] 	- File containing the transverse inertia coefficient (Ca) data table.
+vert_ca.mcd.dat    	VERT_CA_FILE    - [str] 	- File containing the vertical inertia coefficient (Ca) data table.
+axial_cd.mcd.dat   	AXIAL_CD_FILE   - [str] 	- File containing the axial drag coefficient (Cd) data table.
+trans_cd.mcd.dat   	TRANS_CD_FILE   - [str] 	- File containing the transverse drag coefficient (Cd) data table.
+vert_cd.mcd.dat    	VERT_CD_FILE    - [str] 	- File containing the vertical drag coefficient (Cd) data table.
