@@ -399,7 +399,11 @@ void FrequencySolver<N, mode_pf>::calculate_second_order( void )
     }
 
     // Recover partition circle radius from mesh if not already cached
-    this->sim_data->qtf_pc_radius = this->input->bodies[0]->mesh_fs_qtf->get_fs_radius( );
+    // NOTE: mesh_fs_qtf is only loaded for DIRECT/INDIRECT models; Pinkster leaves it nullptr
+    if ( this->input->out_qtf_so_model != QTFSOModelE::PINKSTER )
+    {
+        this->sim_data->qtf_pc_radius = this->input->bodies[0]->mesh_fs_qtf->get_fs_radius( );
+    }
 
     // Configure second order integrators with the current simulation data
     this->kernel->configure_second_order( 

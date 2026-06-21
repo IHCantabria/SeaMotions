@@ -20,6 +20,8 @@
 
 // Include general usage libraries
 #include <cassert>
+#include <iostream>
+#include <vector>
 
 // Include local modules
 #include "qtf.hpp"
@@ -88,7 +90,8 @@ void        calculate_pinkster(
     cusfloat    dk                              = 0.0;
     cusfloat    dkwij                           = 0.0;
     cusfloat    fij                             = 0.0;
-    cuscomplex  froude_krylov[input->dofs_np];  clear_vector( input->dofs_np, froude_krylov );
+    const int   fk_np                           = input->heads_np * mesh_gp->meshes_np * input->dofs_np;
+    cuscomplex* froude_krylov                   = generate_empty_vector<cuscomplex>( fk_np );
     cusfloat    g                               = input->grav_acc;
     cusfloat    ki                              = 0.0;
     cusfloat    kj                              = 0.0;
@@ -134,7 +137,6 @@ void        calculate_pinkster(
                 ( pow2s( wij ) - dk * g * std::tanh( dk * h ) )
             ) * 0.5 * pow2s( g );
     fij = ai * aj * aij * wij / g;
-    
 
     // Correct equivalent Froude-Krylov wave with the scaling factor
     for ( int i=0; i<input->heads_np; i++ )
@@ -162,6 +164,9 @@ void        calculate_pinkster(
             }
         }
     }
+
+    // Delete local heap memory
+    mkl_free( froude_krylov );
 }
 
 
