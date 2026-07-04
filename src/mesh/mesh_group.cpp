@@ -166,11 +166,17 @@ int     MeshGroup::get_body_id(
     int start_index = 0;
     for ( int i=0; i<this->meshes_np; i++ )
     {
-        // Loop over panels to copy its reference (virtual dispatch)
+        // Loop over panels to copy its reference (virtual dispatch).
+        // We also tag every panel with the owning body id so the time-domain
+        // Duhamel σ history can key per-physical-face entries by
+        // (parent_body_id, parent_face_id) — surviving the remesher's
+        // index reshuffles at the waterline.
         start_index = this->panels_cnp[i];
         for ( int j=0; j<this->meshes[i]->get_elems_np( ); j++ )
         {
-            this->panels[start_index+j] = this->meshes[i]->get_panel( j );
+            PanelGeom* p = this->meshes[i]->get_panel( j );
+            p->parent_body_id      = i;
+            this->panels[start_index+j] = p;
         }
 
         // Loop over panels wl to copy its reference

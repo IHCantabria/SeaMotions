@@ -86,6 +86,17 @@ public:
     cusfloat                        normal_vec[6]           = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
     cusfloat                        normal_vec_wl[6]        = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
     int                             num_nodes               = 0;
+    // Stable identity used by the time-domain Duhamel σ history so that
+    // _sigma_hist can be keyed by the underlying physical face rather than
+    // by the current BEM-panel index (which is reassigned every time
+    // RigidBodyMesh::check_underwater_panels() reclassifies the wetted
+    // surface).
+    //   parent_body_id  — owning rigid body (set by MeshGroup at assembly).
+    //   parent_face_id  — body-local index into RigidBodyMesh::panels[],
+    //                     i.e. the original-face id from the input mesh.
+    //                     FS-refined sub-panels inherit their parent face id.
+    int                             parent_body_id          = -1;
+    int                             parent_face_id          = -1;
     cusfloat                        sysref_centre[3]        = { 0.0, 0.0, 0.0 };
     PanelTypeE                      type                    = PanelTypeE::NONE;
     int                             wl_nodes[2]             = { 0, 0 };

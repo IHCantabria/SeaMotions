@@ -39,6 +39,7 @@
 #include "../../math/sparse/sparse_containers.hpp"
 #include "../../mesh/mesh_group.hpp"
 #include "../../mesh/rigid_body_mesh.hpp"
+#include "../../waves/regular_wave_fo.hpp"
 #include "formulation_kernel_backend_t.hpp"
 #include "input_t.hpp"
 
@@ -51,25 +52,21 @@
  * the hydro_forces vector owned by TimeSolver so that the force values can be
  * updated in-place between time steps without re-assigning the functor.
  *
- * A linear ramp-up factor is applied when ramp_time > 0:
- *   scale = min( t / ramp_time, 1 )
- * The ramp is applied ONLY to the incident-wave excitation force (forces_wave).
- * The base forces (radiation damping + hydrostatic restoring + gravity) are
- * passed through unmodified so that the body equilibrium and radiation memory
- * are not artificially suppressed during the ramp window.
- * Set ramp_time = 0 (default) to disable the ramp entirely.
+ * ``forces`` already holds the COMPLETE hydrodynamic load (radiation memory +
+ * diffraction + incident Froude-Krylov + hydrostatic + gravity).  The incident
+ * wave is soft-started at its source (the amplitude ramp in
+ * TimeSolver::_compute_body_vel_bc and the kernel), so the whole wave excitation
+ * — diffraction and Froude-Krylov, with their memory — ramps consistently and
+ * the functor applies the force without any further scaling.
  */
 struct TimeDomainFextStruct
 {
-    /// Non-wave forces (radiation + hydrostatic + gravity) — passed through without ramping.
-    cusfloat*   forces_base  = nullptr;
-    /// Incident-wave excitation forces — multiplied by the ramp scale factor.
-    cusfloat*   forces_wave  = nullptr;
+    /// Complete hydrodynamic + gravitational load (already source-ramped).
+    cusfloat*   forces       = nullptr;
     int         dofs_np      = 0;        ///< Number of DOFs (= 6)
-    cusfloat    ramp_time    = 0.0;      ///< Ramp-up duration [s]; 0 = disabled
 
     void operator()(
-        cusfloat    t,
+        cusfloat  /* t   */,
         cusfloat  /* dt  */,
         cusfloat* /* pos */,
         cusfloat* /* vel */,
@@ -77,17 +74,8 @@ struct TimeDomainFextStruct
         cusfloat* fext
     )
     {
-        // Linear ramp factor: rises from 0 to 1 over [0, ramp_time].
-        // When ramp_time <= 0 the factor is always 1 (no ramp).
-        const cusfloat scale = ( ramp_time > static_cast<cusfloat>( 0.0 ) )
-                               ? ( ( t < ramp_time ) ? ( t / ramp_time )
-                                                     : static_cast<cusfloat>( 1.0 ) )
-                               : static_cast<cusfloat>( 1.0 );
-
-        // Base forces (radiation + hydrostatic + gravity) are not ramped.
-        // Wave excitation is scaled up from zero over [0, ramp_time].
         for ( int id = 0; id < dofs_np; id++ )
-            fext[id] = forces_base[id] + scale * forces_wave[id];
+            fext[id] = forces[id];
     }
 };
 
@@ -114,6 +102,11 @@ private:
     InputT*     _input      = nullptr;
     MpiConfig*  _mpi_config = nullptr;
 
+    // First-order incident wave: the single source of truth for the wave
+    // parameters, dispersion and soft-start ramp, shared by the diffraction BC
+    // and the kernel's Froude-Krylov potential.  Built once from _input.
+    RegularWaveFO   _inc_wave;
+
     // Objects created by this solver (owned)
     MeshGroup*                          _mesh_gp        = nullptr;
     RigidBodyMesh**                     _rb_meshes      = nullptr;  ///< One RigidBodyMesh per body (owned)
@@ -125,10 +118,14 @@ private:
     std::vector<GeneralizedAlpha<FextFunctor>*>  _gen_alpha;
     std::vector<TimeDomainFextStruct>            _fext_structs;  ///< One functor struct per body
 
-    // Source intensity history: _sigma_hist[k] is the solution k steps ago.
-    // Stored in a fixed-capacity circular buffer to avoid O(N) memory copies
-    // per time step and to bound memory usage to the Duhamel history window.
-    CircularBuffer<std::vector<cusfloat>>   _sigma_hist;
+    // Source intensity history: _sigma_hist[k] is the solution k steps ago,
+    // stored as one σ value per physical face (keyed by SigmaFaceKey =
+    // (parent_body_id, parent_face_id)).  Surviving the wetted-surface
+    // remesher requires identity-keyed storage rather than BEM-panel-index
+    // storage — see formulation_kernel_backend_t.hpp for the rationale.
+    // Fixed-capacity circular buffer bounds memory to the Duhamel history
+    // window.
+    SigmaHistType                           _sigma_hist;
 
     // Per-body CoG tracking (6-DOF: surge, sway, heave, roll, pitch, yaw)
     std::vector<std::array<cusfloat, 6>>    _body_pos;
@@ -136,12 +133,10 @@ private:
     std::vector<std::array<cusfloat, 6>>    _body_acc;
 
     // Per-body hydrodynamic force vector (updated each step; referenced by _fext_structs).
-    // Contains all non-wave contributions (radiation + hydrostatic + gravity).
+    // Contains the COMPLETE load: radiation memory + diffraction + incident
+    // (Froude-Krylov) wave + hydrostatic + gravity.  The incident wave is
+    // soft-started at its source, so this vector is already fully ramped.
     std::vector<std::vector<cusfloat>>      _hydro_forces;
-
-    // Per-body incident-wave excitation force (updated each step; referenced by _fext_structs).
-    // Applied to the GA functor with the ramp scale factor.
-    std::vector<std::vector<cusfloat>>      _hydro_forces_wave;
 
     // Hydrostatic stiffness per body (6×6, row-major)
     std::vector<std::array<cusfloat, 36>>   _hydrostiff;
@@ -149,11 +144,23 @@ private:
     // Structural mass matrix per body (6×6, diagonal)
     std::vector<std::array<cusfloat, 36>>   _struct_mass;
 
+    // Infinite-frequency added-mass matrix per body (6×6, row-major), computed
+    // once at the initial wetted configuration from the static (σ̇-driven)
+    // radiation pressure.  DIAGNOSTIC ONLY for now: printed and checked for a
+    // positive diagonal / symmetry so the sign of the static radiation term can
+    // be confirmed before it is moved onto the integrator's LHS as (M + A∞).
+    std::vector<std::array<cusfloat, 36>>   _added_mass_inf;
+
     // CSRMatrix objects whose arrays are referenced by the MKL sparse handles
     // inside _gen_alpha.  They must outlive the GeneralizedAlpha objects.
+    // Indexed by body id (nullptr for fixed bodies) so a single body's mass can
+    // be rebuilt in place when A∞ is refreshed mid-run.
     std::vector<CSRMatrix*>     _csr_mass;
     std::vector<CSRMatrix*>     _csr_stiff;
     std::vector<CSRMatrix*>     _csr_damp;
+
+    // Generalized-alpha spectral radius used to (re)build the body integrators.
+    cusfloat                    _ga_rho_inf = static_cast<cusfloat>( 1.0 );
 
     // Reusable scratch buffer for body kinematic + wave BC (avoids per-step heap allocation).
     // Sized to np each step via assign(); capacity is retained between steps.
@@ -184,6 +191,45 @@ private:
     void _compute_hydrostatic_initial_forces( );
     void _initialize_structural_dynamics( );
     void _initialize_kernel( );
+
+    /**
+     * @brief Compute the infinite-frequency added-mass matrix A∞ per body.
+     *
+     * For each free body and each DOF, imposes a unit rigid-body acceleration
+     * (zero velocity), solves A·σ̇ = (unit-accel BC) with an empty Duhamel
+     * history, integrates the resulting static (σ̇-driven) radiation pressure
+     * over the body's own panels, and stores the 6-DOF reaction as one column
+     * of A∞ (A∞[i][j] = −F_i for unit accel in DOF j).
+     *
+     * Fills _added_mass_inf.  When @p verbose is true it also prints each matrix
+     * and reports the heave-heave diagonal sign + symmetry; the non-positive
+     * diagonal warning is always emitted.  A∞ is folded into the integrator mass
+     * (M + A∞) by _build_body_integrator.  The 6 unit-acceleration solves share
+     * one LU factorization (back-substitution for DOFs 1..5).
+     *
+     * @param verbose  Print the full A∞ matrix + sanity check (true at start-up,
+     *                 false on the periodic mid-run refresh).
+     */
+    void _compute_infinite_added_mass( bool verbose );
+
+    /**
+     * @brief (Re)build body @p ib's GeneralizedAlpha integrator with the current
+     *        A∞ folded into the structural mass, using the body's current
+     *        kinematics (_body_pos/vel/acc) as initial conditions at time @p t0.
+     *
+     * Tears down any existing integrator and its backing CSR matrices first (the
+     * GA's MKL handles alias the CSR arrays).  Used at start-up and on each
+     * periodic A∞ refresh.
+     */
+    void _build_body_integrator( int ib, cusfloat t0 );
+
+    /**
+     * @brief Recompute A∞ on the current geometry and re-fold it into every free
+     *        body's structural mass (rebuilding their integrators about the live
+     *        state at time @p t_now).  Invoked every added_mass_update_niter
+     *        steps from run().
+     */
+    void _update_added_mass( cusfloat t_now );
 
     /**
      * @brief Resize the four per-panel pressure-cache vectors to the current panel count.

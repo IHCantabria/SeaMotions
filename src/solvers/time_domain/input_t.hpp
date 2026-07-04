@@ -109,6 +109,7 @@ public:
     cusfloat                    ramp_time           = 0.0;     // force ramp-up duration [s] (0 = disabled)
     cusfloat                    duhamel_hist_time   = 0.0;     // Duhamel history window [s] (0 = full sim_time)
     int                         output_flush_niter  = 100;     // Close+reopen the time-series HDF5 file every N steps (0 = disabled)
+    int                         added_mass_update_niter = 0;   // Recompute the infinite-frequency added mass every N steps (0 = frozen at init)
 
     // Paths
     std::string                 case_fopath         = "";

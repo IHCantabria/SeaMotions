@@ -109,23 +109,36 @@ void RigidBodyMesh::check_underwater_panels(
     {
         if ( this->panels[i]->location_zone == 0 )
         {
+            const int fs_count_before = this->fs_panels_np;
+
             if ( this->panels[i]->num_nodes == 3 )
             {
-                refine_underwater_triangle( 
-                                                this->panels[i], 
-                                                this->fs_panels, 
-                                                this->fs_panels_np, 
-                                                last_node_index 
+                refine_underwater_triangle(
+                                                this->panels[i],
+                                                this->fs_panels,
+                                                this->fs_panels_np,
+                                                last_node_index
                                             );
             }
             else if ( this->panels[i]->num_nodes == 4 )
             {
-                refine_underwater_quadrilateral( 
-                                                    this->panels[i], 
-                                                    this->fs_panels, 
-                                                    this->fs_panels_np, 
-                                                    last_node_index 
+                refine_underwater_quadrilateral(
+                                                    this->panels[i],
+                                                    this->fs_panels,
+                                                    this->fs_panels_np,
+                                                    last_node_index
                                                 );
+            }
+
+            // Tag every sub-panel just produced with its parent's stable
+            // face id, so the Duhamel σ history can be keyed by physical
+            // face even though sub-panel geometry shifts with the FS
+            // intersection.  parent_body_id is filled in later by
+            // MeshGroup when the BEM panel array is assembled.
+            const int parent_face_id = this->panels[i]->parent_face_id;
+            for ( int k = fs_count_before; k < this->fs_panels_np; k++ )
+            {
+                this->fs_panels[k]->parent_face_id = parent_face_id;
             }
         }
     }
@@ -181,6 +194,16 @@ void RigidBodyMesh::_initialize(
         this->fs_panels[i] = new PanelGeom;
     }
 
+    // Tag every original face with its stable body-local index.  This is the
+    // identifier the time-domain Duhamel σ history uses to survive remeshing
+    // (panels[i] is never destroyed/recreated by check_underwater_panels —
+    // only filtered or refined — so panels[i]->parent_face_id stays valid
+    // for the lifetime of the simulation).  FS-refined sub-panels inherit
+    // this id from their parent in the refinement routine.
+    for ( int i=0; i<this->elems_np; i++ )
+    {
+        this->panels[i]->parent_face_id = i;
+    }
 }
 
 

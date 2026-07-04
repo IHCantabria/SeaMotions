@@ -21,6 +21,8 @@
 #pragma once
 
 // Include general usage libraries
+#include <cstdint>
+#include <unordered_map>
 #include <vector>
 
 // Include local modules
@@ -32,10 +34,44 @@
 #include "../../math/integration.hpp"
 #include "../../math/scalapack_solver.hpp"
 #include "../../mesh/mesh_group.hpp"
+#include "../../waves/regular_wave_fo.hpp"
 #include "input_t.hpp"
 
 // MPI
 #include "mpi.h"
+
+
+// ---------------------------------------------------------------------------
+// Stable per-face σ history key.
+//
+// The Duhamel convolution must reach back into σ values stored at past time
+// steps.  The naive layout (a per-BEM-panel-index vector) is broken by the
+// wetted-surface remesher: panel index `i` at step T is not the same physical
+// face as index `i` at step T-1 once a panel emerges from or submerges into
+// the water — geometry from the current step gets multiplied by σ from a
+// different face.
+//
+// Instead we key σ history by the underlying physical face, encoded as a
+// single 64-bit integer:
+//
+//     key = (int64_t(parent_body_id) << 32) | uint32_t(parent_face_id)
+//
+// Sub-panels of an FS-intersecting parent face share the parent's
+// (body, face) id, so they aggregate naturally into a single per-face σ.
+// ---------------------------------------------------------------------------
+using SigmaFaceKey = std::int64_t;
+
+inline SigmaFaceKey make_face_key( int body_id, int face_id )
+{
+    return ( static_cast<std::int64_t>( body_id ) << 32 )
+         |   static_cast<std::uint32_t>( face_id );
+}
+
+/// One σ snapshot per physical face, indexed by SigmaFaceKey.
+using SigmaFaceMap  = std::unordered_map<SigmaFaceKey, cusfloat>;
+
+/// Circular history of σ snapshots — `_sigma_hist[k]` is the snapshot k steps ago.
+using SigmaHistType = CircularBuffer<SigmaFaceMap>;
 
 
 /**
@@ -109,9 +145,10 @@ private:
     GWTFcnsInterfaceT<N*N>  _gwtfcns_interf;
 
     // Pointers to external objects (not owned)
-    InputT*     _input      = nullptr;
-    MeshGroup*  _mesh_gp    = nullptr;
-    MpiConfig*  _mpi_config = nullptr;
+    InputT*              _input      = nullptr;
+    MeshGroup*           _mesh_gp    = nullptr;
+    MpiConfig*           _mpi_config = nullptr;
+    const RegularWaveFO* _inc_wave   = nullptr;   ///< incident wave (owned by TimeSolver)
 
     // Panel count
     int         _n_panels   = 0;
@@ -144,9 +181,9 @@ private:
      * No MPI reduction is performed here; that is left to build_rhs.
      */
     void _accumulate_duhamel_trapezoidal(
-                                            const CircularBuffer<std::vector<cusfloat>>&  sigma_hist,
-                                            cusfloat                                      t_current,
-                                            cusfloat                                      dt
+                                            const SigmaHistType&    sigma_hist,
+                                            cusfloat                t_current,
+                                            cusfloat                dt
                                         );
 
     /**
@@ -168,9 +205,9 @@ private:
      * No MPI reduction is performed here; that is left to build_rhs.
      */
     void _accumulate_duhamel_gk_sigma(
-                                            const CircularBuffer<std::vector<cusfloat>>&  sigma_hist,
-                                            cusfloat                                      t_current,
-                                            cusfloat                                      dt
+                                            const SigmaHistType&    sigma_hist,
+                                            cusfloat                t_current,
+                                            cusfloat                dt
                                       );
 
 public:
@@ -185,7 +222,8 @@ public:
      * @param input      Pointer to the time-domain input data.
      * @param mpi_config Pointer to MPI configuration.
      */
-    void    initialize( MeshGroup* mesh_gp, InputT* input, MpiConfig* mpi_config );
+    void    initialize( MeshGroup* mesh_gp, InputT* input, MpiConfig* mpi_config,
+                        const RegularWaveFO* inc_wave );
 
     /**
      * @brief Build the RHS vector for time step t_current using the Duhamel convolution.
@@ -201,13 +239,13 @@ public:
      *                      point (size = n_panels). Pass nullptr for stationary bodies.
      */
     void    build_rhs(
-                        cusfloat                                            t_current,
-                        const CircularBuffer<std::vector<cusfloat>>&        sigma_hist,
-                        cusfloat                                            dt,
-                        const cusfloat*                                     body_vel_bc  = nullptr,
-                        const cusfloat*                                     body_acc_bc  = nullptr,
-                        const cusfloat*                                     body_kin_bc  = nullptr,  ///< body-motion BC only (stored in _rhs_body_kin for debug)
-                        const cusfloat*                                     wave_bc      = nullptr   ///< wave diffraction BC only (stored in _rhs_wave for debug)
+                        cusfloat                t_current,
+                        const SigmaHistType&    sigma_hist,
+                        cusfloat                dt,
+                        const cusfloat*         body_vel_bc  = nullptr,
+                        const cusfloat*         body_acc_bc  = nullptr,
+                        const cusfloat*         body_kin_bc  = nullptr,  ///< body-motion BC only (stored in _rhs_body_kin for debug)
+                        const cusfloat*         wave_bc      = nullptr   ///< wave diffraction BC only (stored in _rhs_wave for debug)
                      );
 
     /**
@@ -215,6 +253,19 @@ public:
      *        then broadcast the solution to all MPI processes.
      */
     void    solve( );
+
+    /**
+     * @brief Back-substitute the current σ̇ right-hand side (_rhs_dt) using the
+     *        LU factors left by the most recent solve().
+     *
+     * Solves A·σ̇ = _rhs_dt reusing the stored LU (no re-factorization), then
+     * broadcasts σ̇.  Leaves σ untouched.  The caller must have run build_rhs()
+     * (to assemble _rhs_dt and clear the radiation arrays) and, earlier on the
+     * same geometry, solve() (to factorize).  Intended for sweeps that reuse one
+     * factorization across many acceleration RHSs — e.g. the 6 unit-acceleration
+     * solves of the infinite-frequency added mass.
+     */
+    void    backsub_sigma_dt( );
 
     /**
      * @brief Add the incident wave and steady Rankine contributions to the

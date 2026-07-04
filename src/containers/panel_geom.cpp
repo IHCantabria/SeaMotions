@@ -65,6 +65,8 @@ void PanelGeom::_copy_trivial_from( const PanelGeom& other )
     this->length               = other.length;
     this->location_zone        = other.location_zone;
     this->num_nodes            = other.num_nodes;
+    this->parent_body_id       = other.parent_body_id;
+    this->parent_face_id       = other.parent_face_id;
     this->type                 = other.type;
 
     copy_vals( this->body_cog,            other.body_cog,            3 );

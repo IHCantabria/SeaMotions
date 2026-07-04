@@ -198,14 +198,16 @@ FormulationKernelBackendT<N, NGPT>::~FormulationKernelBackendT( )
 
 template<std::size_t N, int NGPT>
 void FormulationKernelBackendT<N, NGPT>::initialize(
-                                                        MeshGroup*  mesh_gp,
-                                                        InputT*     input,
-                                                        MpiConfig*  mpi_config
+                                                        MeshGroup*           mesh_gp,
+                                                        InputT*              input,
+                                                        MpiConfig*           mpi_config,
+                                                        const RegularWaveFO* inc_wave
                                                     )
 {
     this->_input      = input;
     this->_mesh_gp    = mesh_gp;
     this->_mpi_config = mpi_config;
+    this->_inc_wave   = inc_wave;
     this->_n_panels   = mesh_gp->panels_tnp;
 
     const int np = this->_n_panels;
@@ -367,13 +369,13 @@ void FormulationKernelBackendT<N, NGPT>::_build_steady_matrix( )
 
 template<std::size_t N, int NGPT>
 void FormulationKernelBackendT<N, NGPT>::build_rhs(
-                                                        cusfloat                                            t_current,
-                                                        const CircularBuffer<std::vector<cusfloat>>&        sigma_hist,
-                                                        cusfloat                                            dt,
-                                                        const cusfloat*                                     body_vel_bc,
-                                                        const cusfloat*                                     body_acc_bc,
-                                                        const cusfloat*                                     body_kin_bc,
-                                                        const cusfloat*                                     wave_bc
+                                                        cusfloat                t_current,
+                                                        const SigmaHistType&    sigma_hist,
+                                                        cusfloat                dt,
+                                                        const cusfloat*         body_vel_bc,
+                                                        const cusfloat*         body_acc_bc,
+                                                        const cusfloat*         body_kin_bc,
+                                                        const cusfloat*         wave_bc
                                                    )
 {
     const int np     = this->_n_panels;
@@ -553,9 +555,9 @@ void FormulationKernelBackendT<N, NGPT>::build_rhs(
 
 template<std::size_t N, int NGPT>
 void FormulationKernelBackendT<N, NGPT>::_accumulate_duhamel_trapezoidal(
-                                                                            const CircularBuffer<std::vector<cusfloat>>&  sigma_hist,
-                                                                            cusfloat                                      t_current,
-                                                                            cusfloat                                      dt
+                                                                            const SigmaHistType&    sigma_hist,
+                                                                            cusfloat                t_current,
+                                                                            cusfloat                dt
                                                                          )
 {
     const int np     = this->_n_panels;
@@ -572,13 +574,21 @@ void FormulationKernelBackendT<N, NGPT>::_accumulate_duhamel_trapezoidal(
 
         if ( t_lag_end <= t_lag_start ) { continue; }
 
-        const std::vector<cusfloat>& sigma_k = sigma_hist[k];
+        const SigmaFaceMap& sigma_k = sigma_hist[k];
 
         // Outer loop: local source panels (columns owned by this MPI process)
         for ( int src=this->_solver->start_col_0; src<this->_solver->end_col_0; src++ )
         {
-            SourceNode* source_src = this->_mesh_gp->source_nodes[src];
-            const cusfloat sigma_src = sigma_k[src];   // constant over [t_lag_start, t_lag_end]
+            SourceNode*       source_src       = this->_mesh_gp->source_nodes[src];
+            PanelGeom* const  src_panel        = source_src->panel;
+            const SigmaFaceKey src_face_key    =
+                make_face_key( src_panel->parent_body_id, src_panel->parent_face_id );
+            // σ value at past time τ on this physical face.  Missing key
+            // means the face wasn't part of the wetted surface k steps ago;
+            // its memory contribution is zero in that case.
+            const auto sigma_it = sigma_k.find( src_face_key );
+            if ( sigma_it == sigma_k.end() ) { continue; }
+            const cusfloat sigma_src = sigma_it->second;
 
             // Inner loop: all observation / collocation rows
             for ( int obs=0; obs<np; obs++ )
@@ -648,9 +658,9 @@ void FormulationKernelBackendT<N, NGPT>::_accumulate_duhamel_trapezoidal(
 
 template<std::size_t N, int NGPT>
 void FormulationKernelBackendT<N, NGPT>::_accumulate_duhamel_gk_sigma(
-                                                                          const CircularBuffer<std::vector<cusfloat>>&  sigma_hist,
-                                                                          cusfloat                                      t_current,
-                                                                          cusfloat                                      dt
+                                                                          const SigmaHistType&    sigma_hist,
+                                                                          cusfloat                t_current,
+                                                                          cusfloat                dt
                                                                        )
 {
     const int np     = this->_n_panels;
@@ -684,21 +694,36 @@ void FormulationKernelBackendT<N, NGPT>::_accumulate_duhamel_gk_sigma(
 
         for ( int src = this->_solver->start_col_0; src < this->_solver->end_col_0; src++ )
         {
-            SourceNode* source_src = this->_mesh_gp->source_nodes[src];
+            SourceNode*       source_src = this->_mesh_gp->source_nodes[src];
+            PanelGeom* const  src_panel  = source_src->panel;
+            const SigmaFaceKey src_face_key =
+                make_face_key( src_panel->parent_body_id, src_panel->parent_face_id );
 
             // sigma at lag s: piecewise-linear interpolation from the discrete history.
             //   k_exact = s / dt              (fractional history index)
             //   sigma_hist[k_lo] is sigma at t_current - k_lo*dt  (newer side)
             //   sigma_hist[k_hi] is sigma at t_current - k_hi*dt  (older side)
-            const auto sigma_at = [&sigma_hist, n_hist, dt, src]( cusfloat t_lag ) -> cusfloat
+            // Lookup is by physical-face key so σ at past steps is the value
+            // on the SAME face this current src panel represents, regardless
+            // of how the BEM-panel indexing shuffled across remeshes.  If a
+            // bracketing snapshot doesn't contain this face, treat that side
+            // of the interpolation as 0 (face was dry then).
+            const auto sigma_at = [&sigma_hist, n_hist, dt, src_face_key]( cusfloat t_lag ) -> cusfloat
             {
                 const cusfloat k_real = t_lag / dt;
                 const int      k_lo   = static_cast<int>( std::floor( k_real ) );
                 const cusfloat alpha  = k_real - static_cast<cusfloat>( k_lo );
                 const int      k_lo_c = std::max( 0, std::min( k_lo,     n_hist - 1 ) );
                 const int      k_hi_c = std::max( 0, std::min( k_lo + 1, n_hist - 1 ) );
-                return ( static_cast<cusfloat>( 1.0 ) - alpha ) * sigma_hist[k_lo_c][src]
-                     +   alpha                                  * sigma_hist[k_hi_c][src];
+
+                const SigmaFaceMap& m_lo = sigma_hist[k_lo_c];
+                const SigmaFaceMap& m_hi = sigma_hist[k_hi_c];
+                const auto it_lo = m_lo.find( src_face_key );
+                const auto it_hi = m_hi.find( src_face_key );
+                const cusfloat s_lo = ( it_lo != m_lo.end() ) ? it_lo->second : static_cast<cusfloat>( 0.0 );
+                const cusfloat s_hi = ( it_hi != m_hi.end() ) ? it_hi->second : static_cast<cusfloat>( 0.0 );
+                return ( static_cast<cusfloat>( 1.0 ) - alpha ) * s_lo
+                     +   alpha                                  * s_hi;
             };
 
             for ( int obs = 0; obs < np; obs++ )
@@ -936,6 +961,27 @@ void FormulationKernelBackendT<N, NGPT>::solve( )
 
 
 template<std::size_t N, int NGPT>
+void FormulationKernelBackendT<N, NGPT>::backsub_sigma_dt( )
+{
+    const int np = this->_n_panels;
+
+    // Reuse the LU factors stored in _sysmat by the preceding solve(): only a
+    // back-substitution (pgetrs) is performed for the σ̇ right-hand side that the
+    // preceding build_rhs() assembled into _rhs_dt.
+    copy_vector( np, this->_rhs_dt, this->_sigma_dt );
+    this->_solver->SolveWithStoredLU( this->_sysmat, this->_sigma_dt );
+
+    MPI_Bcast(
+                this->_sigma_dt,
+                np,
+                mpi_cusfloat,
+                this->_mpi_config->proc_root,
+                MPI_COMM_WORLD
+             );
+}
+
+
+template<std::size_t N, int NGPT>
 void FormulationKernelBackendT<N, NGPT>::compute_potential_derivatives( )
 {
     // _phi_dt_rad/dx/dy/dz already hold the Duhamel (memory-kernel) contribution
@@ -960,26 +1006,23 @@ void FormulationKernelBackendT<N, NGPT>::compute_potential_derivatives( )
         clear_vector( np, this->_phi_dy_wave );
         clear_vector( np, this->_phi_dz_wave );
 
-        const cusfloat w  = this->_input->ang_freq;
-        const cusfloat aw = this->_input->wave_amp;
-        const cusfloat h  = this->_input->water_depth;
-        const cusfloat g  = this->_input->grav_acc;
-        const cusfloat mu = this->_input->wave_heading * PI / static_cast<cusfloat>( 180.0 );
-        const cusfloat t  = this->_t_current;
+        // The incident (Froude-Krylov) potential — including its soft-start ramp
+        // — comes from the shared _inc_wave object, the single source of truth
+        // for the wave (also used by the diffraction BC in TimeSolver).
+        const cusfloat t = this->_t_current;
 
-        if ( aw > static_cast<cusfloat>( 0.0 ) && w > static_cast<cusfloat>( 0.0 ) )
+        if ( this->_inc_wave != nullptr && this->_inc_wave->active( ) )
         {
-            const cusfloat k = w2k( w, h, g );
             for ( int j=0; j<np; j++ )
             {
                 const cusfloat x = this->_mesh_gp->panels[j]->center[0];
                 const cusfloat y = this->_mesh_gp->panels[j]->center[1];
                 const cusfloat z = this->_mesh_gp->panels[j]->center[2];
 
-                this->_phi_dt_wave[j] += wave_potential_fo_time_dt( aw, w, k, h, g, x, y, z, mu, t );
-                this->_phi_dx_wave[j] += wave_potential_fo_time_dx( aw, w, k, h, g, x, y, z, mu, t );
-                this->_phi_dy_wave[j] += wave_potential_fo_time_dy( aw, w, k, h, g, x, y, z, mu, t );
-                this->_phi_dz_wave[j] += wave_potential_fo_time_dz( aw, w, k, h, g, x, y, z, mu, t );
+                this->_phi_dt_wave[j] += this->_inc_wave->phi_dt( x, y, z, t );
+                this->_phi_dx_wave[j] += this->_inc_wave->phi_dx( x, y, z, t );
+                this->_phi_dy_wave[j] += this->_inc_wave->phi_dy( x, y, z, t );
+                this->_phi_dz_wave[j] += this->_inc_wave->phi_dz( x, y, z, t );
             }
         }
     }
@@ -1070,7 +1113,13 @@ void FormulationKernelBackendT<N, NGPT>::compute_potential_derivatives( )
                     this->_acc_phi_dx[j] += sigma_i    * vel_sf[0] * inv4pi;
                     this->_acc_phi_dy[j] += sigma_i    * vel_sf[1] * inv4pi;
                     this->_acc_phi_dz[j] += sigma_i    * vel_sf[2] * inv4pi;
-                    this->_acc_phi_dt[j] += sigma_i_dt * ( pot_0 - pot_1 ) * inv4pi;
+                    // Static (σ̇·G₀) part of ∂φ_rad/∂t.  Sign confirmed by the
+                    // infinite-frequency added-mass diagnostic: with += this
+                    // yields A∞[2][2] < 0 (unphysical negative added mass, the
+                    // cause of the period-halving and blow-up); −= makes A∞
+                    // positive-definite and consistent with the memory term,
+                    // which also accumulates with −=.
+                    this->_acc_phi_dt[j] -= sigma_i_dt * ( pot_0 - pot_1 ) * inv4pi;
                 }
             }
         }
@@ -1088,19 +1137,19 @@ void FormulationKernelBackendT<N, NGPT>::compute_potential_derivatives( )
         for ( int j=0; j<np; j++ )
         {
             // Steady Rankine (σ-driven) is part of the radiation potential
-            this->_phi_dt_rad[j]        += this->_acc_phi_dt[j];
-            this->_phi_dx_rad[j]        += this->_acc_phi_dx[j];
-            this->_phi_dy_rad[j]        += this->_acc_phi_dy[j];
-            this->_phi_dz_rad[j]        += this->_acc_phi_dz[j];
+            // this->_phi_dt_rad[j]        += this->_acc_phi_dt[j];
+            // this->_phi_dx_rad[j]        += this->_acc_phi_dx[j];
+            // this->_phi_dy_rad[j]        += this->_acc_phi_dy[j];
+            // this->_phi_dz_rad[j]        += this->_acc_phi_dz[j];
             this->_phi_dt_rad_static[j] += this->_acc_phi_dt[j];
             this->_phi_dx_rad_static[j] += this->_acc_phi_dx[j];
             this->_phi_dy_rad_static[j] += this->_acc_phi_dy[j];
             this->_phi_dz_rad_static[j] += this->_acc_phi_dz[j];
             // Total = radiation + incident wave
-            this->_phi_dt[j] = this->_phi_dt_rad[j] + this->_phi_dt_wave[j];
-            this->_phi_dx[j] = this->_phi_dx_rad[j] + this->_phi_dx_wave[j];
-            this->_phi_dy[j] = this->_phi_dy_rad[j] + this->_phi_dy_wave[j];
-            this->_phi_dz[j] = this->_phi_dz_rad[j] + this->_phi_dz_wave[j];
+            this->_phi_dt[j] = - this->_phi_dt_rad[j] + this->_phi_dt_wave[j];
+            this->_phi_dx[j] = - this->_phi_dx_rad[j] + this->_phi_dx_wave[j];
+            this->_phi_dy[j] = - this->_phi_dy_rad[j] + this->_phi_dy_wave[j];
+            this->_phi_dz[j] = - this->_phi_dz_rad[j] + this->_phi_dz_wave[j];
         }
     }
 

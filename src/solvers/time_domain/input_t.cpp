@@ -501,6 +501,14 @@ void InputT::read_case( const std::string& folder_path )
     read_signal     = read_channel_value( infile, this->output_flush_niter );
     CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
 
+    // Read infinite-frequency added-mass update cadence (steps; 0 = frozen at
+    // init).  When > 0 the A_inf matrix is recomputed on the current wetted
+    // geometry every N steps and folded back into the structural mass — useful
+    // when the body undergoes large motions that change the wetted surface.
+    target_signal   = "AddedMassUpdateNIter";
+    read_signal     = read_channel_value( infile, this->added_mass_update_niter );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
     //////////////////////////////////////////////
     /************** Body Definition *************/
     //////////////////////////////////////////////
