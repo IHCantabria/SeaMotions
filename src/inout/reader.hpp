@@ -24,6 +24,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <utility>
 #include <vector>
 
 // Include local modules
@@ -78,6 +79,13 @@ template<typename T>    inline  void            read_list_contraction(
                                                                             int&                            line_count,
                                                                             std::string                     target_file,
                                                                             std::vector<T>&                 container
+                                                                    );
+
+template<typename T>    inline  void            read_channel_pair_list(
+                                                                            std::ifstream&                  infile,
+                                                                            int&                            line_count,
+                                                                            std::string                     target_file,
+                                                                            std::vector<std::pair<T,T>>&    container
                                                                     );
 
 template<typename T>    inline  void            read_compact_list(

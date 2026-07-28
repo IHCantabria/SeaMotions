@@ -23,6 +23,7 @@
 // Include general usage libraries
 #include <iostream>
 #include <string>
+#include <utility>
 #include <vector>
 
 // Import local modules
@@ -79,6 +80,10 @@ public:
     bool                            out_qtf             = false;
     bool                            out_qtf_comp        = false;
     QTFSOModelE                     out_qtf_so_model    = QTFSOModelE::PINKSTER;
+    std::string                     qtf_pairs_mode                              = "FULL";
+    std::vector<std::pair<cusfloat,cusfloat>> qtf_pair_values_in                ;
+    std::vector<std::pair<int,int>> qtf_freq_pairs                              ;
+    bool                            qtf_use_all_pairs                           = true;
     bool                            out_raos            = false;
     bool                            out_sources         = false;
     bool                            out_struct_mass     = false;
@@ -130,6 +135,24 @@ public:
     void    get_wave_quality_params(
                                     cusfloat& min_wavelength,
                                     cusfloat& max_wave_number
+                ) const;
+
+    /**
+     * @brief Return whether the (i,j) frequency pair must be evaluated
+     *        during the second-order (QTF) calculation.
+     *
+     * When the user requested `QTFPairsMode = FULL` all pairs are
+     * computed. Under `CUSTOM` mode, only the pairs explicitly listed
+     * by the user are evaluated. Uncomputed cells of the QTF output
+     * matrix remain zero.
+     *
+     * @param i  Row index into the angular-frequency array.
+     * @param j  Column index into the angular-frequency array.
+     * @return   True if the pair must be computed.
+     */
+    bool    should_compute_qtf_pair(
+                                    int i,
+                                    int j
                 ) const;
 
 private:

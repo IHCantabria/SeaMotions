@@ -155,3 +155,8 @@ period 			FreqUnit	- [str]		- Frequencies input units. Possible values are { per
 29.454545
 29.727273
 30.0
+
+/*************************************/
+/******* QTF Frequency Pairs *********/
+/*************************************/
+FULL			QTFPairsMode	- [str]		- QTF pair selection { FULL: all N x N pairs | CUSTOM: only the pairs listed below (same unit as FreqUnit) }

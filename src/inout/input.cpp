@@ -696,7 +696,38 @@ void Input::read_case( const std::string& folder_path )
                                 this->angfreqs
                             );
     this->angfreqs_np = this->angfreqs.size( );
- 
+
+    //////////////////////////////////////////////
+    /*********** QTF Frequency Pairs ************/
+    //////////////////////////////////////////////
+    // Mandatory section. Selects whether the second-order (QTF)
+    // calculation is performed on the full N x N frequency-pair
+    // matrix or only on an explicit subset supplied by the user.
+    // When `QTFPairsMode` is `FULL` no pair list is expected. When
+    // `CUSTOM` the following lines (until the next `/***` header or
+    // EOF) must contain one pair per line, `freq_a  freq_b`, in the
+    // same unit as `FreqUnit`. Every value must belong to the
+    // first-order frequency list above.
+
+    // Skip section header
+    skip_header( infile, line_count, 3 );
+
+    // Read the mode selector: FULL | CUSTOM
+    target_signal   = "QTFPairsMode";
+    read_signal     = read_channel_value( infile, this->qtf_pairs_mode );
+    CHECK_SIGNAL_NAME( read_signal, target_signal, target_file, line_count );
+
+    if ( this->qtf_pairs_mode.compare( "CUSTOM" ) == 0 )
+    {
+        // Read pair list until next section header or EOF
+        read_channel_pair_list(
+                                    infile,
+                                    line_count,
+                                    target_file,
+                                    this->qtf_pair_values_in
+                                );
+    }
+
     // Close file unit
     infile.close();
 }
@@ -830,6 +861,91 @@ void Input::configure( void )
     }
 
     mkl_free( sort_keys );
+
+    /**********************************************************/
+    /************ Resolve requested QTF pair values ***********/
+    /**********************************************************/
+    // Validate `QTFPairsMode` and translate the user-supplied pair
+    // values (in the same unit as `FreqUnit`) into pairs of indices
+    // in the (now sorted) `angfreqs` array. Any pair whose values do
+    // not match — within tolerance — an entry of the first-order
+    // frequency list is a hard error.
+    if ( this->qtf_pairs_mode.compare( "CUSTOM" ) == 0 )
+    {
+        // Convert user pair values to angular frequency (rad/s)
+        for ( auto& pv : this->qtf_pair_values_in )
+        {
+            if ( this->freqs_unit.compare( "period" ) == 0 )
+            {
+                pv.first  = period_to_angfreq( pv.first  );
+                pv.second = period_to_angfreq( pv.second );
+            }
+            else if ( this->freqs_unit.compare( "freq" ) == 0 )
+            {
+                pv.first  = freq_to_angfreq( pv.first  );
+                pv.second = freq_to_angfreq( pv.second );
+            }
+            // `angfreq` -> no conversion required
+        }
+
+        // Resolve each pair value to an index in `angfreqs`
+        const cusfloat rel_tol = static_cast<cusfloat>( 1.0e-6 );
+        const cusfloat abs_tol = static_cast<cusfloat>( 1.0e-9 );
+        this->qtf_freq_pairs.reserve( this->qtf_pair_values_in.size( ) );
+        for ( auto const& pv : this->qtf_pair_values_in )
+        {
+            int idx_a = -1;
+            int idx_b = -1;
+            for ( int k=0; k<this->angfreqs_np; k++ )
+            {
+                cusfloat wk  = this->angfreqs[k];
+                cusfloat tol_a = std::max( abs_tol, rel_tol * std::max( std::abs( wk ), std::abs( pv.first  ) ) );
+                cusfloat tol_b = std::max( abs_tol, rel_tol * std::max( std::abs( wk ), std::abs( pv.second ) ) );
+                if ( idx_a < 0 && std::abs( wk - pv.first  ) <= tol_a ) idx_a = k;
+                if ( idx_b < 0 && std::abs( wk - pv.second ) <= tol_b ) idx_b = k;
+            }
+            if ( idx_a < 0 || idx_b < 0 )
+            {
+                std::cerr << std::endl;
+                std::cerr << "ERROR - INPUT: QTF Frequency Pairs" << std::endl;
+                std::cerr << "Requested QTF pair (" << pv.first << ", " << pv.second << ") [rad/s]";
+                std::cerr << " contains a frequency that is not part of the first-order frequency list." << std::endl;
+                std::cerr << "First-order angular frequencies (rad/s):" << std::endl;
+                for ( int k=0; k<this->angfreqs_np; k++ )
+                {
+                    std::cerr << "  [" << k << "] " << this->angfreqs[k] << std::endl;
+                }
+                std::cerr << std::endl;
+                throw std::runtime_error( "" );
+            }
+            this->qtf_freq_pairs.push_back( std::make_pair( idx_a, idx_b ) );
+        }
+
+        this->qtf_use_all_pairs = false;
+
+        // Warn if user requested a QTF subset but the QTF output flag is off
+        if ( !this->out_qtf )
+        {
+            std::cout << std::endl;
+            std::cout << "WARNING - INPUT: QTFPairsMode = CUSTOM was provided but OutQTF is disabled." << std::endl;
+            std::cout << "The requested QTF pair list will be ignored." << std::endl;
+            std::cout << std::endl;
+        }
+    }
+    else if ( this->qtf_pairs_mode.compare( "FULL" ) == 0 )
+    {
+        this->qtf_use_all_pairs = true;
+        this->qtf_freq_pairs.clear( );
+    }
+    else
+    {
+        std::cout << std::endl;
+        std::cout << "ERROR - INPUT:" << std::endl;
+        std::cout << "QTFPairsMode: " << this->qtf_pairs_mode << " is not a valid parameter." << std::endl;
+        std::cout << "Valid values are: FULL | CUSTOM." << std::endl;
+        std::cout << std::endl;
+        throw std::runtime_error( "" );
+    }
 
     /**********************************************************/
     /********** Create a vector for the frequencies ***********/
@@ -1025,4 +1141,22 @@ void Input::get_wave_quality_params(
         min_wavelength = min_lambda;
     }
     max_wave_number = max_k;
+}
+
+
+bool Input::should_compute_qtf_pair( int i, int j ) const
+{
+    if ( this->qtf_use_all_pairs )
+    {
+        return true;
+    }
+
+    for ( auto const& p : this->qtf_freq_pairs )
+    {
+        if ( p.first == i && p.second == j )
+        {
+            return true;
+        }
+    }
+    return false;
 }

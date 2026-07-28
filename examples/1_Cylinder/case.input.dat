@@ -29,8 +29,8 @@ true 			OutWex 		- [bool]	- Output wave excitation forces
 /*************************************/
 /********* Site Conditions ***********/
 /*************************************/
-1025.0 			RhoW 		- [Kg/m³] 	- Water density
-9.81			GravAcc 	- [m/s²]	- Gravitation acceleration
+1025.0 			RhoW 		- [Kg/mÃ‚Â³] 	- Water density
+9.81			GravAcc 	- [m/sÃ‚Â²]	- Gravitation acceleration
 50.0			WaterDepth  - [m] 		- Water depth at the bodies location
 /*************************************/
 /************ Headings ***************/
@@ -120,3 +120,7 @@ period 			FreqUnit	- [str]		- Frequencies input units. Possible values are { per
 23.181818
 23.454545
 23.727273
+/*************************************/
+/******* QTF Frequency Pairs *********/
+/*************************************/
+FULL			QTFPairsMode	- [str]		- QTF pair selection { FULL: all N x N pairs | CUSTOM: only the pairs listed below (same unit as FreqUnit) }

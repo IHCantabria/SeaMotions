@@ -19,9 +19,11 @@
  */
 
 // Include general usage libraries
+#include <cctype>
 #include <iostream>
 #include <sstream>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 // Include local modules
@@ -236,6 +238,97 @@ inline  void    read_list_contraction(
         {
             std::cerr << std::endl;
             std::cerr << "Not posible to find the end of the list that begins at line: " << _first_line;
+            std::cerr << " of the file: " << target_file << std::endl;
+            throw std::runtime_error( "" );
+        }
+
+    }
+}
+
+
+template<typename T>
+inline  void    read_channel_pair_list(
+                                            std::ifstream&               infile,
+                                            int&                         line_count,
+                                            std::string                  target_file,
+                                            std::vector<std::pair<T,T>>& container
+                                        )
+{
+    // Check input data type
+    static_assert(
+                    std::disjunction<
+                                        std::is_same<cusfloat, T>,
+                                        std::is_same<int, T>
+                                    >( ),
+                    "Not valid type. Function only accepts: int | cusfloat"
+                );
+
+    // Loop over lines until the next section header is found (or EOF).
+    // Each non-empty line must contain exactly two whitespace-separated values.
+    T           v1;
+    T           v2;
+    int         _count      = 0;
+    int         _first_line = line_count;
+    std::string line;
+    int         max_count   = 1e4;
+    while ( true )
+    {
+        // Read the current file position
+        auto read_pos = infile.tellg( );
+
+        // Check if there is more lines to read
+        if ( !( std::getline( infile, line ) ) )
+        {
+            break;
+        }
+
+        // Check if reading a header line
+        int pos_h = line.find( "/***" );
+        int pos_c = line.find( "-->" );
+        if ( !( pos_h < 0 ) || !( pos_c < 0 ) )
+        {
+            infile.seekg( read_pos );
+            break;
+        }
+
+        // Skip empty / whitespace-only lines
+        bool only_ws = true;
+        for ( char ch : line )
+        {
+            if ( !std::isspace( static_cast<unsigned char>( ch ) ) )
+            {
+                only_ws = false;
+                break;
+            }
+        }
+        if ( only_ws )
+        {
+            line_count++;
+            continue;
+        }
+
+        // Parse two values
+        std::istringstream iss( line );
+        if ( !( iss >> v1 >> v2 ) )
+        {
+            std::cerr << std::endl;
+            std::cerr << "ERROR - Reading pair list" << std::endl;
+            std::cerr << "Could not parse two numeric values at line " << ( line_count + 1 );
+            std::cerr << " of the file: " << target_file << std::endl;
+            std::cerr << "Line content: '" << line << "'" << std::endl;
+            throw std::runtime_error( "" );
+        }
+
+        // Storage the pair
+        container.push_back( std::make_pair( v1, v2 ) );
+
+        // Check maximum number of iterations
+        _count++;
+        line_count++;
+        if ( _count > max_count )
+        {
+            std::cerr << std::endl;
+            std::cerr << "Not possible to find the end of the pair list that begins at line: " << _first_line;
             std::cerr << " of the file: " << target_file << std::endl;
             throw std::runtime_error( "" );
         }

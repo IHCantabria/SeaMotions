@@ -415,6 +415,13 @@ void FrequencySolver<N, mode_pf>::calculate_second_order( void )
     {
         for ( std::size_t j=0; j<static_cast<std::size_t>(this->input->angfreqs_np); j++ )
         {
+            // Skip pairs that were not requested via QTFPairsMode = CUSTOM.
+            // Uncomputed cells of the QTF output matrix remain zero.
+            if ( !this->input->should_compute_qtf_pair( static_cast<int>( i ), static_cast<int>( j ) ) )
+            {
+                continue;
+            }
+
             LOG_TASK_SS( freq, "SO - Calculating period: " << std::setw( 10 ) << std::fixed << std::setprecision( 3 ) << angfreq_to_period( this->input->angfreqs[i] ) << " s" << " - " << angfreq_to_period( this->input->angfreqs[j] ) << " s" )
 
             // Start time measurement for the current frequency
